@@ -1,0 +1,16 @@
+[Unit]
+Description=MCP InSales Server
+After=docker.service network.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/mcp-insales
+EnvironmentFile=/etc/mcp-insales/.env
+ExecStart=/usr/bin/docker compose up -d --remove-orphans
+ExecStop=/usr/bin/docker compose down
+TimeoutStartSec=120
+
+[Install]
+WantedBy=multi-user.target

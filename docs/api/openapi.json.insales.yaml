@@ -1,0 +1,1650 @@
+openapi: 3.0.0
+info:
+  title: InSales API
+  description: |
+    REST API для управления интернет-магазином на платформе InSales.
+    
+    ## Аутентификация
+    Используется HTTP Basic Authentication с ключом доступа.
+    Ключ создаётся в панели администратора: Расширения → Разработчикам.
+    
+    ## Лимиты
+    - 500 запросов в 5 минут
+    - Заголовки ответа: `API-Usage-Limit` и `Retry-After`
+    
+    ## Форматы
+    Поддерживаются JSON и XML. В примерах используется JSON.
+  version: 1.0.0
+  contact:
+    name: InSales API Support
+    url: https://api.insales.ru
+  license:
+    name: Proprietary
+
+servers:
+  - url: https://{shop}.myinsales.ru/admin
+    description: Технический домен магазина
+    variables:
+      shop:
+        default: shop-123
+        description: Идентификатор магазина (например, shop-123)
+  - url: https://{custom-domain}/admin
+    description: Кастомный домен магазина
+    variables:
+      custom-domain:
+        default: my-store.com
+        description: Ваш кастомный домен
+
+security:
+  - basicAuth: []
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: |
+        Используйте ключ доступа.
+        Логин: token (или любой текст)
+        Пароль: сам ключ доступа
+
+  parameters:
+    PageParam:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Номер страницы
+    PerPageParam:
+      name: per_page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 250
+        default: 25
+      description: Количество записей на странице
+    OrderParam:
+      name: order
+      in: query
+      schema:
+        type: string
+      description: |
+        Поле для сортировки. Добавьте `-` для убывания.
+        Доступные поля зависят от ресурса.
+    CreatedAtMin:
+      name: created_at_min
+      in: query
+      schema:
+        type: string
+        format: date-time
+      description: Начало периода создания (ISO 8601)
+    CreatedAtMax:
+      name: created_at_max
+      in: query
+      schema:
+        type: string
+        format: date-time
+      description: Конец периода создания (ISO 8601)
+    UpdatedAtMin:
+      name: updated_at_min
+      in: query
+      schema:
+        type: string
+        format: date-time
+      description: Начало периода обновления (ISO 8601)
+    UpdatedAtMax:
+      name: updated_at_max
+      in: query
+      schema:
+        type: string
+        format: date-time
+      description: Конец периода обновления (ISO 8601)
+
+  schemas:
+    # === Базовые объекты ===
+    Product:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 12345
+        title:
+          type: string
+          example: "Смартфон X"
+        description:
+          type: string
+          example: "Мощный смартфон с отличной камерой"
+        price:
+          type: string
+          pattern: '^\d+\.\d{2}$'
+          example: "25000.00"
+        category_id:
+          type: integer
+          nullable: true
+          example: 10
+        collection_id:
+          type: integer
+          nullable: true
+          example: 5
+        vendor:
+          type: string
+          example: "Apple"
+        sku:
+          type: string
+          example: "PHONE-X-BK64"
+        quantity:
+          type: integer
+          example: 100
+        weight:
+          type: string
+          example: "0.5"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/Variant'
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/Image'
+
+    Variant:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 9876
+        title:
+          type: string
+          example: "Черный 64GB"
+        price:
+          type: string
+          example: "25000.00"
+        sku:
+          type: string
+          example: "PHONE-X-BK64"
+        quantity:
+          type: integer
+          example: 50
+        weight:
+          type: string
+          example: "0.5"
+        product_id:
+          type: integer
+          example: 12345
+
+    Image:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 456
+        url:
+          type: string
+          format: uri
+          example: "https://shop-123.myinsales.ru/images/12345.jpg"
+        filename:
+          type: string
+          example: "phone-x.jpg"
+        position:
+          type: integer
+          example: 1
+        product_id:
+          type: integer
+          example: 12345
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 100001
+        number:
+          type: string
+          example: "ORD-100001"
+        status:
+          type: string
+          enum: [open, closed, canceled]
+          example: "open"
+        fulfillment_status:
+          type: string
+          enum: [pending, shipped, delivered, canceled]
+          example: "pending"
+        paid:
+          type: boolean
+          example: false
+        total_price:
+          type: string
+          example: "50000.00"
+        discount:
+          type: string
+          example: "0.00"
+        client_id:
+          type: integer
+          nullable: true
+          example: 789
+        delivery_variant_id:
+          type: integer
+          example: 1
+        payment_gateway_id:
+          type: integer
+          example: 2
+        comment:
+          type: string
+          example: "Срочно"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLine'
+
+    OrderLine:
+      type: object
+      properties:
+        id:
+          type: integer
+        product_id:
+          type: integer
+          example: 12345
+        variant_id:
+          type: integer
+          example: 9876
+        title:
+          type: string
+          example: "Смартфон X"
+        quantity:
+          type: integer
+          example: 2
+        price:
+          type: string
+          example: "25000.00"
+        total:
+          type: string
+          example: "50000.00"
+
+    Client:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 789
+        email:
+          type: string
+          format: email
+          example: "client@example.com"
+        first_name:
+          type: string
+          example: "Иван"
+        last_name:
+          type: string
+          example: "Петров"
+        phone:
+          type: string
+          example: "+79991234567"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        address:
+          type: string
+          example: "ул. Ленина, 1"
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 10
+        title:
+          type: string
+          example: "Электроника"
+        parent_id:
+          type: integer
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Collection:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 5
+        title:
+          type: string
+          example: "Скидка 20%"
+        rules:
+          type: object
+          properties:
+            type:
+              type: string
+              enum: [all, any]
+            conditions:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  operator:
+                    type: string
+                  value:
+                    type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Page:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "О нас"
+        content:
+          type: string
+          example: "<p>Текст о компании</p>"
+        handle:
+          type: string
+          example: "about"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    Accessory:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+          example: "Цвет"
+        type:
+          type: string
+          enum: [text, select, checkbox, radio, number]
+          example: "select"
+        values:
+          type: array
+          items:
+            type: string
+          example: ["Красный", "Синий", "Зеленый"]
+
+    MetaField:
+      type: object
+      properties:
+        id:
+          type: integer
+        resource_type:
+          type: string
+          enum: [Product, Variant, Order, Client, Category, Page]
+          example: "Product"
+        resource_id:
+          type: integer
+          example: 12345
+        key:
+          type: string
+          example: "custom_field"
+        value:
+          type: string
+          example: "some value"
+
+    Webhook:
+      type: object
+      properties:
+        id:
+          type: integer
+        event:
+          type: string
+          enum:
+            - order_create
+            - order_update
+            - order_delete
+            - product_create
+            - product_update
+            - product_delete
+            - client_create
+            - client_update
+            - client_delete
+          example: "order_create"
+        url:
+          type: string
+          format: uri
+          example: "https://your-server.com/webhook"
+        format:
+          type: string
+          enum: [json, xml]
+          default: "json"
+
+    Error:
+      type: object
+      properties:
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            title: ["не может быть пустым"]
+        message:
+          type: string
+          example: "Ошибка валидации"
+
+paths:
+  # === ТОВАРЫ ===
+  /products.json:
+    get:
+      summary: Получить список товаров
+      operationId: listProducts
+      tags: [Products]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/OrderParam'
+        - name: category_id
+          in: query
+          schema:
+            type: integer
+          description: Фильтр по категории
+        - name: collection_id
+          in: query
+          schema:
+            type: integer
+          description: Фильтр по коллекции
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Поиск по названию, артикулу
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Product'
+        '429':
+          description: Превышен лимит запросов
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Секунды до следующего запроса
+
+    post:
+      summary: Создать товар
+      operationId: createProduct
+      tags: [Products]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product:
+                  $ref: '#/components/schemas/Product'
+              required:
+                - product
+      responses:
+        '201':
+          description: Товар создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '422':
+          description: Ошибка валидации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /products/{id}.json:
+    get:
+      summary: Получить товар по ID
+      operationId: getProduct
+      tags: [Products]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '404':
+          description: Товар не найден
+
+    put:
+      summary: Обновить товар
+      operationId: updateProduct
+      tags: [Products]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                product:
+                  $ref: '#/components/schemas/Product'
+      responses:
+        '200':
+          description: Товар обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '422':
+          description: Ошибка валидации
+
+    delete:
+      summary: Удалить товар
+      operationId: deleteProduct
+      tags: [Products]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Товар удалён
+        '404':
+          description: Товар не найден
+
+  # === ИЗОБРАЖЕНИЯ ===
+  /products/{product_id}/images.json:
+    get:
+      summary: Получить изображения товара
+      operationId: listProductImages
+      tags: [Images]
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список изображений
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Image'
+
+    post:
+      summary: Добавить изображение товару
+      operationId: createProductImage
+      tags: [Images]
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                image:
+                  type: object
+                  properties:
+                    url:
+                      type: string
+                      format: uri
+                    filename:
+                      type: string
+                    position:
+                      type: integer
+      responses:
+        '201':
+          description: Изображение добавлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+
+  /products/{product_id}/images/{id}.json:
+    delete:
+      summary: Удалить изображение
+      operationId: deleteProductImage
+      tags: [Images]
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Изображение удалено
+
+  # === ЗАКАЗЫ ===
+  /orders.json:
+    get:
+      summary: Получить список заказов
+      operationId: listOrders
+      tags: [Orders]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/OrderParam'
+        - $ref: '#/components/parameters/CreatedAtMin'
+        - $ref: '#/components/parameters/CreatedAtMax'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, closed, canceled]
+          description: Статус заказа
+        - name: fulfillment_status
+          in: query
+          schema:
+            type: string
+            enum: [pending, shipped, delivered, canceled]
+        - name: paid
+          in: query
+          schema:
+            type: boolean
+        - name: client_id
+          in: query
+          schema:
+            type: integer
+          description: Фильтр по клиенту
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+
+    post:
+      summary: Создать заказ
+      operationId: createOrder
+      tags: [Orders]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order:
+                  $ref: '#/components/schemas/Order'
+      responses:
+        '201':
+          description: Заказ создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+  /orders/{id}.json:
+    get:
+      summary: Получить заказ по ID
+      operationId: getOrder
+      tags: [Orders]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+    put:
+      summary: Обновить заказ
+      operationId: updateOrder
+      tags: [Orders]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                order:
+                  $ref: '#/components/schemas/Order'
+      responses:
+        '200':
+          description: Заказ обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+    delete:
+      summary: Удалить заказ
+      operationId: deleteOrder
+      tags: [Orders]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Заказ удалён
+
+  # === КЛИЕНТЫ ===
+  /clients.json:
+    get:
+      summary: Получить список клиентов
+      operationId: listClients
+      tags: [Clients]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - $ref: '#/components/parameters/OrderParam'
+        - $ref: '#/components/parameters/CreatedAtMin'
+        - $ref: '#/components/parameters/CreatedAtMax'
+        - name: q
+          in: query
+          schema:
+            type: string
+          description: Поиск по имени, email, телефону
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Client'
+
+    post:
+      summary: Создать клиента
+      operationId: createClient
+      tags: [Clients]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                client:
+                  $ref: '#/components/schemas/Client'
+      responses:
+        '201':
+          description: Клиент создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+
+  /clients/{id}.json:
+    get:
+      summary: Получить клиента по ID
+      operationId: getClient
+      tags: [Clients]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+
+    put:
+      summary: Обновить клиента
+      operationId: updateClient
+      tags: [Clients]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                client:
+                  $ref: '#/components/schemas/Client'
+      responses:
+        '200':
+          description: Клиент обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Client'
+
+    delete:
+      summary: Удалить клиента
+      operationId: deleteClient
+      tags: [Clients]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Клиент удалён
+
+  # === КАТЕГОРИИ ===
+  /categories.json:
+    get:
+      summary: Получить список категорий
+      operationId: listCategories
+      tags: [Categories]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: parent_id
+          in: query
+          schema:
+            type: integer
+            nullable: true
+          description: Фильтр по родительской категории
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+
+    post:
+      summary: Создать категорию
+      operationId: createCategory
+      tags: [Categories]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                category:
+                  $ref: '#/components/schemas/Category'
+      responses:
+        '201':
+          description: Категория создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+
+  /categories/{id}.json:
+    get:
+      summary: Получить категорию по ID
+      operationId: getCategory
+      tags: [Categories]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+
+    put:
+      summary: Обновить категорию
+      operationId: updateCategory
+      tags: [Categories]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                category:
+                  $ref: '#/components/schemas/Category'
+      responses:
+        '200':
+          description: Категория обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+
+    delete:
+      summary: Удалить категорию
+      operationId: deleteCategory
+      tags: [Categories]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Категория удалена
+        '422':
+          description: Категория содержит товары
+
+  # === КОЛЛЕКЦИИ ===
+  /collections.json:
+    get:
+      summary: Получить список коллекций
+      operationId: listCollections
+      tags: [Collections]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Collection'
+
+    post:
+      summary: Создать коллекцию
+      operationId: createCollection
+      tags: [Collections]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                collection:
+                  $ref: '#/components/schemas/Collection'
+      responses:
+        '201':
+          description: Коллекция создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+
+  /collections/{id}.json:
+    get:
+      summary: Получить коллекцию по ID
+      operationId: getCollection
+      tags: [Collections]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+
+    put:
+      summary: Обновить коллекцию
+      operationId: updateCollection
+      tags: [Collections]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                collection:
+                  $ref: '#/components/schemas/Collection'
+      responses:
+        '200':
+          description: Коллекция обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Collection'
+
+    delete:
+      summary: Удалить коллекцию
+      operationId: deleteCollection
+      tags: [Collections]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Коллекция удалена
+
+  # === СТРАНИЦЫ ===
+  /pages.json:
+    get:
+      summary: Получить список страниц
+      operationId: listPages
+      tags: [Pages]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Page'
+
+    post:
+      summary: Создать страницу
+      operationId: createPage
+      tags: [Pages]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page:
+                  $ref: '#/components/schemas/Page'
+      responses:
+        '201':
+          description: Страница создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page'
+
+  /pages/{id}.json:
+    get:
+      summary: Получить страницу по ID
+      operationId: getPage
+      tags: [Pages]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page'
+
+    put:
+      summary: Обновить страницу
+      operationId: updatePage
+      tags: [Pages]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page:
+                  $ref: '#/components/schemas/Page'
+      responses:
+        '200':
+          description: Страница обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Page'
+
+    delete:
+      summary: Удалить страницу
+      operationId: deletePage
+      tags: [Pages]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Страница удалена
+
+  # === АКСЕССУАРЫ (ХАРАКТЕРИСТИКИ) ===
+  /accessories.json:
+    get:
+      summary: Получить список аксессуаров
+      operationId: listAccessories
+      tags: [Accessories]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Accessory'
+
+    post:
+      summary: Создать аксессуар
+      operationId: createAccessory
+      tags: [Accessories]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accessory:
+                  $ref: '#/components/schemas/Accessory'
+      responses:
+        '201':
+          description: Аксессуар создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Accessory'
+
+  /accessories/{id}.json:
+    get:
+      summary: Получить аксессуар по ID
+      operationId: getAccessory
+      tags: [Accessories]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Accessory'
+
+    put:
+      summary: Обновить аксессуар
+      operationId: updateAccessory
+      tags: [Accessories]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                accessory:
+                  $ref: '#/components/schemas/Accessory'
+      responses:
+        '200':
+          description: Аксессуар обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Accessory'
+
+    delete:
+      summary: Удалить аксессуар
+      operationId: deleteAccessory
+      tags: [Accessories]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Аксессуар удалён
+
+  # === МЕТАПОЛЯ ===
+  /meta_fields.json:
+    get:
+      summary: Получить список метаполей
+      operationId: listMetaFields
+      tags: [MetaFields]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+        - name: resource_type
+          in: query
+          schema:
+            type: string
+            enum: [Product, Variant, Order, Client, Category, Page]
+          description: Тип ресурса
+        - name: resource_id
+          in: query
+          schema:
+            type: integer
+          description: ID ресурса
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MetaField'
+
+    post:
+      summary: Создать метаполе
+      operationId: createMetaField
+      tags: [MetaFields]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                meta_field:
+                  $ref: '#/components/schemas/MetaField'
+      responses:
+        '201':
+          description: Метаполе создано
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetaField'
+
+  /meta_fields/{id}.json:
+    get:
+      summary: Получить метаполе по ID
+      operationId: getMetaField
+      tags: [MetaFields]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetaField'
+
+    put:
+      summary: Обновить метаполе
+      operationId: updateMetaField
+      tags: [MetaFields]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                meta_field:
+                  $ref: '#/components/schemas/MetaField'
+      responses:
+        '200':
+          description: Метаполе обновлено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetaField'
+
+    delete:
+      summary: Удалить метаполе
+      operationId: deleteMetaField
+      tags: [MetaFields]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Метаполе удалено
+
+  # === ВЕБХУКИ ===
+  /webhooks.json:
+    get:
+      summary: Получить список вебхуков
+      operationId: listWebhooks
+      tags: [Webhooks]
+      parameters:
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/PerPageParam'
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Webhook'
+
+    post:
+      summary: Создать вебхук
+      operationId: createWebhook
+      tags: [Webhooks]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                webhook:
+                  $ref: '#/components/schemas/Webhook'
+      responses:
+        '201':
+          description: Вебхук создан
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+
+  /webhooks/{id}.json:
+    get:
+      summary: Получить вебхук по ID
+      operationId: getWebhook
+      tags: [Webhooks]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+
+    put:
+      summary: Обновить вебхук
+      operationId: updateWebhook
+      tags: [Webhooks]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                webhook:
+                  $ref: '#/components/schemas/Webhook'
+      responses:
+        '200':
+          description: Вебхук обновлён
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Webhook'
+
+    delete:
+      summary: Удалить вебхук
+      operationId: deleteWebhook
+      tags: [Webhooks]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Вебхук удалён
+
+  # === ДОПОЛНИТЕЛЬНЫЕ РЕСУРСЫ ===
+  /delivery_variants.json:
+    get:
+      summary: Получить способы доставки
+      operationId: listDeliveryVariants
+      tags: [Delivery]
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    title:
+                      type: string
+                    price:
+                      type: string
+
+  /payment_gateways.json:
+    get:
+      summary: Получить способы оплаты
+      operationId: listPaymentGateways
+      tags: [Payment]
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    title:
+                      type: string
+                    type:
+                      type: string
+
+  /shops.json:
+    get:
+      summary: Получить информацию о магазине
+      operationId: getShopInfo
+      tags: [Shop]
+      responses:
+        '200':
+          description: Информация о магазине
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  domain:
+                    type: string
+                  email:
+                    type: string
+                  currency:
+                    type: string
+                  created_at:
+                    type: string
+                    format: date-time
+
+  /currencies.json:
+    get:
+      summary: Получить список валют
+      operationId: listCurrencies
+      tags: [Currencies]
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    code:
+                      type: string
+                    name:
+                      type: string
+                    rate:
+                      type: string
+
+tags:
+  - name: Products
+    description: Управление товарами
+  - name: Images
+    description: Управление изображениями товаров
+  - name: Orders
+    description: Управление заказами
+  - name: Clients
+    description: Управление клиентами
+  - name: Categories
+    description: Управление категориями
+  - name: Collections
+    description: Управление коллекциями (умными подборками)
+  - name: Pages
+    description: Управление статическими страницами
+  - name: Accessories
+    description: Управление характеристиками товаров
+  - name: MetaFields
+    description: Управление метаполями
+  - name: Webhooks
+    description: Управление вебхуками
+  - name: Delivery
+    description: Способы доставки
+  - name: Payment
+    description: Способы оплаты
+  - name: Shop
+    description: Информация о магазине
+  - name: Currencies
+    description: Валюты магазина

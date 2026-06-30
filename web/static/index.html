@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP InSales</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header class="header" id="header" style="display:none">
+        <div class="header__logo">MCP InSales</div>
+        <nav class="header__nav" id="nav">
+            <a href="/dashboard" class="nav-link" data-page="dashboard">Панель</a>
+            <a href="/shops" class="nav-link" data-page="shops">Магазины</a>
+            <a href="/ai-keys" class="nav-link" data-page="ai-keys">AI-ключи</a>
+            <a href="/settings" class="nav-link" data-page="settings">Настройки</a>
+            <a href="/admin/users" class="nav-link admin-link" data-page="admin" style="display:none">Админ</a>
+        </nav>
+        <div class="header__user">
+            <span id="user-nickname"></span>
+            <button class="btn btn--sm" onclick="App.logout()">Выйти</button>
+        </div>
+    </header>
+
+    <main class="main" id="app">
+        <!-- Content rendered by JS -->
+    </main>
+
+    <footer class="footer">
+        <p>MCP InSales v0.1.0</p>
+    </footer>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/shops.js"></script>
+    <script src="/js/aikeys.js"></script>
+    <script src="/js/admin.js"></script>
+    <script src="/js/app.js"></script>
+</body>
+</html>

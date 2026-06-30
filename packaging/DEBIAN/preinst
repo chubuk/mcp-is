@@ -1,0 +1,23 @@
+#!/bin/bash
+set -e
+
+# Check Docker is installed
+if ! command -v docker &> /dev/null; then
+    echo "ERROR: Docker is not installed. Install docker.io first:"
+    echo "  sudo apt install docker.io"
+    exit 1
+fi
+
+# Check Docker is running
+if ! docker info &> /dev/null; then
+    echo "WARNING: Docker daemon is not running. Starting..."
+    systemctl start docker || true
+fi
+
+# Stop service if running
+if systemctl is-active --quiet mcp-insales 2>/dev/null; then
+    echo "Stopping mcp-insales service..."
+    systemctl stop mcp-insales
+fi
+
+exit 0

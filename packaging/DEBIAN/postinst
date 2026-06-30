@@ -1,0 +1,42 @@
+#!/bin/bash
+set -e
+
+INSTALL_DIR="/opt/mcp-insales"
+CONF_DIR="/etc/mcp-insales"
+ENV_FILE="${CONF_DIR}/.env"
+
+# Create config directory
+mkdir -p "${CONF_DIR}"
+
+# Copy .env.example if .env doesn't exist
+if [ ! -f "${ENV_FILE}" ]; then
+    cp "${INSTALL_DIR}/.env.example" "${ENV_FILE}"
+    echo ""
+    echo "====================================="
+    echo "  MCP InSales installed!"
+    echo "====================================="
+    echo ""
+    echo "  IMPORTANT: Edit configuration file:"
+    echo "  sudo nano ${ENV_FILE}"
+    echo ""
+    echo "  Required settings:"
+    echo "    INSALES_SHOP=your-shop.myinsales.ru"
+    echo "    INSALES_API_KEY=your_api_key"
+    echo "    INSALES_PASSWORD=your_password"
+    echo ""
+    echo "  Then start the service:"
+    echo "  sudo systemctl start mcp-insales"
+    echo ""
+else
+    echo "Config file ${ENV_FILE} already exists, skipping."
+fi
+
+# Reload systemd
+systemctl daemon-reload
+
+# Enable service
+systemctl enable mcp-insales
+
+echo ""
+echo "MCP InSales installed successfully."
+echo "Edit ${ENV_FILE} and run: sudo systemctl start mcp-insales"

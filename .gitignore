@@ -1,0 +1,5 @@
+.env
+*.deb
+packaging/mcp-insales_0.1.0_amd64/
+bin/
+.insales-ip-key

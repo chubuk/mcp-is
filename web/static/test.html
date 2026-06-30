@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>MCP InSales — JS Tests</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #eee; }
+        h1 { color: #4a6cf7; }
+        .pass { color: #27ae60; }
+        .fail { color: #e74c3c; }
+        .test { margin: 4px 0; }
+        #summary { margin-top: 20px; font-size: 18px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>MCP InSales — JS Tests</h1>
+    <div id="output"></div>
+    <div id="summary"></div>
+
+    <script>
+    const output = document.getElementById('output');
+    const summary = document.getElementById('summary');
+    let passed = 0, failed = 0;
+
+    function log(msg, ok) {
+        const div = document.createElement('div');
+        div.className = 'test ' + (ok ? 'pass' : 'fail');
+        div.textContent = (ok ? 'PASS' : 'FAIL') + ': ' + msg;
+        output.appendChild(div);
+        ok ? passed++ : failed++;
+    }
+
+    function assert(condition, msg) {
+        log(msg, !!condition);
+    }
+
+    // === localStorage tests ===
+    localStorage.clear();
+
+    assert(localStorage.getItem('token') === null, 'localStorage starts empty');
+
+    localStorage.setItem('token', 'test-jwt-token');
+    assert(localStorage.getItem('token') === 'test-jwt-token', 'localStorage stores token');
+
+    localStorage.removeItem('token');
+    assert(localStorage.getItem('token') === null, 'localStorage removes token');
+
+    // === API object tests ===
+    assert(typeof API !== 'undefined', 'API object exists');
+    assert(typeof API.request === 'function', 'API.request is function');
+    assert(typeof API.get === 'function', 'API.get is function');
+    assert(typeof API.post === 'function', 'API.post is function');
+    assert(typeof API.put === 'function', 'API.put is function');
+    assert(typeof API.del === 'function', 'API.del is function');
+    assert(typeof API.setToken === 'function', 'API.setToken is function');
+    assert(typeof API.clearToken === 'function', 'API.clearToken is function');
+    assert(typeof API.isLoggedIn === 'function', 'API.isLoggedIn is function');
+
+    API.setToken('test-token');
+    assert(API.token === 'test-token', 'API.setToken sets token');
+    assert(API.isLoggedIn() === true, 'API.isLoggedIn returns true when token set');
+
+    API.clearToken();
+    assert(API.token === null, 'API.clearToken clears token');
+    assert(API.isLoggedIn() === false, 'API.isLoggedIn returns false when no token');
+
+    // === Auth object tests ===
+    assert(typeof Auth !== 'undefined', 'Auth object exists');
+    assert(typeof Auth.renderLogin === 'function', 'Auth.renderLogin is function');
+    assert(typeof Auth.renderRegister === 'function', 'Auth.renderRegister is function');
+
+    const loginHTML = Auth.renderLogin();
+    assert(loginHTML.includes('login-form'), 'renderLogin contains login form');
+    assert(loginHTML.includes('Войти'), 'renderLogin contains submit button');
+
+    const regHTML = Auth.renderRegister();
+    assert(regHTML.includes('register-form'), 'renderRegister contains register form');
+    assert(regHTML.includes('Зарегистрироваться'), 'renderRegister contains submit button');
+    assert(regHTML.includes('reg-nickname'), 'renderRegister has nickname field');
+
+    // === App object tests ===
+    assert(typeof App !== 'undefined', 'App object exists');
+    assert(typeof App.navigate === 'function', 'App.navigate is function');
+    assert(typeof App.routes === 'object', 'App.routes is object');
+    assert('/login' in App.routes, 'App.routes has /login');
+    assert('/register' in App.routes, 'App.routes has /register');
+    assert('/dashboard' in App.routes, 'App.routes has /dashboard');
+    assert('/shops' in App.routes, 'App.routes has /shops');
+    assert('/ai-keys' in App.routes, 'App.routes has /ai-keys');
+    assert('/settings' in App.routes, 'App.routes has /settings');
+
+    // === Dashboard object tests ===
+    assert(typeof Dashboard !== 'undefined', 'Dashboard object exists');
+    assert(typeof Dashboard.render === 'function', 'Dashboard.render is function');
+
+    // === Shops object tests ===
+    assert(typeof Shops !== 'undefined', 'Shops object exists');
+    assert(typeof Shops.render === 'function', 'Shops.render is function');
+    assert(typeof Shops.showForm === 'function', 'Shops.showForm is function');
+    assert(typeof Shops.hideForm === 'function', 'Shops.hideForm is function');
+
+    // === AIKeys object tests ===
+    assert(typeof AIKeys !== 'undefined', 'AIKeys object exists');
+    assert(typeof AIKeys.render === 'function', 'AIKeys.render is function');
+    assert(typeof AIKeys.create === 'function', 'AIKeys.create is function');
+
+    // === Summary ===
+    const total = passed + failed;
+    summary.textContent = total + ' tests: ' + passed + ' passed, ' + failed + ' failed';
+    summary.style.color = failed === 0 ? '#27ae60' : '#e74c3c';
+    </script>
+</body>
+</html>

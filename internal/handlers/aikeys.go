@@ -1,0 +1,89 @@
+package handlers
+
+import (
+	"encoding/json"
+	"log/slog"
+	"net/http"
+
+	"github.com/your-project/mcp-insales/internal/auth"
+	"github.com/your-project/mcp-insales/internal/storage"
+)
+
+type AIKeyHandler struct {
+	keyRepo storage.AIKeyRepositoryInterface
+}
+
+func NewAIKeyHandler(keyRepo storage.AIKeyRepositoryInterface) *AIKeyHandler {
+	return &AIKeyHandler{keyRepo: keyRepo}
+}
+
+type AIKeyRequest struct {
+	Name string `json:"name"`
+}
+
+type AIKeyResponse struct {
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Key       string `json:"key,omitempty"`
+	KeyHash   string `json:"key_hash,omitempty"`
+	CreatedAt string `json:"created_at,omitempty"`
+	Error     string `json:"error,omitempty"`
+}
+
+func (h *AIKeyHandler) Create(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(auth.UserIDKey).(string)
+
+	var req AIKeyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, AIKeyResponse{Error: "invalid request body"})
+		return
+	}
+
+	rawKey, keyHash, err := auth.GenerateAPIKey()
+	if err != nil {
+		slog.Error("generate key", "error", err)
+		writeJSON(w, http.StatusInternalServerError, AIKeyResponse{Error: "internal error"})
+		return
+	}
+
+	key, err := h.keyRepo.Create(userID, keyHash, req.Name)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, AIKeyResponse{Error: "failed to create key"})
+		return
+	}
+
+	slog.Info("ai key created", "id", key.ID, "name", key.Name)
+	writeJSON(w, http.StatusCreated, AIKeyResponse{
+		ID: key.ID, Name: key.Name, Key: rawKey, KeyHash: keyHash,
+	})
+}
+
+func (h *AIKeyHandler) List(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(auth.UserIDKey).(string)
+
+	keys, err := h.keyRepo.ListByUserID(userID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, []AIKeyResponse{{Error: "failed to list keys"}})
+		return
+	}
+
+	result := make([]AIKeyResponse, len(keys))
+	for i, k := range keys {
+		result[i] = AIKeyResponse{
+			ID: k.ID, Name: k.Name, KeyHash: k.KeyHash, CreatedAt: k.CreatedAt,
+		}
+	}
+
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (h *AIKeyHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	keyID := r.PathValue("id")
+
+	if err := h.keyRepo.Delete(keyID); err != nil {
+		writeJSON(w, http.StatusInternalServerError, AIKeyResponse{Error: "failed to delete key"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, AIKeyResponse{ID: keyID})
+}
