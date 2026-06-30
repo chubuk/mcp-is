@@ -94,6 +94,51 @@ func (r *UserRepository) ListAll() ([]User, error) {
 	return users, nil
 }
 
+func (r *UserRepository) ListFiltered(page, perPage int, query string) ([]User, int, error) {
+	offset := (page - 1) * perPage
+	if offset < 0 {
+		offset = 0
+	}
+
+	where := ""
+	args := []interface{}{}
+	if query != "" {
+		where = `WHERE nickname ILIKE '%' || $1 || '%' 
+		          OR email ILIKE '%' || $1 || '%' 
+		          OR phone ILIKE '%' || $1 || '%' 
+		          OR first_name ILIKE '%' || $1 || '%' 
+		          OR last_name ILIKE '%' || $1 || '%'`
+		args = append(args, query)
+	}
+
+	var total int
+	countQuery := `SELECT COUNT(*) FROM users ` + where
+	if err := r.db.QueryRow(context.Background(), countQuery, args...).Scan(&total); err != nil {
+		return nil, 0, fmt.Errorf("count users: %w", err)
+	}
+
+	dataArgs := append(args, perPage, offset)
+	dataQuery := `SELECT id, nickname, COALESCE(email,''), COALESCE(phone,''),
+	       COALESCE(first_name,''), COALESCE(last_name,''), role, is_active, created_at::text
+		FROM users ` + where + ` ORDER BY created_at DESC LIMIT $` + fmt.Sprintf("%d", len(args)+1) + ` OFFSET $` + fmt.Sprintf("%d", len(args)+2)
+
+	rows, err := r.db.Query(context.Background(), dataQuery, dataArgs...)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list users filtered: %w", err)
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var u User
+		if err := rows.Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.Role, &u.IsActive, &u.CreatedAt); err != nil {
+			return nil, 0, fmt.Errorf("scan user: %w", err)
+		}
+		users = append(users, u)
+	}
+	return users, total, nil
+}
+
 func (r *UserRepository) UpdateRole(id, role string) error {
 	_, err := r.db.Exec(context.Background(),
 		`UPDATE users SET role=$1, updated_at=NOW() WHERE id=$2`, role, id)

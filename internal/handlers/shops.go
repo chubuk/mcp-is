@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/your-project/mcp-insales/internal/auth"
 	"github.com/your-project/mcp-insales/internal/storage"
@@ -19,19 +20,21 @@ func NewShopHandler(shopRepo storage.ShopRepositoryInterface, aes *auth.AESCiphe
 }
 
 type ShopRequest struct {
-	ShopURL      string `json:"shop_url"`
-	APIKeyID     string `json:"api_key_id"`
-	APIPassword  string `json:"api_password"`
-	IsDefault    bool   `json:"is_default"`
+	ShopURL     string `json:"shop_url"`
+	APIKeyID    string `json:"api_key_id"`
+	APIPassword string `json:"api_password"`
+	IsDefault   bool   `json:"is_default"`
+	IsReadOnly  bool   `json:"is_read_only"`
 }
 
 type ShopResponse struct {
-	ID        string `json:"id"`
-	ShopURL   string `json:"shop_url"`
-	APIKeyID  string `json:"api_key_id"`
-	IsDefault bool   `json:"is_default"`
-	CreatedAt string `json:"created_at,omitempty"`
-	Error     string `json:"error,omitempty"`
+	ID         string `json:"id"`
+	ShopURL    string `json:"shop_url"`
+	APIKeyID   string `json:"api_key_id"`
+	IsDefault  bool   `json:"is_default"`
+	IsReadOnly bool   `json:"is_read_only"`
+	CreatedAt  string `json:"created_at,omitempty"`
+	Error      string `json:"error,omitempty"`
 }
 
 func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -55,7 +58,7 @@ func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shop, err := h.shopRepo.Create(userID, req.ShopURL, req.APIKeyID, encrypted, req.IsDefault)
+	shop, err := h.shopRepo.Create(userID, req.ShopURL, req.APIKeyID, encrypted, req.IsDefault, req.IsReadOnly)
 	if err != nil {
 		slog.Warn("create shop failed", "error", err)
 		writeJSON(w, http.StatusInternalServerError, ShopResponse{Error: "failed to create shop"})
@@ -64,27 +67,41 @@ func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("shop created", "id", shop.ID, "url", shop.ShopURL)
 	writeJSON(w, http.StatusCreated, ShopResponse{
-		ID: shop.ID, ShopURL: shop.ShopURL, APIKeyID: shop.APIKeyID, IsDefault: shop.IsDefault,
+		ID: shop.ID, ShopURL: shop.ShopURL, APIKeyID: shop.APIKeyID, IsDefault: shop.IsDefault, IsReadOnly: shop.IsReadOnly,
 	})
 }
 
 func (h *ShopHandler) List(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(auth.UserIDKey).(string)
 
-	shops, err := h.shopRepo.ListByUserID(userID)
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+	if perPage < 1 || perPage > 100 {
+		perPage = 20
+	}
+
+	shops, total, err := h.shopRepo.ListByUserIDFiltered(userID, page, perPage)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, []ShopResponse{{Error: "failed to list shops"}})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to list shops"})
 		return
 	}
 
 	result := make([]ShopResponse, len(shops))
 	for i, s := range shops {
 		result[i] = ShopResponse{
-			ID: s.ID, ShopURL: s.ShopURL, APIKeyID: s.APIKeyID, IsDefault: s.IsDefault, CreatedAt: s.CreatedAt,
+			ID: s.ID, ShopURL: s.ShopURL, APIKeyID: s.APIKeyID, IsDefault: s.IsDefault, IsReadOnly: s.IsReadOnly, CreatedAt: s.CreatedAt,
 		}
 	}
 
-	writeJSON(w, http.StatusOK, result)
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"items":    result,
+		"total":    total,
+		"page":     page,
+		"per_page": perPage,
+	})
 }
 
 func (h *ShopHandler) Update(w http.ResponseWriter, r *http.Request) {
@@ -117,12 +134,12 @@ func (h *ShopHandler) Update(w http.ResponseWriter, r *http.Request) {
 		encrypted = existing.APIPasswordEncrypted
 	}
 
-	if err := h.shopRepo.Update(shopID, req.ShopURL, req.APIKeyID, encrypted, req.IsDefault); err != nil {
+	if err := h.shopRepo.Update(shopID, req.ShopURL, req.APIKeyID, encrypted, req.IsDefault, req.IsReadOnly); err != nil {
 		writeJSON(w, http.StatusInternalServerError, ShopResponse{Error: "failed to update shop"})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, ShopResponse{ID: shopID, ShopURL: req.ShopURL, APIKeyID: req.APIKeyID, IsDefault: req.IsDefault})
+	writeJSON(w, http.StatusOK, ShopResponse{ID: shopID, ShopURL: req.ShopURL, APIKeyID: req.APIKeyID, IsDefault: req.IsDefault, IsReadOnly: req.IsReadOnly})
 }
 
 func (h *ShopHandler) Delete(w http.ResponseWriter, r *http.Request) {

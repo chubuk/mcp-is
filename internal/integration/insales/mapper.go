@@ -141,3 +141,24 @@ func MapWebhook(resp *InSalesWebhookResponse) map[string]interface{} {
 		"format": resp.Format,
 	}
 }
+
+func MapPage(resp *InSalesPageResponse) *Page {
+	return &Page{
+		ID:        fmt.Sprintf("%d", resp.ID),
+		Title:     resp.Title,
+		Content:   resp.Content,
+		Handle:    resp.Handle,
+		CreatedAt: resp.CreatedAt,
+		UpdatedAt: resp.UpdatedAt,
+	}
+}
+
+func MapAccessory(resp *InSalesAccessoryResponse) *Accessory {
+	return &Accessory{
+		ID:        fmt.Sprintf("%d", resp.ID),
+		Title:     resp.Title,
+		Position:  resp.Position,
+		CreatedAt: resp.CreatedAt,
+		UpdatedAt: resp.UpdatedAt,
+	}
+}

@@ -10,24 +10,30 @@ import (
 	"github.com/your-project/mcp-insales/internal/storage"
 )
 
+type contextKey string
+
+const ShopReadOnlyKey contextKey = "shop_read_only"
+
 type AccountManager struct {
-	shopRepo *storage.ShopRepository
-	aes      *auth.AESCipher
-	clients  map[string]*insales.InSalesClient
+	shopRepo     *storage.ShopRepository
+	aes          *auth.AESCipher
+	clients      map[string]*insales.InSalesClient
+	globalReadOnly bool
 }
 
-func NewAccountManager(shopRepo *storage.ShopRepository, aes *auth.AESCipher) *AccountManager {
+func NewAccountManager(shopRepo *storage.ShopRepository, aes *auth.AESCipher, globalReadOnly bool) *AccountManager {
 	return &AccountManager{
-		shopRepo: shopRepo,
-		aes:      aes,
-		clients:  make(map[string]*insales.InSalesClient),
+		shopRepo:       shopRepo,
+		aes:            aes,
+		clients:        make(map[string]*insales.InSalesClient),
+		globalReadOnly: globalReadOnly,
 	}
 }
 
-func (m *AccountManager) GetClient(ctx context.Context) (*insales.InSalesClient, error) {
+func (m *AccountManager) GetClient(ctx context.Context) (*insales.InSalesClient, context.Context, error) {
 	userID, ok := ctx.Value(auth.UserIDKey).(string)
 	if !ok || userID == "" {
-		return nil, errors.New("user_id missing in context")
+		return nil, ctx, errors.New("user_id missing in context")
 	}
 
 	shopID, _ := ctx.Value(auth.ShopIDKey).(string)
@@ -42,24 +48,27 @@ func (m *AccountManager) GetClient(ctx context.Context) (*insales.InSalesClient,
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("shop not found: %w", err)
+		return nil, ctx, fmt.Errorf("shop not found: %w", err)
 	}
+
+	shopReadOnly := m.globalReadOnly || shop.IsReadOnly
+	ctx = context.WithValue(ctx, ShopReadOnlyKey, shopReadOnly)
 
 	cacheKey := shop.ID
 	if client, exists := m.clients[cacheKey]; exists {
-		return client, nil
+		return client, ctx, nil
 	}
 
 	password, err := m.aes.Decrypt(shop.APIPasswordEncrypted)
 	if err != nil {
-		return nil, fmt.Errorf("decrypt password: %w", err)
+		return nil, ctx, fmt.Errorf("decrypt password: %w", err)
 	}
 
 	client, err := insales.NewClient(shop.ShopURL, shop.APIKeyID, password)
 	if err != nil {
-		return nil, fmt.Errorf("create client: %w", err)
+		return nil, ctx, fmt.Errorf("create client: %w", err)
 	}
 
 	m.clients[cacheKey] = client
-	return client, nil
+	return client, ctx, nil
 }

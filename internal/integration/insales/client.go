@@ -44,6 +44,16 @@ type Client interface {
 	ListCurrencies(ctx context.Context) (interface{}, error)
 	ListDeliveryVariants(ctx context.Context) (interface{}, error)
 	ListPaymentGateways(ctx context.Context) (interface{}, error)
+	ListPages(ctx context.Context, page, perPage int) ([]Page, error)
+	GetPage(ctx context.Context, pageID string) (*Page, error)
+	CreatePage(ctx context.Context, title, content, handle string) (*Page, error)
+	UpdatePage(ctx context.Context, pageID string, args map[string]interface{}) (*Page, error)
+	DeletePage(ctx context.Context, pageID string) error
+	ListAccessories(ctx context.Context, page, perPage int) ([]Accessory, error)
+	GetAccessory(ctx context.Context, accessoryID string) (*Accessory, error)
+	CreateAccessory(ctx context.Context, title string) (*Accessory, error)
+	UpdateAccessory(ctx context.Context, accessoryID string, args map[string]interface{}) (*Accessory, error)
+	DeleteAccessory(ctx context.Context, accessoryID string) error
 }
 
 type StoreInfo struct {
@@ -105,4 +115,21 @@ type OrderLine struct {
 	Price     string `json:"price"`
 	Total     string `json:"total"`
 	SKU       string `json:"sku"`
+}
+
+type Page struct {
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	Handle    string `json:"handle"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type Accessory struct {
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	Position  int    `json:"position"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }

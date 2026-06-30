@@ -289,6 +289,80 @@ func (h *Handler) HandleTool(ctx context.Context, toolName string, args map[stri
 	case "list_payment_gateways":
 		return h.service.ListPaymentGateways(ctx)
 
+	case "list_pages":
+		page, _ := args["page"].(float64)
+		perPage, _ := args["per_page"].(float64)
+		return h.service.ListPages(ctx, int(page), int(perPage))
+
+	case "get_page":
+		pageID, ok := args["page_id"].(string)
+		if !ok {
+			return nil, fmt.Errorf("page_id is required")
+		}
+		return h.service.GetPage(ctx, pageID)
+
+	case "create_page":
+		title, _ := args["title"].(string)
+		content, _ := args["content"].(string)
+		handle, _ := args["handle"].(string)
+		return h.service.CreatePage(ctx, title, content, handle)
+
+	case "update_page":
+		pageID, ok := args["page_id"].(string)
+		if !ok {
+			return nil, fmt.Errorf("page_id is required")
+		}
+		updateArgs := make(map[string]interface{})
+		for k, v := range args {
+			if k != "page_id" {
+				updateArgs[k] = v
+			}
+		}
+		return h.service.UpdatePage(ctx, pageID, updateArgs)
+
+	case "delete_page":
+		pageID, ok := args["page_id"].(string)
+		if !ok {
+			return nil, fmt.Errorf("page_id is required")
+		}
+		return nil, h.service.DeletePage(ctx, pageID)
+
+	case "list_accessories":
+		page, _ := args["page"].(float64)
+		perPage, _ := args["per_page"].(float64)
+		return h.service.ListAccessories(ctx, int(page), int(perPage))
+
+	case "get_accessory":
+		accessoryID, ok := args["accessory_id"].(string)
+		if !ok {
+			return nil, fmt.Errorf("accessory_id is required")
+		}
+		return h.service.GetAccessory(ctx, accessoryID)
+
+	case "create_accessory":
+		title, _ := args["title"].(string)
+		return h.service.CreateAccessory(ctx, title)
+
+	case "update_accessory":
+		accessoryID, ok := args["accessory_id"].(string)
+		if !ok {
+			return nil, fmt.Errorf("accessory_id is required")
+		}
+		updateArgs := make(map[string]interface{})
+		for k, v := range args {
+			if k != "accessory_id" {
+				updateArgs[k] = v
+			}
+		}
+		return h.service.UpdateAccessory(ctx, accessoryID, updateArgs)
+
+	case "delete_accessory":
+		accessoryID, ok := args["accessory_id"].(string)
+		if !ok {
+			return nil, fmt.Errorf("accessory_id is required")
+		}
+		return nil, h.service.DeleteAccessory(ctx, accessoryID)
+
 	default:
 		return nil, fmt.Errorf("unknown tool: %s", toolName)
 	}

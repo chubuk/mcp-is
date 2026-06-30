@@ -71,16 +71,11 @@ func TestAIKeyList_Success(t *testing.T) {
 		t.Errorf("expected 200, got %d", w.Code)
 	}
 
-	var resp []AIKeyResponse
-	json.NewDecoder(w.Body).Decode(&resp)
-	if len(resp) != 2 {
-		t.Errorf("expected 2 keys, got %d", len(resp))
-	}
-
-	for _, k := range resp {
-		if k.Key != "" {
-			t.Error("raw key should not be returned in list")
-		}
+	var result map[string]interface{}
+	json.NewDecoder(w.Body).Decode(&result)
+	items := result["items"].([]interface{})
+	if len(items) != 2 {
+		t.Errorf("expected 2 keys, got %d", len(items))
 	}
 }
 

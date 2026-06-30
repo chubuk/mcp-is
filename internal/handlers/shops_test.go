@@ -92,8 +92,8 @@ func TestShopCreate_EncryptsPassword(t *testing.T) {
 func TestShopList_Success(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	repo.Create("user-1", "shop1.ru", "k1", "enc1", true)
-	repo.Create("user-1", "shop2.ru", "k2", "enc2", false)
+	repo.Create("user-1", "shop1.ru", "k1", "enc1", true, false)
+	repo.Create("user-1", "shop2.ru", "k2", "enc2", false, false)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/shops", nil)
 	req = req.WithContext(withUserID(req.Context(), "user-1"))
@@ -105,10 +105,11 @@ func TestShopList_Success(t *testing.T) {
 		t.Errorf("expected 200, got %d", w.Code)
 	}
 
-	var resp []ShopResponse
-	json.NewDecoder(w.Body).Decode(&resp)
-	if len(resp) != 2 {
-		t.Errorf("expected 2 shops, got %d", len(resp))
+	var result map[string]interface{}
+	json.NewDecoder(w.Body).Decode(&result)
+	items := result["items"].([]interface{})
+	if len(items) != 2 {
+		t.Errorf("expected 2 shops, got %d", len(items))
 	}
 }
 
@@ -135,7 +136,7 @@ func TestShopList_Empty(t *testing.T) {
 func TestShopUpdate_Success(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	shop, _ := repo.Create("user-1", "old.ru", "k1", "enc1", false)
+	shop, _ := repo.Create("user-1", "old.ru", "k1", "enc1", false, false)
 
 	body, _ := json.Marshal(ShopRequest{
 		ShopURL:  "new.ru",
@@ -172,7 +173,7 @@ func TestShopUpdate_NotFound(t *testing.T) {
 func TestShopDelete_Success(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	shop, _ := repo.Create("user-1", "del.ru", "k", "enc", false)
+	shop, _ := repo.Create("user-1", "del.ru", "k", "enc", false, false)
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/shops/"+shop.ID, nil)
 	req.SetPathValue("id", shop.ID)

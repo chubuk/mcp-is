@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/your-project/mcp-insales/internal/auth"
 	"github.com/your-project/mcp-insales/internal/storage"
@@ -47,9 +48,19 @@ type StatsResponse struct {
 }
 
 func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := h.userRepo.ListAll()
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+	if perPage < 1 || perPage > 100 {
+		perPage = 20
+	}
+	query := r.URL.Query().Get("q")
+
+	users, total, err := h.userRepo.ListFiltered(page, perPage, query)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, []UserResponse{{Error: "failed to list users"}})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to list users"})
 		return
 	}
 
@@ -62,7 +73,12 @@ func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJSON(w, http.StatusOK, result)
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"items":    result,
+		"total":    total,
+		"page":     page,
+		"per_page": perPage,
+	})
 }
 
 func (h *AdminHandler) GetUser(w http.ResponseWriter, r *http.Request) {

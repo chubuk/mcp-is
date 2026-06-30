@@ -132,10 +132,83 @@ SMTP_FROM=noreply@example.com
 
 ## Обновление
 
+### Через deb-пакет
+
+```bash
+# Скачайте новый deb-пакет
+sudo dpkg -i mcp-insales_X.Y.Z_amd64.deb
+```
+
+Скрипт автоматически:
+- Создаст бэкап БД и файлов (с вашим подтверждением)
+- Остановит сервис
+- Обновит файлы
+- Выполнит миграции БД
+- Проверит работоспособность
+- Запустит сервис
+
+### Через git (для разработчиков)
+
 ```bash
 cd mcp-insales
 git pull
 docker compose up -d --build
+```
+
+## Восстановление из бэкапа
+
+Бэкапы хранятся в `/opt/mcp-insales/backups/`:
+- `db_YYYYMMDD_HHMMSS.sql` — дамп базы данных
+- `files_YYYYMMDD_HHMMSS.tar.gz` — файлы проекта
+
+### Восстановление БД
+
+```bash
+# 1. Остановите сервис
+sudo systemctl stop mcp-insales
+
+# 2. Восстановите БД
+sudo docker compose -f /opt/mcp-insales/docker-compose.yaml \
+  exec -T db psql -U admin -d mcp_insales < /opt/mcp-insales/backups/db_YYYYMMDD_HHMMSS.sql
+
+# 3. Запустите сервис
+sudo systemctl start mcp-insales
+```
+
+### Восстановление файлов
+
+```bash
+# 1. Остановите сервис
+sudo systemctl stop mcp-insales
+
+# 2. Распакуйте бэкап
+sudo tar xzf /opt/mcp-insales/backups/files_YYYYMMDD_HHMMSS.tar.gz -C /opt/mcp-insales/
+
+# 3. Пересоберите контейнеры
+cd /opt/mcp-insales && sudo docker compose up -d --build
+
+# 4. Запустите сервис
+sudo systemctl start mcp-insales
+```
+
+### Полное восстановление
+
+```bash
+# 1. Остановите сервис
+sudo systemctl stop mcp-insales
+
+# 2. Восстановите файлы
+sudo tar xzf /opt/mcp-insales/backups/files_YYYYMMDD_HHMMSS.tar.gz -C /opt/mcp-insales/
+
+# 3. Пересоберите и запустите
+cd /opt/mcp-insales && sudo docker compose up -d --build
+
+# 4. Восстановите БД (если нужно)
+sudo docker compose -f /opt/mcp-insales/docker-compose.yaml \
+  exec -T db psql -U admin -d mcp_insales < /opt/mcp-insales/backups/db_YYYYMMDD_HHMMSS.sql
+
+# 5. Запустите сервис
+sudo systemctl start mcp-insales
 ```
 
 ## Остановка

@@ -40,10 +40,11 @@ func TestListUsers_Success(t *testing.T) {
 		t.Errorf("expected 200, got %d", w.Code)
 	}
 
-	var users []UserResponse
-	json.NewDecoder(w.Body).Decode(&users)
-	if len(users) != 2 {
-		t.Errorf("expected 2 users, got %d", len(users))
+	var result map[string]interface{}
+	json.NewDecoder(w.Body).Decode(&result)
+	items := result["items"].([]interface{})
+	if len(items) != 2 {
+		t.Errorf("expected 2 users, got %d", len(items))
 	}
 }
 
@@ -312,9 +313,9 @@ func TestStats_Success(t *testing.T) {
 	u1, _ := userRepo.Create("user1", "u1@test.com", "", "", "", "hash")
 	u2, _ := userRepo.Create("user2", "u2@test.com", "", "", "", "hash")
 
-	shopRepo.Create(u1.ID, "shop1.myinsales.ru", "key1", "pass1", true)
-	shopRepo.Create(u2.ID, "shop2.myinsales.ru", "key2", "pass2", true)
-	shopRepo.Create(u1.ID, "shop3.myinsales.ru", "key3", "pass3", false)
+	shopRepo.Create(u1.ID, "shop1.myinsales.ru", "key1", "pass1", true, false)
+	shopRepo.Create(u2.ID, "shop2.myinsales.ru", "key2", "pass2", true, false)
+	shopRepo.Create(u1.ID, "shop3.myinsales.ru", "key3", "pass3", false, false)
 
 	aiKeyRepo.Create(u1.ID, "hash1", "AI Key 1")
 

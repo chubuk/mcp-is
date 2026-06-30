@@ -13,7 +13,7 @@ const API = {
         const res = await fetch(path, opts);
         const data = await res.json();
 
-        if (res.status === 401) {
+        if (res.status === 401 && this.token) {
             this.token = null;
             localStorage.removeItem('token');
             App.navigate('/login');

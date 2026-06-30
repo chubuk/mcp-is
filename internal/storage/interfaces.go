@@ -6,6 +6,7 @@ type UserRepositoryInterface interface {
 	GetByLogin(login string) (*User, error)
 	GetByEmail(email string) (*User, error)
 	ListAll() ([]User, error)
+	ListFiltered(page, perPage int, query string) ([]User, int, error)
 	UpdateRole(id, role string) error
 	UpdateStatus(id string, isActive bool) error
 	UpdatePassword(id, passwordHash string) error
@@ -18,11 +19,12 @@ type UserRepositoryInterface interface {
 }
 
 type ShopRepositoryInterface interface {
-	Create(userID, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault bool) (*Shop, error)
+	Create(userID, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) (*Shop, error)
 	GetByID(id string) (*Shop, error)
 	ListByUserID(userID string) ([]Shop, error)
+	ListByUserIDFiltered(userID string, page, perPage int) ([]Shop, int, error)
 	GetDefault(userID string) (*Shop, error)
-	Update(id, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault bool) error
+	Update(id, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) error
 	Delete(id string) error
 }
 
@@ -30,6 +32,7 @@ type AIKeyRepositoryInterface interface {
 	Create(userID, keyHash, name string) (*AIKey, error)
 	GetByHash(keyHash string) (*AIKey, error)
 	ListByUserID(userID string) ([]AIKey, error)
+	ListByUserIDFiltered(userID string, page, perPage int) ([]AIKey, int, error)
 	UpdateLastUsed(id string) error
 	Delete(id string) error
 }

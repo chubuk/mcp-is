@@ -1,9 +1,14 @@
 const AIKeys = {
     newKey: null,
 
-    async render() {
-        const res = await API.get('/api/ai-keys');
-        const keys = (res && res.ok) ? res.data : [];
+    async render(page, perPage) {
+        page = page || 1;
+        perPage = perPage || getPerPage();
+
+        const res = await API.get(`/api/ai-keys?page=${page}&per_page=${perPage}`);
+        const data = (res && res.ok) ? res.data : { items: [], total: 0, page: 1, per_page: perPage };
+        const keys = data.items || [];
+        const total = data.total || 0;
 
         let keyAlert = '';
         if (this.newKey) {
@@ -34,6 +39,8 @@ const AIKeys = {
             });
         }
 
+        const pagination = renderPagination(data.page, total, perPage, AIKeys.goPage);
+
         return `
             <div class="page-header">
                 <div>
@@ -57,6 +64,7 @@ const AIKeys = {
                     </thead>
                     <tbody>${rows}</tbody>
                 </table>
+                ${pagination}
             </div>`;
     },
 
@@ -85,5 +93,12 @@ const AIKeys = {
         if (!confirm('Отозвать ключ? AI-агенты с этим ключом потеряют доступ.')) return;
         await API.del('/api/ai-keys/' + id);
         App.navigate('/ai-keys');
+    },
+
+    goPage(page, perPage) {
+        setPerPage(perPage);
+        AIKeys.render(page, perPage).then(html => {
+            document.getElementById('app').innerHTML = html;
+        });
     }
 };

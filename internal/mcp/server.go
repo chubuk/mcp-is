@@ -174,6 +174,12 @@ var writeTools = map[string]bool{
 	"create_webhook":      true,
 	"update_webhook":      true,
 	"delete_webhook":      true,
+	"create_page":         true,
+	"update_page":         true,
+	"delete_page":         true,
+	"create_accessory":    true,
+	"update_accessory":    true,
+	"delete_accessory":    true,
 }
 
 func isWriteTool(name string) bool {

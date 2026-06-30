@@ -119,3 +119,20 @@ type InSalesWebhookResponse struct {
 	URL    string `json:"url"`
 	Format string `json:"format"`
 }
+
+type InSalesPageResponse struct {
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	Content   string `json:"content"`
+	Handle    string `json:"handle"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type InSalesAccessoryResponse struct {
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	Position  int    `json:"position"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}

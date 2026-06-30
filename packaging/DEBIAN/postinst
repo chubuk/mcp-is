@@ -4,6 +4,7 @@ set -e
 INSTALL_DIR="/opt/mcp-insales"
 CONF_DIR="/etc/mcp-insales"
 ENV_FILE="${CONF_DIR}/.env"
+VERSION_FILE="${INSTALL_DIR}/VERSION"
 
 # Create config directory
 mkdir -p "${CONF_DIR}"
@@ -28,7 +29,7 @@ if [ ! -f "${ENV_FILE}" ]; then
     echo "  sudo systemctl start mcp-insales"
     echo ""
 else
-    echo "Config file ${ENV_FILE} already exists, skipping."
+    echo "Config file ${ENV_FILE} already exists, preserving."
 fi
 
 # Reload systemd
@@ -37,6 +38,63 @@ systemctl daemon-reload
 # Enable service
 systemctl enable mcp-insales
 
+# Start containers
 echo ""
-echo "MCP InSales installed successfully."
-echo "Edit ${ENV_FILE} and run: sudo systemctl start mcp-insales"
+echo "Starting containers..."
+cd "${INSTALL_DIR}"
+docker compose up -d --remove-orphans
+
+# Wait for database to be healthy
+echo "Waiting for database..."
+WAIT_COUNT=0
+MAX_WAIT=30
+while [ ${WAIT_COUNT} -lt ${MAX_WAIT} ]; do
+    if docker compose exec -T db pg_isready -U admin -d mcp_insales &>/dev/null; then
+        echo "Database is ready."
+        break
+    fi
+    sleep 2
+    WAIT_COUNT=$((WAIT_COUNT + 1))
+done
+
+if [ ${WAIT_COUNT} -ge ${MAX_WAIT} ]; then
+    echo "WARNING: Database not ready after ${MAX_WAIT} attempts"
+fi
+
+# Run migrations
+echo ""
+echo "Running database migrations..."
+MIGRATIONS_FILE="${INSTALL_DIR}/internal/storage/migrations.sql"
+if [ -f "${MIGRATIONS_FILE}" ]; then
+    docker compose exec -T db psql -U admin -d mcp_insales -f /dev/stdin < "${MIGRATIONS_FILE}" 2>/dev/null && \
+        echo "Migrations applied successfully." || \
+        echo "WARNING: Some migrations may have failed (this is normal for first install)"
+else
+    echo "No migrations file found, skipping."
+fi
+
+# Health check
+echo ""
+echo "Running health check..."
+sleep 3
+HEALTH_URL="http://localhost:8080/health"
+if curl -sf "${HEALTH_URL}" >/dev/null 2>&1; then
+    echo "Health check passed."
+else
+    echo "WARNING: Health check failed. Service may need manual configuration."
+    echo "  Check logs: docker compose -f ${INSTALL_DIR}/docker-compose.yaml logs"
+fi
+
+# Save version
+NEW_VERSION=$(dpkg -s mcp-insales 2>/dev/null | grep "^Version:" | awk '{print $2}' || echo "unknown")
+echo "${NEW_VERSION}" > "${VERSION_FILE}"
+
+echo ""
+echo "====================================="
+echo "  MCP InSales update complete!"
+echo "====================================="
+echo ""
+echo "  Version: ${NEW_VERSION}"
+echo "  Config:  ${ENV_FILE}"
+echo "  Logs:    docker compose -f ${INSTALL_DIR}/docker-compose.yaml logs -f"
+echo ""

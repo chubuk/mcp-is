@@ -47,7 +47,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	manager := core.NewAccountManager(shopRepo, aesCipher)
+	manager := core.NewAccountManager(shopRepo, aesCipher, cfg.ReadOnly)
 	svc := service.NewService(manager)
 	mcpServer := mcp.NewServer(svc, cfg.ReadOnly)
 

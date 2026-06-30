@@ -35,6 +35,7 @@ cp "${PROJECT_DIR}/go.sum" "${BUILD_DIR}/opt/mcp-insales/"
 cp -r "${PROJECT_DIR}/internal" "${BUILD_DIR}/opt/mcp-insales/"
 cp -r "${PROJECT_DIR}/cmd" "${BUILD_DIR}/opt/mcp-insales/"
 cp -r "${PROJECT_DIR}/web" "${BUILD_DIR}/opt/mcp-insales/"
+cp "${PROJECT_DIR}/packaging/update.sh" "${BUILD_DIR}/opt/mcp-insales/" 2>/dev/null || true
 
 # Copy DEBIAN files
 cp "${PROJECT_DIR}/packaging/DEBIAN/control" "${BUILD_DIR}/DEBIAN/"

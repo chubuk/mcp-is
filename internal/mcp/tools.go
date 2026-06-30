@@ -474,5 +474,124 @@ func GetAllTools() []Tool {
 				"properties": map[string]interface{}{},
 			},
 		},
+		// === СТРАНИЦЫ ===
+		{
+			Name:        "list_pages",
+			Description: "Получить список страниц магазина (статьи, публикации, информационные страницы)",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"page":     map[string]interface{}{"type": "integer", "description": "Номер страницы", "default": 1},
+					"per_page": map[string]interface{}{"type": "integer", "description": "Страниц на экран (макс 250)", "default": 25},
+				},
+			},
+		},
+		{
+			Name:        "get_page",
+			Description: "Получить страницу по ID",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"page_id": map[string]interface{}{"type": "string", "description": "ID страницы"},
+				},
+				"required": []string{"page_id"},
+			},
+		},
+		{
+			Name:        "create_page",
+			Description: "Создать новую страницу в магазине",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"title":   map[string]interface{}{"type": "string", "description": "Название страницы"},
+					"content": map[string]interface{}{"type": "string", "description": "HTML-содержимое страницы"},
+					"handle":  map[string]interface{}{"type": "string", "description": "URL-идентификатор (например 'about')"},
+				},
+				"required": []string{"title", "content"},
+			},
+		},
+		{
+			Name:        "update_page",
+			Description: "Обновить данные страницы",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"page_id": map[string]interface{}{"type": "string", "description": "ID страницы"},
+					"title":   map[string]interface{}{"type": "string"},
+					"content": map[string]interface{}{"type": "string"},
+					"handle":  map[string]interface{}{"type": "string"},
+				},
+				"required": []string{"page_id"},
+			},
+		},
+		{
+			Name:        "delete_page",
+			Description: "Удалить страницу",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"page_id": map[string]interface{}{"type": "string", "description": "ID страницы"},
+				},
+				"required": []string{"page_id"},
+			},
+		},
+		// === АКСЕССУАРЫ ===
+		{
+			Name:        "list_accessories",
+			Description: "Получить список аксессуаров (характеристик товаров)",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"page":     map[string]interface{}{"type": "integer", "description": "Номер страницы", "default": 1},
+					"per_page": map[string]interface{}{"type": "integer", "description": "Записей на странице (макс 250)", "default": 25},
+				},
+			},
+		},
+		{
+			Name:        "get_accessory",
+			Description: "Получить аксессуар по ID",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"accessory_id": map[string]interface{}{"type": "string", "description": "ID аксессуара"},
+				},
+				"required": []string{"accessory_id"},
+			},
+		},
+		{
+			Name:        "create_accessory",
+			Description: "Создать новый аксессуар (характеристику)",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"title": map[string]interface{}{"type": "string", "description": "Название аксессуара (например 'Цвет', 'Размер')"},
+				},
+				"required": []string{"title"},
+			},
+		},
+		{
+			Name:        "update_accessory",
+			Description: "Обновить аксессуар",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"accessory_id": map[string]interface{}{"type": "string", "description": "ID аксессуара"},
+					"title":        map[string]interface{}{"type": "string"},
+					"position":     map[string]interface{}{"type": "integer"},
+				},
+				"required": []string{"accessory_id"},
+			},
+		},
+		{
+			Name:        "delete_accessory",
+			Description: "Удалить аксессуар",
+			InputSchema: map[string]interface{}{
+				"type": "object",
+				"properties": map[string]interface{}{
+					"accessory_id": map[string]interface{}{"type": "string", "description": "ID аксессуара"},
+				},
+				"required": []string{"accessory_id"},
+			},
+		},
 	}
 }

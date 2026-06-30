@@ -73,6 +73,41 @@ func (r *AIKeyRepository) ListByUserID(userID string) ([]AIKey, error) {
 	return keys, nil
 }
 
+func (r *AIKeyRepository) ListByUserIDFiltered(userID string, page, perPage int) ([]AIKey, int, error) {
+	offset := (page - 1) * perPage
+	if offset < 0 {
+		offset = 0
+	}
+
+	var total int
+	err := r.db.QueryRow(context.Background(),
+		`SELECT COUNT(*) FROM ai_keys WHERE user_id = $1`, userID,
+	).Scan(&total)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count ai keys: %w", err)
+	}
+
+	rows, err := r.db.Query(context.Background(),
+		`SELECT id, user_id, key_hash, COALESCE(name,''), COALESCE(last_used_at::text,''), created_at::text
+		 FROM ai_keys WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+		userID, perPage, offset,
+	)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list ai keys filtered: %w", err)
+	}
+	defer rows.Close()
+
+	var keys []AIKey
+	for rows.Next() {
+		var k AIKey
+		if err := rows.Scan(&k.ID, &k.UserID, &k.KeyHash, &k.Name, &k.LastUsedAt, &k.CreatedAt); err != nil {
+			return nil, 0, fmt.Errorf("scan ai key: %w", err)
+		}
+		keys = append(keys, k)
+	}
+	return keys, total, nil
+}
+
 func (r *AIKeyRepository) UpdateLastUsed(id string) error {
 	_, err := r.db.Exec(context.Background(),
 		`UPDATE ai_keys SET last_used_at = NOW() WHERE id = $1`, id,

@@ -617,3 +617,133 @@ func (c *InSalesClient) ListPaymentGateways(ctx context.Context) (interface{}, e
 	}
 	return result, nil
 }
+
+func (c *InSalesClient) ListPages(ctx context.Context, page, perPage int) ([]Page, error) {
+	path := fmt.Sprintf("/pages.json?page=%d&per_page=%d", page, perPage)
+	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+	var raw []InSalesPageResponse
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("decode pages: %w", err)
+	}
+	result := make([]Page, len(raw))
+	for i, p := range raw {
+		result[i] = *MapPage(&p)
+	}
+	return result, nil
+}
+
+func (c *InSalesClient) GetPage(ctx context.Context, pageID string) (*Page, error) {
+	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/pages/%s.json", pageID), nil)
+	if err != nil {
+		return nil, err
+	}
+	var raw InSalesPageResponse
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("decode page: %w", err)
+	}
+	return MapPage(&raw), nil
+}
+
+func (c *InSalesClient) CreatePage(ctx context.Context, title, content, handle string) (*Page, error) {
+	payload := map[string]interface{}{
+		"page": map[string]interface{}{
+			"title":   title,
+			"content": content,
+			"handle":  handle,
+		},
+	}
+	body, _, err := c.doRequest(ctx, http.MethodPost, "/pages.json", payload)
+	if err != nil {
+		return nil, err
+	}
+	var raw InSalesPageResponse
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("decode page: %w", err)
+	}
+	return MapPage(&raw), nil
+}
+
+func (c *InSalesClient) UpdatePage(ctx context.Context, pageID string, args map[string]interface{}) (*Page, error) {
+	payload := map[string]interface{}{"page": args}
+	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/pages/%s.json", pageID), payload)
+	if err != nil {
+		return nil, err
+	}
+	var raw InSalesPageResponse
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("decode page: %w", err)
+	}
+	return MapPage(&raw), nil
+}
+
+func (c *InSalesClient) DeletePage(ctx context.Context, pageID string) error {
+	_, _, err := c.doRequest(ctx, http.MethodDelete, fmt.Sprintf("/pages/%s.json", pageID), nil)
+	return err
+}
+
+func (c *InSalesClient) ListAccessories(ctx context.Context, page, perPage int) ([]Accessory, error) {
+	path := fmt.Sprintf("/accessories.json?page=%d&per_page=%d", page, perPage)
+	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return nil, err
+	}
+	var raw []InSalesAccessoryResponse
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("decode accessories: %w", err)
+	}
+	result := make([]Accessory, len(raw))
+	for i, a := range raw {
+		result[i] = *MapAccessory(&a)
+	}
+	return result, nil
+}
+
+func (c *InSalesClient) GetAccessory(ctx context.Context, accessoryID string) (*Accessory, error) {
+	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/accessories/%s.json", accessoryID), nil)
+	if err != nil {
+		return nil, err
+	}
+	var raw InSalesAccessoryResponse
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("decode accessory: %w", err)
+	}
+	return MapAccessory(&raw), nil
+}
+
+func (c *InSalesClient) CreateAccessory(ctx context.Context, title string) (*Accessory, error) {
+	payload := map[string]interface{}{
+		"accessory": map[string]interface{}{
+			"title": title,
+		},
+	}
+	body, _, err := c.doRequest(ctx, http.MethodPost, "/accessories.json", payload)
+	if err != nil {
+		return nil, err
+	}
+	var raw InSalesAccessoryResponse
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("decode accessory: %w", err)
+	}
+	return MapAccessory(&raw), nil
+}
+
+func (c *InSalesClient) UpdateAccessory(ctx context.Context, accessoryID string, args map[string]interface{}) (*Accessory, error) {
+	payload := map[string]interface{}{"accessory": args}
+	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/accessories/%s.json", accessoryID), payload)
+	if err != nil {
+		return nil, err
+	}
+	var raw InSalesAccessoryResponse
+	if err := json.Unmarshal(body, &raw); err != nil {
+		return nil, fmt.Errorf("decode accessory: %w", err)
+	}
+	return MapAccessory(&raw), nil
+}
+
+func (c *InSalesClient) DeleteAccessory(ctx context.Context, accessoryID string) error {
+	_, _, err := c.doRequest(ctx, http.MethodDelete, fmt.Sprintf("/accessories/%s.json", accessoryID), nil)
+	return err
+}

@@ -1,29 +1,45 @@
 const Admin = {
-    async renderUsers() {
-        const res = await API.get('/api/admin/users');
-        const users = (res && res.ok) ? res.data : [];
+    _usersPage: 1,
+    _usersQuery: '',
+    _usersDebounce: null,
+
+    async renderUsers(page, perPage) {
+        page = page || 1;
+        perPage = perPage || getPerPage();
+        const q = this._usersQuery || '';
+
+        const res = await API.get(`/api/admin/users?page=${page}&per_page=${perPage}&q=${encodeURIComponent(q)}`);
+        const data = (res && res.ok) ? res.data : { items: [], total: 0, page: 1, per_page: perPage };
+        const users = data.items || [];
+        const total = data.total || 0;
 
         let rows = '';
-        users.forEach(u => {
-            const roleBadge = u.role === 'super_admin' ? '<span style="color:#e74c3c;font-weight:600">Super Admin</span>'
-                : u.role === 'admin' ? '<span style="color:#f39c12;font-weight:600">Admin</span>'
-                : 'User';
-            const statusBadge = u.is_active
-                ? '<span style="color:#27ae60">Активен</span>'
-                : '<span style="color:#e74c3c">Заблокирован</span>';
+        if (users.length === 0) {
+            rows = '<tr><td colspan="6" class="empty">Пользователи не найдены</td></tr>';
+        } else {
+            users.forEach(u => {
+                const roleBadge = u.role === 'super_admin' ? '<span style="color:#e74c3c;font-weight:600">Super Admin</span>'
+                    : u.role === 'admin' ? '<span style="color:#f39c12;font-weight:600">Admin</span>'
+                    : 'User';
+                const statusBadge = u.is_active
+                    ? '<span style="color:#27ae60">Активен</span>'
+                    : '<span style="color:#e74c3c">Заблокирован</span>';
 
-            rows += `
-                <tr>
-                    <td>${u.nickname}</td>
-                    <td>${u.email || '—'}</td>
-                    <td>${roleBadge}</td>
-                    <td>${statusBadge}</td>
-                    <td>${u.created_at ? u.created_at.split('T')[0] : '—'}</td>
-                    <td>
-                        <button class="btn btn--ghost btn--sm" onclick="Admin.showUser('${u.id}')">Подробнее</button>
-                    </td>
-                </tr>`;
-        });
+                rows += `
+                    <tr>
+                        <td>${u.nickname}</td>
+                        <td>${u.email || '—'}</td>
+                        <td>${roleBadge}</td>
+                        <td>${statusBadge}</td>
+                        <td>${u.created_at ? u.created_at.split('T')[0] : '—'}</td>
+                        <td>
+                            <button class="btn btn--ghost btn--sm" onclick="Admin.showUser('${u.id}')">Подробнее</button>
+                        </td>
+                    </tr>`;
+            });
+        }
+
+        const pagination = renderPagination(data.page, total, perPage, Admin.goUsersPage);
 
         return `
             <div class="page-header">
@@ -31,6 +47,10 @@ const Admin = {
                     <h1>Пользователи</h1>
                     <p class="desc">Управление пользователями системы</p>
                 </div>
+            </div>
+            <div class="search-box">
+                <input type="text" id="user-search" placeholder="Поиск по никнейму, email, телефону, ФИО..." 
+                       value="${this._usersQuery}" oninput="Admin.onUserSearch(this.value)">
             </div>
             <div class="card">
                 <table class="table">
@@ -46,7 +66,32 @@ const Admin = {
                     </thead>
                     <tbody>${rows}</tbody>
                 </table>
+                ${pagination}
             </div>`;
+    },
+
+    onUserSearch(value) {
+        clearTimeout(this._usersDebounce);
+        this._usersDebounce = setTimeout(() => {
+            this._usersQuery = value;
+            this._usersPage = 1;
+            this.renderUsers(1, getPerPage()).then(html => {
+                document.getElementById('app').innerHTML = html;
+                const input = document.getElementById('user-search');
+                if (input) {
+                    input.focus();
+                    input.setSelectionRange(input.value.length, input.value.length);
+                }
+            });
+        }, 700);
+    },
+
+    goUsersPage(page, perPage) {
+        setPerPage(perPage);
+        Admin._usersPage = page;
+        Admin.renderUsers(page, perPage).then(html => {
+            document.getElementById('app').innerHTML = html;
+        });
     },
 
     async showUser(id) {

@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS shops (
     api_key_id TEXT NOT NULL,
     api_password_encrypted TEXT NOT NULL,
     is_default BOOLEAN DEFAULT FALSE,
+    is_read_only BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

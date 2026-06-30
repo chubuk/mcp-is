@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/your-project/mcp-insales/internal/storage"
@@ -87,6 +88,35 @@ func (m *mockUserRepo) ListAll() ([]storage.User, error) {
 	return users, nil
 }
 
+func (m *mockUserRepo) ListFiltered(page, perPage int, query string) ([]storage.User, int, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var filtered []storage.User
+	for _, u := range m.users {
+		if query == "" ||
+			strings.Contains(strings.ToLower(u.Nickname), strings.ToLower(query)) ||
+			strings.Contains(strings.ToLower(u.Email), strings.ToLower(query)) ||
+			strings.Contains(strings.ToLower(u.Phone), strings.ToLower(query)) ||
+			strings.Contains(strings.ToLower(u.FirstName), strings.ToLower(query)) ||
+			strings.Contains(strings.ToLower(u.LastName), strings.ToLower(query)) {
+			filtered = append(filtered, *u)
+		}
+	}
+
+	total := len(filtered)
+	start := (page - 1) * perPage
+	if start > total {
+		start = total
+	}
+	end := start + perPage
+	if end > total {
+		end = total
+	}
+
+	return filtered[start:end], total, nil
+}
+
 func (m *mockUserRepo) UpdateRole(id, role string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -168,7 +198,7 @@ func newMockShopRepo() *mockShopRepo {
 	return &mockShopRepo{shops: make(map[string]*storage.Shop)}
 }
 
-func (m *mockShopRepo) Create(userID, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault bool) (*storage.Shop, error) {
+func (m *mockShopRepo) Create(userID, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) (*storage.Shop, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -180,6 +210,7 @@ func (m *mockShopRepo) Create(userID, shopURL, apiKeyID, apiPasswordEncrypted st
 		APIKeyID:             apiKeyID,
 		APIPasswordEncrypted: apiPasswordEncrypted,
 		IsDefault:            isDefault,
+		IsReadOnly:           isReadOnly,
 		CreatedAt:            "2026-01-01T00:00:00Z",
 	}
 	m.shops[s.ID] = s
@@ -209,6 +240,30 @@ func (m *mockShopRepo) ListByUserID(userID string) ([]storage.Shop, error) {
 	return result, nil
 }
 
+func (m *mockShopRepo) ListByUserIDFiltered(userID string, page, perPage int) ([]storage.Shop, int, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var filtered []storage.Shop
+	for _, s := range m.shops {
+		if s.UserID == userID {
+			filtered = append(filtered, *s)
+		}
+	}
+
+	total := len(filtered)
+	start := (page - 1) * perPage
+	if start > total {
+		start = total
+	}
+	end := start + perPage
+	if end > total {
+		end = total
+	}
+
+	return filtered[start:end], total, nil
+}
+
 func (m *mockShopRepo) GetDefault(userID string) (*storage.Shop, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
@@ -221,7 +276,7 @@ func (m *mockShopRepo) GetDefault(userID string) (*storage.Shop, error) {
 	return nil, fmt.Errorf("not found")
 }
 
-func (m *mockShopRepo) Update(id, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault bool) error {
+func (m *mockShopRepo) Update(id, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -230,6 +285,7 @@ func (m *mockShopRepo) Update(id, shopURL, apiKeyID, apiPasswordEncrypted string
 		s.APIKeyID = apiKeyID
 		s.APIPasswordEncrypted = apiPasswordEncrypted
 		s.IsDefault = isDefault
+		s.IsReadOnly = isReadOnly
 		return nil
 	}
 	return fmt.Errorf("not found")
@@ -292,6 +348,30 @@ func (m *mockAIKeyRepo) ListByUserID(userID string) ([]storage.AIKey, error) {
 		}
 	}
 	return result, nil
+}
+
+func (m *mockAIKeyRepo) ListByUserIDFiltered(userID string, page, perPage int) ([]storage.AIKey, int, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	var filtered []storage.AIKey
+	for _, k := range m.keys {
+		if k.UserID == userID {
+			filtered = append(filtered, *k)
+		}
+	}
+
+	total := len(filtered)
+	start := (page - 1) * perPage
+	if start > total {
+		start = total
+	}
+	end := start + perPage
+	if end > total {
+		end = total
+	}
+
+	return filtered[start:end], total, nil
 }
 
 func (m *mockAIKeyRepo) UpdateLastUsed(id string) error {

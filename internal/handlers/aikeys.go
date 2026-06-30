@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/your-project/mcp-insales/internal/auth"
 	"github.com/your-project/mcp-insales/internal/storage"
@@ -61,9 +62,18 @@ func (h *AIKeyHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *AIKeyHandler) List(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(auth.UserIDKey).(string)
 
-	keys, err := h.keyRepo.ListByUserID(userID)
+	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
+	if perPage < 1 || perPage > 100 {
+		perPage = 20
+	}
+
+	keys, total, err := h.keyRepo.ListByUserIDFiltered(userID, page, perPage)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, []AIKeyResponse{{Error: "failed to list keys"}})
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to list keys"})
 		return
 	}
 
@@ -74,7 +84,12 @@ func (h *AIKeyHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJSON(w, http.StatusOK, result)
+	writeJSON(w, http.StatusOK, map[string]interface{}{
+		"items":    result,
+		"total":    total,
+		"page":     page,
+		"per_page": perPage,
+	})
 }
 
 func (h *AIKeyHandler) Delete(w http.ResponseWriter, r *http.Request) {
