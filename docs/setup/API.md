@@ -376,6 +376,85 @@
 
 ---
 
+### Настройки сервера (требуется JWT + admin/super_admin)
+
+#### GET /api/admin/server
+
+Получить текущие настройки сервера и статус сертификата.
+
+**Доступ:** admin, super_admin
+
+**Ответ (200):**
+```json
+{
+  "domain": "example.com",
+  "https_enabled": true,
+  "auto_renew": true,
+  "renew_days_before": 30,
+  "cert_expires_at": "2026-12-01T00:00:00Z",
+  "cert_issuer": "Let's Encrypt",
+  "cert_needs_attention": false,
+  "last_renew_error": "",
+  "retry_count": 0,
+  "last_retry_at": "",
+  "letsencrypt_email": "admin@example.com"
+}
+```
+
+#### PUT /api/admin/server
+
+Обновить настройки сервера.
+
+**Доступ:** super_admin only
+
+**Тело запроса:**
+```json
+{
+  "domain": "example.com",
+  "https_enabled": true,
+  "auto_renew": true,
+  "renew_days_before": 30,
+  "letsencrypt_email": "admin@example.com"
+}
+```
+
+**Ограничения:**
+- `renew_days_before`: минимум 14, максимум 60
+
+#### POST /api/admin/server/cert-issue
+
+Запросить выпуск сертификата Let's Encrypt.
+
+**Доступ:** admin, super_admin
+
+**Требования:**
+- Домен не должен быть `localhost`
+- Email для Let's Encrypt должен быть установлен
+
+**Ответ (200):**
+```json
+{
+  "message": "certificate issuance started",
+  "domain": "example.com"
+}
+```
+
+#### POST /api/admin/server/cert-renew
+
+Продлить сертификат Let's Encrypt.
+
+**Доступ:** admin, super_admin
+
+**Ответ (200):**
+```json
+{
+  "message": "certificate renewal started",
+  "domain": "example.com"
+}
+```
+
+---
+
 ## MCP (Model Context Protocol)
 
 ### Транспорт

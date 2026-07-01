@@ -23,4 +23,19 @@ cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.tmpl
 envsubst '${DOMAIN}' < /etc/nginx/nginx.conf.tmpl > /etc/nginx/nginx.conf.final
 mv /etc/nginx/nginx.conf.final /etc/nginx/nginx.conf
 
+# Watch for domain changes and reload nginx
+(
+    while true; do
+        sleep 60
+        CURRENT_DOMAIN=$(cat /etc/nginx/domain.conf 2>/dev/null || echo "${DOMAIN}")
+        if [ "$CURRENT_DOMAIN" != "${DOMAIN}" ]; then
+            DOMAIN="$CURRENT_DOMAIN"
+            envsubst '${DOMAIN}' < /etc/nginx/nginx.conf.tmpl > /etc/nginx/nginx.conf.final
+            mv /etc/nginx/nginx.conf.final /etc/nginx/nginx.conf
+            nginx -s reload 2>/dev/null || true
+            echo "Domain updated to ${DOMAIN}, nginx reloaded"
+        fi
+    done
+) &
+
 exec "$@"

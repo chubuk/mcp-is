@@ -227,5 +227,138 @@ const Admin = {
                     <div style="font-size:32px;font-weight:700">${stats.total_ai_keys || 0}</div>
                 </div>
             </div>`;
+    },
+
+    async renderServer() {
+        const res = await API.get('/api/admin/server');
+        const s = (res && res.ok) ? res.data : {};
+        const myRole = localStorage.getItem('role');
+        const isSuperAdmin = myRole === 'super_admin';
+
+        let statusClass = 'alert--success';
+        let statusText = '✅ Действителен';
+        if (s.cert_needs_attention) {
+            statusClass = 'alert--error';
+            statusText = '⚠️ Обновление не удалось (' + (s.retry_count || 0) + '/10)';
+        } else if (s.cert_issuer === 'Self-signed' || !s.cert_issuer) {
+            statusClass = 'alert--info';
+            statusText = 'ℹ️ Self-signed сертификат';
+        }
+
+        const domainField = isSuperAdmin
+            ? `<div class="form-group">
+                <label>Доменное имя</label>
+                <input type="text" id="srv-domain" value="${s.domain || 'localhost'}" placeholder="example.com">
+               </div>`
+            : `<div class="form-group">
+                <label>Доменное имя</label>
+                <input type="text" value="${s.domain || 'localhost'}" disabled>
+               </div>`;
+
+        const httpsField = isSuperAdmin
+            ? `<div class="form-group">
+                <label>HTTPS (Let's Encrypt)</label>
+                <label><input type="radio" name="srv-https" value="false" ${!s.https_enabled ? 'checked' : ''}> Выключен (self-signed)</label><br>
+                <label><input type="radio" name="srv-https" value="true" ${s.https_enabled ? 'checked' : ''}> Включён (Let's Encrypt)</label>
+               </div>`
+            : `<div class="form-group">
+                <label>HTTPS</label>
+                <input type="text" value="${s.https_enabled ? 'Let\'s Encrypt' : 'Self-signed'}" disabled>
+               </div>`;
+
+        return `
+            <div class="page-header">
+                <div>
+                    <h1>Настройки сервера</h1>
+                    <p class="desc">Доменное имя и HTTPS-сертификат</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card__title">Основные настройки</div>
+                <div id="srv-alert"></div>
+                ${domainField}
+                ${httpsField}
+                <div class="form-group">
+                    <label>Email для Let's Encrypt</label>
+                    <input type="email" id="srv-email" value="${s.letsencrypt_email || ''}" placeholder="admin@example.com" ${!isSuperAdmin ? 'disabled' : ''}>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="srv-auto-renew" ${s.auto_renew !== false ? 'checked' : ''}> Автообновление сертификата
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>Обновлять за (дней до окончания)</label>
+                    <input type="number" id="srv-renew-days" value="${s.renew_days_before || 30}" min="14" max="60" ${!isSuperAdmin ? 'disabled' : ''}>
+                </div>
+                ${isSuperAdmin ? '<button class="btn btn--primary" onclick="Admin.saveServer()">Сохранить</button>' : ''}
+            </div>
+
+            <div class="card">
+                <div class="card__title">Статус сертификата</div>
+                <div class="alert ${statusClass}">${statusText}</div>
+                <div class="table-wrap">
+                <table class="table">
+                    <tr><td><strong>Тип</strong></td><td>${s.cert_issuer || 'Self-signed'}</td></tr>
+                    <tr><td><strong>Домен</strong></td><td>${s.domain || 'localhost'}</td></tr>
+                    <tr><td><strong>Истекает</strong></td><td>${s.cert_expires_at ? new Date(s.cert_expires_at).toLocaleDateString('ru-RU') : '—'}</td></tr>
+                    ${s.last_renew_error ? `<tr><td><strong>Ошибка</strong></td><td style="color:#e74c3c">${s.last_renew_error.substring(0, 100)}</td></tr>` : ''}
+                    ${s.retry_count > 0 ? `<tr><td><strong>Попыток</strong></td><td>${s.retry_count} / 10</td></tr>` : ''}
+                </table>
+                </div>
+                <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+                    <button class="btn btn--secondary" onclick="Admin.issueCert()">Выпустить сертификат</button>
+                    <button class="btn btn--ghost" onclick="Admin.renewCert()">Продлить сертификат</button>
+                </div>
+            </div>`;
+    },
+
+    async saveServer() {
+        const domain = document.getElementById('srv-domain').value.trim();
+        const https = document.querySelector('input[name="srv-https"]:checked').value === 'true';
+        const email = document.getElementById('srv-email').value.trim();
+        const autoRenew = document.getElementById('srv-auto-renew').checked;
+        const renewDays = parseInt(document.getElementById('srv-renew-days').value) || 30;
+
+        const res = await API.put('/api/admin/server', {
+            domain: domain,
+            https_enabled: https,
+            letsencrypt_email: email,
+            auto_renew: autoRenew,
+            renew_days_before: renewDays,
+        });
+
+        if (res && res.ok) {
+            document.getElementById('srv-alert').innerHTML =
+                '<div class="alert alert--success">Настройки сохранены</div>';
+            setTimeout(() => Admin.renderServer().then(html => {
+                document.getElementById('app').innerHTML = html;
+            }), 1000);
+        } else {
+            document.getElementById('srv-alert').innerHTML =
+                '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+        }
+    },
+
+    async issueCert() {
+        if (!confirm('Выпустить сертификат Let\'s Encrypt? Это может занять несколько минут.')) return;
+        const res = await API.post('/api/admin/server/cert-issue');
+        if (res && res.ok) {
+            alert('Запрос на выпуск сертификата отправлен');
+            Admin.renderServer().then(html => document.getElementById('app').innerHTML = html);
+        } else {
+            alert('Ошибка: ' + (res ? res.data.error : 'Сервер недоступен'));
+        }
+    },
+
+    async renewCert() {
+        if (!confirm('Продлить сертификат?')) return;
+        const res = await API.post('/api/admin/server/cert-renew');
+        if (res && res.ok) {
+            alert('Запрос на продление отправлен');
+        } else {
+            alert('Ошибка: ' + (res ? res.data.error : 'Сервер недоступен'));
+        }
     }
 };

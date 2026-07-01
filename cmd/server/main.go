@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/your-project/mcp-insales/internal/auth"
+	"github.com/your-project/mcp-insales/internal/certbot"
 	"github.com/your-project/mcp-insales/internal/config"
 	"github.com/your-project/mcp-insales/internal/core"
 	"github.com/your-project/mcp-insales/internal/email"
@@ -39,6 +40,8 @@ func main() {
 	userRepo := storage.NewUserRepository(pool)
 	shopRepo := storage.NewShopRepository(pool)
 	aiKeyRepo := storage.NewAIKeyRepository(pool)
+	settingsRepo := storage.NewSettingsRepository(pool)
+	_ = settingsRepo.InitDefaults()
 
 	jwtMgr := auth.NewJWTManager(cfg.JWTSecret)
 	aesCipher, err := auth.NewAESCipher(cfg.EncryptionKey)
@@ -64,6 +67,10 @@ func main() {
 	shopHandler := handlers.NewShopHandler(shopRepo, aesCipher)
 	aiKeyHandler := handlers.NewAIKeyHandler(aiKeyRepo)
 	adminHandler := handlers.NewAdminHandler(userRepo, shopRepo, aiKeyRepo)
+	serverHandler := handlers.NewServerHandler(settingsRepo)
+
+	certbotSvc := certbot.NewCertbotService(settingsRepo)
+	scheduler := certbot.NewScheduler(certbotSvc, settingsRepo)
 
 	authRateLimiter := auth.NewRateLimiter(10, 1*time.Minute)
 
@@ -96,6 +103,12 @@ func main() {
 	mux.Handle("DELETE /api/admin/users/{id}", jwtMW(adminMW(http.HandlerFunc(adminHandler.DeleteUser))))
 	mux.Handle("GET /api/admin/stats", jwtMW(adminMW(http.HandlerFunc(adminHandler.Stats))))
 
+	superAdminMW := auth.RequireRole("super_admin")
+	mux.Handle("GET /api/admin/server", jwtMW(adminMW(http.HandlerFunc(serverHandler.GetSettings))))
+	mux.Handle("PUT /api/admin/server", jwtMW(superAdminMW(http.HandlerFunc(serverHandler.UpdateSettings))))
+	mux.Handle("POST /api/admin/server/cert-issue", jwtMW(adminMW(http.HandlerFunc(serverHandler.IssueCert))))
+	mux.Handle("POST /api/admin/server/cert-renew", jwtMW(adminMW(http.HandlerFunc(serverHandler.RenewCert))))
+
 	apiKeyMW := auth.APIKeyMiddleware(pool)
 	mux.Handle("POST /mcp", apiKeyMW(http.HandlerFunc(mcpServer.HandleMCP)))
 	mux.Handle("GET /mcp", apiKeyMW(http.HandlerFunc(mcpServer.HandleSSE)))
@@ -124,8 +137,12 @@ func main() {
 		}
 	}()
 
+	scheduler.Start()
+
 	<-ctx.Done()
 	slog.Info("shutting down...")
+
+	scheduler.Stop()
 
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()

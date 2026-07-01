@@ -11,6 +11,7 @@ const App = {
         { path: '/admin/users', render: () => Admin.renderUsers(), auth: true, role: ['admin', 'super_admin'] },
         { path: '/admin/users/:id', render: (params) => Admin.showUser(params.id), auth: true, role: ['admin', 'super_admin'] },
         { path: '/admin/stats', render: () => Admin.renderStats(), auth: true, role: ['admin', 'super_admin'] },
+        { path: '/admin/server', render: () => Admin.renderServer(), auth: true, role: ['admin', 'super_admin'] },
     ],
 
     currentPage: null,
@@ -91,10 +92,9 @@ const App = {
             document.getElementById('user-nickname').textContent = localStorage.getItem('nickname') || '';
 
             const role = localStorage.getItem('role');
-            const adminLink = document.querySelector('.admin-link');
-            if (adminLink) {
-                adminLink.style.display = (role === 'admin' || role === 'super_admin') ? 'inline' : 'none';
-            }
+            document.querySelectorAll('.admin-link').forEach(link => {
+                link.style.display = (role === 'admin' || role === 'super_admin') ? 'inline' : 'none';
+            });
         } else {
             header.style.display = 'none';
         }
