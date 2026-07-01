@@ -49,7 +49,7 @@ func (s *Service) GetProduct(ctx context.Context, productID string) (*insales.Pr
 	return client.GetProduct(ctx, productID)
 }
 
-func (s *Service) CreateProduct(ctx context.Context, title, price string, args map[string]interface{}) (*insales.Product, error) {
+func (s *Service) CreateProduct(ctx context.Context, title, price string, args map[string]any) (*insales.Product, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -60,7 +60,7 @@ func (s *Service) CreateProduct(ctx context.Context, title, price string, args m
 	return client.CreateProduct(ctx, title, price, args)
 }
 
-func (s *Service) UpdateProduct(ctx context.Context, productID string, args map[string]interface{}) (*insales.Product, error) {
+func (s *Service) UpdateProduct(ctx context.Context, productID string, args map[string]any) (*insales.Product, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -100,7 +100,7 @@ func (s *Service) GetOrderDetails(ctx context.Context, orderID string) (*insales
 	return client.GetOrder(ctx, orderID)
 }
 
-func (s *Service) UpdateOrder(ctx context.Context, orderID string, args map[string]interface{}) (*insales.Order, error) {
+func (s *Service) UpdateOrder(ctx context.Context, orderID string, args map[string]any) (*insales.Order, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -111,7 +111,7 @@ func (s *Service) UpdateOrder(ctx context.Context, orderID string, args map[stri
 	return client.UpdateOrder(ctx, orderID, args)
 }
 
-func (s *Service) CreateOrder(ctx context.Context, clientID int, args map[string]interface{}) (*insales.Order, error) {
+func (s *Service) CreateOrder(ctx context.Context, clientID int, args map[string]any) (*insales.Order, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (s *Service) CreateOrder(ctx context.Context, clientID int, args map[string
 
 // === КЛИЕНТЫ ===
 
-func (s *Service) GetClients(ctx context.Context, page, perPage int) ([]interface{}, error) {
+func (s *Service) GetClients(ctx context.Context, page, perPage int) ([]any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -132,7 +132,7 @@ func (s *Service) GetClients(ctx context.Context, page, perPage int) ([]interfac
 	return client.ListClients(ctx, page, perPage)
 }
 
-func (s *Service) GetClient(ctx context.Context, clientID string) (interface{}, error) {
+func (s *Service) GetClient(ctx context.Context, clientID string) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (s *Service) GetClient(ctx context.Context, clientID string) (interface{}, 
 	return client.GetClient(ctx, clientID)
 }
 
-func (s *Service) CreateClient(ctx context.Context, email string, args map[string]interface{}) (interface{}, error) {
+func (s *Service) CreateClient(ctx context.Context, email string, args map[string]any) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -151,7 +151,7 @@ func (s *Service) CreateClient(ctx context.Context, email string, args map[strin
 	return client.CreateClient(ctx, email, args)
 }
 
-func (s *Service) UpdateClient(ctx context.Context, clientID string, args map[string]interface{}) (interface{}, error) {
+func (s *Service) UpdateClient(ctx context.Context, clientID string, args map[string]any) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -175,7 +175,7 @@ func (s *Service) DeleteClient(ctx context.Context, clientID string) error {
 
 // === КАТЕГОРИИ ===
 
-func (s *Service) GetCategories(ctx context.Context, page, perPage int) ([]interface{}, error) {
+func (s *Service) GetCategories(ctx context.Context, page, perPage int) ([]any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -183,7 +183,7 @@ func (s *Service) GetCategories(ctx context.Context, page, perPage int) ([]inter
 	return client.ListCategories(ctx, page, perPage)
 }
 
-func (s *Service) GetCategory(ctx context.Context, categoryID string) (interface{}, error) {
+func (s *Service) GetCategory(ctx context.Context, categoryID string) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -191,7 +191,7 @@ func (s *Service) GetCategory(ctx context.Context, categoryID string) (interface
 	return client.GetCategory(ctx, categoryID)
 }
 
-func (s *Service) CreateCategory(ctx context.Context, title string, args map[string]interface{}) (interface{}, error) {
+func (s *Service) CreateCategory(ctx context.Context, title string, args map[string]any) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -202,7 +202,7 @@ func (s *Service) CreateCategory(ctx context.Context, title string, args map[str
 	return client.CreateCategory(ctx, title, args)
 }
 
-func (s *Service) UpdateCategory(ctx context.Context, categoryID string, args map[string]interface{}) (interface{}, error) {
+func (s *Service) UpdateCategory(ctx context.Context, categoryID string, args map[string]any) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -226,7 +226,7 @@ func (s *Service) DeleteCategory(ctx context.Context, categoryID string) error {
 
 // === КОЛЛЕКЦИИ ===
 
-func (s *Service) GetCollections(ctx context.Context, page, perPage int) ([]interface{}, error) {
+func (s *Service) GetCollections(ctx context.Context, page, perPage int) ([]any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -234,7 +234,7 @@ func (s *Service) GetCollections(ctx context.Context, page, perPage int) ([]inte
 	return client.ListCollections(ctx, page, perPage)
 }
 
-func (s *Service) GetCollection(ctx context.Context, collectionID string) (interface{}, error) {
+func (s *Service) GetCollection(ctx context.Context, collectionID string) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -242,7 +242,7 @@ func (s *Service) GetCollection(ctx context.Context, collectionID string) (inter
 	return client.GetCollection(ctx, collectionID)
 }
 
-func (s *Service) CreateCollection(ctx context.Context, title string) (interface{}, error) {
+func (s *Service) CreateCollection(ctx context.Context, title string) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -253,7 +253,7 @@ func (s *Service) CreateCollection(ctx context.Context, title string) (interface
 	return client.CreateCollection(ctx, title)
 }
 
-func (s *Service) UpdateCollection(ctx context.Context, collectionID, title string) (interface{}, error) {
+func (s *Service) UpdateCollection(ctx context.Context, collectionID, title string) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -277,7 +277,7 @@ func (s *Service) DeleteCollection(ctx context.Context, collectionID string) err
 
 // === ИЗОБРАЖЕНИЯ ===
 
-func (s *Service) ListImages(ctx context.Context, productID string) ([]interface{}, error) {
+func (s *Service) ListImages(ctx context.Context, productID string) ([]any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -285,7 +285,7 @@ func (s *Service) ListImages(ctx context.Context, productID string) ([]interface
 	return client.ListImages(ctx, productID)
 }
 
-func (s *Service) AddImage(ctx context.Context, productID, url string, args map[string]interface{}) (interface{}, error) {
+func (s *Service) AddImage(ctx context.Context, productID, url string, args map[string]any) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -309,7 +309,7 @@ func (s *Service) DeleteImage(ctx context.Context, productID, imageID string) er
 
 // === МЕТАПОЛЯ ===
 
-func (s *Service) ListMetaFields(ctx context.Context, args map[string]interface{}) ([]interface{}, error) {
+func (s *Service) ListMetaFields(ctx context.Context, args map[string]any) ([]any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -317,7 +317,7 @@ func (s *Service) ListMetaFields(ctx context.Context, args map[string]interface{
 	return client.ListMetaFields(ctx, args)
 }
 
-func (s *Service) CreateMetaField(ctx context.Context, args map[string]interface{}) (interface{}, error) {
+func (s *Service) CreateMetaField(ctx context.Context, args map[string]any) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -328,7 +328,7 @@ func (s *Service) CreateMetaField(ctx context.Context, args map[string]interface
 	return client.CreateMetaField(ctx, args)
 }
 
-func (s *Service) UpdateMetaField(ctx context.Context, metaFieldID string, args map[string]interface{}) (interface{}, error) {
+func (s *Service) UpdateMetaField(ctx context.Context, metaFieldID string, args map[string]any) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -352,7 +352,7 @@ func (s *Service) DeleteMetaField(ctx context.Context, metaFieldID string) error
 
 // === ВЕБХУКИ ===
 
-func (s *Service) ListWebhooks(ctx context.Context) ([]interface{}, error) {
+func (s *Service) ListWebhooks(ctx context.Context) ([]any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -360,7 +360,7 @@ func (s *Service) ListWebhooks(ctx context.Context) ([]interface{}, error) {
 	return client.ListWebhooks(ctx)
 }
 
-func (s *Service) CreateWebhook(ctx context.Context, event, url string, args map[string]interface{}) (interface{}, error) {
+func (s *Service) CreateWebhook(ctx context.Context, event, url string, args map[string]any) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -371,7 +371,7 @@ func (s *Service) CreateWebhook(ctx context.Context, event, url string, args map
 	return client.CreateWebhook(ctx, event, url, args)
 }
 
-func (s *Service) UpdateWebhook(ctx context.Context, webhookID string, args map[string]interface{}) (interface{}, error) {
+func (s *Service) UpdateWebhook(ctx context.Context, webhookID string, args map[string]any) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -395,7 +395,7 @@ func (s *Service) DeleteWebhook(ctx context.Context, webhookID string) error {
 
 // === СИСТЕМНЫЕ ===
 
-func (s *Service) ListCurrencies(ctx context.Context) (interface{}, error) {
+func (s *Service) ListCurrencies(ctx context.Context) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -403,7 +403,7 @@ func (s *Service) ListCurrencies(ctx context.Context) (interface{}, error) {
 	return client.ListCurrencies(ctx)
 }
 
-func (s *Service) ListDeliveryVariants(ctx context.Context) (interface{}, error) {
+func (s *Service) ListDeliveryVariants(ctx context.Context) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -411,7 +411,7 @@ func (s *Service) ListDeliveryVariants(ctx context.Context) (interface{}, error)
 	return client.ListDeliveryVariants(ctx)
 }
 
-func (s *Service) ListPaymentGateways(ctx context.Context) (interface{}, error) {
+func (s *Service) ListPaymentGateways(ctx context.Context) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -448,7 +448,7 @@ func (s *Service) CreatePage(ctx context.Context, title, content, handle string)
 	return client.CreatePage(ctx, title, content, handle)
 }
 
-func (s *Service) UpdatePage(ctx context.Context, pageID string, args map[string]interface{}) (*insales.Page, error) {
+func (s *Service) UpdatePage(ctx context.Context, pageID string, args map[string]any) (*insales.Page, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -499,7 +499,7 @@ func (s *Service) CreateAccessory(ctx context.Context, title string) (*insales.A
 	return client.CreateAccessory(ctx, title)
 }
 
-func (s *Service) UpdateAccessory(ctx context.Context, accessoryID string, args map[string]interface{}) (*insales.Accessory, error) {
+func (s *Service) UpdateAccessory(ctx context.Context, accessoryID string, args map[string]any) (*insales.Accessory, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -519,4 +519,259 @@ func (s *Service) DeleteAccessory(ctx context.Context, accessoryID string) error
 		return err
 	}
 	return client.DeleteAccessory(ctx, accessoryID)
+}
+
+// === ВАРИАНТЫ ===
+
+func (s *Service) ListVariants(ctx context.Context, productID string) ([]insales.Variant, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.ListVariants(ctx, productID)
+}
+
+func (s *Service) GetVariant(ctx context.Context, productID, variantID string) (*insales.Variant, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.GetVariant(ctx, productID, variantID)
+}
+
+func (s *Service) UpdateVariant(ctx context.Context, productID, variantID string, args map[string]any) (*insales.Variant, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.UpdateVariant(ctx, productID, variantID, args)
+}
+
+func (s *Service) DeleteVariant(ctx context.Context, productID, variantID string) error {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return client.DeleteVariant(ctx, productID, variantID)
+}
+
+// === ЗНАЧЕНИЯ СВОЙСТВ ===
+
+func (s *Service) ListPropertyValues(ctx context.Context, accessoryID string) ([]insales.PropertyValue, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.ListPropertyValues(ctx, accessoryID)
+}
+
+func (s *Service) CreatePropertyValue(ctx context.Context, accessoryID, title string) (*insales.PropertyValue, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.CreatePropertyValue(ctx, accessoryID, title)
+}
+
+func (s *Service) UpdatePropertyValue(ctx context.Context, propertyValueID string, args map[string]any) (*insales.PropertyValue, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.UpdatePropertyValue(ctx, propertyValueID, args)
+}
+
+func (s *Service) DeletePropertyValue(ctx context.Context, propertyValueID string) error {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return client.DeletePropertyValue(ctx, propertyValueID)
+}
+
+// === МЕНЮ ===
+
+func (s *Service) ListMenus(ctx context.Context) ([]insales.Menu, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.ListMenus(ctx)
+}
+
+func (s *Service) GetMenu(ctx context.Context, menuID string) (*insales.Menu, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.GetMenu(ctx, menuID)
+}
+
+func (s *Service) CreateMenu(ctx context.Context, title, handle string) (*insales.Menu, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.CreateMenu(ctx, title, handle)
+}
+
+func (s *Service) UpdateMenu(ctx context.Context, menuID string, args map[string]any) (*insales.Menu, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.UpdateMenu(ctx, menuID, args)
+}
+
+func (s *Service) DeleteMenu(ctx context.Context, menuID string) error {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return client.DeleteMenu(ctx, menuID)
+}
+
+// === РЕДИРЕКТЫ ===
+
+func (s *Service) ListRedirects(ctx context.Context) ([]insales.Redirect, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.ListRedirects(ctx)
+}
+
+func (s *Service) CreateRedirect(ctx context.Context, url, target string) (*insales.Redirect, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.CreateRedirect(ctx, url, target)
+}
+
+func (s *Service) DeleteRedirect(ctx context.Context, redirectID string) error {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return client.DeleteRedirect(ctx, redirectID)
+}
+
+// === БЛОГИ ===
+
+func (s *Service) ListBlogs(ctx context.Context) ([]insales.Blog, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.ListBlogs(ctx)
+}
+
+func (s *Service) GetBlog(ctx context.Context, blogID string) (*insales.Blog, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.GetBlog(ctx, blogID)
+}
+
+func (s *Service) CreateBlog(ctx context.Context, title, handle string) (*insales.Blog, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.CreateBlog(ctx, title, handle)
+}
+
+func (s *Service) DeleteBlog(ctx context.Context, blogID string) error {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return client.DeleteBlog(ctx, blogID)
+}
+
+func (s *Service) ListBlogPosts(ctx context.Context, blogID string) ([]insales.BlogPost, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.ListBlogPosts(ctx, blogID)
+}
+
+func (s *Service) GetBlogPost(ctx context.Context, blogID, postID string) (*insales.BlogPost, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.GetBlogPost(ctx, blogID, postID)
+}
+
+func (s *Service) CreateBlogPost(ctx context.Context, blogID, title, bodyHTML string) (*insales.BlogPost, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.CreateBlogPost(ctx, blogID, title, bodyHTML)
+}
+
+func (s *Service) UpdateBlogPost(ctx context.Context, blogID, postID string, args map[string]any) (*insales.BlogPost, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.UpdateBlogPost(ctx, blogID, postID, args)
+}
+
+func (s *Service) DeleteBlogPost(ctx context.Context, blogID, postID string) error {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return client.DeleteBlogPost(ctx, blogID, postID)
 }

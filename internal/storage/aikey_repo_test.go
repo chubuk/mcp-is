@@ -108,3 +108,30 @@ func TestAIKeyRepo_UpdateLastUsed(t *testing.T) {
 		t.Error("expected last_used_at to be set")
 	}
 }
+
+func TestAIKeyRepo_ListByUserIDFiltered(t *testing.T) {
+	pool := setupTestDB(t)
+	userRepo := NewUserRepository(pool)
+	keyRepo := NewAIKeyRepository(pool)
+
+	user, _ := userRepo.Create("filtkey", "", "", "", "", "hash")
+	keyRepo.Create(user.ID, "h1", "Cursor")
+	keyRepo.Create(user.ID, "h2", "Windsurf")
+	keyRepo.Create(user.ID, "h3", "Roo Code")
+
+	keys, total, err := keyRepo.ListByUserIDFiltered(user.ID, 1, 2)
+	if err != nil {
+		t.Fatalf("ListByUserIDFiltered failed: %v", err)
+	}
+	if total != 3 {
+		t.Errorf("expected total 3, got %d", total)
+	}
+	if len(keys) != 2 {
+		t.Errorf("expected 2 keys on page 1, got %d", len(keys))
+	}
+
+	keys2, _, _ := keyRepo.ListByUserIDFiltered(user.ID, 2, 2)
+	if len(keys2) != 1 {
+		t.Errorf("expected 1 key on page 2, got %d", len(keys2))
+	}
+}

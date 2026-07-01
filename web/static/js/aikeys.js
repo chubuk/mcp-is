@@ -53,6 +53,7 @@ const AIKeys = {
             ${keyAlert}
 
             <div class="card">
+                <div class="table-wrap">
                 <table class="table">
                     <thead>
                         <tr>
@@ -64,6 +65,7 @@ const AIKeys = {
                     </thead>
                     <tbody>${rows}</tbody>
                 </table>
+                </div>
                 ${pagination}
             </div>`;
     },

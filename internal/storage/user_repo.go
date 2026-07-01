@@ -101,7 +101,7 @@ func (r *UserRepository) ListFiltered(page, perPage int, query string) ([]User, 
 	}
 
 	where := ""
-	args := []interface{}{}
+	args := []any{}
 	if query != "" {
 		where = `WHERE nickname ILIKE '%' || $1 || '%' 
 		          OR email ILIKE '%' || $1 || '%' 
@@ -213,7 +213,7 @@ func (r *UserRepository) ClearResetTokens(userID string) error {
 	return err
 }
 
-func nullStr(s string) interface{} {
+func nullStr(s string) any {
 	if s == "" {
 		return nil
 	}

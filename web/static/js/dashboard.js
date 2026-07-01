@@ -17,7 +17,7 @@ const Dashboard = {
                 </div>
             </div>
 
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+            <div class="stats-grid">
                 <div class="card">
                     <div class="card__title">Магазины</div>
                     <div class="card__desc">Подключённые магазины InSales</div>

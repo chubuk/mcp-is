@@ -443,6 +443,95 @@ components:
           enum: [json, xml]
           default: "json"
 
+    PropertyValue:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        accessory_id:
+          type: integer
+          example: 10
+        title:
+          type: string
+          example: "Красный"
+        position:
+          type: integer
+          example: 1
+
+    Menu:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Главная навигация"
+        handle:
+          type: string
+          example: "main-menu"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MenuItem'
+
+    MenuItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+          example: "Каталог"
+        url:
+          type: string
+          example: "/collection/all"
+        position:
+          type: integer
+
+    Redirect:
+      type: object
+      properties:
+        id:
+          type: integer
+        url:
+          type: string
+          example: "/old-page"
+        target:
+          type: string
+          example: "/new-page"
+
+    Blog:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+          example: "Новости"
+        handle:
+          type: string
+          example: "news"
+
+    BlogPost:
+      type: object
+      properties:
+        id:
+          type: integer
+        blog_id:
+          type: integer
+        title:
+          type: string
+          example: "Запуск нового продукта"
+        handle:
+          type: string
+        body_html:
+          type: string
+        published_at:
+          type: string
+          format: date-time
+
     Error:
       type: object
       properties:
@@ -1524,6 +1613,489 @@ paths:
           description: Вебхук удалён
 
   # === ДОПОЛНИТЕЛЬНЫЕ РЕСУРСЫ ===
+  # === ВАРИАНТЫ ТОВАРОВ ===
+  /products/{product_id}/variants.json:
+    get:
+      summary: Список вариантов товара
+      operationId: listVariants
+      tags: [Variants]
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список вариантов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Variant'
+
+  /products/{product_id}/variants/{id}.json:
+    get:
+      summary: Получить вариант по ID
+      operationId: getVariant
+      tags: [Variants]
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Вариант товара
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Variant'
+
+    put:
+      summary: Обновить вариант
+      operationId: updateVariant
+      tags: [Variants]
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                variant:
+                  $ref: '#/components/schemas/Variant'
+      responses:
+        '200':
+          description: Вариант обновлён
+
+    delete:
+      summary: Удалить вариант
+      operationId: deleteVariant
+      tags: [Variants]
+      parameters:
+        - name: product_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Вариант удалён
+
+  # === ЗНАЧЕНИЯ СВОЙСТВ ===
+  /property_values.json:
+    get:
+      summary: Список значений свойств
+      operationId: listPropertyValues
+      tags: [PropertyValues]
+      responses:
+        '200':
+          description: Список значений
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PropertyValue'
+
+    post:
+      summary: Создать значение свойства
+      operationId: createPropertyValue
+      tags: [PropertyValues]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                property_value:
+                  $ref: '#/components/schemas/PropertyValue'
+      responses:
+        '201':
+          description: Значение создано
+
+  /property_values/{id}.json:
+    put:
+      summary: Обновить значение свойства
+      operationId: updatePropertyValue
+      tags: [PropertyValues]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                property_value:
+                  $ref: '#/components/schemas/PropertyValue'
+      responses:
+        '200':
+          description: Значение обновлено
+
+    delete:
+      summary: Удалить значение свойства
+      operationId: deletePropertyValue
+      tags: [PropertyValues]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Значение удалено
+
+  # === МЕНЮ ===
+  /menus.json:
+    get:
+      summary: Список меню
+      operationId: listMenus
+      tags: [Menus]
+      responses:
+        '200':
+          description: Список меню
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Menu'
+
+    post:
+      summary: Создать меню
+      operationId: createMenu
+      tags: [Menus]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                menu:
+                  $ref: '#/components/schemas/Menu'
+      responses:
+        '201':
+          description: Меню создано
+
+  /menus/{id}.json:
+    get:
+      summary: Получить меню по ID
+      operationId: getMenu
+      tags: [Menus]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Меню с пунктами
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Menu'
+
+    put:
+      summary: Обновить меню
+      operationId: updateMenu
+      tags: [Menus]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                menu:
+                  $ref: '#/components/schemas/Menu'
+      responses:
+        '200':
+          description: Меню обновлено
+
+    delete:
+      summary: Удалить меню
+      operationId: deleteMenu
+      tags: [Menus]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Меню удалено
+
+  # === РЕДИРЕКТЫ ===
+  /redirects.json:
+    get:
+      summary: Список редиректов
+      operationId: listRedirects
+      tags: [Redirects]
+      responses:
+        '200':
+          description: Список редиректов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Redirect'
+
+    post:
+      summary: Создать редирект
+      operationId: createRedirect
+      tags: [Redirects]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                redirect:
+                  $ref: '#/components/schemas/Redirect'
+      responses:
+        '201':
+          description: Редирект создан
+
+  /redirects/{id}.json:
+    delete:
+      summary: Удалить редирект
+      operationId: deleteRedirect
+      tags: [Redirects]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Редирект удалён
+
+  # === БЛОГИ ===
+  /blogs.json:
+    get:
+      summary: Список блогов
+      operationId: listBlogs
+      tags: [Blogs]
+      responses:
+        '200':
+          description: Список блогов
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Blog'
+
+    post:
+      summary: Создать блог
+      operationId: createBlog
+      tags: [Blogs]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                blog:
+                  $ref: '#/components/schemas/Blog'
+      responses:
+        '201':
+          description: Блог создан
+
+  /blogs/{id}.json:
+    get:
+      summary: Получить блог по ID
+      operationId: getBlog
+      tags: [Blogs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Блог
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Blog'
+
+    delete:
+      summary: Удалить блог
+      operationId: deleteBlog
+      tags: [Blogs]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Блог удалён
+
+  # === ЗАПИСИ БЛОГА ===
+  /blogs/{blog_id}/blog_posts.json:
+    get:
+      summary: Список записей блога
+      operationId: listBlogPosts
+      tags: [BlogPosts]
+      parameters:
+        - name: blog_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Список записей
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BlogPost'
+
+    post:
+      summary: Создать запись блога
+      operationId: createBlogPost
+      tags: [BlogPosts]
+      parameters:
+        - name: blog_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                blog_post:
+                  $ref: '#/components/schemas/BlogPost'
+      responses:
+        '201':
+          description: Запись создана
+
+  /blogs/{blog_id}/blog_posts/{id}.json:
+    get:
+      summary: Получить запись блога
+      operationId: getBlogPost
+      tags: [BlogPosts]
+      parameters:
+        - name: blog_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Запись блога
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlogPost'
+
+    put:
+      summary: Обновить запись блога
+      operationId: updateBlogPost
+      tags: [BlogPosts]
+      parameters:
+        - name: blog_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                blog_post:
+                  $ref: '#/components/schemas/BlogPost'
+      responses:
+        '200':
+          description: Запись обновлена
+
+    delete:
+      summary: Удалить запись блога
+      operationId: deleteBlogPost
+      tags: [BlogPosts]
+      parameters:
+        - name: blog_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Запись удалена
+
   /delivery_variants.json:
     get:
       summary: Получить способы доставки
@@ -1619,9 +2191,11 @@ paths:
                     rate:
                       type: string
 
-tags:
+  tags:
   - name: Products
     description: Управление товарами
+  - name: Variants
+    description: Управление вариантами товаров
   - name: Images
     description: Управление изображениями товаров
   - name: Orders
@@ -1636,10 +2210,20 @@ tags:
     description: Управление статическими страницами
   - name: Accessories
     description: Управление характеристиками товаров
+  - name: PropertyValues
+    description: Значения характеристик (Цвет, Размер и т.д.)
   - name: MetaFields
     description: Управление метаполями
   - name: Webhooks
     description: Управление вебхуками
+  - name: Menus
+    description: Навигационные меню
+  - name: Redirects
+    description: URL-редиректы
+  - name: Blogs
+    description: Блоги магазина
+  - name: BlogPosts
+    description: Записи блога
   - name: Delivery
     description: Способы доставки
   - name: Payment

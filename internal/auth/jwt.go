@@ -38,7 +38,7 @@ func (m *JWTManager) GenerateToken(userID, nickname, role string) (string, error
 }
 
 func (m *JWTManager) ValidateToken(tokenStr string) (*JWTClaims, error) {
-	token, err := jwt.ParseWithClaims(tokenStr, &JWTClaims{}, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenStr, &JWTClaims{}, func(t *jwt.Token) (any, error) {
 		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method")
 		}

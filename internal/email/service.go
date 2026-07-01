@@ -70,7 +70,7 @@ func (s *Service) SendVerifyEmail(to, name, token string) error {
 	return s.send(to, "Подтвердите email — MCP InSales", body)
 }
 
-func (s *Service) renderTemplate(name string, data interface{}) (string, error) {
+func (s *Service) renderTemplate(name string, data any) (string, error) {
 	tmpl := template.Must(template.New(name).Parse(templates[name]))
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, data); err != nil {

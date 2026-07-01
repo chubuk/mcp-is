@@ -92,8 +92,8 @@ func mapOrderLines(l []InSalesOrderLine) []OrderLine {
 	return result
 }
 
-func MapClient(resp *InSalesClientResponse) map[string]interface{} {
-	return map[string]interface{}{
+func MapClient(resp *InSalesClientResponse) map[string]any {
+	return map[string]any{
 		"id":         resp.ID,
 		"email":      resp.Email,
 		"first_name": resp.FirstName,
@@ -104,8 +104,8 @@ func MapClient(resp *InSalesClientResponse) map[string]interface{} {
 	}
 }
 
-func MapCategory(resp *InSalesCategoryResponse) map[string]interface{} {
-	return map[string]interface{}{
+func MapCategory(resp *InSalesCategoryResponse) map[string]any {
+	return map[string]any{
 		"id":         resp.ID,
 		"title":      resp.Title,
 		"parent_id":  resp.ParentID,
@@ -114,8 +114,8 @@ func MapCategory(resp *InSalesCategoryResponse) map[string]interface{} {
 	}
 }
 
-func MapCollection(resp *InSalesCollectionResponse) map[string]interface{} {
-	return map[string]interface{}{
+func MapCollection(resp *InSalesCollectionResponse) map[string]any {
+	return map[string]any{
 		"id":         resp.ID,
 		"title":      resp.Title,
 		"created_at": resp.CreatedAt,
@@ -123,8 +123,8 @@ func MapCollection(resp *InSalesCollectionResponse) map[string]interface{} {
 	}
 }
 
-func MapMetaField(resp *InSalesMetaFieldResponse) map[string]interface{} {
-	return map[string]interface{}{
+func MapMetaField(resp *InSalesMetaFieldResponse) map[string]any {
+	return map[string]any{
 		"id":            resp.ID,
 		"resource_type": resp.ResourceType,
 		"resource_id":   resp.ResourceID,
@@ -133,8 +133,8 @@ func MapMetaField(resp *InSalesMetaFieldResponse) map[string]interface{} {
 	}
 }
 
-func MapWebhook(resp *InSalesWebhookResponse) map[string]interface{} {
-	return map[string]interface{}{
+func MapWebhook(resp *InSalesWebhookResponse) map[string]any {
+	return map[string]any{
 		"id":     resp.ID,
 		"event":  resp.Event,
 		"url":    resp.URL,
@@ -160,5 +160,69 @@ func MapAccessory(resp *InSalesAccessoryResponse) *Accessory {
 		Position:  resp.Position,
 		CreatedAt: resp.CreatedAt,
 		UpdatedAt: resp.UpdatedAt,
+	}
+}
+
+func MapPropertyValue(resp *InSalesPropertyValueResponse) *PropertyValue {
+	return &PropertyValue{
+		ID:          fmt.Sprintf("%d", resp.ID),
+		AccessoryID: resp.AccessoryID,
+		Title:       resp.Title,
+		Position:    resp.Position,
+		CreatedAt:   resp.CreatedAt,
+		UpdatedAt:   resp.UpdatedAt,
+	}
+}
+
+func MapMenu(resp *InSalesMenuResponse) *Menu {
+	items := make([]MenuItem, len(resp.Items))
+	for i, item := range resp.Items {
+		items[i] = MenuItem{
+			ID:       item.ID,
+			Title:    item.Title,
+			URL:     item.URL,
+			Position: item.Position,
+		}
+	}
+	return &Menu{
+		ID:        fmt.Sprintf("%d", resp.ID),
+		Title:     resp.Title,
+		Handle:    resp.Handle,
+		Items:     items,
+		CreatedAt: resp.CreatedAt,
+		UpdatedAt: resp.UpdatedAt,
+	}
+}
+
+func MapRedirect(resp *InSalesRedirectResponse) *Redirect {
+	return &Redirect{
+		ID:        fmt.Sprintf("%d", resp.ID),
+		URL:       resp.Url,
+		Target:    resp.Target,
+		CreatedAt: resp.CreatedAt,
+		UpdatedAt: resp.UpdatedAt,
+	}
+}
+
+func MapBlog(resp *InSalesBlogResponse) *Blog {
+	return &Blog{
+		ID:        fmt.Sprintf("%d", resp.ID),
+		Title:     resp.Title,
+		Handle:    resp.Handle,
+		CreatedAt: resp.CreatedAt,
+		UpdatedAt: resp.UpdatedAt,
+	}
+}
+
+func MapBlogPost(resp *InSalesBlogPostResponse) *BlogPost {
+	return &BlogPost{
+		ID:          fmt.Sprintf("%d", resp.ID),
+		BlogID:      resp.BlogID,
+		Title:       resp.Title,
+		Handle:      resp.Handle,
+		BodyHTML:    resp.BodyHTML,
+		PublishedAt: resp.PublishedAt,
+		CreatedAt:   resp.CreatedAt,
+		UpdatedAt:   resp.UpdatedAt,
 	}
 }

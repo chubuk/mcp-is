@@ -53,6 +53,7 @@ const Admin = {
                        value="${this._usersQuery}" oninput="Admin.onUserSearch(this.value)">
             </div>
             <div class="card">
+                <div class="table-wrap">
                 <table class="table">
                     <thead>
                         <tr>
@@ -66,6 +67,7 @@ const Admin = {
                     </thead>
                     <tbody>${rows}</tbody>
                 </table>
+                </div>
                 ${pagination}
             </div>`;
     },
@@ -140,6 +142,7 @@ const Admin = {
             </div>
             <div class="card">
                 <div class="card__title">Основная информация</div>
+                <div class="table-wrap">
                 <table class="table">
                     <tr><td><strong>ID</strong></td><td><code>${u.id}</code></td></tr>
                     <tr><td><strong>Никнейм</strong></td><td>${u.nickname}</td></tr>
@@ -151,6 +154,7 @@ const Admin = {
                     <tr><td><strong>Статус</strong></td><td>${u.is_active ? 'Активен' : 'Заблокирован'}</td></tr>
                     <tr><td><strong>Создан</strong></td><td>${u.created_at || '—'}</td></tr>
                 </table>
+                </div>
             </div>
             <div class="card">
                 <div class="card__title">Действия</div>
@@ -209,7 +213,7 @@ const Admin = {
                     <p class="desc">Общая статистика системы</p>
                 </div>
             </div>
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px">
+            <div class="stats-grid stats-grid--3">
                 <div class="card">
                     <div class="card__title">Пользователи</div>
                     <div style="font-size:32px;font-weight:700">${stats.total_users || 0}</div>

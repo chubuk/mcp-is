@@ -29,6 +29,7 @@ func setupTestDB(t *testing.T) *pgxpool.Pool {
 	}
 
 	t.Cleanup(func() {
+		pool.Exec(context.Background(), "DELETE FROM password_resets")
 		pool.Exec(context.Background(), "DELETE FROM ai_keys")
 		pool.Exec(context.Background(), "DELETE FROM shops")
 		pool.Exec(context.Background(), "DELETE FROM users")

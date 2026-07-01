@@ -71,9 +71,9 @@ func TestAIKeyList_Success(t *testing.T) {
 		t.Errorf("expected 200, got %d", w.Code)
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	json.NewDecoder(w.Body).Decode(&result)
-	items := result["items"].([]interface{})
+	items := result["items"].([]any)
 	if len(items) != 2 {
 		t.Errorf("expected 2 keys, got %d", len(items))
 	}

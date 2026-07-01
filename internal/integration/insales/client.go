@@ -8,52 +8,87 @@ type Client interface {
 	GetStoreInfo(ctx context.Context) (*StoreInfo, error)
 	ListProducts(ctx context.Context, page, perPage int) ([]Product, error)
 	GetProduct(ctx context.Context, productID string) (*Product, error)
-	CreateProduct(ctx context.Context, title, price string, args map[string]interface{}) (*Product, error)
-	UpdateProduct(ctx context.Context, productID string, args map[string]interface{}) (*Product, error)
+	CreateProduct(ctx context.Context, title, price string, args map[string]any) (*Product, error)
+	UpdateProduct(ctx context.Context, productID string, args map[string]any) (*Product, error)
 	DeleteProduct(ctx context.Context, productID string) error
 	ListOrders(ctx context.Context, page, perPage int) ([]Order, error)
 	GetOrder(ctx context.Context, orderID string) (*Order, error)
-	UpdateOrder(ctx context.Context, orderID string, args map[string]interface{}) (*Order, error)
-	CreateOrder(ctx context.Context, clientID int, args map[string]interface{}) (*Order, error)
-	ListClients(ctx context.Context, page, perPage int) ([]interface{}, error)
-	GetClient(ctx context.Context, clientID string) (interface{}, error)
-	CreateClient(ctx context.Context, email string, args map[string]interface{}) (interface{}, error)
-	UpdateClient(ctx context.Context, clientID string, args map[string]interface{}) (interface{}, error)
+	UpdateOrder(ctx context.Context, orderID string, args map[string]any) (*Order, error)
+	CreateOrder(ctx context.Context, clientID int, args map[string]any) (*Order, error)
+	ListClients(ctx context.Context, page, perPage int) ([]any, error)
+	GetClient(ctx context.Context, clientID string) (any, error)
+	CreateClient(ctx context.Context, email string, args map[string]any) (any, error)
+	UpdateClient(ctx context.Context, clientID string, args map[string]any) (any, error)
 	DeleteClient(ctx context.Context, clientID string) error
-	ListCategories(ctx context.Context, page, perPage int) ([]interface{}, error)
-	GetCategory(ctx context.Context, categoryID string) (interface{}, error)
-	CreateCategory(ctx context.Context, title string, args map[string]interface{}) (interface{}, error)
-	UpdateCategory(ctx context.Context, categoryID string, args map[string]interface{}) (interface{}, error)
+	ListCategories(ctx context.Context, page, perPage int) ([]any, error)
+	GetCategory(ctx context.Context, categoryID string) (any, error)
+	CreateCategory(ctx context.Context, title string, args map[string]any) (any, error)
+	UpdateCategory(ctx context.Context, categoryID string, args map[string]any) (any, error)
 	DeleteCategory(ctx context.Context, categoryID string) error
-	ListCollections(ctx context.Context, page, perPage int) ([]interface{}, error)
-	GetCollection(ctx context.Context, collectionID string) (interface{}, error)
-	CreateCollection(ctx context.Context, title string) (interface{}, error)
-	UpdateCollection(ctx context.Context, collectionID, title string) (interface{}, error)
+	ListCollections(ctx context.Context, page, perPage int) ([]any, error)
+	GetCollection(ctx context.Context, collectionID string) (any, error)
+	CreateCollection(ctx context.Context, title string) (any, error)
+	UpdateCollection(ctx context.Context, collectionID, title string) (any, error)
 	DeleteCollection(ctx context.Context, collectionID string) error
-	ListImages(ctx context.Context, productID string) ([]interface{}, error)
-	AddImage(ctx context.Context, productID, url string, args map[string]interface{}) (interface{}, error)
+	ListImages(ctx context.Context, productID string) ([]any, error)
+	AddImage(ctx context.Context, productID, url string, args map[string]any) (any, error)
 	DeleteImage(ctx context.Context, productID, imageID string) error
-	ListMetaFields(ctx context.Context, args map[string]interface{}) ([]interface{}, error)
-	CreateMetaField(ctx context.Context, args map[string]interface{}) (interface{}, error)
-	UpdateMetaField(ctx context.Context, metaFieldID string, args map[string]interface{}) (interface{}, error)
+	ListMetaFields(ctx context.Context, args map[string]any) ([]any, error)
+	CreateMetaField(ctx context.Context, args map[string]any) (any, error)
+	UpdateMetaField(ctx context.Context, metaFieldID string, args map[string]any) (any, error)
 	DeleteMetaField(ctx context.Context, metaFieldID string) error
-	ListWebhooks(ctx context.Context) ([]interface{}, error)
-	CreateWebhook(ctx context.Context, event, url string, args map[string]interface{}) (interface{}, error)
-	UpdateWebhook(ctx context.Context, webhookID string, args map[string]interface{}) (interface{}, error)
+	ListWebhooks(ctx context.Context) ([]any, error)
+	CreateWebhook(ctx context.Context, event, url string, args map[string]any) (any, error)
+	UpdateWebhook(ctx context.Context, webhookID string, args map[string]any) (any, error)
 	DeleteWebhook(ctx context.Context, webhookID string) error
-	ListCurrencies(ctx context.Context) (interface{}, error)
-	ListDeliveryVariants(ctx context.Context) (interface{}, error)
-	ListPaymentGateways(ctx context.Context) (interface{}, error)
+	ListCurrencies(ctx context.Context) (any, error)
+	ListDeliveryVariants(ctx context.Context) (any, error)
+	ListPaymentGateways(ctx context.Context) (any, error)
 	ListPages(ctx context.Context, page, perPage int) ([]Page, error)
 	GetPage(ctx context.Context, pageID string) (*Page, error)
 	CreatePage(ctx context.Context, title, content, handle string) (*Page, error)
-	UpdatePage(ctx context.Context, pageID string, args map[string]interface{}) (*Page, error)
+	UpdatePage(ctx context.Context, pageID string, args map[string]any) (*Page, error)
 	DeletePage(ctx context.Context, pageID string) error
 	ListAccessories(ctx context.Context, page, perPage int) ([]Accessory, error)
 	GetAccessory(ctx context.Context, accessoryID string) (*Accessory, error)
 	CreateAccessory(ctx context.Context, title string) (*Accessory, error)
-	UpdateAccessory(ctx context.Context, accessoryID string, args map[string]interface{}) (*Accessory, error)
+	UpdateAccessory(ctx context.Context, accessoryID string, args map[string]any) (*Accessory, error)
 	DeleteAccessory(ctx context.Context, accessoryID string) error
+
+	// Variants
+	ListVariants(ctx context.Context, productID string) ([]Variant, error)
+	GetVariant(ctx context.Context, productID, variantID string) (*Variant, error)
+	UpdateVariant(ctx context.Context, productID, variantID string, args map[string]any) (*Variant, error)
+	DeleteVariant(ctx context.Context, productID, variantID string) error
+
+	// Property Values
+	ListPropertyValues(ctx context.Context, accessoryID string) ([]PropertyValue, error)
+	CreatePropertyValue(ctx context.Context, accessoryID, title string) (*PropertyValue, error)
+	UpdatePropertyValue(ctx context.Context, propertyValueID string, args map[string]any) (*PropertyValue, error)
+	DeletePropertyValue(ctx context.Context, propertyValueID string) error
+
+	// Menus
+	ListMenus(ctx context.Context) ([]Menu, error)
+	GetMenu(ctx context.Context, menuID string) (*Menu, error)
+	CreateMenu(ctx context.Context, title, handle string) (*Menu, error)
+	UpdateMenu(ctx context.Context, menuID string, args map[string]any) (*Menu, error)
+	DeleteMenu(ctx context.Context, menuID string) error
+
+	// Redirects
+	ListRedirects(ctx context.Context) ([]Redirect, error)
+	CreateRedirect(ctx context.Context, url, target string) (*Redirect, error)
+	DeleteRedirect(ctx context.Context, redirectID string) error
+
+	// Blogs
+	ListBlogs(ctx context.Context) ([]Blog, error)
+	GetBlog(ctx context.Context, blogID string) (*Blog, error)
+	CreateBlog(ctx context.Context, title, handle string) (*Blog, error)
+	DeleteBlog(ctx context.Context, blogID string) error
+	ListBlogPosts(ctx context.Context, blogID string) ([]BlogPost, error)
+	GetBlogPost(ctx context.Context, blogID, postID string) (*BlogPost, error)
+	CreateBlogPost(ctx context.Context, blogID, title, bodyHTML string) (*BlogPost, error)
+	UpdateBlogPost(ctx context.Context, blogID, postID string, args map[string]any) (*BlogPost, error)
+	DeleteBlogPost(ctx context.Context, blogID, postID string) error
 }
 
 type StoreInfo struct {
@@ -132,4 +167,56 @@ type Accessory struct {
 	Position  int    `json:"position"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
+}
+
+type PropertyValue struct {
+	ID          string `json:"id"`
+	AccessoryID int    `json:"accessory_id"`
+	Title       string `json:"title"`
+	Position    int    `json:"position"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
+type Menu struct {
+	ID        string     `json:"id"`
+	Title     string     `json:"title"`
+	Handle    string     `json:"handle"`
+	Items     []MenuItem `json:"items"`
+	CreatedAt string     `json:"created_at"`
+	UpdatedAt string     `json:"updated_at"`
+}
+
+type MenuItem struct {
+	ID       int    `json:"id"`
+	Title    string `json:"title"`
+	URL     string `json:"url"`
+	Position int    `json:"position"`
+}
+
+type Redirect struct {
+	ID        string `json:"id"`
+	URL       string `json:"url"`
+	Target    string `json:"target"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type Blog struct {
+	ID        string `json:"id"`
+	Title     string `json:"title"`
+	Handle    string `json:"handle"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type BlogPost struct {
+	ID          string `json:"id"`
+	BlogID      int    `json:"blog_id"`
+	Title       string `json:"title"`
+	Handle      string `json:"handle"`
+	BodyHTML    string `json:"body_html"`
+	PublishedAt string `json:"published_at"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
 }

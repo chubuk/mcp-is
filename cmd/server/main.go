@@ -65,11 +65,13 @@ func main() {
 	aiKeyHandler := handlers.NewAIKeyHandler(aiKeyRepo)
 	adminHandler := handlers.NewAdminHandler(userRepo, shopRepo, aiKeyRepo)
 
+	authRateLimiter := auth.NewRateLimiter(10, 1*time.Minute)
+
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("POST /api/register", authHandler.Register)
-	mux.HandleFunc("POST /api/login", authHandler.Login)
-	mux.HandleFunc("POST /api/forgot-password", authHandler.ForgotPassword)
+	mux.Handle("POST /api/register", authRateLimiter.Middleware(authHandler.Register))
+	mux.Handle("POST /api/login", authRateLimiter.Middleware(authHandler.Login))
+	mux.Handle("POST /api/forgot-password", authRateLimiter.Middleware(authHandler.ForgotPassword))
 	mux.HandleFunc("POST /api/reset-password", authHandler.ResetPassword)
 
 	jwtMW := auth.JWTMiddleware(jwtMgr)
@@ -78,6 +80,7 @@ func main() {
 
 	mux.Handle("POST /api/shops", jwtMW(http.HandlerFunc(shopHandler.Create)))
 	mux.Handle("GET /api/shops", jwtMW(http.HandlerFunc(shopHandler.List)))
+	mux.Handle("POST /api/shops/test-connection", jwtMW(http.HandlerFunc(shopHandler.TestConnection)))
 	mux.Handle("PUT /api/shops/{id}", jwtMW(http.HandlerFunc(shopHandler.Update)))
 	mux.Handle("DELETE /api/shops/{id}", jwtMW(http.HandlerFunc(shopHandler.Delete)))
 
@@ -105,7 +108,7 @@ func main() {
 
 	httpServer := &http.Server{
 		Addr:         ":" + cfg.ServerPort,
-		Handler:      mux,
+		Handler:      auth.CORSMiddleware(mux),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}

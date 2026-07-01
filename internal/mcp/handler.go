@@ -17,7 +17,7 @@ func NewHandler(s *service.Service) *Handler {
 	}
 }
 
-func (h *Handler) HandleTool(ctx context.Context, toolName string, args map[string]interface{}) (interface{}, error) {
+func (h *Handler) HandleTool(ctx context.Context, toolName string, args map[string]any) (any, error) {
 	switch toolName {
 	case "get_shop_info":
 		return h.service.GetStoreDetails(ctx)
@@ -312,7 +312,7 @@ func (h *Handler) HandleTool(ctx context.Context, toolName string, args map[stri
 		if !ok {
 			return nil, fmt.Errorf("page_id is required")
 		}
-		updateArgs := make(map[string]interface{})
+		updateArgs := make(map[string]any)
 		for k, v := range args {
 			if k != "page_id" {
 				updateArgs[k] = v
@@ -348,7 +348,7 @@ func (h *Handler) HandleTool(ctx context.Context, toolName string, args map[stri
 		if !ok {
 			return nil, fmt.Errorf("accessory_id is required")
 		}
-		updateArgs := make(map[string]interface{})
+		updateArgs := make(map[string]any)
 		for k, v := range args {
 			if k != "accessory_id" {
 				updateArgs[k] = v
@@ -362,6 +362,193 @@ func (h *Handler) HandleTool(ctx context.Context, toolName string, args map[stri
 			return nil, fmt.Errorf("accessory_id is required")
 		}
 		return nil, h.service.DeleteAccessory(ctx, accessoryID)
+
+	// === ВАРИАНТЫ ТОВАРОВ ===
+
+	case "list_variants":
+		productID, _ := args["product_id"].(string)
+		if productID == "" {
+			return nil, fmt.Errorf("product_id is required")
+		}
+		return h.service.ListVariants(ctx, productID)
+
+	case "get_variant":
+		productID, _ := args["product_id"].(string)
+		variantID, _ := args["variant_id"].(string)
+		if productID == "" || variantID == "" {
+			return nil, fmt.Errorf("product_id and variant_id are required")
+		}
+		return h.service.GetVariant(ctx, productID, variantID)
+
+	case "update_variant":
+		productID, _ := args["product_id"].(string)
+		variantID, _ := args["variant_id"].(string)
+		if productID == "" || variantID == "" {
+			return nil, fmt.Errorf("product_id and variant_id are required")
+		}
+		return h.service.UpdateVariant(ctx, productID, variantID, args)
+
+	case "delete_variant":
+		productID, _ := args["product_id"].(string)
+		variantID, _ := args["variant_id"].(string)
+		if productID == "" || variantID == "" {
+			return nil, fmt.Errorf("product_id and variant_id are required")
+		}
+		return nil, h.service.DeleteVariant(ctx, productID, variantID)
+
+	// === ЗНАЧЕНИЯ СВОЙСТВ ===
+
+	case "list_property_values":
+		accessoryID, _ := args["accessory_id"].(string)
+		if accessoryID == "" {
+			return nil, fmt.Errorf("accessory_id is required")
+		}
+		return h.service.ListPropertyValues(ctx, accessoryID)
+
+	case "create_property_value":
+		accessoryID, _ := args["accessory_id"].(string)
+		title, _ := args["title"].(string)
+		if accessoryID == "" || title == "" {
+			return nil, fmt.Errorf("accessory_id and title are required")
+		}
+		return h.service.CreatePropertyValue(ctx, accessoryID, title)
+
+	case "update_property_value":
+		propertyValueID, _ := args["property_value_id"].(string)
+		if propertyValueID == "" {
+			return nil, fmt.Errorf("property_value_id is required")
+		}
+		return h.service.UpdatePropertyValue(ctx, propertyValueID, args)
+
+	case "delete_property_value":
+		propertyValueID, _ := args["property_value_id"].(string)
+		if propertyValueID == "" {
+			return nil, fmt.Errorf("property_value_id is required")
+		}
+		return nil, h.service.DeletePropertyValue(ctx, propertyValueID)
+
+	// === МЕНЮ ===
+
+	case "list_menus":
+		return h.service.ListMenus(ctx)
+
+	case "get_menu":
+		menuID, _ := args["menu_id"].(string)
+		if menuID == "" {
+			return nil, fmt.Errorf("menu_id is required")
+		}
+		return h.service.GetMenu(ctx, menuID)
+
+	case "create_menu":
+		title, _ := args["title"].(string)
+		handle, _ := args["handle"].(string)
+		if title == "" {
+			return nil, fmt.Errorf("title is required")
+		}
+		return h.service.CreateMenu(ctx, title, handle)
+
+	case "update_menu":
+		menuID, _ := args["menu_id"].(string)
+		if menuID == "" {
+			return nil, fmt.Errorf("menu_id is required")
+		}
+		return h.service.UpdateMenu(ctx, menuID, args)
+
+	case "delete_menu":
+		menuID, _ := args["menu_id"].(string)
+		if menuID == "" {
+			return nil, fmt.Errorf("menu_id is required")
+		}
+		return nil, h.service.DeleteMenu(ctx, menuID)
+
+	// === РЕДИРЕКТЫ ===
+
+	case "list_redirects":
+		return h.service.ListRedirects(ctx)
+
+	case "create_redirect":
+		url, _ := args["url"].(string)
+		target, _ := args["target"].(string)
+		if url == "" || target == "" {
+			return nil, fmt.Errorf("url and target are required")
+		}
+		return h.service.CreateRedirect(ctx, url, target)
+
+	case "delete_redirect":
+		redirectID, _ := args["redirect_id"].(string)
+		if redirectID == "" {
+			return nil, fmt.Errorf("redirect_id is required")
+		}
+		return nil, h.service.DeleteRedirect(ctx, redirectID)
+
+	// === БЛОГИ ===
+
+	case "list_blogs":
+		return h.service.ListBlogs(ctx)
+
+	case "get_blog":
+		blogID, _ := args["blog_id"].(string)
+		if blogID == "" {
+			return nil, fmt.Errorf("blog_id is required")
+		}
+		return h.service.GetBlog(ctx, blogID)
+
+	case "create_blog":
+		title, _ := args["title"].(string)
+		handle, _ := args["handle"].(string)
+		if title == "" {
+			return nil, fmt.Errorf("title is required")
+		}
+		return h.service.CreateBlog(ctx, title, handle)
+
+	case "delete_blog":
+		blogID, _ := args["blog_id"].(string)
+		if blogID == "" {
+			return nil, fmt.Errorf("blog_id is required")
+		}
+		return nil, h.service.DeleteBlog(ctx, blogID)
+
+	// === ЗАПИСИ БЛОГА ===
+
+	case "list_blog_posts":
+		blogID, _ := args["blog_id"].(string)
+		if blogID == "" {
+			return nil, fmt.Errorf("blog_id is required")
+		}
+		return h.service.ListBlogPosts(ctx, blogID)
+
+	case "get_blog_post":
+		blogID, _ := args["blog_id"].(string)
+		postID, _ := args["post_id"].(string)
+		if blogID == "" || postID == "" {
+			return nil, fmt.Errorf("blog_id and post_id are required")
+		}
+		return h.service.GetBlogPost(ctx, blogID, postID)
+
+	case "create_blog_post":
+		blogID, _ := args["blog_id"].(string)
+		title, _ := args["title"].(string)
+		bodyHTML, _ := args["body_html"].(string)
+		if blogID == "" || title == "" || bodyHTML == "" {
+			return nil, fmt.Errorf("blog_id, title, and body_html are required")
+		}
+		return h.service.CreateBlogPost(ctx, blogID, title, bodyHTML)
+
+	case "update_blog_post":
+		blogID, _ := args["blog_id"].(string)
+		postID, _ := args["post_id"].(string)
+		if blogID == "" || postID == "" {
+			return nil, fmt.Errorf("blog_id and post_id are required")
+		}
+		return h.service.UpdateBlogPost(ctx, blogID, postID, args)
+
+	case "delete_blog_post":
+		blogID, _ := args["blog_id"].(string)
+		postID, _ := args["post_id"].(string)
+		if blogID == "" || postID == "" {
+			return nil, fmt.Errorf("blog_id and post_id are required")
+		}
+		return nil, h.service.DeleteBlogPost(ctx, blogID, postID)
 
 	default:
 		return nil, fmt.Errorf("unknown tool: %s", toolName)

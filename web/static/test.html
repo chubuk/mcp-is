@@ -104,6 +104,34 @@
     assert(typeof AIKeys.render === 'function', 'AIKeys.render is function');
     assert(typeof AIKeys.create === 'function', 'AIKeys.create is function');
 
+    // === Responsive navigation tests ===
+    assert(typeof App.toggleNav === 'function', 'App.toggleNav is function');
+    assert(typeof App.closeNav === 'function', 'App.closeNav is function');
+
+    // === Admin object tests ===
+    assert(typeof Admin !== 'undefined', 'Admin object exists');
+    assert(typeof Admin.renderUsers === 'function', 'Admin.renderUsers is function');
+    assert(typeof Admin.renderStats === 'function', 'Admin.renderStats is function');
+
+    // === CSS responsive classes ===
+    const styleSheet = document.styleSheets[0];
+    let hasTableWrap = false;
+    let hasStatsGrid = false;
+    let hasMediaQuery = false;
+    let hasHeaderToggle = false;
+    try {
+        for (const rule of styleSheet.cssRules) {
+            if (rule.selectorText === '.table-wrap') hasTableWrap = true;
+            if (rule.selectorText === '.stats-grid') hasStatsGrid = true;
+            if (rule.selectorText === '.header__toggle') hasHeaderToggle = true;
+            if (rule.type === CSSRule.MEDIA_RULE) hasMediaQuery = true;
+        }
+    } catch(e) {}
+    assert(hasTableWrap, 'CSS has .table-wrap class');
+    assert(hasStatsGrid, 'CSS has .stats-grid class');
+    assert(hasHeaderToggle, 'CSS has .header__toggle class');
+    assert(hasMediaQuery, 'CSS has @media queries');
+
     // === Summary ===
     const total = passed + failed;
     summary.textContent = total + ' tests: ' + passed + ' passed, ' + failed + ' failed';

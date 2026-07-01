@@ -29,6 +29,7 @@ const App = {
 
     navigate(path) {
         history.pushState(null, '', path);
+        this.closeNav();
         this.route();
     },
 
@@ -116,6 +117,14 @@ const App = {
         localStorage.removeItem('role');
         localStorage.removeItem('user_id');
         this.navigate('/login');
+    },
+
+    toggleNav() {
+        document.getElementById('nav').classList.toggle('active');
+    },
+
+    closeNav() {
+        document.getElementById('nav').classList.remove('active');
     }
 };
 

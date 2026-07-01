@@ -2,3 +2,8 @@
 .env
 *.md
 docs/
+bin/
+packaging/
+.mimocode/
+*.deb
+.gitignore

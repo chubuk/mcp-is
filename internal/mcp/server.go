@@ -31,7 +31,7 @@ func (s *Server) HandleMCP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req map[string]interface{}
+	var req map[string]any
 	if err := json.Unmarshal(body, &req); err != nil {
 		http.Error(w, `{"error":"invalid json"}`, http.StatusBadRequest)
 		return
@@ -39,37 +39,37 @@ func (s *Server) HandleMCP(w http.ResponseWriter, r *http.Request) {
 
 	method, _ := req["method"].(string)
 	id := req["id"]
-	params, _ := req["params"].(map[string]interface{})
+	params, _ := req["params"].(map[string]any)
 
 	slog.Info("mcp request", "method", method, "id", id)
 
-	var result interface{}
-	var rpcError interface{}
+	var result any
+	var rpcError any
 
 	switch method {
 	case "initialize":
-		result = map[string]interface{}{
+		result = map[string]any{
 			"protocolVersion": "2024-11-05",
-			"capabilities": map[string]interface{}{
-				"tools": map[string]interface{}{},
+			"capabilities": map[string]any{
+				"tools": map[string]any{},
 			},
-			"serverInfo": map[string]interface{}{
+			"serverInfo": map[string]any{
 				"name":    "mcp-insales",
 				"version": "0.1.0",
 			},
 		}
 
 	case "tools/list":
-		result = map[string]interface{}{
+		result = map[string]any{
 			"tools": GetAllTools(),
 		}
 
 	case "tools/call":
 		toolName, _ := params["name"].(string)
-		arguments, _ := params["arguments"].(map[string]interface{})
+		arguments, _ := params["arguments"].(map[string]any)
 
 		if s.readOnly && isWriteTool(toolName) {
-			rpcError = map[string]interface{}{
+			rpcError = map[string]any{
 				"code":    -32000,
 				"message": fmt.Sprintf("tool '%s' is not available in read-only mode", toolName),
 			}
@@ -86,13 +86,13 @@ func (s *Server) HandleMCP(w http.ResponseWriter, r *http.Request) {
 
 		output, err := s.handler.HandleTool(ctx, toolName, arguments)
 		if err != nil {
-			rpcError = map[string]interface{}{
+			rpcError = map[string]any{
 				"code":    -32000,
 				"message": err.Error(),
 			}
 		} else {
-			result = map[string]interface{}{
-				"content": []map[string]interface{}{
+			result = map[string]any{
+				"content": []map[string]any{
 					{
 						"type": "text",
 						"text": formatResult(output),
@@ -102,13 +102,13 @@ func (s *Server) HandleMCP(w http.ResponseWriter, r *http.Request) {
 		}
 
 	default:
-		rpcError = map[string]interface{}{
+		rpcError = map[string]any{
 			"code":    -32601,
 			"message": fmt.Sprintf("method not found: %s", method),
 		}
 	}
 
-	resp := map[string]interface{}{
+	resp := map[string]any{
 		"jsonrpc": "2.0",
 		"id":      id,
 	}
@@ -140,7 +140,7 @@ func (s *Server) HandleWebhook(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func formatResult(v interface{}) string {
+func formatResult(v any) string {
 	if v == nil {
 		return "null"
 	}
@@ -152,34 +152,49 @@ func formatResult(v interface{}) string {
 }
 
 var writeTools = map[string]bool{
-	"create_product":      true,
-	"update_product":      true,
-	"delete_product":      true,
-	"create_order":        true,
-	"update_order":        true,
-	"create_client":       true,
-	"update_client":       true,
-	"delete_client":       true,
-	"create_category":     true,
-	"update_category":     true,
-	"delete_category":     true,
-	"create_collection":   true,
-	"update_collection":   true,
-	"delete_collection":   true,
-	"add_image":           true,
-	"delete_image":        true,
-	"create_meta_field":   true,
-	"update_meta_field":   true,
-	"delete_meta_field":   true,
-	"create_webhook":      true,
-	"update_webhook":      true,
-	"delete_webhook":      true,
-	"create_page":         true,
-	"update_page":         true,
-	"delete_page":         true,
-	"create_accessory":    true,
-	"update_accessory":    true,
-	"delete_accessory":    true,
+	"create_product":        true,
+	"update_product":        true,
+	"delete_product":        true,
+	"create_order":          true,
+	"update_order":          true,
+	"create_client":         true,
+	"update_client":         true,
+	"delete_client":         true,
+	"create_category":       true,
+	"update_category":       true,
+	"delete_category":       true,
+	"create_collection":     true,
+	"update_collection":     true,
+	"delete_collection":     true,
+	"add_image":             true,
+	"delete_image":          true,
+	"create_meta_field":     true,
+	"update_meta_field":     true,
+	"delete_meta_field":     true,
+	"create_webhook":        true,
+	"update_webhook":        true,
+	"delete_webhook":        true,
+	"create_page":           true,
+	"update_page":           true,
+	"delete_page":           true,
+	"create_accessory":      true,
+	"update_accessory":      true,
+	"delete_accessory":      true,
+	"update_variant":        true,
+	"delete_variant":        true,
+	"create_property_value": true,
+	"update_property_value": true,
+	"delete_property_value": true,
+	"create_menu":           true,
+	"update_menu":           true,
+	"delete_menu":           true,
+	"create_redirect":       true,
+	"delete_redirect":       true,
+	"create_blog":           true,
+	"delete_blog":           true,
+	"create_blog_post":      true,
+	"update_blog_post":      true,
+	"delete_blog_post":      true,
 }
 
 func isWriteTool(name string) bool {

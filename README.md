@@ -199,6 +199,61 @@ curl http://localhost:8080/health
 | `update_accessory` | Обновить аксессуар | `accessory_id`, `title`, `position` |
 | `delete_accessory` | Удалить аксессуар | `accessory_id` |
 
+### Варианты товаров
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `list_variants` | Список вариантов товара | `product_id` |
+| `get_variant` | Вариант по ID | `product_id`, `variant_id` |
+| `update_variant` | Обновить вариант | `product_id`, `variant_id`, `price`, `sku`, `quantity`, `weight` |
+| `delete_variant` | Удалить вариант | `product_id`, `variant_id` |
+
+### Значения свойств
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `list_property_values` | Значения аксессуара | `accessory_id` |
+| `create_property_value` | Создать значение | `accessory_id`, `title` |
+| `update_property_value` | Обновить значение | `property_value_id`, `title` |
+| `delete_property_value` | Удалить значение | `property_value_id` |
+
+### Меню
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `list_menus` | Список меню | — |
+| `get_menu` | Меню по ID | `menu_id` |
+| `create_menu` | Создать меню | `title`, `handle` |
+| `update_menu` | Обновить меню | `menu_id`, `title`, `handle` |
+| `delete_menu` | Удалить меню | `menu_id` |
+
+### Редиректы
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `list_redirects` | Список редиректов | — |
+| `create_redirect` | Создать редирект | `url`, `target` |
+| `delete_redirect` | Удалить редирект | `redirect_id` |
+
+### Блоги
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `list_blogs` | Список блогов | — |
+| `get_blog` | Блог по ID | `blog_id` |
+| `create_blog` | Создать блог | `title`, `handle` |
+| `delete_blog` | Удалить блог | `blog_id` |
+
+### Записи блога
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `list_blog_posts` | Записи блога | `blog_id` |
+| `get_blog_post` | Запись по ID | `blog_id`, `post_id` |
+| `create_blog_post` | Создать запись | `blog_id`, `title`, `body_html` |
+| `update_blog_post` | Обновить запись | `blog_id`, `post_id`, `title`, `body_html` |
+| `delete_blog_post` | Удалить запись | `blog_id`, `post_id` |
+
 ## Аутентификация
 
 ### Регистрация
@@ -334,6 +389,7 @@ SMTP_FROM=MCP InSales <noreply@your-domain.com>
 | POST | `/api/change-password` | Смена пароля | JWT |
 | POST | `/api/set-email` | Установка email | JWT |
 | POST | `/api/shops` | Добавить магазин | JWT |
+| POST | `/api/shops/test-connection` | Проверить ключ InSales | JWT |
 | GET | `/api/shops` | Список магазинов | JWT |
 | PUT | `/api/shops/:id` | Обновить магазин | JWT |
 | DELETE | `/api/shops/:id` | Удалить магазин | JWT |
@@ -512,6 +568,24 @@ make deb            # Собрать .deb пакет
 - SPA-роутинг через History API
 - JWT токены в localStorage
 - HTTPS через Let's Encrypt (или самоподписанный для разработки)
+- Адаптивный дизайн (мобильный/планшет/десктоп)
+
+### Адаптивный дизайн
+
+Интерфейс работает на всех устройствах:
+
+| Устройство | Ширина | Особенности |
+|------------|--------|-------------|
+| Десктоп | > 1024px | Полный хедер с навигацией, 2-3 колонки в сетках |
+| Планшет | 640–1024px | Компактный хедер, уменьшенные отступы |
+| Мобильный | < 640px | Бургер-меню, 1 колонка, скроллируемые таблицы |
+
+**Реализация:**
+- CSS media queries для 3 breakpoints
+- Бургер-меню для мобильной навигации
+- Таблицы с горизонтальным скроллом (`.table-wrap`)
+- Адаптивные сетки статистики (`.stats-grid`)
+- Увеличенные touch-target для кнопок на мобильных
 
 ### Тесты JS
 

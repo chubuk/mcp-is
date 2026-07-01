@@ -105,9 +105,9 @@ func TestShopList_Success(t *testing.T) {
 		t.Errorf("expected 200, got %d", w.Code)
 	}
 
-	var result map[string]interface{}
+	var result map[string]any
 	json.NewDecoder(w.Body).Decode(&result)
-	items := result["items"].([]interface{})
+	items := result["items"].([]any)
 	if len(items) != 2 {
 		t.Errorf("expected 2 shops, got %d", len(items))
 	}
@@ -183,5 +183,65 @@ func TestShopDelete_Success(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Errorf("expected 200, got %d", w.Code)
+	}
+}
+
+func TestTestConnection_MissingFields(t *testing.T) {
+	h, _ := setupShopHandler()
+
+	body, _ := json.Marshal(TestConnectionRequest{ShopURL: "test.ru"})
+	req := httptest.NewRequest(http.MethodPost, "/api/shops/test-connection", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	h.TestConnection(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+
+	var resp TestConnectionResponse
+	json.NewDecoder(w.Body).Decode(&resp)
+	if resp.Error == "" {
+		t.Error("expected error message")
+	}
+}
+
+func TestTestConnection_InvalidJSON(t *testing.T) {
+	h, _ := setupShopHandler()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/shops/test-connection", bytes.NewReader([]byte("not json")))
+	w := httptest.NewRecorder()
+
+	h.TestConnection(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestTestConnection_InvalidDomain(t *testing.T) {
+	h, _ := setupShopHandler()
+
+	body, _ := json.Marshal(TestConnectionRequest{
+		ShopURL:     "nonexistent.invalid",
+		APIKeyID:    "fakekey",
+		APIPassword: "fakepass",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/shops/test-connection", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	h.TestConnection(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200 (error returned in body), got %d", w.Code)
+	}
+
+	var resp TestConnectionResponse
+	json.NewDecoder(w.Body).Decode(&resp)
+	if resp.OK {
+		t.Error("expected ok=false for invalid domain")
+	}
+	if resp.Error == "" {
+		t.Error("expected error message for invalid domain")
 	}
 }

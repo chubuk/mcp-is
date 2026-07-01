@@ -67,6 +67,8 @@ const Shops = {
                                 <input type="checkbox" id="shop-readonly"> Только чтение (запрет записи)
                             </label>
                         </div>
+                        <div id="test-connection-result" style="display:none;margin-bottom:16px"></div>
+                        <button type="button" class="btn btn--secondary" onclick="Shops.testConnection()">Проверить соединение</button>
                         <button type="submit" class="btn btn--primary">Сохранить</button>
                         <button type="button" class="btn btn--ghost" onclick="Shops.hideForm()">Отмена</button>
                     </form>
@@ -74,6 +76,7 @@ const Shops = {
             </div>
 
             <div class="card">
+                <div class="table-wrap">
                 <table class="table">
                     <thead>
                         <tr>
@@ -86,6 +89,7 @@ const Shops = {
                     </thead>
                     <tbody>${rows}</tbody>
                 </table>
+                </div>
                 ${pagination}
             </div>`;
     },
@@ -125,6 +129,43 @@ const Shops = {
         if (!confirm('Удалить магазин?')) return;
         await API.del('/api/shops/' + id);
         App.navigate('/shops');
+    },
+
+    async testConnection() {
+        const resultEl = document.getElementById('test-connection-result');
+        const shopUrl = document.getElementById('shop-url').value.trim();
+        const apiKey = document.getElementById('shop-apikey').value.trim();
+        const apiPass = document.getElementById('shop-apipass').value.trim();
+
+        if (!shopUrl || !apiKey || !apiPass) {
+            resultEl.style.display = 'block';
+            resultEl.innerHTML = '<div class="alert alert--error">Заполните домен, ID ключа и пароль</div>';
+            return;
+        }
+
+        resultEl.style.display = 'block';
+        resultEl.innerHTML = '<div class="alert alert--info">Проверка соединения...</div>';
+
+        const res = await API.post('/api/shops/test-connection', {
+            shop_url: shopUrl,
+            api_key_id: apiKey,
+            api_password: apiPass,
+        });
+
+        if (res && res.ok && res.data.ok) {
+            const shop = res.data.shop;
+            resultEl.innerHTML = `
+                <div class="alert alert--success">
+                    <strong>${res.data.message}</strong><br>
+                    Магазин: ${shop.name}<br>
+                    Домен: ${shop.domain}<br>
+                    Email: ${shop.email}<br>
+                    Валюта: ${shop.currency}
+                </div>`;
+        } else {
+            const errMsg = (res && res.data && res.data.error) ? res.data.error : 'Неизвестная ошибка';
+            resultEl.innerHTML = '<div class="alert alert--error"><strong>Ошибка соединения:</strong> ' + errMsg + '</div>';
+        }
     },
 
     goPage(page, perPage) {

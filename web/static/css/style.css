@@ -143,6 +143,16 @@ body {
     background: #f0f0f0;
 }
 
+.btn--secondary {
+    background: #6c757d;
+    color: #fff;
+    border: 1px solid #6c757d;
+}
+
+.btn--secondary:hover {
+    background: #5a6268;
+}
+
 /* Cards */
 .card {
     background: #fff;
@@ -223,6 +233,12 @@ body {
     background: #d4edda;
     color: #155724;
     border: 1px solid #c3e6cb;
+}
+
+.alert--info {
+    background: #d1ecf1;
+    color: #0c5460;
+    border: 1px solid #bee5eb;
 }
 
 /* Table */
@@ -375,4 +391,169 @@ body {
 .search-box input:focus {
     outline: none;
     border-color: #1a1a2e;
+}
+
+/* === TABLE WRAP (responsive scroll) === */
+.table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* === STATS GRID === */
+.stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.stats-grid--3 {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
+/* === HAMBURGER TOGGLE === */
+.header__toggle {
+    display: none;
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 4px 8px;
+    line-height: 1;
+}
+
+/* ============================================
+   RESPONSIVE — TABLET (640–1024px)
+   ============================================ */
+@media (max-width: 1024px) {
+    .header {
+        padding: 0 16px;
+        gap: 16px;
+    }
+
+    .header__nav {
+        gap: 2px;
+    }
+
+    .nav-link {
+        font-size: 13px;
+        padding: 6px 8px;
+    }
+
+    .main {
+        padding: 20px;
+    }
+}
+
+/* ============================================
+   RESPONSIVE — MOBILE (<640px)
+   ============================================ */
+@media (max-width: 640px) {
+    /* Header */
+    .header {
+        flex-wrap: wrap;
+        padding: 0 12px;
+        gap: 8px;
+        height: auto;
+        min-height: 48px;
+    }
+
+    .header__toggle {
+        display: block;
+    }
+
+    .header__nav {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        order: 10;
+        background: #16213e;
+        border-top: 1px solid rgba(255,255,255,0.1);
+        gap: 0;
+        padding: 4px 0;
+    }
+
+    .header__nav.active {
+        display: flex;
+    }
+
+    .nav-link {
+        padding: 10px 16px;
+        border-radius: 0;
+        font-size: 14px;
+    }
+
+    .header__user {
+        margin-left: auto;
+        font-size: 13px;
+    }
+
+    /* Main */
+    .main {
+        padding: 12px;
+    }
+
+    /* Page header */
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .page-header .btn {
+        width: 100%;
+    }
+
+    /* Cards */
+    .card {
+        padding: 16px;
+    }
+
+    /* Stats grid — single column */
+    .stats-grid {
+        grid-template-columns: 1fr !important;
+    }
+
+    .stats-grid--3 {
+        grid-template-columns: 1fr !important;
+    }
+
+    /* Tables */
+    .table {
+        font-size: 13px;
+    }
+
+    .table th, .table td {
+        padding: 8px 10px;
+    }
+
+    /* Buttons — bigger touch targets */
+    .btn--sm {
+        padding: 8px 12px;
+        font-size: 13px;
+    }
+
+    /* Auth */
+    .auth-card {
+        padding: 24px 16px;
+    }
+
+    /* Search */
+    .search-box input {
+        max-width: 100%;
+    }
+
+    /* Pagination */
+    .pagination {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .pagination__sizes {
+        justify-content: center;
+    }
+
+    .pagination__nav {
+        justify-content: center;
+    }
 }

@@ -122,3 +122,47 @@ func TestShopRepo_Delete(t *testing.T) {
 		t.Error("expected error for deleted shop")
 	}
 }
+
+func TestShopRepo_ListByUserIDFiltered(t *testing.T) {
+	pool := setupTestDB(t)
+	userRepo := NewUserRepository(pool)
+	shopRepo := NewShopRepository(pool)
+
+	user, _ := userRepo.Create("filtshop", "", "", "", "", "hash")
+	shopRepo.Create(user.ID, "s1.ru", "k1", "e1", true, false)
+	shopRepo.Create(user.ID, "s2.ru", "k2", "e2", false, false)
+	shopRepo.Create(user.ID, "s3.ru", "k3", "e3", false, true)
+
+	shops, total, err := shopRepo.ListByUserIDFiltered(user.ID, 1, 2)
+	if err != nil {
+		t.Fatalf("ListByUserIDFiltered failed: %v", err)
+	}
+	if total != 3 {
+		t.Errorf("expected total 3, got %d", total)
+	}
+	if len(shops) != 2 {
+		t.Errorf("expected 2 shops on page 1, got %d", len(shops))
+	}
+	if !shops[0].IsDefault {
+		t.Error("expected first shop to be default (sorted by is_default DESC)")
+	}
+
+	shops2, _, _ := shopRepo.ListByUserIDFiltered(user.ID, 2, 2)
+	if len(shops2) != 1 {
+		t.Errorf("expected 1 shop on page 2, got %d", len(shops2))
+	}
+}
+
+func TestShopRepo_IsReadOnly(t *testing.T) {
+	pool := setupTestDB(t)
+	userRepo := NewUserRepository(pool)
+	shopRepo := NewShopRepository(pool)
+
+	user, _ := userRepo.Create("roshop", "", "", "", "", "hash")
+	shop, _ := shopRepo.Create(user.ID, "ro.ru", "k", "e", false, true)
+
+	found, _ := shopRepo.GetByID(shop.ID)
+	if !found.IsReadOnly {
+		t.Error("expected is_read_only=true")
+	}
+}

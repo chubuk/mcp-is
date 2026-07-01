@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/your-project/mcp-insales/internal/auth"
+	"github.com/your-project/mcp-insales/internal/integration/insales"
 	"github.com/your-project/mcp-insales/internal/storage"
 )
 
@@ -96,7 +97,7 @@ func (h *ShopHandler) List(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	writeJSON(w, http.StatusOK, map[string]interface{}{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"items":    result,
 		"total":    total,
 		"page":     page,
@@ -151,4 +152,65 @@ func (h *ShopHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, ShopResponse{ID: shopID})
+}
+
+type TestConnectionRequest struct {
+	ShopURL     string `json:"shop_url"`
+	APIKeyID    string `json:"api_key_id"`
+	APIPassword string `json:"api_password"`
+}
+
+type TestConnectionResponse struct {
+	OK      bool   `json:"ok"`
+	Message string `json:"message,omitempty"`
+	Error   string `json:"error,omitempty"`
+	Shop    *struct {
+		Name     string `json:"name"`
+		Domain   string `json:"domain"`
+		Email    string `json:"email"`
+		Currency string `json:"currency"`
+	} `json:"shop,omitempty"`
+}
+
+func (h *ShopHandler) TestConnection(w http.ResponseWriter, r *http.Request) {
+	var req TestConnectionRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, TestConnectionResponse{Error: "invalid request body"})
+		return
+	}
+
+	if req.ShopURL == "" || req.APIKeyID == "" || req.APIPassword == "" {
+		writeJSON(w, http.StatusBadRequest, TestConnectionResponse{Error: "shop_url, api_key_id and api_password are required"})
+		return
+	}
+
+	client, err := insales.NewClient(req.ShopURL, req.APIKeyID, req.APIPassword)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, TestConnectionResponse{Error: err.Error()})
+		return
+	}
+
+	info, err := client.GetStoreInfo(r.Context())
+	if err != nil {
+		slog.Warn("test connection failed", "shop", req.ShopURL, "error", err)
+		writeJSON(w, http.StatusOK, TestConnectionResponse{OK: false, Error: err.Error()})
+		return
+	}
+
+	slog.Info("test connection success", "shop", req.ShopURL, "name", info.Name)
+	writeJSON(w, http.StatusOK, TestConnectionResponse{
+		OK:      true,
+		Message: "Соединение успешно установлено",
+		Shop: &struct {
+			Name     string `json:"name"`
+			Domain   string `json:"domain"`
+			Email    string `json:"email"`
+			Currency string `json:"currency"`
+		}{
+			Name:     info.Name,
+			Domain:   info.Domain,
+			Email:    info.Email,
+			Currency: info.Currency,
+		},
+	})
 }

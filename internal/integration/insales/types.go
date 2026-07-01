@@ -50,8 +50,8 @@ type InSalesOrderResponse struct {
 	TotalPrice        float64                `json:"total_price"`
 	ItemsPrice        float64                `json:"items_price"`
 	DeliveryPrice     float64                `json:"delivery_price"`
-	Discount          map[string]interface{} `json:"discount"`
-	Discounts         []interface{}          `json:"discounts"`
+	Discount          map[string]any `json:"discount"`
+	Discounts         []any          `json:"discounts"`
 	Client            *InSalesClientRef      `json:"client"`
 	DeliveryTitle     string                 `json:"delivery_title"`
 	PaymentTitle      string                 `json:"payment_title"`
@@ -135,4 +135,56 @@ type InSalesAccessoryResponse struct {
 	Position  int    `json:"position"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
+}
+
+type InSalesPropertyValueResponse struct {
+	ID           int    `json:"id"`
+	AccessoryID  int    `json:"accessory_id"`
+	Title        string `json:"title"`
+	Position     int    `json:"position"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
+}
+
+type InSalesMenuResponse struct {
+	ID        int                `json:"id"`
+	Title     string             `json:"title"`
+	Handle    string             `json:"handle"`
+	Items     []InSalesMenuItem  `json:"items"`
+	CreatedAt string             `json:"created_at"`
+	UpdatedAt string             `json:"updated_at"`
+}
+
+type InSalesMenuItem struct {
+	ID       int    `json:"id"`
+	Title    string `json:"title"`
+	URL      string `json:"url"`
+	Position int    `json:"position"`
+}
+
+type InSalesRedirectResponse struct {
+	ID          int    `json:"id"`
+	Url         string `json:"url"`
+	Target      string `json:"target"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
+type InSalesBlogResponse struct {
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	Handle    string `json:"handle"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type InSalesBlogPostResponse struct {
+	ID          int    `json:"id"`
+	BlogID      int    `json:"blog_id"`
+	Title       string `json:"title"`
+	Handle      string `json:"handle"`
+	BodyHTML    string `json:"body_html"`
+	PublishedAt string `json:"published_at"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
 }
