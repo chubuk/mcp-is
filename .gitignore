@@ -4,3 +4,4 @@ packaging/mcp-insales_0.1.0_amd64/
 bin/
 server
 .insales-ip-key
+.mimocode/
