@@ -249,3 +249,67 @@ func TestTestConnection_InvalidDomain(t *testing.T) {
 		t.Error("expected error message for invalid domain")
 	}
 }
+
+func TestCheckCommands_ReadOnly(t *testing.T) {
+	h, repo := setupShopHandler()
+
+	shop, _ := repo.Create("user-1", "Тестовый", "test.ru", "k", "enc", false, true)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/shops/"+shop.ID+"/check-commands", nil)
+	req.SetPathValue("id", shop.ID)
+	w := httptest.NewRecorder()
+
+	h.CheckCommands(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+
+	var resp CheckCommandsResponse
+	json.NewDecoder(w.Body).Decode(&resp)
+	if resp.Count == 0 {
+		t.Error("expected commands count > 0")
+	}
+	if resp.UpdatedAt == "" {
+		t.Error("expected updated_at")
+	}
+	if len(resp.Commands) == 0 {
+		t.Error("expected commands list")
+	}
+	if resp.Commands[0].Description == "" {
+		t.Error("expected command description")
+	}
+}
+
+func TestCheckCommands_NotFound(t *testing.T) {
+	h, _ := setupShopHandler()
+
+	req := httptest.NewRequest(http.MethodPost, "/api/shops/nonexistent/check-commands", nil)
+	req.SetPathValue("id", "nonexistent")
+	w := httptest.NewRecorder()
+
+	h.CheckCommands(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", w.Code)
+	}
+}
+
+func TestShopCreate_NameRequired(t *testing.T) {
+	h, _ := setupShopHandler()
+
+	body, _ := json.Marshal(ShopRequest{
+		ShopURL:     "test.ru",
+		APIKeyID:    "key",
+		APIPassword: "pass",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/shops", bytes.NewReader(body))
+	req = req.WithContext(withUserID(req.Context(), "user-1"))
+	w := httptest.NewRecorder()
+
+	h.Create(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400 for missing name, got %d", w.Code)
+	}
+}

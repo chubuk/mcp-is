@@ -157,11 +157,35 @@
 **Тело запроса:**
 ```json
 {
+  "name": "Моя Аптека",
   "shop_url": "myshop.myinsales.ru",
   "api_key_id": "идентификатор_ключа",
   "api_password": "пароль_ключа",
   "is_default": true
 }
+```
+
+**Обязательные поля:** `name`, `shop_url`, `api_key_id`, `api_password`
+
+#### POST /api/shops/:id/check-commands
+
+Проверить и сохранить доступные команды для магазина.
+
+**Ответ (200):**
+```json
+{
+  "commands": [
+    {"name": "list_products", "description": "Получить список товаров"},
+    {"name": "get_product", "description": "Получить товар по ID"}
+  ],
+  "count": 30,
+  "updated_at": "02.07.2026 14:30"
+}
+```
+
+**Логика:**
+- `is_read_only=true` → 30 read-команд (list_*, get_*, system)
+- `is_read_only=false` → все 73 команды
 ```
 
 #### GET /api/shops

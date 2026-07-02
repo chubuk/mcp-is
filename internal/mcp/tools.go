@@ -888,3 +888,20 @@ func GetAllTools() []Tool {
 		},
 	}
 }
+
+func GetToolDescription(name string) string {
+	for _, t := range GetAllTools() {
+		if t.Name == name {
+			return t.Description
+		}
+	}
+	return ""
+}
+
+func GetAllToolDescriptions() map[string]string {
+	result := make(map[string]string)
+	for _, t := range GetAllTools() {
+		result[t.Name] = t.Description
+	}
+	return result
+}

@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS ai_keys (
     key_hash TEXT UNIQUE NOT NULL,
     name TEXT,
     available_commands TEXT DEFAULT '',
+    commands_updated_at TIMESTAMPTZ,
     last_used_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );

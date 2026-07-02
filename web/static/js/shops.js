@@ -161,11 +161,18 @@ const Shops = {
         const res = await API.post(`/api/shops/${id}/check-commands`);
         if (res && res.ok) {
             const cmds = res.data.commands || [];
+            const updatedAt = res.data.updated_at || '';
             result.innerHTML = `
-                <div class="alert alert--success">Найдено команд: ${res.data.count}</div>
-                <div style="max-height:300px;overflow-y:auto">
+                <div class="alert alert--success">
+                    Найдено команд: ${res.data.count}
+                    ${updatedAt ? '<br><small>Актуально: ' + updatedAt + '</small>' : ''}
+                </div>
+                <div style="max-height:400px;overflow-y:auto">
                     <ul style="list-style:none;padding:0">
-                        ${cmds.map(c => `<li style="padding:4px 0;border-bottom:1px solid #eee"><code>${c}</code></li>`).join('')}
+                        ${cmds.map(c => `<li style="padding:6px 0;border-bottom:1px solid #eee">
+                            <code>${c.name}</code>
+                            <span style="color:#666;margin-left:8px">${c.description}</span>
+                        </li>`).join('')}
                     </ul>
                 </div>`;
         } else {

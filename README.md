@@ -284,11 +284,12 @@ curl -X POST http://localhost:8080/api/login \
 ### Управление магазинами
 
 ```bash
-# Добавить магазин (требуется JWT)
+# Добавить магазин (требуется JWT, name обязателен)
 curl -X POST http://localhost:8080/api/shops \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <JWT_TOKEN>" \
   -d '{
+    "name": "Моя Аптека",
     "shop_url": "myshop.myinsales.ru",
     "api_key_id": "ваш_api_key_id",
     "api_password": "ваш_пароль",
@@ -297,6 +298,10 @@ curl -X POST http://localhost:8080/api/shops \
 
 # Список магазинов
 curl http://localhost:8080/api/shops \
+  -H "Authorization: Bearer <JWT_TOKEN>"
+
+# Проверить доступные команды магазина
+curl -X POST http://localhost:8080/api/shops/{id}/check-commands \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
@@ -407,6 +412,7 @@ SMTP_FROM=MCP InSales <noreply@your-domain.com>
 | POST | `/api/set-email` | Установка email | JWT |
 | POST | `/api/shops` | Добавить магазин | JWT |
 | POST | `/api/shops/test-connection` | Проверить ключ InSales | JWT |
+| POST | `/api/shops/:id/check-commands` | Проверить доступные команды | JWT |
 | GET | `/api/shops` | Список магазинов | JWT |
 | PUT | `/api/shops/:id` | Обновить магазин | JWT |
 | DELETE | `/api/shops/:id` | Удалить магазин | JWT |
@@ -429,6 +435,32 @@ SMTP_FROM=MCP InSales <noreply@your-domain.com>
 - **AI-ключи** — хранятся как SHA-256 хэши (сами ключи не хранятся)
 - **JWT-токены** —用于 управления магазинами (срок 24 часа)
 - **MCP-эндпоинты** — защищены API-ключами
+
+## MCP контекст
+
+При подключении AI-агента MCP сервер возвращает контекст магазина:
+
+```json
+{
+  "serverInfo": {
+    "name": "mcp-insales",
+    "shop": "Моя Аптека",
+    "key": "Cursor MCP",
+    "read_only": true
+  }
+}
+```
+
+При `tools/list` с read-only возвращаются только 30 read-команд (без create/update/delete).
+
+## Доступные команды
+
+Нажмите "Команды" в списке магазинов чтобы увидеть доступные инструменты с описаниями:
+
+| Режим | Команд | Описание |
+|-------|--------|----------|
+| read-only | 30 | list_*, get_*, system команды |
+| read/write | 73 | Все команды включая create/update/delete |
 
 ## Примеры запросов
 

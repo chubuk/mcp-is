@@ -126,14 +126,14 @@ func (r *AIKeyRepository) Delete(id string) error {
 
 func (r *AIKeyRepository) UpdateCommands(id, commands string) error {
 	_, err := r.db.Exec(context.Background(),
-		`UPDATE ai_keys SET available_commands = $1 WHERE id = $2`, commands, id,
+		`UPDATE ai_keys SET available_commands = $1, commands_updated_at = NOW() WHERE id = $2`, commands, id,
 	)
 	return err
 }
 
 func (r *AIKeyRepository) UpdateCommandsByUserID(userID, commands string) error {
 	_, err := r.db.Exec(context.Background(),
-		`UPDATE ai_keys SET available_commands = $1 WHERE user_id = $2`, commands, userID,
+		`UPDATE ai_keys SET available_commands = $1, commands_updated_at = NOW() WHERE user_id = $2`, commands, userID,
 	)
 	return err
 }

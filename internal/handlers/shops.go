@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/your-project/mcp-insales/internal/auth"
 	"github.com/your-project/mcp-insales/internal/integration/insales"
@@ -235,10 +236,16 @@ func (h *ShopHandler) TestConnection(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+type CheckCommandItem struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+}
+
 type CheckCommandsResponse struct {
-	Commands []string `json:"commands"`
-	Count    int      `json:"count"`
-	Error    string   `json:"error,omitempty"`
+	Commands  []CheckCommandItem `json:"commands"`
+	Count     int                `json:"count"`
+	UpdatedAt string             `json:"updated_at,omitempty"`
+	Error     string             `json:"error,omitempty"`
 }
 
 var readCommands = []string{
@@ -271,23 +278,33 @@ func (h *ShopHandler) CheckCommands(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var commands []string
+	var commandNames []string
 	if shop.IsReadOnly {
-		commands = readCommands
+		commandNames = readCommands
 	} else {
 		allTools := mcp.GetAllTools()
-		commands = make([]string, len(allTools))
+		commandNames = make([]string, len(allTools))
 		for i, t := range allTools {
-			commands[i] = t.Name
+			commandNames[i] = t.Name
 		}
 	}
 
-	commandsJSON, _ := json.Marshal(commands)
+	items := make([]CheckCommandItem, len(commandNames))
+	for i, name := range commandNames {
+		items[i] = CheckCommandItem{
+			Name:        name,
+			Description: mcp.GetToolDescription(name),
+		}
+	}
+
+	commandsJSON, _ := json.Marshal(commandNames)
 	_ = h.aiKeyRepo.UpdateCommandsByUserID(shop.UserID, string(commandsJSON))
 
-	slog.Info("commands updated", "shop_id", shopID, "count", len(commands), "read_only", shop.IsReadOnly)
+	now := time.Now().Format("2006-01-02 15:04")
+	slog.Info("commands updated", "shop_id", shopID, "count", len(commandNames), "read_only", shop.IsReadOnly)
 	writeJSON(w, http.StatusOK, CheckCommandsResponse{
-		Commands: commands,
-		Count:    len(commands),
+		Commands:  items,
+		Count:     len(commandNames),
+		UpdatedAt: now,
 	})
 }
