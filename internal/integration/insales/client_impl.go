@@ -83,15 +83,20 @@ func (c *InSalesClient) doRequest(ctx context.Context, method, path string, body
 }
 
 func (c *InSalesClient) GetStoreInfo(ctx context.Context) (*StoreInfo, error) {
-	body, _, err := c.doRequest(ctx, http.MethodGet, "/shops.json", nil)
+	body, _, err := c.doRequest(ctx, http.MethodGet, "/orders.json?per_page=1", nil)
 	if err != nil {
 		return nil, err
 	}
-	var resp InSalesShopResponse
+	var resp []InSalesOrderResponse
 	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("decode shop info: %w", err)
+		return nil, fmt.Errorf("decode orders: %w", err)
 	}
-	return MapShop(&resp), nil
+	return &StoreInfo{
+		Name:     c.ShopDomain,
+		Domain:   c.ShopDomain,
+		Email:    "",
+		Currency: "RUB",
+	}, nil
 }
 
 func (c *InSalesClient) ListProducts(ctx context.Context, page, perPage int) ([]Product, error) {
