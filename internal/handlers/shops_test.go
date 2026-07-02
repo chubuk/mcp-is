@@ -13,8 +13,9 @@ import (
 
 func setupShopHandler() (*ShopHandler, *mockShopRepo) {
 	repo := newMockShopRepo()
+	aiKeyRepo := newMockAIKeyRepo()
 	aes, _ := auth.NewAESCipher("12345678901234567890123456789012")
-	return NewShopHandler(repo, aes), repo
+	return NewShopHandler(repo, aiKeyRepo, aes, nil), repo
 }
 
 func withUserID(ctx context.Context, userID string) context.Context {
@@ -25,6 +26,7 @@ func TestShopCreate_Success(t *testing.T) {
 	h, _ := setupShopHandler()
 
 	body, _ := json.Marshal(ShopRequest{
+		Name:        "Мой магазин",
 		ShopURL:     "myshop.myinsales.ru",
 		APIKeyID:    "key123",
 		APIPassword: "secret",
@@ -70,6 +72,7 @@ func TestShopCreate_EncryptsPassword(t *testing.T) {
 	h, repo := setupShopHandler()
 
 	body, _ := json.Marshal(ShopRequest{
+		Name:        "Тестовый",
 		ShopURL:     "test.myinsales.ru",
 		APIKeyID:    "key",
 		APIPassword: "my-password",
@@ -92,8 +95,8 @@ func TestShopCreate_EncryptsPassword(t *testing.T) {
 func TestShopList_Success(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	repo.Create("user-1", "shop1.ru", "k1", "enc1", true, false)
-	repo.Create("user-1", "shop2.ru", "k2", "enc2", false, false)
+	repo.Create("user-1", "Магазин 1", "shop1.ru", "k1", "enc1", true, false)
+	repo.Create("user-1", "Магазин 2", "shop2.ru", "k2", "enc2", false, false)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/shops", nil)
 	req = req.WithContext(withUserID(req.Context(), "user-1"))
@@ -136,9 +139,10 @@ func TestShopList_Empty(t *testing.T) {
 func TestShopUpdate_Success(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	shop, _ := repo.Create("user-1", "old.ru", "k1", "enc1", false, false)
+	shop, _ := repo.Create("user-1", "Старое имя", "old.ru", "k1", "enc1", false, false)
 
 	body, _ := json.Marshal(ShopRequest{
+		Name:     "Новое имя",
 		ShopURL:  "new.ru",
 		APIKeyID: "k2",
 	})
@@ -157,7 +161,7 @@ func TestShopUpdate_Success(t *testing.T) {
 func TestShopUpdate_NotFound(t *testing.T) {
 	h, _ := setupShopHandler()
 
-	body, _ := json.Marshal(ShopRequest{ShopURL: "x"})
+	body, _ := json.Marshal(ShopRequest{Name: "Test", ShopURL: "x"})
 	req := httptest.NewRequest(http.MethodPut, "/api/shops/nonexistent", bytes.NewReader(body))
 	req.SetPathValue("id", "nonexistent")
 	req = req.WithContext(withUserID(req.Context(), "user-1"))
@@ -173,7 +177,7 @@ func TestShopUpdate_NotFound(t *testing.T) {
 func TestShopDelete_Success(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	shop, _ := repo.Create("user-1", "del.ru", "k", "enc", false, false)
+	shop, _ := repo.Create("user-1", "Удаляемый", "del.ru", "k", "enc", false, false)
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/shops/"+shop.ID, nil)
 	req.SetPathValue("id", shop.ID)

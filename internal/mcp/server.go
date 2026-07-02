@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/your-project/mcp-insales/internal/auth"
+	"github.com/your-project/mcp-insales/internal/core"
 	"github.com/your-project/mcp-insales/internal/service"
 )
 
@@ -48,20 +49,52 @@ func (s *Server) HandleMCP(w http.ResponseWriter, r *http.Request) {
 
 	switch method {
 	case "initialize":
+		ctx := r.Context()
+		shopName, _ := ctx.Value(core.ShopNameKey).(string)
+		keyName, _ := ctx.Value(auth.KeyNameKey).(string)
+		readOnly := s.readOnly
+		if v, ok := ctx.Value(core.ShopReadOnlyKey).(bool); ok {
+			readOnly = readOnly || v
+		}
+
+		serverInfo := map[string]any{
+			"name":    "mcp-insales",
+			"version": "0.1.0",
+		}
+		if shopName != "" {
+			serverInfo["shop"] = shopName
+		}
+		if keyName != "" {
+			serverInfo["key"] = keyName
+		}
+		serverInfo["read_only"] = readOnly
+
 		result = map[string]any{
 			"protocolVersion": "2024-11-05",
 			"capabilities": map[string]any{
 				"tools": map[string]any{},
 			},
-			"serverInfo": map[string]any{
-				"name":    "mcp-insales",
-				"version": "0.1.0",
-			},
+			"serverInfo": serverInfo,
 		}
 
 	case "tools/list":
+		allTools := GetAllTools()
+		ctx := r.Context()
+		readOnly := s.readOnly
+		if v, ok := ctx.Value(core.ShopReadOnlyKey).(bool); ok {
+			readOnly = readOnly || v
+		}
+		if readOnly {
+			filtered := make([]Tool, 0)
+			for _, t := range allTools {
+				if !isWriteTool(t.Name) {
+					filtered = append(filtered, t)
+				}
+			}
+			allTools = filtered
+		}
 		result = map[string]any{
-			"tools": GetAllTools(),
+			"tools": allTools,
 		}
 
 	case "tools/call":

@@ -19,20 +19,23 @@ type UserRepositoryInterface interface {
 }
 
 type ShopRepositoryInterface interface {
-	Create(userID, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) (*Shop, error)
+	Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) (*Shop, error)
 	GetByID(id string) (*Shop, error)
 	ListByUserID(userID string) ([]Shop, error)
 	ListByUserIDFiltered(userID string, page, perPage int) ([]Shop, int, error)
 	GetDefault(userID string) (*Shop, error)
-	Update(id, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) error
+	Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) error
 	Delete(id string) error
 }
 
 type AIKeyRepositoryInterface interface {
 	Create(userID, keyHash, name string) (*AIKey, error)
 	GetByHash(keyHash string) (*AIKey, error)
+	GetByID(id string) (*AIKey, error)
 	ListByUserID(userID string) ([]AIKey, error)
 	ListByUserIDFiltered(userID string, page, perPage int) ([]AIKey, int, error)
 	UpdateLastUsed(id string) error
+	UpdateCommands(id, commands string) error
+	UpdateCommandsByUserID(userID, commands string) error
 	Delete(id string) error
 }

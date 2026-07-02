@@ -16,6 +16,8 @@ const (
 	NicknameKey contextKey = "nickname"
 	RoleKey     contextKey = "role"
 	ShopIDKey   contextKey = "shop_id"
+	KeyNameKey  contextKey = "key_name"
+	KeyIDKey    contextKey = "key_id"
 )
 
 func CORSMiddleware(next http.Handler) http.Handler {
@@ -99,10 +101,10 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 
 			keyHash := HashAPIKey(apiKey)
 
-			var userID, keyID string
+			var userID, keyID, keyName string
 			err := db.QueryRow(r.Context(),
-				`SELECT id, user_id FROM ai_keys WHERE key_hash = $1`, keyHash,
-			).Scan(&keyID, &userID)
+				`SELECT id, user_id, COALESCE(name,'') FROM ai_keys WHERE key_hash = $1`, keyHash,
+			).Scan(&keyID, &userID, &keyName)
 
 			if err != nil {
 				slog.Warn("invalid api key", "hash", keyHash[:8]+"...")
@@ -113,6 +115,8 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 			_, _ = db.Exec(r.Context(), `UPDATE ai_keys SET last_used_at = NOW() WHERE id = $1`, keyID)
 
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
+			ctx = context.WithValue(ctx, KeyNameKey, keyName)
+			ctx = context.WithValue(ctx, KeyIDKey, keyID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

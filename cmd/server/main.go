@@ -64,7 +64,7 @@ func main() {
 	})
 
 	authHandler := handlers.NewAuthHandler(userRepo, jwtMgr, emailSvc)
-	shopHandler := handlers.NewShopHandler(shopRepo, aesCipher)
+	shopHandler := handlers.NewShopHandler(shopRepo, aiKeyRepo, aesCipher, mcpServer)
 	aiKeyHandler := handlers.NewAIKeyHandler(aiKeyRepo)
 	adminHandler := handlers.NewAdminHandler(userRepo, shopRepo, aiKeyRepo)
 	serverHandler := handlers.NewServerHandler(settingsRepo)
@@ -90,6 +90,7 @@ func main() {
 	mux.Handle("POST /api/shops/test-connection", jwtMW(http.HandlerFunc(shopHandler.TestConnection)))
 	mux.Handle("PUT /api/shops/{id}", jwtMW(http.HandlerFunc(shopHandler.Update)))
 	mux.Handle("DELETE /api/shops/{id}", jwtMW(http.HandlerFunc(shopHandler.Delete)))
+	mux.Handle("POST /api/shops/{id}/check-commands", jwtMW(http.HandlerFunc(shopHandler.CheckCommands)))
 
 	mux.Handle("POST /api/ai-keys", jwtMW(http.HandlerFunc(aiKeyHandler.Create)))
 	mux.Handle("GET /api/ai-keys", jwtMW(http.HandlerFunc(aiKeyHandler.List)))

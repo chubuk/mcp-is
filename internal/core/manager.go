@@ -12,7 +12,11 @@ import (
 
 type contextKey string
 
-const ShopReadOnlyKey contextKey = "shop_read_only"
+const (
+	ShopReadOnlyKey contextKey = "shop_read_only"
+	ShopNameKey     contextKey = "shop_name"
+	ShopURLKey      contextKey = "shop_url"
+)
 
 type AccountManager struct {
 	shopRepo     *storage.ShopRepository
@@ -53,6 +57,8 @@ func (m *AccountManager) GetClient(ctx context.Context) (*insales.InSalesClient,
 
 	shopReadOnly := m.globalReadOnly || shop.IsReadOnly
 	ctx = context.WithValue(ctx, ShopReadOnlyKey, shopReadOnly)
+	ctx = context.WithValue(ctx, ShopNameKey, shop.Name)
+	ctx = context.WithValue(ctx, ShopURLKey, shop.ShopURL)
 
 	cacheKey := shop.ID
 	if client, exists := m.clients[cacheKey]; exists {

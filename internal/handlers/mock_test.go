@@ -198,7 +198,7 @@ func newMockShopRepo() *mockShopRepo {
 	return &mockShopRepo{shops: make(map[string]*storage.Shop)}
 }
 
-func (m *mockShopRepo) Create(userID, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) (*storage.Shop, error) {
+func (m *mockShopRepo) Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) (*storage.Shop, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -206,6 +206,7 @@ func (m *mockShopRepo) Create(userID, shopURL, apiKeyID, apiPasswordEncrypted st
 	s := &storage.Shop{
 		ID:                   fmt.Sprintf("shop-%d", m.counter),
 		UserID:               userID,
+		Name:                 name,
 		ShopURL:              shopURL,
 		APIKeyID:             apiKeyID,
 		APIPasswordEncrypted: apiPasswordEncrypted,
@@ -276,11 +277,12 @@ func (m *mockShopRepo) GetDefault(userID string) (*storage.Shop, error) {
 	return nil, fmt.Errorf("not found")
 }
 
-func (m *mockShopRepo) Update(id, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) error {
+func (m *mockShopRepo) Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if s, ok := m.shops[id]; ok {
+		s.Name = name
 		s.ShopURL = shopURL
 		s.APIKeyID = apiKeyID
 		s.APIPasswordEncrypted = apiPasswordEncrypted
@@ -383,5 +385,38 @@ func (m *mockAIKeyRepo) Delete(id string) error {
 	defer m.mu.Unlock()
 
 	delete(m.keys, id)
+	return nil
+}
+
+func (m *mockAIKeyRepo) GetByID(id string) (*storage.AIKey, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	if k, ok := m.keys[id]; ok {
+		return k, nil
+	}
+	return nil, fmt.Errorf("not found")
+}
+
+func (m *mockAIKeyRepo) UpdateCommands(id, commands string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if k, ok := m.keys[id]; ok {
+		k.AvailableCommands = commands
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
+
+func (m *mockAIKeyRepo) UpdateCommandsByUserID(userID, commands string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	for _, k := range m.keys {
+		if k.UserID == userID {
+			k.AvailableCommands = commands
+		}
+	}
 	return nil
 }

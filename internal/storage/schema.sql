@@ -22,6 +22,7 @@ CREATE INDEX IF NOT EXISTS idx_users_phone ON users(phone) WHERE phone IS NOT NU
 CREATE TABLE IF NOT EXISTS shops (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    name TEXT DEFAULT '',
     shop_url TEXT NOT NULL,
     api_key_id TEXT NOT NULL,
     api_password_encrypted TEXT NOT NULL,
@@ -39,6 +40,7 @@ CREATE TABLE IF NOT EXISTS ai_keys (
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     key_hash TEXT UNIQUE NOT NULL,
     name TEXT,
+    available_commands TEXT DEFAULT '',
     last_used_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );

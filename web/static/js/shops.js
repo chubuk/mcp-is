@@ -10,7 +10,7 @@ const Shops = {
 
         let rows = '';
         if (shops.length === 0) {
-            rows = '<tr><td colspan="5" class="empty">Магазины не добавлены</td></tr>';
+            rows = '<tr><td colspan="6" class="empty">Магазины не добавлены</td></tr>';
         } else {
             shops.forEach(s => {
                 const roBadge = s.is_read_only
@@ -18,11 +18,12 @@ const Shops = {
                     : '<span style="color:#27ae60">Чтение/Запись</span>';
                 rows += `
                     <tr>
-                        <td>${s.shop_url}</td>
-                        <td>${s.api_key_id.substring(0, 12)}...</td>
+                        <td><strong>${s.name || 'Без названия'}</strong><br><small style="color:#888">${s.shop_url}</small></td>
+                        <td><code>${s.api_key_id.substring(0, 12)}...</code></td>
                         <td>${s.is_default ? 'Да' : 'Нет'}</td>
                         <td>${roBadge}</td>
                         <td>
+                            <button class="btn btn--ghost btn--sm" onclick="Shops.checkCommands('${s.id}')">Команды</button>
                             <button class="btn btn--danger btn--sm" onclick="Shops.delete('${s.id}')">Удалить</button>
                         </td>
                     </tr>`;
@@ -45,6 +46,10 @@ const Shops = {
                     <div class="card__title">Новый магазин</div>
                     <div id="shop-alert"></div>
                     <form id="add-shop-form">
+                        <div class="form-group">
+                            <label>Название магазина *</label>
+                            <input type="text" id="shop-name" placeholder="Моя Аптека" required>
+                        </div>
                         <div class="form-group">
                             <label>Домен магазина</label>
                             <input type="text" id="shop-url" placeholder="myshop.myinsales.ru" required>
@@ -75,12 +80,20 @@ const Shops = {
                 </div>
             </div>
 
+            <div id="commands-modal" style="display:none">
+                <div class="card">
+                    <div class="card__title">Доступные команды</div>
+                    <div id="commands-result"></div>
+                    <button class="btn btn--ghost" onclick="document.getElementById('commands-modal').style.display='none'">Закрыть</button>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="table-wrap">
                 <table class="table">
                     <thead>
                         <tr>
-                            <th>Домен</th>
+                            <th>Магазин</th>
                             <th>API Key ID</th>
                             <th>По умолчанию</th>
                             <th>Режим</th>
@@ -108,7 +121,15 @@ const Shops = {
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
+            const name = document.getElementById('shop-name').value.trim();
+            if (!name) {
+                document.getElementById('shop-alert').innerHTML =
+                    '<div class="alert alert--error">Название магазина обязательно</div>';
+                return;
+            }
+
             const res = await API.post('/api/shops', {
+                name: name,
                 shop_url: document.getElementById('shop-url').value,
                 api_key_id: document.getElementById('shop-apikey').value,
                 api_password: document.getElementById('shop-apipass').value,
@@ -129,6 +150,27 @@ const Shops = {
         if (!confirm('Удалить магазин?')) return;
         await API.del('/api/shops/' + id);
         App.navigate('/shops');
+    },
+
+    async checkCommands(id) {
+        const modal = document.getElementById('commands-modal');
+        const result = document.getElementById('commands-result');
+        modal.style.display = 'block';
+        result.innerHTML = '<div class="alert alert--info">Проверка доступных команд...</div>';
+
+        const res = await API.post(`/api/shops/${id}/check-commands`);
+        if (res && res.ok) {
+            const cmds = res.data.commands || [];
+            result.innerHTML = `
+                <div class="alert alert--success">Найдено команд: ${res.data.count}</div>
+                <div style="max-height:300px;overflow-y:auto">
+                    <ul style="list-style:none;padding:0">
+                        ${cmds.map(c => `<li style="padding:4px 0;border-bottom:1px solid #eee"><code>${c}</code></li>`).join('')}
+                    </ul>
+                </div>`;
+        } else {
+            result.innerHTML = '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+        }
     },
 
     async testConnection() {
@@ -159,7 +201,6 @@ const Shops = {
                     <strong>${res.data.message}</strong><br>
                     Магазин: ${shop.name}<br>
                     Домен: ${shop.domain}<br>
-                    Email: ${shop.email}<br>
                     Валюта: ${shop.currency}
                 </div>`;
         } else {
