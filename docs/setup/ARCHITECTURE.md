@@ -121,7 +121,7 @@ Web UI → HTTP POST /api/shops → Shop Handler → AES encrypt → PostgreSQL
 
 ```
 Глобальный (MCP_READ_ONLY=true в .env)
-    ↓ приоритет最高的
+    ↓ приоритетнаибольший
 Per-shop (is_read_only в shops)
     ↓ если глобальный НЕ установлен
 Tool filtering (tools/list возвращает только read-команды)
