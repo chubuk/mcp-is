@@ -28,16 +28,18 @@ web/
 
 ## Технологии
 
-- **Язык**: Go 1.24
+- **Язык**: Go 1.25
 - **БД**: PostgreSQL 15
 - **Контейнеризация**: Docker (multi-stage сборка, статическая компиляция)
-- **Протокол**: MCP (JSON-RPC 2.0 + SSE)
+- **Протокол**: MCP 2025-11-25 (через [mcp-go SDK](https://github.com/mark3labs/mcp-go))
+- **Транспорт**: Streamable HTTP
 - **Логирование**: slog (структурное JSON)
 
 ## Требования
 
 - Docker и Docker Compose v2
 - Ключ доступа InSales (Расширения → Разработчикам → Ключи доступа)
+- AI-клиент с поддержкой MCP: Claude Desktop, Cursor, VS Code/Copilot, Continue, LibreChat, Open WebUI
 
 ## Установка
 
@@ -95,6 +97,8 @@ curl http://localhost:8080/health
 ```
 
 ## MCP Инструменты
+
+Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). Каждый инструмент имеет аннотации `readOnlyHint`/`destructiveHint` для AI.
 
 ### Товары
 

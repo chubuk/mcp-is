@@ -52,7 +52,7 @@ func main() {
 
 	manager := core.NewAccountManager(shopRepo, aesCipher, cfg.ReadOnly)
 	svc := service.NewService(manager)
-	mcpServer := mcp.NewServer(svc, cfg.ReadOnly)
+	mcpServer := mcp.NewMCPServer(svc, cfg.ReadOnly)
 
 	emailSvc := email.NewService(email.Config{
 		Host:   cfg.SMTPHost,
@@ -111,10 +111,8 @@ func main() {
 	mux.Handle("POST /api/admin/server/cert-renew", jwtMW(adminMW(http.HandlerFunc(serverHandler.RenewCert))))
 
 	apiKeyMW := auth.APIKeyMiddleware(pool)
-	mux.Handle("POST /mcp", apiKeyMW(http.HandlerFunc(mcpServer.HandleMCP)))
-	mux.Handle("GET /mcp", apiKeyMW(http.HandlerFunc(mcpServer.HandleSSE)))
+	mux.Handle("/mcp", apiKeyMW(http.HandlerFunc(mcpServer.ServeHTTP)))
 
-	mux.HandleFunc("POST /webhook/{event}", mcpServer.HandleWebhook)
 	mux.HandleFunc("GET /health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))

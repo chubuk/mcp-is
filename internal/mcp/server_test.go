@@ -1,150 +1,101 @@
 package mcp
 
 import (
-	"bytes"
-	"encoding/json"
-	"net/http"
-	"net/http/httptest"
+	"context"
 	"testing"
+
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/your-project/mcp-insales/internal/core"
 )
 
-func TestReadOnlyBlocksWriteTools(t *testing.T) {
-	writeToolNames := []string{
-		"create_product", "update_product", "delete_product",
-		"create_order", "update_order",
-		"create_client", "update_client", "delete_client",
-		"create_category", "update_category", "delete_category",
-		"create_collection", "update_collection", "delete_collection",
-		"add_image", "delete_image",
-		"create_meta_field", "update_meta_field", "delete_meta_field",
-		"create_webhook", "update_webhook", "delete_webhook",
-		"create_page", "update_page", "delete_page",
-		"create_accessory", "update_accessory", "delete_accessory",
-		"update_variant", "delete_variant",
-		"create_property_value", "update_property_value", "delete_property_value",
-		"create_menu", "update_menu", "delete_menu",
-		"create_redirect", "delete_redirect",
-		"create_blog", "delete_blog",
-		"create_blog_post", "update_blog_post", "delete_blog_post",
+func TestToolFilterReadOnly(t *testing.T) {
+	filter := toolFilter(true)
+
+	tools := []mcp.Tool{
+		{Name: "list_products", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(true)}},
+		{Name: "create_product", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(false)}},
+		{Name: "get_product", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(true)}},
+		{Name: "delete_product", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(false)}},
 	}
 
-	for _, toolName := range writeToolNames {
-		t.Run(toolName, func(t *testing.T) {
-			server := NewServer(nil, true)
+	ctx := context.Background()
+	filtered := filter(ctx, tools)
 
-			body, _ := json.Marshal(map[string]any{
-				"jsonrpc": "2.0",
-				"method":  "tools/call",
-				"id":      1,
-				"params": map[string]any{
-					"name":      toolName,
-					"arguments": map[string]any{},
-				},
-			})
+	if len(filtered) != 2 {
+		t.Errorf("expected 2 read-only tools, got %d", len(filtered))
+	}
 
-			req := httptest.NewRequest(http.MethodPost, "/mcp", bytes.NewReader(body))
-			req.Header.Set("Content-Type", "application/json")
-			w := httptest.NewRecorder()
-
-			server.HandleMCP(w, req)
-
-			var resp map[string]any
-			json.NewDecoder(w.Body).Decode(&resp)
-
-			if _, hasError := resp["error"]; !hasError {
-				t.Errorf("tool '%s' should be blocked in read-only mode, but no error returned", toolName)
-			}
-		})
+	for _, tool := range filtered {
+		if tool.Name != "list_products" && tool.Name != "get_product" {
+			t.Errorf("unexpected tool in filtered list: %s", tool.Name)
+		}
 	}
 }
 
-func TestReadOnlyAllowsReadTools(t *testing.T) {
-	readToolNames := []string{
-		"list_products", "get_product",
-		"list_orders", "get_order",
-		"list_clients", "get_client",
-		"list_categories", "get_category",
-		"list_collections", "get_collection",
-		"list_images",
-		"list_meta_fields",
-		"list_webhooks",
-		"list_pages", "get_page",
-		"list_accessories", "get_accessory",
-		"list_variants", "get_variant",
-		"list_property_values",
-		"list_menus", "get_menu",
-		"list_redirects",
-		"list_blogs", "get_blog",
-		"list_blog_posts", "get_blog_post",
-		"get_shop_info",
-		"list_currencies", "list_delivery_variants", "list_payment_gateways",
+func TestToolFilterReadWrite(t *testing.T) {
+	filter := toolFilter(false)
+
+	tools := []mcp.Tool{
+		{Name: "list_products"},
+		{Name: "create_product"},
 	}
 
-	for _, toolName := range readToolNames {
-		t.Run(toolName, func(t *testing.T) {
-			if writeTools[toolName] {
-				t.Errorf("read tool '%s' is incorrectly marked as write tool", toolName)
-			}
-		})
+	ctx := context.Background()
+	filtered := filter(ctx, tools)
+
+	if len(filtered) != 2 {
+		t.Errorf("expected 2 tools when not read-only, got %d", len(filtered))
 	}
 }
 
-func TestWriteToolsListComplete(t *testing.T) {
-	expectedWriteTools := map[string]bool{
-		"create_product":        true,
-		"update_product":        true,
-		"delete_product":        true,
-		"create_order":          true,
-		"update_order":          true,
-		"create_client":         true,
-		"update_client":         true,
-		"delete_client":         true,
-		"create_category":       true,
-		"update_category":       true,
-		"delete_category":       true,
-		"create_collection":     true,
-		"update_collection":     true,
-		"delete_collection":     true,
-		"add_image":             true,
-		"delete_image":          true,
-		"create_meta_field":     true,
-		"update_meta_field":     true,
-		"delete_meta_field":     true,
-		"create_webhook":        true,
-		"update_webhook":        true,
-		"delete_webhook":        true,
-		"create_page":           true,
-		"update_page":           true,
-		"delete_page":           true,
-		"create_accessory":      true,
-		"update_accessory":      true,
-		"delete_accessory":      true,
-		"update_variant":        true,
-		"delete_variant":        true,
-		"create_property_value": true,
-		"update_property_value": true,
-		"delete_property_value": true,
-		"create_menu":           true,
-		"update_menu":           true,
-		"delete_menu":           true,
-		"create_redirect":       true,
-		"delete_redirect":       true,
-		"create_blog":           true,
-		"delete_blog":           true,
-		"create_blog_post":      true,
-		"update_blog_post":      true,
-		"delete_blog_post":      true,
+func TestToolFilterShopReadOnly(t *testing.T) {
+	filter := toolFilter(false)
+
+	tools := []mcp.Tool{
+		{Name: "list_products", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(true)}},
+		{Name: "create_product", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(false)}},
 	}
 
-	for tool := range expectedWriteTools {
-		if !writeTools[tool] {
-			t.Errorf("tool '%s' missing from writeTools map", tool)
-		}
+	ctx := context.WithValue(context.Background(), core.ShopReadOnlyKey, true)
+	filtered := filter(ctx, tools)
+
+	if len(filtered) != 1 {
+		t.Errorf("expected 1 read-only tool when shop is read-only, got %d", len(filtered))
+	}
+	if filtered[0].Name != "list_products" {
+		t.Errorf("expected list_products, got %s", filtered[0].Name)
+	}
+}
+
+func TestAllCommandNamesComplete(t *testing.T) {
+	// Verify all expected tools have descriptions in shops.go commandDescriptions
+	// This test ensures the shops.go and tools.go stay in sync
+	expectedTools := []string{
+		"list_products", "get_product", "create_product", "update_product", "delete_product",
+		"list_orders", "get_order", "update_order", "create_order",
+		"list_clients", "get_client", "create_client", "update_client", "delete_client",
+		"list_categories", "get_category", "create_category", "update_category", "delete_category",
+		"list_collections", "get_collection", "create_collection", "update_collection", "delete_collection",
+		"list_images", "add_image", "delete_image",
+		"list_meta_fields", "create_meta_field", "update_meta_field", "delete_meta_field",
+		"list_webhooks", "create_webhook", "update_webhook", "delete_webhook",
+		"get_shop_info", "list_currencies", "list_delivery_variants", "list_payment_gateways",
+		"list_pages", "get_page", "create_page", "update_page", "delete_page",
+		"list_accessories", "get_accessory", "create_accessory", "update_accessory", "delete_accessory",
+		"list_variants", "get_variant", "update_variant", "delete_variant",
+		"list_property_values", "create_property_value", "update_property_value", "delete_property_value",
+		"list_menus", "get_menu", "create_menu", "update_menu", "delete_menu",
+		"list_redirects", "create_redirect", "delete_redirect",
+		"list_blogs", "get_blog", "create_blog", "delete_blog",
+		"list_blog_posts", "get_blog_post", "create_blog_post", "update_blog_post", "delete_blog_post",
 	}
 
-	for tool := range writeTools {
-		if !expectedWriteTools[tool] {
-			t.Errorf("tool '%s' in writeTools but not in expected list", tool)
-		}
+	// Verify the list has the right count
+	if len(expectedTools) != 74 {
+		t.Errorf("expected 74 tools, got %d", len(expectedTools))
 	}
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

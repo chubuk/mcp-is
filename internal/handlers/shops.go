@@ -17,10 +17,10 @@ type ShopHandler struct {
 	shopRepo   storage.ShopRepositoryInterface
 	aiKeyRepo  storage.AIKeyRepositoryInterface
 	aes        *auth.AESCipher
-	mcpServer  *mcp.Server
+	mcpServer  *mcp.MCPServer
 }
 
-func NewShopHandler(shopRepo storage.ShopRepositoryInterface, aiKeyRepo storage.AIKeyRepositoryInterface, aes *auth.AESCipher, mcpServer *mcp.Server) *ShopHandler {
+func NewShopHandler(shopRepo storage.ShopRepositoryInterface, aiKeyRepo storage.AIKeyRepositoryInterface, aes *auth.AESCipher, mcpServer *mcp.MCPServer) *ShopHandler {
 	return &ShopHandler{shopRepo: shopRepo, aiKeyRepo: aiKeyRepo, aes: aes, mcpServer: mcpServer}
 }
 
@@ -269,6 +269,103 @@ var readCommands = []string{
 	"list_currencies", "list_delivery_variants", "list_payment_gateways",
 }
 
+var allCommandNames = []string{
+	"list_products", "get_product", "create_product", "update_product", "delete_product",
+	"list_orders", "get_order", "update_order", "create_order",
+	"list_clients", "get_client", "create_client", "update_client", "delete_client",
+	"list_categories", "get_category", "create_category", "update_category", "delete_category",
+	"list_collections", "get_collection", "create_collection", "update_collection", "delete_collection",
+	"list_images", "add_image", "delete_image",
+	"list_meta_fields", "create_meta_field", "update_meta_field", "delete_meta_field",
+	"list_webhooks", "create_webhook", "update_webhook", "delete_webhook",
+	"get_shop_info", "list_currencies", "list_delivery_variants", "list_payment_gateways",
+	"list_pages", "get_page", "create_page", "update_page", "delete_page",
+	"list_accessories", "get_accessory", "create_accessory", "update_accessory", "delete_accessory",
+	"list_variants", "get_variant", "update_variant", "delete_variant",
+	"list_property_values", "create_property_value", "update_property_value", "delete_property_value",
+	"list_menus", "get_menu", "create_menu", "update_menu", "delete_menu",
+	"list_redirects", "create_redirect", "delete_redirect",
+	"list_blogs", "get_blog", "create_blog", "delete_blog",
+	"list_blog_posts", "get_blog_post", "create_blog_post", "update_blog_post", "delete_blog_post",
+}
+
+var commandDescriptions = map[string]string{
+	"list_products":         "Получить список товаров",
+	"get_product":           "Получить товар по ID",
+	"create_product":        "Создать товар",
+	"update_product":        "Обновить товар",
+	"delete_product":        "Удалить товар",
+	"list_orders":           "Получить список заказов",
+	"get_order":             "Получить заказ по ID",
+	"update_order":          "Обновить заказ",
+	"create_order":          "Создать заказ",
+	"list_clients":          "Получить список клиентов",
+	"get_client":            "Получить клиента по ID",
+	"create_client":         "Создать клиента",
+	"update_client":         "Обновить клиента",
+	"delete_client":         "Удалить клиента",
+	"list_categories":       "Получить список категорий",
+	"get_category":          "Получить категорию по ID",
+	"create_category":       "Создать категорию",
+	"update_category":       "Обновить категорию",
+	"delete_category":       "Удалить категорию",
+	"list_collections":      "Получить список коллекций",
+	"get_collection":        "Получить коллекцию по ID",
+	"create_collection":     "Создать коллекцию",
+	"update_collection":     "Обновить коллекцию",
+	"delete_collection":     "Удалить коллекцию",
+	"list_images":           "Получить изображения товара",
+	"add_image":             "Добавить изображение",
+	"delete_image":          "Удалить изображение",
+	"list_meta_fields":      "Получить список метаполей",
+	"create_meta_field":     "Создать метаполе",
+	"update_meta_field":     "Обновить метаполе",
+	"delete_meta_field":     "Удалить метаполе",
+	"list_webhooks":         "Получить список вебхуков",
+	"create_webhook":        "Создать вебхук",
+	"update_webhook":        "Обновить вебхук",
+	"delete_webhook":        "Удалить вебхук",
+	"get_shop_info":         "Получить информацию о магазине",
+	"list_currencies":       "Получить список валют",
+	"list_delivery_variants": "Получить способы доставки",
+	"list_payment_gateways": "Получить способы оплаты",
+	"list_pages":            "Получить список страниц",
+	"get_page":              "Получить страницу по ID",
+	"create_page":           "Создать страницу",
+	"update_page":           "Обновить страницу",
+	"delete_page":           "Удалить страницу",
+	"list_accessories":      "Получить список аксессуаров",
+	"get_accessory":         "Получить аксессуар по ID",
+	"create_accessory":      "Создать аксессуар",
+	"update_accessory":      "Обновить аксессуар",
+	"delete_accessory":      "Удалить аксессуар",
+	"list_variants":         "Получить варианты товара",
+	"get_variant":           "Получить вариант по ID",
+	"update_variant":        "Обновить вариант",
+	"delete_variant":        "Удалить вариант",
+	"list_property_values":  "Получить значения свойств",
+	"create_property_value": "Создать значение свойства",
+	"update_property_value": "Обновить значение свойства",
+	"delete_property_value": "Удалить значение свойства",
+	"list_menus":            "Получить список меню",
+	"get_menu":              "Получить меню по ID",
+	"create_menu":           "Создать меню",
+	"update_menu":           "Обновить меню",
+	"delete_menu":           "Удалить меню",
+	"list_redirects":        "Получить список редиректов",
+	"create_redirect":       "Создать редирект",
+	"delete_redirect":       "Удалить редирект",
+	"list_blogs":            "Получить список блогов",
+	"get_blog":              "Получить блог по ID",
+	"create_blog":           "Создать блог",
+	"delete_blog":           "Удалить блог",
+	"list_blog_posts":       "Получить записи блога",
+	"get_blog_post":         "Получить запись блога по ID",
+	"create_blog_post":      "Создать запись блога",
+	"update_blog_post":      "Обновить запись блога",
+	"delete_blog_post":      "Удалить запись блога",
+}
+
 func (h *ShopHandler) CheckCommands(w http.ResponseWriter, r *http.Request) {
 	shopID := r.PathValue("id")
 
@@ -282,18 +379,14 @@ func (h *ShopHandler) CheckCommands(w http.ResponseWriter, r *http.Request) {
 	if shop.IsReadOnly {
 		commandNames = readCommands
 	} else {
-		allTools := mcp.GetAllTools()
-		commandNames = make([]string, len(allTools))
-		for i, t := range allTools {
-			commandNames[i] = t.Name
-		}
+		commandNames = allCommandNames
 	}
 
 	items := make([]CheckCommandItem, len(commandNames))
 	for i, name := range commandNames {
 		items[i] = CheckCommandItem{
 			Name:        name,
-			Description: mcp.GetToolDescription(name),
+			Description: commandDescriptions[name],
 		}
 	}
 

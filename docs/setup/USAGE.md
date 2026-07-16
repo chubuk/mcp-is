@@ -80,6 +80,96 @@ curl -X POST http://localhost:8080/mcp \
 - URL: `http://localhost:8080/mcp`
 - Заголовок: `Authorization: Bearer <ВАШ_AI_КЛЮЧ>`
 
+### VS Code / Copilot
+
+Создайте файл `.vscode/mcp.json` в корне проекта:
+
+```json
+{
+  "servers": {
+    "mcp-insales": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp",
+      "headers": {
+        "Authorization": "Bearer <ВАШ_AI_КЛЮЧ>"
+      }
+    }
+  }
+}
+```
+
+Или через Command Palette: **MCP: Add Server** → выбрать **Workspace** → ввести URL и заголовок.
+
+### Continue
+
+Создайте файл `.continue/mcpServers/mcp-insales.yaml`:
+
+```yaml
+name: MCP InSales
+version: 0.1.0
+schema: v1
+mcpServers:
+  - name: InSales
+    type: streamable-http
+    url: http://localhost:8080/mcp
+    env:
+      MCP_API_KEY: <ВАШ_AI_КЛЮЧ>
+```
+
+Или добавьте в `config.yaml`:
+
+```yaml
+mcpServers:
+  - name: InSales
+    type: streamable-http
+    url: http://localhost:8080/mcp
+    env:
+      MCP_API_KEY: <ВАШ_AI_КЛЮЧ>
+```
+
+### LibreChat
+
+Добавьте в `librechat.yaml`:
+
+```yaml
+mcpServers:
+  mcp-insales:
+    type: streamable-http
+    url: http://localhost:8080/mcp
+    headers:
+      Authorization: 'Bearer ${INSALES_MCP_API_KEY}'
+    requiresOAuth: false
+    serverInstructions: true
+    timeout: 30000
+```
+
+В `.env` LibreChat добавьте:
+```bash
+INSALES_MCP_API_KEY=<ваш_AI_ключ_из_mcp-insales>
+```
+
+### Open WebUI (v0.6.31+)
+
+**Через Web UI:**
+1. Admin Settings → External Tools → + (Add Server)
+2. Type: **MCP (Streamable HTTP)**
+3. URL: `http://localhost:8080/mcp`
+4. Auth: **Bearer** → ввести API-ключ mcp-insales
+5. Save → Restart
+
+**Если Open WebUI в Docker:**
+- URL: `http://host.docker.internal:8080/mcp`
+
+**Через конфигурацию:**
+```yaml
+mcpServers:
+  mcp-insales:
+    type: streamable-http
+    url: http://host.docker.internal:8080/mcp
+    headers:
+      Authorization: 'Bearer ${INSALES_MCP_API_KEY}'
+```
+
 ## Примеры запросов через curl
 
 ### Список товаров
