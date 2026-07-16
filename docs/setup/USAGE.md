@@ -59,8 +59,12 @@ curl -X POST http://localhost:8080/mcp \
 
 ### Claude Desktop
 
-Добавьте в `~/.config/claude/claude_desktop_config.json`:
+**Путь к конфигурации:**
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux:** `~/.config/claude/claude_desktop_config.json`
 
+Добавьте:
 ```json
 {
   "mcpServers": {
@@ -74,11 +78,36 @@ curl -X POST http://localhost:8080/mcp \
 }
 ```
 
-### Cursor / VS Code (MCP-расширение)
+> **Примечание:**
+> - macOS: путь можно открыть через Finder → ⌘+Shift+G → вставить путь
+> - Windows: Win+R → `%APPDATA%\Claude`
+> - После изменений перезапустите Claude Desktop
 
-В настройках MCP укажите:
-- URL: `http://localhost:8080/mcp`
-- Заголовок: `Authorization: Bearer <ВАШ_AI_КЛЮЧ>`
+### Cursor
+
+**Через UI:**
+- **macOS/Linux:** Настройки → MCP Servers → добавить сервер
+- **Windows:** File → Preferences → MCP Servers
+
+URL: `http://localhost:8080/mcp`
+Заголовок: `Authorization: Bearer <ВАШ_AI_КЛЮЧ>`
+
+**Через файл конфигурации:**
+- **macOS/Linux:** `~/.cursor/mcp.json`
+- **Windows:** `%USERPROFILE%\.cursor\mcp.json`
+
+```json
+{
+  "mcpServers": {
+    "mcp-insales": {
+      "url": "http://localhost:8080/mcp",
+      "headers": {
+        "Authorization": "Bearer <ВАШ_AI_КЛЮЧ>"
+      }
+    }
+  }
+}
+```
 
 ### VS Code / Copilot
 
@@ -99,6 +128,9 @@ curl -X POST http://localhost:8080/mcp \
 ```
 
 Или через Command Palette: **MCP: Add Server** → выбрать **Workspace** → ввести URL и заголовок.
+
+> **Примечание:** Файл `.vscode/mcp.json` одинаков для всех платформ (macOS, Windows, Linux).
+> Глобальные настройки: Command Palette → **MCP: Open User Configuration**.
 
 ### Continue
 
@@ -148,6 +180,9 @@ mcpServers:
 INSALES_MCP_API_KEY=<ваш_AI_ключ_из_mcp-insales>
 ```
 
+> **Примечание:** LibreChat работает через Docker, поэтому инструкции одинаковы для всех платформ.
+> Если mcp-insales тоже в Docker, используйте `http://host.docker.internal:8080/mcp`.
+
 ### Open WebUI (v0.6.31+)
 
 **Через Web UI:**
@@ -169,6 +204,9 @@ mcpServers:
     headers:
       Authorization: 'Bearer ${INSALES_MCP_API_KEY}'
 ```
+
+> **Примечание:** Open WebUI работает через Docker, поэтому инструкции одинаковы для всех платформ.
+> Если mcp-insales тоже в Docker, используйте `http://host.docker.internal:8080/mcp`.
 
 ## Примеры запросов через curl
 
