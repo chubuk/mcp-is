@@ -16,6 +16,8 @@ type Shop struct {
 	APIPasswordEncrypted string
 	IsDefault            bool
 	IsReadOnly           bool
+	Jurisdiction         string
+	PDNEnabled           bool
 	CreatedAt            string
 	UpdatedAt            string
 }
@@ -33,9 +35,9 @@ func (r *ShopRepository) Create(userID, name, shopURL, apiKeyID, apiPasswordEncr
 	err := r.db.QueryRow(context.Background(),
 		`INSERT INTO shops (user_id, name, shop_url, api_key_id, api_password_encrypted, is_default, is_read_only)
 		 VALUES ($1, $2, $3, $4, $5, $6, $7)
-		 RETURNING id, user_id, name, shop_url, api_key_id, is_default, is_read_only, created_at::text`,
+		 RETURNING id, user_id, name, shop_url, api_key_id, is_default, is_read_only, COALESCE(jurisdiction,'AUTO'), pdn_enabled, created_at::text`,
 		userID, name, shopURL, apiKeyID, apiPasswordEncrypted, isDefault, isReadOnly,
-	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.CreatedAt)
+	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.Jurisdiction, &s.PDNEnabled, &s.CreatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("create shop: %w", err)
@@ -46,9 +48,9 @@ func (r *ShopRepository) Create(userID, name, shopURL, apiKeyID, apiPasswordEncr
 func (r *ShopRepository) GetByID(id string) (*Shop, error) {
 	var s Shop
 	err := r.db.QueryRow(context.Background(),
-		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, api_password_encrypted, is_default, is_read_only, created_at::text, updated_at::text
+		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, api_password_encrypted, is_default, is_read_only, COALESCE(jurisdiction,'AUTO'), pdn_enabled, created_at::text, updated_at::text
 		 FROM shops WHERE id = $1`, id,
-	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.APIPasswordEncrypted, &s.IsDefault, &s.IsReadOnly, &s.CreatedAt, &s.UpdatedAt)
+	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.APIPasswordEncrypted, &s.IsDefault, &s.IsReadOnly, &s.Jurisdiction, &s.PDNEnabled, &s.CreatedAt, &s.UpdatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("shop not found: %w", err)
@@ -115,9 +117,9 @@ func (r *ShopRepository) ListByUserIDFiltered(userID string, page, perPage int) 
 func (r *ShopRepository) GetDefault(userID string) (*Shop, error) {
 	var s Shop
 	err := r.db.QueryRow(context.Background(),
-		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, api_password_encrypted, is_default, is_read_only, created_at::text, updated_at::text
+		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, api_password_encrypted, is_default, is_read_only, COALESCE(jurisdiction,'AUTO'), pdn_enabled, created_at::text, updated_at::text
 		 FROM shops WHERE user_id = $1 AND is_default = TRUE`, userID,
-	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.APIPasswordEncrypted, &s.IsDefault, &s.IsReadOnly, &s.CreatedAt, &s.UpdatedAt)
+	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.APIPasswordEncrypted, &s.IsDefault, &s.IsReadOnly, &s.Jurisdiction, &s.PDNEnabled, &s.CreatedAt, &s.UpdatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("default shop not found: %w", err)

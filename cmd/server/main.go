@@ -68,6 +68,7 @@ func main() {
 	aiKeyHandler := handlers.NewAIKeyHandler(aiKeyRepo)
 	adminHandler := handlers.NewAdminHandler(userRepo, shopRepo, aiKeyRepo)
 	serverHandler := handlers.NewServerHandler(settingsRepo)
+	pdnHandler := handlers.NewPDNHandler(pool)
 
 	certbotSvc := certbot.NewCertbotService(settingsRepo)
 	scheduler := certbot.NewScheduler(certbotSvc, settingsRepo)
@@ -109,6 +110,11 @@ func main() {
 	mux.Handle("PUT /api/admin/server", jwtMW(superAdminMW(http.HandlerFunc(serverHandler.UpdateSettings))))
 	mux.Handle("POST /api/admin/server/cert-issue", jwtMW(adminMW(http.HandlerFunc(serverHandler.IssueCert))))
 	mux.Handle("POST /api/admin/server/cert-renew", jwtMW(adminMW(http.HandlerFunc(serverHandler.RenewCert))))
+
+	mux.Handle("GET /api/admin/pdn", jwtMW(adminMW(http.HandlerFunc(pdnHandler.GetSettings))))
+	mux.Handle("PUT /api/admin/pdn", jwtMW(superAdminMW(http.HandlerFunc(pdnHandler.UpdateSettings))))
+	mux.Handle("GET /api/admin/pdn/log", jwtMW(adminMW(http.HandlerFunc(pdnHandler.GetLog))))
+	mux.Handle("GET /api/admin/pdn/stats", jwtMW(adminMW(http.HandlerFunc(pdnHandler.GetStats))))
 
 	apiKeyMW := auth.APIKeyMiddleware(pool)
 	mux.Handle("/mcp", apiKeyMW(http.HandlerFunc(mcpServer.ServeHTTP)))

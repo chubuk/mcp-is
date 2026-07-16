@@ -13,6 +13,7 @@ type AIKey struct {
 	KeyHash           string
 	Name              string
 	AvailableCommands string
+	PDNEnabled        bool
 	LastUsedAt        string
 	CreatedAt         string
 }
@@ -141,9 +142,9 @@ func (r *AIKeyRepository) UpdateCommandsByUserID(userID, commands string) error 
 func (r *AIKeyRepository) GetByID(id string) (*AIKey, error) {
 	var k AIKey
 	err := r.db.QueryRow(context.Background(),
-		`SELECT id, user_id, key_hash, COALESCE(name,''), COALESCE(available_commands,''), COALESCE(last_used_at::text,''), created_at::text
+		`SELECT id, user_id, key_hash, COALESCE(name,''), COALESCE(available_commands,''), pdn_enabled, COALESCE(last_used_at::text,''), created_at::text
 		 FROM ai_keys WHERE id = $1`, id,
-	).Scan(&k.ID, &k.UserID, &k.KeyHash, &k.Name, &k.AvailableCommands, &k.LastUsedAt, &k.CreatedAt)
+	).Scan(&k.ID, &k.UserID, &k.KeyHash, &k.Name, &k.AvailableCommands, &k.PDNEnabled, &k.LastUsedAt, &k.CreatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("ai key not found: %w", err)

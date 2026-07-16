@@ -31,6 +31,7 @@ type ShopRequest struct {
 	APIPassword string `json:"api_password"`
 	IsDefault   bool   `json:"is_default"`
 	IsReadOnly  bool   `json:"is_read_only"`
+	PDNEnabled  bool   `json:"pdn_enabled"`
 }
 
 type ShopResponse struct {
@@ -40,6 +41,7 @@ type ShopResponse struct {
 	APIKeyID   string `json:"api_key_id"`
 	IsDefault  bool   `json:"is_default"`
 	IsReadOnly bool   `json:"is_read_only"`
+	PDNEnabled bool   `json:"pdn_enabled"`
 	CreatedAt  string `json:"created_at,omitempty"`
 	Error      string `json:"error,omitempty"`
 }

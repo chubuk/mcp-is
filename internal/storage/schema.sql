@@ -67,3 +67,16 @@ CREATE TABLE IF NOT EXISTS server_settings (
     value TEXT NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- PDN access log (152-ФЗ compliance)
+CREATE TABLE IF NOT EXISTS pdn_access_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ts TIMESTAMPTZ DEFAULT NOW(),
+    user_id UUID,
+    shop_id UUID,
+    tool TEXT,
+    data_types TEXT[],
+    jurisdiction TEXT,
+    llm_provider TEXT,
+    masked BOOLEAN
+);

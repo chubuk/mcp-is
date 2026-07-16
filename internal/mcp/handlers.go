@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/your-project/mcp-insales/internal/pdn"
 	"github.com/your-project/mcp-insales/internal/service"
 )
 
@@ -25,6 +26,31 @@ func getFloat(args map[string]any, key string, def float64) float64 {
 		return v
 	}
 	return def
+}
+
+func applyPDNToResult(ctx context.Context, result any, toolName string) any {
+	shopPDN, _ := ctx.Value("shop_pdn_enabled").(bool)
+	aiKeyPDN, _ := ctx.Value("ai_key_pdn_enabled").(bool)
+
+	if !shopPDN && !aiKeyPDN {
+		return result
+	}
+
+	if dataMap, ok := result.(map[string]any); ok {
+		return pdn.MaskClientData(dataMap)
+	}
+	if dataArray, ok := result.([]any); ok {
+		masked := make([]any, len(dataArray))
+		for i, item := range dataArray {
+			if dataMap, ok := item.(map[string]any); ok {
+				masked[i] = pdn.MaskClientData(dataMap)
+			} else {
+				masked[i] = item
+			}
+		}
+		return masked
+	}
+	return result
 }
 
 // === ТОВАРЫ ===
@@ -114,7 +140,8 @@ func listOrdersHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		masked := applyPDNToResult(ctx, result, "list_orders")
+		return mcp.NewToolResultText(formatResult(masked)), nil
 	}
 }
 
@@ -128,7 +155,8 @@ func getOrderHandler(svc *service.Service) func(ctx context.Context, req mcp.Cal
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		masked := applyPDNToResult(ctx, result, "get_order")
+		return mcp.NewToolResultText(formatResult(masked)), nil
 	}
 }
 
@@ -173,7 +201,8 @@ func listClientsHandler(svc *service.Service) func(ctx context.Context, req mcp.
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		masked := applyPDNToResult(ctx, result, "list_clients")
+		return mcp.NewToolResultText(formatResult(masked)), nil
 	}
 }
 
@@ -187,7 +216,8 @@ func getClientHandler(svc *service.Service) func(ctx context.Context, req mcp.Ca
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		masked := applyPDNToResult(ctx, result, "get_client")
+		return mcp.NewToolResultText(formatResult(masked)), nil
 	}
 }
 
@@ -202,7 +232,8 @@ func createClientHandler(svc *service.Service) func(ctx context.Context, req mcp
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		masked := applyPDNToResult(ctx, result, "create_client")
+		return mcp.NewToolResultText(formatResult(masked)), nil
 	}
 }
 
@@ -217,7 +248,8 @@ func updateClientHandler(svc *service.Service) func(ctx context.Context, req mcp
 		if err != nil {
 			return mcp.NewToolResultError(err.Error()), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		masked := applyPDNToResult(ctx, result, "update_client")
+		return mcp.NewToolResultText(formatResult(masked)), nil
 	}
 }
 
