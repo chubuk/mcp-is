@@ -37,5 +37,6 @@ type AIKeyRepositoryInterface interface {
 	UpdateLastUsed(id string) error
 	UpdateCommands(id, commands string) error
 	UpdateCommandsByUserID(userID, commands string) error
+	UpdatePDNEnabled(id string, enabled bool) error
 	Delete(id string) error
 }

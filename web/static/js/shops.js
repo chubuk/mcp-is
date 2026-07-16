@@ -2,6 +2,8 @@ const Shops = {
     async render(page, perPage) {
         page = page || 1;
         perPage = perPage || getPerPage();
+        const myRole = localStorage.getItem('role');
+        const isAdmin = myRole === 'admin' || myRole === 'super_admin';
 
         const res = await API.get(`/api/shops?page=${page}&per_page=${perPage}`);
         const data = (res && res.ok) ? res.data : { items: [], total: 0, page: 1, per_page: perPage };
@@ -10,18 +12,22 @@ const Shops = {
 
         let rows = '';
         if (shops.length === 0) {
-            rows = '<tr><td colspan="6" class="empty">Магазины не добавлены</td></tr>';
+            rows = '<tr><td colspan="7" class="empty">Магазины не добавлены</td></tr>';
         } else {
             shops.forEach(s => {
                 const roBadge = s.is_read_only
                     ? '<span style="color:#e67e22;font-weight:600">Только чтение</span>'
                     : '<span style="color:#27ae60">Чтение/Запись</span>';
+                const pdnBadge = s.pdn_enabled
+                    ? '<span style="color:#27ae60;font-weight:600">ПДн ✅</span>'
+                    : '<span style="color:#888">ПДн —</span>';
+                const jurBadge = isAdmin && s.jurisdiction ? `<br><small style="color:#888">Юрисдикция: ${s.jurisdiction}</small>` : '';
                 rows += `
                     <tr>
-                        <td><strong>${s.name || 'Без названия'}</strong><br><small style="color:#888">${s.shop_url}</small></td>
+                        <td><strong>${s.name || 'Без названия'}</strong><br><small style="color:#888">${s.shop_url}</small>${jurBadge}</td>
                         <td><code>${s.api_key_id.substring(0, 12)}...</code></td>
                         <td>${s.is_default ? 'Да' : 'Нет'}</td>
-                        <td>${roBadge}</td>
+                        <td>${roBadge}<br>${pdnBadge}</td>
                         <td>
                             <button class="btn btn--ghost btn--sm" onclick="Shops.checkCommands('${s.id}')">Команды</button>
                             <button class="btn btn--danger btn--sm" onclick="Shops.delete('${s.id}')">Удалить</button>
@@ -71,6 +77,12 @@ const Shops = {
                             <label>
                                 <input type="checkbox" id="shop-readonly"> Только чтение (запрет записи)
                             </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="shop-pdn"> Защита персональных данных (152-ФЗ)
+                            </label>
+                            <small style="color:#888">Маскировка email, телефона, ФИО для AI</small>
                         </div>
                         <div id="test-connection-result" style="display:none;margin-bottom:16px"></div>
                         <button type="button" class="btn btn--secondary" onclick="Shops.testConnection()">Проверить соединение</button>
@@ -135,6 +147,7 @@ const Shops = {
                 api_password: document.getElementById('shop-apipass').value,
                 is_default: document.getElementById('shop-default').checked,
                 is_read_only: document.getElementById('shop-readonly').checked,
+                pdn_enabled: document.getElementById('shop-pdn').checked,
             });
 
             if (res && res.ok) {

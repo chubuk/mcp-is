@@ -420,3 +420,14 @@ func (m *mockAIKeyRepo) UpdateCommandsByUserID(userID, commands string) error {
 	}
 	return nil
 }
+
+func (m *mockAIKeyRepo) UpdatePDNEnabled(id string, enabled bool) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if k, ok := m.keys[id]; ok {
+		k.PDNEnabled = enabled
+		return nil
+	}
+	return fmt.Errorf("not found")
+}

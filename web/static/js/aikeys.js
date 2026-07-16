@@ -24,13 +24,17 @@ const AIKeys = {
 
         let rows = '';
         if (keys.length === 0) {
-            rows = '<tr><td colspan="4" class="empty">Ключи не созданы</td></tr>';
+            rows = '<tr><td colspan="5" class="empty">Ключи не созданы</td></tr>';
         } else {
             keys.forEach(k => {
+                const pdnBadge = k.pdn_enabled
+                    ? '<span style="color:#27ae60;font-weight:600">ПДн ✅</span>'
+                    : '<span style="color:#888">ПДн —</span>';
                 rows += `
                     <tr>
                         <td>${k.name || 'Без названия'}</td>
                         <td><code>${k.key_hash.substring(0, 16)}...</code></td>
+                        <td>${pdnBadge}</td>
                         <td>${k.created_at ? k.created_at.split('T')[0] : '—'}</td>
                         <td>
                             <button class="btn btn--danger btn--sm" onclick="AIKeys.delete('${k.id}')">Отозвать</button>
@@ -47,10 +51,31 @@ const AIKeys = {
                     <h1>AI-ключи</h1>
                     <p class="desc">API-ключи для подключения AI-агентов к магазину</p>
                 </div>
-                <button class="btn btn--primary" onclick="AIKeys.create()">+ Создать ключ</button>
+                <button class="btn btn--primary" onclick="AIKeys.showForm()">+ Создать ключ</button>
             </div>
 
             ${keyAlert}
+
+            <div id="aikey-form" style="display:none">
+                <div class="card">
+                    <div class="card__title">Новый AI-ключ</div>
+                    <div id="aikey-alert"></div>
+                    <form id="add-aikey-form">
+                        <div class="form-group">
+                            <label>Название ключа *</label>
+                            <input type="text" id="aikey-name" placeholder="Cursor MCP" required>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="aikey-pdn"> Защита персональных данных (152-ФЗ)
+                            </label>
+                            <small style="color:#888">Маскировка email, телефона, ФИО для AI</small>
+                        </div>
+                        <button type="submit" class="btn btn--primary">Создать ключ</button>
+                        <button type="button" class="btn btn--ghost" onclick="AIKeys.hideForm()">Отмена</button>
+                    </form>
+                </div>
+            </div>
 
             <div class="card">
                 <div class="table-wrap">
@@ -59,6 +84,7 @@ const AIKeys = {
                         <tr>
                             <th>Название</th>
                             <th>Хэш ключа</th>
+                            <th>ПДн</th>
                             <th>Создан</th>
                             <th></th>
                         </tr>
@@ -70,17 +96,37 @@ const AIKeys = {
             </div>`;
     },
 
-    async create() {
-        const name = prompt('Название ключа (например, "Cursor MCP"):');
-        if (name === null) return;
+    showForm() {
+        document.getElementById('aikey-form').style.display = 'block';
+    },
 
-        const res = await API.post('/api/ai-keys', { name });
-        if (res && res.ok && res.data.key) {
-            this.newKey = res.data.key;
-            App.navigate('/ai-keys');
-        } else {
-            alert('Ошибка: ' + (res ? res.data.error : 'Сервер недоступен'));
-        }
+    hideForm() {
+        document.getElementById('aikey-form').style.display = 'none';
+    },
+
+    bind() {
+        const form = document.getElementById('add-aikey-form');
+        if (!form) return;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('aikey-name').value.trim();
+            if (!name) {
+                document.getElementById('aikey-alert').innerHTML =
+                    '<div class="alert alert--error">Название ключа обязательно</div>';
+                return;
+            }
+
+            const pdn = document.getElementById('aikey-pdn').checked;
+            const res = await API.post('/api/ai-keys', { name, pdn_enabled: pdn });
+            if (res && res.ok && res.data.key) {
+                this.newKey = res.data.key;
+                App.navigate('/ai-keys');
+            } else {
+                document.getElementById('aikey-alert').innerHTML =
+                    '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+            }
+        });
     },
 
     copyKey() {

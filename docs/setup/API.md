@@ -400,6 +400,81 @@
 
 ---
 
+### Персональные данные / 152-ФЗ (требуется JWT + admin/super_admin)
+
+#### GET /api/admin/pdn
+
+Получить настройки контроля персональных данных.
+
+**Доступ:** admin, super_admin
+
+**Ответ (200):**
+```json
+{
+  "enabled": true,
+  "log": true,
+  "mask_pii": false
+}
+```
+
+#### PUT /api/admin/pdn
+
+Обновить настройки контроля ПДн.
+
+**Доступ:** super_admin only
+
+**Тело запроса:**
+```json
+{
+  "enabled": true,
+  "log": true,
+  "mask_pii": true
+}
+```
+
+#### GET /api/admin/pdn/log
+
+Журнал доступа к персональным данным.
+
+**Доступ:** admin, super_admin
+
+**Параметры:** `limit` (по умолчанию 20, макс. 100)
+
+**Ответ (200):**
+```json
+{
+  "entries": [
+    {
+      "id": "uuid",
+      "timestamp": "2026-07-17T10:00:00Z",
+      "tool": "list_clients",
+      "data_types": ["email", "phone"],
+      "jurisdiction": "RU",
+      "llm_provider": "US",
+      "masked": true
+    }
+  ],
+  "total": 1
+}
+```
+
+#### GET /api/admin/pdn/stats
+
+Статистика доступа к ПДн за сегодня.
+
+**Доступ:** admin, super_admin
+
+**Ответ (200):**
+```json
+{
+  "total_today": 45,
+  "masked_today": 12,
+  "unmasked_today": 33
+}
+```
+
+---
+
 ### Настройки сервера (требуется JWT + admin/super_admin)
 
 #### GET /api/admin/server

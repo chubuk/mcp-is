@@ -428,6 +428,10 @@ SMTP_FROM=MCP InSales <noreply@your-domain.com>
 | PUT | `/api/admin/users/:id/status` | Заблокировать | JWT + admin |
 | DELETE | `/api/admin/users/:id` | Удалить пользователя | JWT + admin |
 | GET | `/api/admin/stats` | Статистика | JWT + admin |
+| GET | `/api/admin/pdn` | Настройки ПДн | JWT + admin |
+| PUT | `/api/admin/pdn` | Обновить настройки ПДн | JWT + super_admin |
+| GET | `/api/admin/pdn/log` | Журнал доступа к ПДн | JWT + admin |
+| GET | `/api/admin/pdn/stats` | Статистика ПДн за сегодня | JWT + admin |
 | POST | `/mcp` | MCP-запросы | API Key |
 | GET | `/mcp` | SSE-подключение | API Key |
 | GET | `/health` | Проверка здоровья | Нет |

@@ -19,16 +19,18 @@ func NewAIKeyHandler(keyRepo storage.AIKeyRepositoryInterface) *AIKeyHandler {
 }
 
 type AIKeyRequest struct {
-	Name string `json:"name"`
+	Name       string `json:"name"`
+	PDNEnabled bool   `json:"pdn_enabled"`
 }
 
 type AIKeyResponse struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Key       string `json:"key,omitempty"`
-	KeyHash   string `json:"key_hash,omitempty"`
-	CreatedAt string `json:"created_at,omitempty"`
-	Error     string `json:"error,omitempty"`
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	Key        string `json:"key,omitempty"`
+	KeyHash    string `json:"key_hash,omitempty"`
+	PDNEnabled bool   `json:"pdn_enabled"`
+	CreatedAt  string `json:"created_at,omitempty"`
+	Error      string `json:"error,omitempty"`
 }
 
 func (h *AIKeyHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -53,9 +55,13 @@ func (h *AIKeyHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("ai key created", "id", key.ID, "name", key.Name)
+	if req.PDNEnabled {
+		h.keyRepo.UpdatePDNEnabled(key.ID, true)
+	}
+
+	slog.Info("ai key created", "id", key.ID, "name", key.Name, "pdn", req.PDNEnabled)
 	writeJSON(w, http.StatusCreated, AIKeyResponse{
-		ID: key.ID, Name: key.Name, Key: rawKey, KeyHash: keyHash,
+		ID: key.ID, Name: key.Name, Key: rawKey, KeyHash: keyHash, PDNEnabled: req.PDNEnabled,
 	})
 }
 
@@ -80,7 +86,7 @@ func (h *AIKeyHandler) List(w http.ResponseWriter, r *http.Request) {
 	result := make([]AIKeyResponse, len(keys))
 	for i, k := range keys {
 		result[i] = AIKeyResponse{
-			ID: k.ID, Name: k.Name, KeyHash: k.KeyHash, CreatedAt: k.CreatedAt,
+			ID: k.ID, Name: k.Name, KeyHash: k.KeyHash, PDNEnabled: k.PDNEnabled, CreatedAt: k.CreatedAt,
 		}
 	}
 

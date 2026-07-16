@@ -35,15 +35,16 @@ type ShopRequest struct {
 }
 
 type ShopResponse struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	ShopURL    string `json:"shop_url"`
-	APIKeyID   string `json:"api_key_id"`
-	IsDefault  bool   `json:"is_default"`
-	IsReadOnly bool   `json:"is_read_only"`
-	PDNEnabled bool   `json:"pdn_enabled"`
-	CreatedAt  string `json:"created_at,omitempty"`
-	Error      string `json:"error,omitempty"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	ShopURL      string `json:"shop_url"`
+	APIKeyID     string `json:"api_key_id"`
+	IsDefault    bool   `json:"is_default"`
+	IsReadOnly   bool   `json:"is_read_only"`
+	PDNEnabled   bool   `json:"pdn_enabled"`
+	Jurisdiction string `json:"jurisdiction,omitempty"`
+	CreatedAt    string `json:"created_at,omitempty"`
+	Error        string `json:"error,omitempty"`
 }
 
 func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -86,6 +87,8 @@ func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 func (h *ShopHandler) List(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(auth.UserIDKey).(string)
+	role := r.Context().Value(auth.RoleKey).(string)
+	isAdmin := role == "admin" || role == "super_admin"
 
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	if page < 1 {
@@ -104,9 +107,13 @@ func (h *ShopHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	result := make([]ShopResponse, len(shops))
 	for i, s := range shops {
-		result[i] = ShopResponse{
-			ID: s.ID, Name: s.Name, ShopURL: s.ShopURL, APIKeyID: s.APIKeyID, IsDefault: s.IsDefault, IsReadOnly: s.IsReadOnly, CreatedAt: s.CreatedAt,
+		resp := ShopResponse{
+			ID: s.ID, Name: s.Name, ShopURL: s.ShopURL, APIKeyID: s.APIKeyID, IsDefault: s.IsDefault, IsReadOnly: s.IsReadOnly, PDNEnabled: s.PDNEnabled, CreatedAt: s.CreatedAt,
 		}
+		if isAdmin {
+			resp.Jurisdiction = s.Jurisdiction
+		}
+		result[i] = resp
 	}
 
 	writeJSON(w, http.StatusOK, map[string]any{

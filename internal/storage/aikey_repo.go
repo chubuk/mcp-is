@@ -139,6 +139,13 @@ func (r *AIKeyRepository) UpdateCommandsByUserID(userID, commands string) error 
 	return err
 }
 
+func (r *AIKeyRepository) UpdatePDNEnabled(id string, enabled bool) error {
+	_, err := r.db.Exec(context.Background(),
+		`UPDATE ai_keys SET pdn_enabled = $1 WHERE id = $2`, enabled, id,
+	)
+	return err
+}
+
 func (r *AIKeyRepository) GetByID(id string) (*AIKey, error) {
 	var k AIKey
 	err := r.db.QueryRow(context.Background(),

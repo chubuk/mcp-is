@@ -99,7 +99,9 @@ func TestShopList_Success(t *testing.T) {
 	repo.Create("user-1", "Магазин 2", "shop2.ru", "k2", "enc2", false, false)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/shops", nil)
-	req = req.WithContext(withUserID(req.Context(), "user-1"))
+	ctx := withUserID(req.Context(), "user-1")
+	ctx = context.WithValue(ctx, auth.RoleKey, "user")
+	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	h.List(w, req)
@@ -120,7 +122,9 @@ func TestShopList_Empty(t *testing.T) {
 	h, _ := setupShopHandler()
 
 	req := httptest.NewRequest(http.MethodGet, "/api/shops", nil)
-	req = req.WithContext(withUserID(req.Context(), "user-nobody"))
+	ctx := withUserID(req.Context(), "user-nobody")
+	ctx = context.WithValue(ctx, auth.RoleKey, "user")
+	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
 
 	h.List(w, req)
