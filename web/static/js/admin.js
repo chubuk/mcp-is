@@ -360,5 +360,116 @@ const Admin = {
         } else {
             alert('Ошибка: ' + (res ? res.data.error : 'Сервер недоступен'));
         }
+    },
+
+    async renderPDN() {
+        const [settingsRes, logRes, statsRes] = await Promise.all([
+            API.get('/api/admin/pdn'),
+            API.get('/api/admin/pdn/log?limit=20'),
+            API.get('/api/admin/pdn/stats'),
+        ]);
+
+        const s = (settingsRes && settingsRes.ok) ? settingsRes.data : {};
+        const log = (logRes && logRes.ok) ? logRes.data : { entries: [] };
+        const stats = (statsRes && statsRes.ok) ? statsRes.data : {};
+
+        let logRows = '';
+        if (log.entries && log.entries.length > 0) {
+            log.entries.forEach(e => {
+                logRows += `
+                    <tr>
+                        <td>${e.timestamp ? new Date(e.timestamp).toLocaleString('ru-RU') : '—'}</td>
+                        <td><code>${e.tool}</code></td>
+                        <td>${(e.data_types || []).join(', ')}</td>
+                        <td>${e.jurisdiction || '—'}</td>
+                        <td>${e.llm_provider || '—'}</td>
+                        <td>${e.masked ? '<span style="color:#27ae60">Да</span>' : 'Нет'}</td>
+                    </tr>`;
+            });
+        } else {
+            logRows = '<tr><td colspan="6" class="empty">Нет записей за сегодня</td></tr>';
+        }
+
+        return `
+            <div class="page-header">
+                <div>
+                    <h1>Персональные данные (152-ФЗ)</h1>
+                    <p class="desc">Настройки и журнал доступа к персональным данным</p>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="card">
+                    <div class="card__title">Всего запросов</div>
+                    <div style="font-size:32px;font-weight:700">${stats.total_today || 0}</div>
+                </div>
+                <div class="card">
+                    <div class="card__title">Замаскировано</div>
+                    <div style="font-size:32px;font-weight:700;color:#27ae60">${stats.masked_today || 0}</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card__title">Настройки</div>
+                <div id="pdn-alert"></div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="pdn-enabled" ${s.enabled ? 'checked' : ''}> Контроль персональных данных
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="pdn-log" ${s.log ? 'checked' : ''}> Логирование доступа
+                    </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="pdn-mask" ${s.mask_pii ? 'checked' : ''}> Маскировка ПДн
+                    </label>
+                </div>
+                <button class="btn btn--primary" onclick="Admin.savePDN()">Сохранить</button>
+            </div>
+
+            <div class="card">
+                <div class="card__title">Журнал доступа к ПДн (сегодня)</div>
+                <div class="table-wrap">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Время</th>
+                            <th>Команда</th>
+                            <th>Данные</th>
+                            <th>Юрисдикция</th>
+                            <th>LLM</th>
+                            <th>Маска</th>
+                        </tr>
+                    </thead>
+                    <tbody>${logRows}</tbody>
+                </table>
+                </div>
+            </div>`;
+    },
+
+    async savePDN() {
+        const enabled = document.getElementById('pdn-enabled').checked;
+        const log = document.getElementById('pdn-log').checked;
+        const mask = document.getElementById('pdn-mask').checked;
+
+        const res = await API.put('/api/admin/pdn', {
+            enabled: enabled,
+            log: log,
+            mask_pii: mask,
+        });
+
+        if (res && res.ok) {
+            document.getElementById('pdn-alert').innerHTML =
+                '<div class="alert alert--success">Настройки сохранены</div>';
+            setTimeout(() => Admin.renderPDN().then(html => {
+                document.getElementById('app').innerHTML = html;
+            }), 1000);
+        } else {
+            document.getElementById('pdn-alert').innerHTML =
+                '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+        }
     }
 };
