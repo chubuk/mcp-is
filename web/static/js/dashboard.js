@@ -5,8 +5,8 @@ const Dashboard = {
             API.get('/api/ai-keys')
         ]);
 
-        const shops = (shopsRes && shopsRes.ok) ? shopsRes.data : [];
-        const keys = (keysRes && keysRes.ok) ? keysRes.data : [];
+        const shops = (shopsRes && shopsRes.ok) ? (shopsRes.data.items || []) : [];
+        const keys = (keysRes && keysRes.ok) ? (keysRes.data.items || []) : [];
         const nickname = localStorage.getItem('nickname') || 'пользователь';
 
         return `
