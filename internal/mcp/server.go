@@ -62,6 +62,9 @@ func toolFilter(globalReadOnly bool) server.ToolFilterFunc {
 }
 
 func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// Limit body size to 1MB
+	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+
 	ctx := r.Context()
 
 	shopName, _ := ctx.Value(core.ShopNameKey).(string)

@@ -74,7 +74,14 @@ const Auth = {
                 localStorage.setItem('nickname', res.data.nickname);
                 localStorage.setItem('role', res.data.role);
                 localStorage.setItem('user_id', res.data.user_id);
-                App.navigate('/dashboard');
+
+                if (res.data.require_password_change) {
+                    App.navigate('/force-change-password');
+                } else if (res.data.require_email) {
+                    App.navigate('/settings');
+                } else {
+                    App.navigate('/dashboard');
+                }
             } else {
                 Auth.showError(res ? res.data.error : 'Ошибка сервера');
             }
@@ -186,6 +193,59 @@ const Auth = {
             const res = await API.post('/api/reset-password', { token, new_password: password });
             if (res && res.ok) {
                 Auth.showSuccess('Пароль обновлён! Теперь войдите.');
+                setTimeout(() => App.navigate('/login'), 2000);
+            } else {
+                Auth.showError(res ? res.data.error : 'Ошибка сервера');
+            }
+        });
+    },
+
+    renderForceChangePassword() {
+        return `
+            <div class="auth-page">
+                <div class="auth-card">
+                    <h1>Смена пароля</h1>
+                    <p class="subtitle">Вы вошли с дефолтным паролем. Для безопасности необходимо задать новый пароль.</p>
+                    <div id="alert"></div>
+                    <form id="force-change-form">
+                        <div class="form-group">
+                            <label>Новый пароль</label>
+                            <input type="password" id="force-new-password" required minlength="8" autocomplete="new-password">
+                            <small style="color:#888">Минимум 8 символов, заглавная буква и цифра</small>
+                        </div>
+                        <div class="form-group">
+                            <label>Повторите пароль</label>
+                            <input type="password" id="force-new-password2" required minlength="6" autocomplete="new-password">
+                        </div>
+                        <button type="submit" class="btn btn--primary" style="width:100%">Сменить пароль</button>
+                    </form>
+                </div>
+            </div>`;
+    },
+
+    bindForceChangePassword() {
+        document.getElementById('force-change-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const password = document.getElementById('force-new-password').value;
+            const password2 = document.getElementById('force-new-password2').value;
+
+            if (password !== password2) {
+                Auth.showError('Пароли не совпадают');
+                return;
+            }
+
+            if (password.length < 8) {
+                Auth.showError('Пароль должен быть не менее 8 символов');
+                return;
+            }
+
+            const res = await API.post('/api/change-password', {
+                old_password: 'password',
+                new_password: password,
+            });
+
+            if (res && res.ok) {
+                Auth.showSuccess('Пароль обновлён! Теперь войдите с новым паролем.');
                 setTimeout(() => App.navigate('/login'), 2000);
             } else {
                 Auth.showError(res ? res.data.error : 'Ошибка сервера');

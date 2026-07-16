@@ -120,7 +120,7 @@ func main() {
 
 	httpServer := &http.Server{
 		Addr:         ":" + cfg.ServerPort,
-		Handler:      auth.CORSMiddleware(mux),
+		Handler:      auth.CORSMiddleware(cfg.AllowedOrigins)(mux),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}

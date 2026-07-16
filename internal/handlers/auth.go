@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"time"
 
 	"github.com/your-project/mcp-insales/internal/auth"
@@ -13,6 +14,8 @@ import (
 	"github.com/your-project/mcp-insales/internal/storage"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 
 type AuthHandler struct {
 	userRepo storage.UserRepositoryInterface
@@ -39,13 +42,14 @@ type LoginRequest struct {
 }
 
 type AuthResponse struct {
-	Token        string `json:"token,omitempty"`
-	UserID       string `json:"user_id,omitempty"`
-	Nickname     string `json:"nickname,omitempty"`
-	Role         string `json:"role,omitempty"`
-	RequireEmail bool   `json:"require_email,omitempty"`
-	Message      string `json:"message,omitempty"`
-	Error        string `json:"error,omitempty"`
+	Token                string `json:"token,omitempty"`
+	UserID               string `json:"user_id,omitempty"`
+	Nickname             string `json:"nickname,omitempty"`
+	Role                 string `json:"role,omitempty"`
+	RequireEmail         bool   `json:"require_email,omitempty"`
+	RequirePasswordChange bool  `json:"require_password_change,omitempty"`
+	Message              string `json:"message,omitempty"`
+	Error                string `json:"error,omitempty"`
 }
 
 type ChangePasswordRequest struct {
@@ -78,8 +82,13 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.Password) < 6 {
-		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "password must be at least 6 characters"})
+	if len(req.Password) < 8 {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "password must be at least 8 characters"})
+		return
+	}
+
+	if !hasUpperCase(req.Password) || !hasDigit(req.Password) {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "password must contain at least one uppercase letter and one digit"})
 		return
 	}
 
@@ -146,6 +155,18 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if user.Role == "super_admin" && isDefaultPassword(user.PasswordHash) {
+		token, _ := h.jwtMgr.GenerateToken(user.ID, user.Nickname, user.Role)
+		writeJSON(w, http.StatusOK, AuthResponse{
+			Token:                token,
+			UserID:               user.ID,
+			Nickname:             user.Nickname,
+			Role:                 user.Role,
+			RequirePasswordChange: true,
+		})
+		return
+	}
+
 	token, err := h.jwtMgr.GenerateToken(user.ID, user.Nickname, user.Role)
 	if err != nil {
 		slog.Error("generate token", "error", err)
@@ -171,8 +192,13 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.NewPassword) < 6 {
-		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "new password must be at least 6 characters"})
+	if len(req.NewPassword) < 8 {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "new password must be at least 8 characters"})
+		return
+	}
+
+	if !hasUpperCase(req.NewPassword) || !hasDigit(req.NewPassword) {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "new password must contain at least one uppercase letter and one digit"})
 		return
 	}
 
@@ -228,7 +254,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("password reset requested", "user_id", user.ID, "email", user.Email, "token", token)
+	slog.Info("password reset requested", "user_id", user.ID, "email", user.Email)
 
 	if h.emailSvc != nil {
 		name := user.Nickname
@@ -253,8 +279,13 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if len(req.NewPassword) < 6 {
-		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "password must be at least 6 characters"})
+	if len(req.NewPassword) < 8 {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "password must be at least 8 characters"})
+		return
+	}
+
+	if !hasUpperCase(req.NewPassword) || !hasDigit(req.NewPassword) {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "password must contain at least one uppercase letter and one digit"})
 		return
 	}
 
@@ -294,6 +325,11 @@ func (h *AuthHandler) SetEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !isValidEmail(req.Email) {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "invalid email format"})
+		return
+	}
+
 	if err := h.userRepo.UpdateEmail(userID, req.Email); err != nil {
 		writeJSON(w, http.StatusConflict, AuthResponse{Error: "email already exists"})
 		return
@@ -307,6 +343,33 @@ func generateResetToken() string {
 	b := make([]byte, 32)
 	rand.Read(b)
 	return hex.EncodeToString(b)
+}
+
+func hasUpperCase(s string) bool {
+	for _, c := range s {
+		if c >= 'A' && c <= 'Z' {
+			return true
+		}
+	}
+	return false
+}
+
+func hasDigit(s string) bool {
+	for _, c := range s {
+		if c >= '0' && c <= '9' {
+			return true
+		}
+	}
+	return false
+}
+
+func isValidEmail(email string) bool {
+	return emailRegex.MatchString(email)
+}
+
+func isDefaultPassword(hash string) bool {
+	defaultHash, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
+	return hash == string(defaultHash)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

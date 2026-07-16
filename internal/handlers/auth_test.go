@@ -23,7 +23,7 @@ func TestRegister_Success(t *testing.T) {
 		Nickname: "testuser",
 		Email:    "test@example.com",
 		Phone:    "+79991234567",
-		Password: "password123",
+		Password: "Password123",
 	})
 
 	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
@@ -48,7 +48,7 @@ func TestRegister_Success(t *testing.T) {
 func TestRegister_MissingNickname(t *testing.T) {
 	h, _ := setupAuthHandler()
 
-	body, _ := json.Marshal(RegisterRequest{Password: "password123"})
+	body, _ := json.Marshal(RegisterRequest{Password: "Password123"})
 	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 
@@ -76,7 +76,7 @@ func TestRegister_ShortPassword(t *testing.T) {
 func TestRegister_DuplicateNickname(t *testing.T) {
 	h, _ := setupAuthHandler()
 
-	body, _ := json.Marshal(RegisterRequest{Nickname: "user1", Password: "password123"})
+	body, _ := json.Marshal(RegisterRequest{Nickname: "user1", Password: "Password123"})
 	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	h.Register(w, req)
@@ -110,12 +110,12 @@ func TestRegister_InvalidJSON(t *testing.T) {
 func TestLogin_Success_ByNickname(t *testing.T) {
 	h, _ := setupAuthHandler()
 
-	body, _ := json.Marshal(RegisterRequest{Nickname: "myuser", Password: "secret123"})
+	body, _ := json.Marshal(RegisterRequest{Nickname: "myuser", Password: "Secret123"})
 	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	h.Register(w, req)
 
-	loginBody, _ := json.Marshal(LoginRequest{Login: "myuser", Password: "secret123"})
+	loginBody, _ := json.Marshal(LoginRequest{Login: "myuser", Password: "Secret123"})
 	loginReq := httptest.NewRequest(http.MethodPost, "/api/login", bytes.NewReader(loginBody))
 	loginW := httptest.NewRecorder()
 	h.Login(loginW, loginReq)
@@ -134,12 +134,12 @@ func TestLogin_Success_ByNickname(t *testing.T) {
 func TestLogin_Success_ByEmail(t *testing.T) {
 	h, _ := setupAuthHandler()
 
-	body, _ := json.Marshal(RegisterRequest{Nickname: "emailuser", Email: "me@test.com", Password: "pass1234"})
+	body, _ := json.Marshal(RegisterRequest{Nickname: "emailuser", Email: "me@test.com", Password: "Pass1234"})
 	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	h.Register(w, req)
 
-	loginBody, _ := json.Marshal(LoginRequest{Login: "me@test.com", Password: "pass1234"})
+	loginBody, _ := json.Marshal(LoginRequest{Login: "me@test.com", Password: "Pass1234"})
 	loginReq := httptest.NewRequest(http.MethodPost, "/api/login", bytes.NewReader(loginBody))
 	loginW := httptest.NewRecorder()
 	h.Login(loginW, loginReq)
@@ -152,7 +152,7 @@ func TestLogin_Success_ByEmail(t *testing.T) {
 func TestLogin_WrongPassword(t *testing.T) {
 	h, _ := setupAuthHandler()
 
-	body, _ := json.Marshal(RegisterRequest{Nickname: "user2", Password: "correct"})
+	body, _ := json.Marshal(RegisterRequest{Nickname: "user2", Password: "Correct1"})
 	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	h.Register(w, req)
@@ -198,12 +198,12 @@ func TestLogin_MissingFields(t *testing.T) {
 func TestChangePassword_Success(t *testing.T) {
 	h, _ := setupAuthHandler()
 
-	body, _ := json.Marshal(RegisterRequest{Nickname: "chpwd", Password: "oldpass123"})
+	body, _ := json.Marshal(RegisterRequest{Nickname: "chpwd", Password: "Oldpass123"})
 	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	h.Register(w, req)
 
-	chgBody, _ := json.Marshal(ChangePasswordRequest{OldPassword: "oldpass123", NewPassword: "newpass123"})
+	chgBody, _ := json.Marshal(ChangePasswordRequest{OldPassword: "Oldpass123", NewPassword: "Newpass123"})
 	chgReq := httptest.NewRequest(http.MethodPost, "/api/change-password", bytes.NewReader(chgBody))
 	chgReq = chgReq.WithContext(withUserID(chgReq.Context(), "user-1"))
 	chgW := httptest.NewRecorder()
@@ -217,12 +217,12 @@ func TestChangePassword_Success(t *testing.T) {
 func TestChangePassword_WrongOldPassword(t *testing.T) {
 	h, _ := setupAuthHandler()
 
-	body, _ := json.Marshal(RegisterRequest{Nickname: "chpwd2", Password: "correct"})
+	body, _ := json.Marshal(RegisterRequest{Nickname: "chpwd2", Password: "Correct1"})
 	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	h.Register(w, req)
 
-	chgBody, _ := json.Marshal(ChangePasswordRequest{OldPassword: "wrong", NewPassword: "newpass"})
+	chgBody, _ := json.Marshal(ChangePasswordRequest{OldPassword: "wrong", NewPassword: "Newpass1"})
 	chgReq := httptest.NewRequest(http.MethodPost, "/api/change-password", bytes.NewReader(chgBody))
 	chgReq = chgReq.WithContext(withUserID(chgReq.Context(), "user-1"))
 	chgW := httptest.NewRecorder()
@@ -236,7 +236,7 @@ func TestChangePassword_WrongOldPassword(t *testing.T) {
 func TestForgotPassword_Success(t *testing.T) {
 	h, _ := setupAuthHandler()
 
-	body, _ := json.Marshal(RegisterRequest{Nickname: "forgot", Email: "forgot@test.com", Password: "pass1234"})
+	body, _ := json.Marshal(RegisterRequest{Nickname: "forgot", Email: "forgot@test.com", Password: "Pass1234"})
 	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	h.Register(w, req)
@@ -254,7 +254,7 @@ func TestForgotPassword_Success(t *testing.T) {
 func TestSetEmail_Success(t *testing.T) {
 	h, _ := setupAuthHandler()
 
-	body, _ := json.Marshal(RegisterRequest{Nickname: "setemail", Password: "pass1234"})
+	body, _ := json.Marshal(RegisterRequest{Nickname: "setemail", Password: "Pass1234"})
 	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	h.Register(w, req)
