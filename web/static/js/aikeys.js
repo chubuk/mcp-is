@@ -36,6 +36,7 @@ const AIKeys = {
                         <td><code>${k.key_hash.substring(0, 16)}...</code></td>
                         <td>${pdnBadge}</td>
                         <td>${k.created_at ? k.created_at.split('T')[0] : '—'}</td>
+                        <td>${k.last_used_at ? k.last_used_at.split('T')[0] : '—'}</td>
                         <td>
                             <button class="btn btn--danger btn--sm" onclick="AIKeys.delete('${k.id}')">Отозвать</button>
                         </td>
@@ -86,6 +87,7 @@ const AIKeys = {
                             <th>Хэш ключа</th>
                             <th>ПДн</th>
                             <th>Создан</th>
+                            <th>Использован</th>
                             <th></th>
                         </tr>
                     </thead>

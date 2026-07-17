@@ -5,6 +5,8 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"sync"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -19,6 +21,26 @@ const (
 	KeyNameKey  contextKey = "key_name"
 	KeyIDKey    contextKey = "key_id"
 )
+
+var (
+	lastKeyUpdate   = make(map[string]time.Time)
+	lastKeyUpdateMu sync.Mutex
+)
+
+func shouldUpdateLastUsed(keyID string) bool {
+	lastKeyUpdateMu.Lock()
+	defer lastKeyUpdateMu.Unlock()
+	last, exists := lastKeyUpdate[keyID]
+	if !exists {
+		lastKeyUpdate[keyID] = time.Now()
+		return true
+	}
+	if time.Since(last) > 5*time.Minute {
+		lastKeyUpdate[keyID] = time.Now()
+		return true
+	}
+	return false
+}
 
 func CORSMiddleware(allowedOrigins []string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -126,7 +148,9 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 				return
 			}
 
-			_, _ = db.Exec(r.Context(), `UPDATE ai_keys SET last_used_at = NOW() WHERE id = $1`, keyID)
+			if shouldUpdateLastUsed(keyID) {
+				go db.Exec(r.Context(), `UPDATE ai_keys SET last_used_at = NOW() WHERE id = $1`, keyID)
+			}
 
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
 			ctx = context.WithValue(ctx, KeyNameKey, keyName)

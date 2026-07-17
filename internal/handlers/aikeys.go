@@ -24,6 +24,7 @@ type AIKeyRequest struct {
 }
 
 type AIKeyResponse struct {
+	LastUsedAt string `json:"last_used_at,omitempty"`
 	ID         string `json:"id"`
 	Name       string `json:"name"`
 	Key        string `json:"key,omitempty"`
@@ -86,7 +87,7 @@ func (h *AIKeyHandler) List(w http.ResponseWriter, r *http.Request) {
 	result := make([]AIKeyResponse, len(keys))
 	for i, k := range keys {
 		result[i] = AIKeyResponse{
-			ID: k.ID, Name: k.Name, KeyHash: k.KeyHash, PDNEnabled: k.PDNEnabled, CreatedAt: k.CreatedAt,
+			ID: k.ID, Name: k.Name, KeyHash: k.KeyHash, PDNEnabled: k.PDNEnabled, CreatedAt: k.CreatedAt, LastUsedAt: k.LastUsedAt,
 		}
 	}
 
