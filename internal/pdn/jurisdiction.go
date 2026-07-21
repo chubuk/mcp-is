@@ -18,14 +18,14 @@ func DetectJurisdiction(shopURL string) string {
 func DetectLLMProvider(clientName string) string {
 	lower := strings.ToLower(clientName)
 	switch {
-	case strings.Contains(lower, "claude"):
-		return "US"
-	case strings.Contains(lower, "openai") || strings.Contains(lower, "gpt"):
-		return "US"
 	case strings.Contains(lower, "yandex"):
 		return "RU"
 	case strings.Contains(lower, "sber"):
 		return "RU"
+	case strings.Contains(lower, "claude"):
+		return "US"
+	case strings.Contains(lower, "openai") || strings.Contains(lower, "gpt"):
+		return "US"
 	default:
 		return "UNKNOWN"
 	}

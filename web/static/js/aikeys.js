@@ -122,6 +122,13 @@ const AIKeys = {
                             <label><input type="checkbox" id="edit-aikey-pdn"> Защита персональных данных (152-ФЗ)</label>
                             <small style="color:#888">Маскировка email, телефона, ФИО для AI</small>
                         </div>
+                        <div style="margin-bottom:12px">
+                            <label style="font-weight:600;font-size:13px;color:#555">🌐 MCP Server URL</label>
+                            <div style="display:flex;gap:4px;align-items:center">
+                                <div class="key-display" id="edit-mcp-url" style="flex:1;margin-bottom:0"></div>
+                                <button type="button" class="btn btn--secondary btn--sm" onclick="AIKeys.copyEditMCPUrl()">📋</button>
+                            </div>
+                        </div>
                         <button type="submit" class="btn btn--primary">💾 Сохранить</button>
                         <button type="button" class="btn btn--ghost" onclick="AIKeys.hideEditForm()">✖️ Отмена</button>
                     </form>
@@ -160,6 +167,11 @@ const AIKeys = {
         document.getElementById('edit-aikey-id').value = id;
         document.getElementById('edit-aikey-name').value = name;
         document.getElementById('edit-aikey-pdn').checked = pdnEnabled;
+
+        const scheme = location.protocol === 'https:' ? 'https' : 'http';
+        const host = location.hostname + (location.port ? ':' + location.port : (scheme === 'https' ? ':443' : ':8080'));
+        document.getElementById('edit-mcp-url').textContent = scheme + '://' + host + '/mcp';
+
         document.getElementById('aikey-edit-form').style.display = 'block';
         document.getElementById('aikey-form').style.display = 'none';
     },
@@ -214,6 +226,15 @@ const AIKeys = {
                         '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
                 }
             });
+        }
+    },
+
+    copyEditMCPUrl() {
+        const el = document.getElementById('edit-mcp-url');
+        if (el) {
+            navigator.clipboard.writeText(el.textContent.trim()).then(() => {
+                showToast('URL скопирован!');
+            }).catch(() => {});
         }
     },
 

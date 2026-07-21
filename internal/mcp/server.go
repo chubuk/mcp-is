@@ -9,6 +9,7 @@ import (
 	"github.com/mark3labs/mcp-go/server"
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/core"
+	"github.com/chubuk/mcp-is/internal/pdn"
 	"github.com/chubuk/mcp-is/internal/service"
 )
 
@@ -79,15 +80,39 @@ func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	shopName, _ := ctx.Value(core.ShopNameKey).(string)
 	keyName, _ := ctx.Value(auth.KeyNameKey).(string)
+	aiKeyPDN, _ := ctx.Value(auth.KeyPDNKey).(bool)
 	readOnly := s.readOnly
 	if v, ok := ctx.Value(core.ShopReadOnlyKey).(bool); ok {
 		readOnly = readOnly || v
+	}
+
+	// Auto-detect jurisdiction and apply PDN if needed
+	shopJurisdiction := "INTL"
+	llmJurisdiction := "UNKNOWN"
+	if shopName != "" {
+		shopJurisdiction = pdn.DetectJurisdiction(shopName)
+	}
+	if keyName != "" {
+		llmJurisdiction = pdn.DetectLLMProvider(keyName)
+	}
+	shopPDN := pdn.ShouldAutoProtectPDN(shopJurisdiction, llmJurisdiction)
+
+	// Manual PDN override takes precedence
+	if shopPDN || aiKeyPDN {
+		slog.Debug("PDN protection active",
+			"shop_jurisdiction", shopJurisdiction,
+			"llm_provider", llmJurisdiction,
+			"auto_protected", shopPDN,
+			"manual_ai_key", aiKeyPDN,
+		)
 	}
 
 	if shopName != "" || keyName != "" {
 		ctx = context.WithValue(ctx, mcpShopNameKey, shopName)
 		ctx = context.WithValue(ctx, mcpKeyNameKey, keyName)
 		ctx = context.WithValue(ctx, mcpReadOnlyKey, readOnly)
+		ctx = context.WithValue(ctx, mcpShopPDNKey, shopPDN)
+		ctx = context.WithValue(ctx, mcpAIKeyPDNKey, aiKeyPDN)
 	}
 
 	s.httpServer.ServeHTTP(w, r.WithContext(ctx))

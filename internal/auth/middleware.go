@@ -20,6 +20,7 @@ const (
 	ShopIDKey   contextKey = "shop_id"
 	KeyNameKey  contextKey = "key_name"
 	KeyIDKey    contextKey = "key_id"
+	KeyPDNKey   contextKey = "ai_key_pdn_enabled"
 )
 
 var (
@@ -149,9 +150,10 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 			keyHash := HashAPIKey(apiKey)
 
 			var userID, keyID, keyName string
+			var aiKeyPDN bool
 			err := db.QueryRow(r.Context(),
-				`SELECT id, user_id, COALESCE(name,'') FROM ai_keys WHERE key_hash = $1`, keyHash,
-			).Scan(&keyID, &userID, &keyName)
+				`SELECT id, user_id, COALESCE(name,''), pdn_enabled FROM ai_keys WHERE key_hash = $1`, keyHash,
+			).Scan(&keyID, &userID, &keyName, &aiKeyPDN)
 
 			if err != nil {
 				slog.Warn("invalid api key", "hash", keyHash[:8]+"...")
@@ -166,6 +168,7 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)
 			ctx = context.WithValue(ctx, KeyNameKey, keyName)
 			ctx = context.WithValue(ctx, KeyIDKey, keyID)
+			ctx = context.WithValue(ctx, KeyPDNKey, aiKeyPDN)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

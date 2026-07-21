@@ -46,7 +46,36 @@ AI_KEY=$(curl -s -X POST http://localhost:8080/api/ai-keys \
 echo "Сохраните ключ: $AI_KEY"
 ```
 
-### 5. MCP-запрос
+### 5. Редактирование AI-ключа
+
+**Включить/выключить защиту ПДн:**
+
+```bash
+# Включить ПДн
+curl -X PUT http://localhost:8080/api/ai-keys/{KEY_ID} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"pdn_enabled": true}'
+
+# Выключить ПДн
+curl -X PUT http://localhost:8080/api/ai-keys/{KEY_ID} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"pdn_enabled": false}'
+```
+
+**Изменить название:**
+
+```bash
+curl -X PUT http://localhost:8080/api/ai-keys/{KEY_ID} \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"name": "Новое название", "pdn_enabled": true}'
+```
+
+**Через Web UI:** в списке AI-ключей нажмите кнопку «✏️ Ред.» или переключите ПДн-кнопку «✅ ПДн» / «☐ ПДн».
+
+### 6. MCP-запрос
 
 ```bash
 curl -X POST http://localhost:8080/mcp \
