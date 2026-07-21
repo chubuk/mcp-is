@@ -24,16 +24,18 @@ func NewPDNHandler(db *pgxpool.Pool) *PDNHandler {
 }
 
 type PDNSettingsResponse struct {
-	Enabled bool   `json:"enabled"`
-	Log     bool   `json:"log"`
-	MaskPII bool   `json:"mask_pii"`
-	Error   string `json:"error,omitempty"`
+	Enabled     bool   `json:"enabled"`
+	Log         bool   `json:"log"`
+	MaskPII     bool   `json:"mask_pii"`
+	AutoProtect bool   `json:"auto_protect"`
+	Error       string `json:"error,omitempty"`
 }
 
 type PDNSettingsRequest struct {
-	Enabled *bool `json:"enabled,omitempty"`
-	Log     *bool `json:"log,omitempty"`
-	MaskPII *bool `json:"mask_pii,omitempty"`
+	Enabled     *bool `json:"enabled,omitempty"`
+	Log         *bool `json:"log,omitempty"`
+	MaskPII     *bool `json:"mask_pii,omitempty"`
+	AutoProtect *bool `json:"auto_protect,omitempty"`
 }
 
 type PDNLogEntry struct {
@@ -56,9 +58,10 @@ func (h *PDNHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	settings := h.settingsCache.Get(h.db)
 
 	writeJSON(w, http.StatusOK, PDNSettingsResponse{
-		Enabled: settings.Enabled,
-		Log:     settings.Log,
-		MaskPII: settings.MaskPII,
+		Enabled:     settings.Enabled,
+		Log:         settings.Log,
+		MaskPII:     settings.MaskPII,
+		AutoProtect: settings.AutoProtect,
 	})
 }
 
@@ -82,6 +85,9 @@ func (h *PDNHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		h.settingsCache.Invalidate()
 	}
 	if req.MaskPII != nil {
+		h.settingsCache.Invalidate()
+	}
+	if req.AutoProtect != nil {
 		h.settingsCache.Invalidate()
 	}
 
@@ -137,5 +143,42 @@ func (h *PDNHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 		"total_today":    totalToday,
 		"masked_today":   totalMasked,
 		"unmasked_today": totalToday - totalMasked,
+	})
+}
+
+func (h *PDNHandler) GetJurisdictions(w http.ResponseWriter, r *http.Request) {
+	role := r.Context().Value(auth.RoleKey).(string)
+	if role != "super_admin" && role != "admin" {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied"})
+		return
+	}
+
+	// Count shops by jurisdiction
+	jurisdictions := map[string]int{"RU": 0, "KZ": 0, "BY": 0, "INTL": 0}
+	rows, err := h.db.Query(context.Background(),
+		`SELECT COALESCE(jurisdiction, 'AUTO') FROM shops`)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var j string
+			if err := rows.Scan(&j); err == nil {
+				jurisdictions[j]++
+			}
+		}
+	}
+
+	// Count auto-protected vs manual today
+	var autoProtected, manualProtected int
+	h.db.QueryRow(context.Background(),
+		`SELECT COUNT(*) FROM pdn_access_log WHERE ts >= CURRENT_DATE AND masked = TRUE AND llm_provider != 'RU' AND llm_provider != ''`,
+	).Scan(&autoProtected)
+	h.db.QueryRow(context.Background(),
+		`SELECT COUNT(*) FROM pdn_access_log WHERE ts >= CURRENT_DATE AND masked = TRUE AND llm_provider = 'RU'`,
+	).Scan(&manualProtected)
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"jurisdictions":    jurisdictions,
+		"auto_protected":   autoProtected,
+		"manual_protected": manualProtected,
 	})
 }

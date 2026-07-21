@@ -56,7 +56,7 @@ func main() {
 
 	manager := core.NewAccountManager(shopRepo, aesCipher, cfg.ReadOnly)
 	svc := service.NewService(manager)
-	mcpServer := mcp.NewMCPServer(svc, cfg.ReadOnly)
+	mcpServer := mcp.NewMCPServer(svc, cfg.ReadOnly, cfg.PDNAutoProtect, cfg.ServerCountry)
 
 	emailSvc := email.NewService(email.Config{
 		Host:   cfg.SMTPHost,
@@ -121,6 +121,7 @@ func main() {
 	mux.Handle("PUT /api/admin/pdn", jwtMW(superAdminMW(http.HandlerFunc(pdnHandler.UpdateSettings))))
 	mux.Handle("GET /api/admin/pdn/log", jwtMW(adminMW(http.HandlerFunc(pdnHandler.GetLog))))
 	mux.Handle("GET /api/admin/pdn/stats", jwtMW(adminMW(http.HandlerFunc(pdnHandler.GetStats))))
+	mux.Handle("GET /api/admin/pdn/jurisdictions", jwtMW(adminMW(http.HandlerFunc(pdnHandler.GetJurisdictions))))
 
 	apiKeyMW := auth.APIKeyMiddleware(pool)
 	mux.Handle("/mcp", apiKeyMW(http.HandlerFunc(mcpServer.ServeHTTP)))

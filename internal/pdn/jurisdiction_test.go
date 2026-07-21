@@ -72,3 +72,69 @@ func TestShouldAutoProtectPDN(t *testing.T) {
 		})
 	}
 }
+
+func TestDetectJurisdiction_AllSuffixes(t *testing.T) {
+	tests := []struct {
+		suffix string
+		want   string
+	}{
+		{".myinsales.ru", "RU"},
+		{".myinsales.kz", "KZ"},
+		{".myinsales.by", "BY"},
+		{".example.com", "INTL"},
+	}
+
+	for _, tt := range tests {
+		got := DetectJurisdiction("myshop" + tt.suffix)
+		if got != tt.want {
+			t.Errorf("DetectJurisdiction('myshop%s') = %q, want %q", tt.suffix, got, tt.want)
+		}
+	}
+}
+
+func TestDetectLLMProvider_AllCases(t *testing.T) {
+	tests := []struct {
+		client string
+		want   string
+	}{
+		{"Claude Desktop", "US"},
+		{"claude-3-opus", "US"},
+		{"OpenAI ChatGPT", "US"},
+		{"gpt-4", "US"},
+		{"YandexGPT", "RU"},
+		{"yandex gpt", "RU"},
+		{"SberGPT", "RU"},
+		{"sber alicegpt", "RU"},
+		{"Unknown Client", "UNKNOWN"},
+	}
+
+	for _, tt := range tests {
+		got := DetectLLMProvider(tt.client)
+		if got != tt.want {
+			t.Errorf("DetectLLMProvider(%q) = %q, want %q", tt.client, got, tt.want)
+		}
+	}
+}
+
+func TestShouldAutoProtectPDN_AllCombinations(t *testing.T) {
+	tests := []struct {
+		shop string
+		llm  string
+		want bool
+	}{
+		{"RU", "US", true},
+		{"RU", "UNKNOWN", true},
+		{"RU", "RU", false},
+		{"KZ", "US", false},
+		{"BY", "US", false},
+		{"INTL", "US", false},
+		{"INTL", "INTL", false},
+	}
+
+	for _, tt := range tests {
+		got := ShouldAutoProtectPDN(tt.shop, tt.llm)
+		if got != tt.want {
+			t.Errorf("ShouldAutoProtectPDN(%q, %q) = %v, want %v", tt.shop, tt.llm, got, tt.want)
+		}
+	}
+}

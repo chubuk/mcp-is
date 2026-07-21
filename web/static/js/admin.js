@@ -363,15 +363,17 @@ const Admin = {
     },
 
     async renderPDN() {
-        const [settingsRes, logRes, statsRes] = await Promise.all([
+        const [settingsRes, logRes, statsRes, jurisRes] = await Promise.all([
             API.get('/api/admin/pdn'),
             API.get('/api/admin/pdn/log?limit=20'),
             API.get('/api/admin/pdn/stats'),
+            API.get('/api/admin/pdn/jurisdictions'),
         ]);
 
         const s = (settingsRes && settingsRes.ok) ? settingsRes.data : {};
         const log = (logRes && logRes.ok) ? logRes.data : { entries: [] };
         const stats = (statsRes && statsRes.ok) ? statsRes.data : {};
+        const juris = (jurisRes && jurisRes.ok) ? jurisRes.data : {};
 
         let logRows = '';
         if (log.entries && log.entries.length > 0) {
@@ -410,6 +412,37 @@ const Admin = {
             </div>
 
             <div class="card">
+                <div class="card__title">🛡️ АвтоПДн — Юрисдикция и автоматическая защита</div>
+                <p style="color:#888;font-size:13px;margin-bottom:12px">Система автоматически включает защиту ПДн если магазин в юрисдикции РФ, а LLM-провайдер иностранный (152-ФЗ).</p>
+                <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
+                    <div class="card" style="flex:1;min-width:120px;text-align:center">
+                        <div style="font-size:24px">🇷🇺</div>
+                        <div style="font-size:20px;font-weight:700">${juris.jurisdictions ? (juris.jurisdictions.RU || 0) : 0}</div>
+                        <div style="font-size:12px;color:#888">Россия</div>
+                    </div>
+                    <div class="card" style="flex:1;min-width:120px;text-align:center">
+                        <div style="font-size:24px">🇰🇿</div>
+                        <div style="font-size:20px;font-weight:700">${juris.jurisdictions ? (juris.jurisdictions.KZ || 0) : 0}</div>
+                        <div style="font-size:12px;color:#888">Казахстан</div>
+                    </div>
+                    <div class="card" style="flex:1;min-width:120px;text-align:center">
+                        <div style="font-size:24px">🇧🇾</div>
+                        <div style="font-size:20px;font-weight:700">${juris.jurisdictions ? (juris.jurisdictions.BY || 0) : 0}</div>
+                        <div style="font-size:12px;color:#888">Беларусь</div>
+                    </div>
+                    <div class="card" style="flex:1;min-width:120px;text-align:center">
+                        <div style="font-size:24px">🌍</div>
+                        <div style="font-size:20px;font-weight:700">${juris.jurisdictions ? (juris.jurisdictions.INTL || 0) : 0}</div>
+                        <div style="font-size:12px;color:#888">Международные</div>
+                    </div>
+                </div>
+                <div style="display:flex;gap:16px;font-size:13px;color:#555">
+                    <span>🛡️ АвтоПДн: <strong>${juris.auto_protected || 0}</strong> запросов</span>
+                    <span>✋ Ручная: <strong>${juris.manual_protected || 0}</strong> запросов</span>
+                </div>
+            </div>
+
+            <div class="card">
                 <div class="card__title">Настройки</div>
                 <div id="pdn-alert"></div>
                 <div class="form-group">
@@ -426,6 +459,12 @@ const Admin = {
                     <label>
                         <input type="checkbox" id="pdn-mask" ${s.mask_pii ? 'checked' : ''}> Маскировка ПДн
                     </label>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="pdn-auto" ${s.auto_protect !== false ? 'checked' : ''}> АвтоПДн (автоматическая защита для РФ + иностранных LLM)
+                    </label>
+                    <small style="color:#888">Отключите для тестирования. В .env: PDN_AUTO_PROTECT=false</small>
                 </div>
                 <button class="btn btn--primary" onclick="Admin.savePDN()">💾 Сохранить</button>
             </div>
@@ -454,11 +493,13 @@ const Admin = {
         const enabled = document.getElementById('pdn-enabled').checked;
         const log = document.getElementById('pdn-log').checked;
         const mask = document.getElementById('pdn-mask').checked;
+        const autoPdn = document.getElementById('pdn-auto').checked;
 
         const res = await API.put('/api/admin/pdn', {
             enabled: enabled,
             log: log,
             mask_pii: mask,
+            auto_protect: autoPdn,
         });
 
         if (res && res.ok) {

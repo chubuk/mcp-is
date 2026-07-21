@@ -29,6 +29,8 @@ type Config struct {
 	AllowedOrigins   []string
 	MaxBodySize      int64
 	JWTExpiry        time.Duration
+	PDNAutoProtect   bool
+	ServerCountry    string
 }
 
 func Load() *Config {
@@ -52,6 +54,8 @@ func Load() *Config {
 		Domain:         getEnv("DOMAIN", "localhost"),
 		AllowedOrigins: parseOrigins(getEnv("ALLOWED_ORIGINS", "*")),
 		MaxBodySize:    1 << 20, // 1MB default
+				ServerCountry: getEnv("SERVER_COUNTRY", "RU"),
+		PDNAutoProtect:  getEnv("PDN_AUTO_PROTECT", "true") == "true",
 		JWTExpiry:      parseDuration(getEnv("JWT_EXPIRY_HOURS", "24"), time.Hour),
 	}
 

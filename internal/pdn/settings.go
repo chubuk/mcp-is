@@ -17,9 +17,10 @@ type PDNSettingsCache struct {
 }
 
 type PDNSettings struct {
-	Enabled bool
-	Log     bool
-	MaskPII bool
+	Enabled     bool
+	Log         bool
+	MaskPII     bool
+	AutoProtect bool
 }
 
 func NewPDNSettingsCache() *PDNSettingsCache {
@@ -49,13 +50,14 @@ func (c *PDNSettingsCache) Get(db *pgxpool.Pool) *PDNSettings {
 
 func (c *PDNSettingsCache) loadFromDB(db *pgxpool.Pool) *PDNSettings {
 	s := &PDNSettings{
-		Enabled: false,
-		Log:     true,
-		MaskPII: false,
+		Enabled:     false,
+		Log:         true,
+		MaskPII:     false,
+		AutoProtect: true,
 	}
 
 	rows, err := db.Query(context.Background(),
-		`SELECT key, value FROM server_settings WHERE key IN ('pdn_control_enabled', 'pdn_log_access', 'pdn_mask_pii')`,
+		`SELECT key, value FROM server_settings WHERE key IN ('pdn_control_enabled', 'pdn_log_access', 'pdn_mask_pii', 'pdn_auto_protect')`,
 	)
 	if err != nil {
 		return s
@@ -74,6 +76,8 @@ func (c *PDNSettingsCache) loadFromDB(db *pgxpool.Pool) *PDNSettings {
 			s.Log = value == "true"
 		case "pdn_mask_pii":
 			s.MaskPII = value == "true"
+		case "pdn_auto_protect":
+			s.AutoProtect = value == "true"
 		}
 	}
 

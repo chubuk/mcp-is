@@ -17,6 +17,8 @@ type MCPServer struct {
 	mcpServer  *server.MCPServer
 	httpServer *server.StreamableHTTPServer
 	readOnly   bool
+	autoPDN       bool
+	serverCountry string
 }
 
 type mcpContextKey string
@@ -29,7 +31,7 @@ const (
 	mcpAIKeyPDNKey      mcpContextKey = "ai_key_pdn_enabled"
 )
 
-func NewMCPServer(svc *service.Service, readOnly bool) *MCPServer {
+func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry string) *MCPServer {
 	s := server.NewMCPServer(
 		"mcp-is",
 		"0.2.0",
@@ -47,6 +49,8 @@ func NewMCPServer(svc *service.Service, readOnly bool) *MCPServer {
 		mcpServer:  s,
 		httpServer: httpServer,
 		readOnly:   readOnly,
+		autoPDN:       autoPDN,
+		serverCountry: serverCountry,
 	}
 }
 
@@ -86,7 +90,10 @@ func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		readOnly = readOnly || v
 	}
 
-	// Auto-detect jurisdiction and apply PDN if needed
+	// Auto-PDN logic:
+	// 1. If auto-PDN disabled → no protection
+	// 2. If server NOT in Russia AND shop IS Russian → protect
+	// 3. If server IS in Russia AND shop IS Russian AND LLM is foreign → protect
 	shopJurisdiction := "INTL"
 	llmJurisdiction := "UNKNOWN"
 	if shopName != "" {
@@ -95,7 +102,16 @@ func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if keyName != "" {
 		llmJurisdiction = pdn.DetectLLMProvider(keyName)
 	}
-	shopPDN := pdn.ShouldAutoProtectPDN(shopJurisdiction, llmJurisdiction)
+	shopPDN := false
+	if s.autoPDN {
+		serverInRU := s.serverCountry == "RU"
+		shopInRU := shopJurisdiction == "RU"
+		llmForeign := llmJurisdiction != "RU" && llmJurisdiction != "UNKNOWN"
+		
+		if (!serverInRU && shopInRU) || (serverInRU && shopInRU && llmForeign) {
+			shopPDN = true
+		}
+	}
 
 	// Manual PDN override takes precedence
 	if shopPDN || aiKeyPDN {
