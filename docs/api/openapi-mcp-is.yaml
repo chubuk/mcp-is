@@ -1,0 +1,740 @@
+openapi: 3.0.0
+info:
+  title: MCP IS API
+  description: |
+    REST API для управления MCP IS — сервером Model Context Protocol для InSales.
+    
+    ## Аутентификация
+    - **JWT Token**: заголовок `Authorization: Bearer <token>` — для веб-API
+    - **API Key**: заголовок `X-API-Key: <key>` или `Authorization: Bearer <key>` — для MCP endpoint
+    
+    ## Формат ответов
+    Все ответы в формате JSON.
+  version: 0.2.0
+  contact:
+    name: MCP IS
+    url: https://github.com/chubuk/mcp-is
+  license:
+    name: BSL 1.1
+    url: https://github.com/chubuk/mcp-is/blob/main/LICENSE
+
+servers:
+  - url: https://localhost:8443
+    description: Локальная разработка
+  - url: https://{domain}
+    description: Production
+    variables:
+      domain:
+        default: mcp-is.example.com
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [System]
+      responses:
+        '200':
+          description: Сервер работает
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: ok
+
+  /metrics:
+    get:
+      summary: Prometheus метрики
+      tags: [System]
+      responses:
+        '200':
+          description: Metрики в формате Prometheus
+
+  /api/register:
+    post:
+      summary: Регистрация пользователя
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Пользователь создан
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_id:
+                    type: string
+                  nickname:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Пользователь уже существует
+
+  /api/login:
+    post:
+      summary: Вход в систему
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Успешный вход
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          description: Неверные учётные данные
+        '429':
+          description: Превышен лимит запросов
+
+  /api/forgot-password:
+    post:
+      summary: Запрос сброса пароля
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Письмо отправлено (если email существует)
+
+  /api/reset-password:
+    post:
+      summary: Сброс пароля по токену
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, new_password]
+              properties:
+                token:
+                  type: string
+                new_password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Пароль обновлён
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/change-password:
+    post:
+      summary: Смена пароля
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [old_password, new_password]
+              properties:
+                old_password:
+                  type: string
+                new_password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Пароль обновлён
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/set-email:
+    post:
+      summary: Установка email
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '200':
+          description: Email установлен
+        '409':
+          description: Email уже занят
+
+  /api/shops:
+    get:
+      summary: Список магазинов
+      tags: [Shops]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Список магазинов
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedShops'
+    post:
+      summary: Добавление магазина
+      tags: [Shops]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateShopRequest'
+      responses:
+        '201':
+          description: Магазин добавлен
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/shops/test-connection:
+    post:
+      summary: Проверка соединения с InSales
+      tags: [Shops]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shop_url, api_key_id, api_password]
+              properties:
+                shop_url:
+                  type: string
+                api_key_id:
+                  type: string
+                api_password:
+                  type: string
+      responses:
+        '200':
+          description: Соединение установлено
+        '400':
+          description: Ошибка соединения
+
+  /api/shops/{id}:
+    put:
+      summary: Обновление магазина
+      tags: [Shops]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ShopID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateShopRequest'
+      responses:
+        '200':
+          description: Магазин обновлён
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Удаление магазина
+      tags: [Shops]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ShopID'
+      responses:
+        '204':
+          description: Магазин удалён
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/shops/{id}/check-commands:
+    post:
+      summary: Проверка доступных MCP команд
+      tags: [Shops]
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ShopID'
+      responses:
+        '200':
+          description: Команды обновлены
+
+  /api/ai-keys:
+    get:
+      summary: Список AI-ключей
+      tags: [AI Keys]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список ключей
+    post:
+      summary: Создание AI-ключа
+      tags: [AI Keys]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+      responses:
+        '201':
+          description: Ключ создан (показывается только один раз)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  key:
+                    type: string
+                  name:
+                    type: string
+
+  /api/ai-keys/{id}:
+    delete:
+      summary: Удаление AI-ключа
+      tags: [AI Keys]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Ключ удалён
+
+  /api/admin/users:
+    get:
+      summary: Список пользователей
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список пользователей
+
+  /api/admin/users/{id}:
+    get:
+      summary: Получение пользователя
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Пользователь
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/users/{id}/role:
+    put:
+      summary: Изменение роли
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  type: string
+                  enum: [user, admin, super_admin]
+      responses:
+        '200':
+          description: Роль обновлена
+
+  /api/admin/users/{id}/status:
+    put:
+      summary: Изменение статуса
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [is_active]
+              properties:
+                is_active:
+                  type: boolean
+      responses:
+        '200':
+          description: Статус обновлён
+
+  /api/admin/users/{id}:
+    delete:
+      summary: Удаление пользователя
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Пользователь удалён
+
+  /api/admin/stats:
+    get:
+      summary: Статистика
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Статистика
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminStats'
+
+  /api/admin/server:
+    get:
+      summary: Настройки сервера
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Настройки
+    put:
+      summary: Обновление настроек сервера
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServerSettings'
+      responses:
+        '200':
+          description: Настройки обновлены
+
+  /api/admin/pdn:
+    get:
+      summary: Настройки PDN
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Настройки PDN
+    put:
+      summary: Обновление настроек PDN
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                enabled:
+                  type: boolean
+      responses:
+        '200':
+          description: Настройки обновлены
+
+  /api/admin/pdn/log:
+    get:
+      summary: Лог PDN
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Лог записей
+
+  /api/admin/pdn/stats:
+    get:
+      summary: Статистика PDN
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Статистика
+
+  /mcp:
+    post:
+      summary: MCP endpoint (Streamable HTTP)
+      tags: [MCP]
+      security:
+        - apiKeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: JSON-RPC запрос
+      responses:
+        '200':
+          description: JSON-RPC ответ
+    get:
+      summary: MCP SSE endpoint
+      tags: [MCP]
+      security:
+        - apiKeyAuth: []
+      responses:
+        '200':
+          description: Server-Sent Events stream
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  parameters:
+    ShopID:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [nickname, password]
+      properties:
+        nickname:
+          type: string
+          minLength: 3
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        password:
+          type: string
+          minLength: 8
+
+    LoginRequest:
+      type: object
+      required: [login, password]
+      properties:
+        login:
+          type: string
+          description: Nickname, email или phone
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user_id:
+          type: string
+        nickname:
+          type: string
+        role:
+          type: string
+          enum: [user, admin, super_admin]
+        require_password_change:
+          type: boolean
+
+    CreateShopRequest:
+      type: object
+      required: [name, shop_url, api_key_id, api_password]
+      properties:
+        name:
+          type: string
+        shop_url:
+          type: string
+          example: myshop.myinsales.ru
+        api_key_id:
+          type: string
+        api_password:
+          type: string
+        is_read_only:
+          type: boolean
+          default: false
+
+    UpdateShopRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        shop_url:
+          type: string
+        api_key_id:
+          type: string
+        api_password:
+          type: string
+        is_read_only:
+          type: boolean
+
+    Shop:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        shop_url:
+          type: string
+        is_default:
+          type: boolean
+        is_read_only:
+          type: boolean
+        created_at:
+          type: string
+
+    AIKey:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        created_at:
+          type: string
+
+    AdminStats:
+      type: object
+      properties:
+        total_users:
+          type: integer
+        total_shops:
+          type: integer
+        total_ai_keys:
+          type: integer
+
+    ServerSettings:
+      type: object
+      properties:
+        domain:
+          type: string
+        email:
+          type: string
+        certificate_status:
+          type: string
+
+    PaginatedShops:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shop'
+        total:
+          type: integer
+        page:
+          type: integer
+        per_page:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Неверный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: Не авторизован
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Не найдено
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

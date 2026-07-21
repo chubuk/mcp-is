@@ -9,14 +9,17 @@ import (
 	"log/slog"
 	"net/http"
 	"time"
+
+	"github.com/chubuk/mcp-is/internal/resilience"
 )
 
 type InSalesClient struct {
-	BaseURL    string
-	ShopDomain string
-	APIKey     string
-	Password   string
-	HTTPClient *http.Client
+	BaseURL        string
+	ShopDomain     string
+	APIKey         string
+	Password       string
+	HTTPClient     *http.Client
+	CircuitBreaker *resilience.CircuitBreaker
 }
 
 func NewClient(shopDomain, apiKey, password string) (*InSalesClient, error) {
@@ -34,10 +37,37 @@ func NewClient(shopDomain, apiKey, password string) (*InSalesClient, error) {
 		HTTPClient: &http.Client{
 			Timeout: 30 * time.Second,
 		},
+		CircuitBreaker: resilience.NewCircuitBreaker(5, 30*time.Second),
 	}, nil
 }
 
 func (c *InSalesClient) doRequest(ctx context.Context, method, path string, body any) ([]byte, int, error) {
+	var result []byte
+	var statusCode int
+
+	err := c.CircuitBreaker.Execute(func() error {
+		var reqErr error
+		result, statusCode, reqErr = c.doRequestRaw(ctx, method, path, body)
+		if reqErr != nil && resilience.IsRetryable(reqErr) {
+			return reqErr
+		}
+		if statusCode >= 500 {
+			return fmt.Errorf("server error %d", statusCode)
+		}
+		return nil
+	})
+
+	if err != nil {
+		if resilience.IsCircuitOpen(err) {
+			slog.Warn("circuit breaker open", "shop", c.ShopDomain, "path", path)
+			return nil, 0, fmt.Errorf("service temporarily unavailable (circuit breaker open)")
+		}
+		return result, statusCode, err
+	}
+	return result, statusCode, nil
+}
+
+func (c *InSalesClient) doRequestRaw(ctx context.Context, method, path string, body any) ([]byte, int, error) {
 	url := fmt.Sprintf("%s%s", c.BaseURL, path)
 
 	var bodyReader io.Reader
