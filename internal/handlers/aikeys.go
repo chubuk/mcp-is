@@ -125,12 +125,19 @@ func (h *AIKeyHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if req.Name != "" {
+		if err := h.keyRepo.UpdateName(keyID, req.Name); err != nil {
+			writeJSON(w, http.StatusInternalServerError, AIKeyResponse{Error: "failed to update name"})
+			return
+		}
+	}
+
 	if err := h.keyRepo.UpdatePDNEnabled(keyID, req.PDNEnabled); err != nil {
-		writeJSON(w, http.StatusInternalServerError, AIKeyResponse{Error: "failed to update key"})
+		writeJSON(w, http.StatusInternalServerError, AIKeyResponse{Error: "failed to update pdn"})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, AIKeyResponse{ID: keyID, PDNEnabled: req.PDNEnabled})
+	writeJSON(w, http.StatusOK, AIKeyResponse{ID: keyID, Name: req.Name, PDNEnabled: req.PDNEnabled})
 }
 
 func (h *AIKeyHandler) Delete(w http.ResponseWriter, r *http.Request) {

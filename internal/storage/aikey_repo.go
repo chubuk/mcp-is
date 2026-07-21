@@ -146,6 +146,13 @@ func (r *AIKeyRepository) UpdatePDNEnabled(id string, enabled bool) error {
 	return err
 }
 
+func (r *AIKeyRepository) UpdateName(id, name string) error {
+	_, err := r.db.Exec(context.Background(),
+		`UPDATE ai_keys SET name = $1 WHERE id = $2`, name, id,
+	)
+	return err
+}
+
 func (r *AIKeyRepository) GetByID(id string) (*AIKey, error) {
 	var k AIKey
 	err := r.db.QueryRow(context.Background(),

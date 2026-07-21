@@ -54,18 +54,21 @@ const AIKeys = {
             rows = '<tr><td colspan="5" class="empty">Ключи не созданы</td></tr>';
         } else {
             keys.forEach(k => {
-                const pdnBadge = k.pdn_enabled
-                    ? '<span style="color:#27ae60;font-weight:600;cursor:pointer" onclick="AIKeys.togglePDN(\'' + k.id + '\', false)">ПДн ✅</span>'
-                    : '<span style="color:#888;cursor:pointer" onclick="AIKeys.togglePDN(\'' + k.id + '\', true)">ПДн —</span>';
+                const pdnBtn = k.pdn_enabled
+                    ? '<button class="btn btn--ghost btn--sm" style="color:#27ae60;border-color:#27ae60" onclick="AIKeys.togglePDN(\'' + k.id + '\', false)">✅ ПДн</button>'
+                    : '<button class="btn btn--ghost btn--sm" onclick="AIKeys.togglePDN(\'' + k.id + '\', true)">☐ ПДн</button>';
                 rows += `
                     <tr>
                         <td data-label="Название">${k.name || 'Без названия'}</td>
                         <td data-label="Хэш"><code>${k.key_hash.substring(0, 16)}...</code></td>
-                        <td data-label="ПДн">${pdnBadge}</td>
+                        <td data-label="ПДн">${pdnBtn}</td>
                         <td data-label="Создан">${k.created_at ? k.created_at.split('T')[0] : '—'}</td>
                         <td data-label="Использован">${k.last_used_at ? k.last_used_at.split('T')[0] : '—'}</td>
                         <td data-label="">
-                            <button class="btn btn--danger btn--sm" onclick="AIKeys.delete('${k.id}')">🗑️ Отозвать</button>
+                            <div style="display:flex;gap:4px;flex-wrap:nowrap">
+                                <button class="btn btn--ghost btn--sm" onclick="AIKeys.edit('${k.id}', '${k.name}', ${k.pdn_enabled})">✏️ Ред.</button>
+                                <button class="btn btn--danger btn--sm" onclick="AIKeys.delete('${k.id}')">🗑️ Отозвать</button>
+                            </div>
                         </td>
                     </tr>`;
             });
@@ -105,6 +108,26 @@ const AIKeys = {
                 </div>
             </div>
 
+            <div id="aikey-edit-form" style="display:none">
+                <div class="card">
+                    <div class="card__title">Редактирование AI-ключа</div>
+                    <div id="aikey-edit-alert"></div>
+                    <form id="edit-aikey-form">
+                        <input type="hidden" id="edit-aikey-id">
+                        <div class="form-group">
+                            <label>Название ключа</label>
+                            <input type="text" id="edit-aikey-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="edit-aikey-pdn"> Защита персональных данных (152-ФЗ)</label>
+                            <small style="color:#888">Маскировка email, телефона, ФИО для AI</small>
+                        </div>
+                        <button type="submit" class="btn btn--primary">💾 Сохранить</button>
+                        <button type="button" class="btn btn--ghost" onclick="AIKeys.hideEditForm()">✖️ Отмена</button>
+                    </form>
+                </div>
+            </div>
+
             <div class="card">
                 <div class="table-wrap">
                 <table class="table">
@@ -133,6 +156,18 @@ const AIKeys = {
         document.getElementById('aikey-form').style.display = 'none';
     },
 
+    edit(id, name, pdnEnabled) {
+        document.getElementById('edit-aikey-id').value = id;
+        document.getElementById('edit-aikey-name').value = name;
+        document.getElementById('edit-aikey-pdn').checked = pdnEnabled;
+        document.getElementById('aikey-edit-form').style.display = 'block';
+        document.getElementById('aikey-form').style.display = 'none';
+    },
+
+    hideEditForm() {
+        document.getElementById('aikey-edit-form').style.display = 'none';
+    },
+
     bind() {
         const form = document.getElementById('add-aikey-form');
         if (!form) return;
@@ -157,6 +192,29 @@ const AIKeys = {
                     '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
             }
         });
+
+        // Edit form binding
+        const editForm = document.getElementById('edit-aikey-form');
+        if (editForm) {
+            editForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('edit-aikey-id').value;
+                const name = document.getElementById('edit-aikey-name').value.trim();
+                if (!name) {
+                    document.getElementById('aikey-edit-alert').innerHTML =
+                        '<div class="alert alert--error">Название обязательно</div>';
+                    return;
+                }
+                const pdn = document.getElementById('edit-aikey-pdn').checked;
+                const res = await API.put('/api/ai-keys/' + id, { name, pdn_enabled: pdn });
+                if (res && res.ok) {
+                    App.navigate('/ai-keys');
+                } else {
+                    document.getElementById('aikey-edit-alert').innerHTML =
+                        '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+                }
+            });
+        }
     },
 
     copyKey() {

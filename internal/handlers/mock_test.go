@@ -453,3 +453,14 @@ func (m *mockAIKeyRepo) UpdatePDNEnabled(id string, enabled bool) error {
 	}
 	return fmt.Errorf("not found")
 }
+
+func (m *mockAIKeyRepo) UpdateName(id, name string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if k, ok := m.keys[id]; ok {
+		k.Name = name
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
