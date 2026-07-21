@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/chubuk/mcp-is/internal/ratelimit"
@@ -47,29 +48,59 @@ func NewClient(shopDomain, apiKey, password string) (*InSalesClient, error) {
 }
 
 func (c *InSalesClient) doRequest(ctx context.Context, method, path string, body any) ([]byte, int, error) {
-	// Throttle if approaching rate limit
-	delay := c.RateTracker.GetThrottleDelay(c.APIKey)
-	if delay > 0 {
-		slog.Debug("throttling request", "delay", delay, "shop", c.ShopDomain)
-		time.Sleep(delay)
-	}
-
-	// Use per-key circuit breaker
 	breaker := c.BreakerPool.GetBreaker(c.APIKey)
-	if !breaker.Allow() {
-		slog.Warn("circuit breaker open", "shop", c.ShopDomain, "path", path)
-		return nil, 0, fmt.Errorf("service temporarily unavailable (circuit breaker open)")
-	}
+	maxRetries := 3
 
-	result, statusCode, err := c.doRequestRaw(ctx, method, path, body)
+	for attempt := 0; attempt <= maxRetries; attempt++ {
+		// Throttle if approaching rate limit
+		delay := c.RateTracker.GetThrottleDelay(c.APIKey)
+		if delay > 0 {
+			slog.Debug("throttling request", "delay", delay, "shop", c.ShopDomain, "attempt", attempt)
+			time.Sleep(delay)
+		}
 
-	if err != nil {
+		// Check circuit breaker
+		if !breaker.Allow() {
+			slog.Warn("circuit breaker open", "shop", c.ShopDomain, "path", path)
+			return nil, 0, fmt.Errorf("service temporarily unavailable (circuit breaker open)")
+		}
+
+		result, statusCode, err := c.doRequestRaw(ctx, method, path, body)
+
+		if err == nil {
+			breaker.RecordSuccess()
+			return result, statusCode, nil
+		}
+
+		// 429: retry with Retry-After
+		if statusCode == 429 {
+			retryAfter := parseRetryAfter(err.Error())
+			slog.Warn("rate limited by InSales", "retry_after", retryAfter, "attempt", attempt+1, "shop", c.ShopDomain)
+			breaker.RecordFailure()
+			time.Sleep(retryAfter)
+			continue
+		}
+
+		// Other errors: don't retry
 		breaker.RecordFailure()
-	} else {
-		breaker.RecordSuccess()
+		return result, statusCode, err
 	}
 
-	return result, statusCode, err
+	return nil, 0, fmt.Errorf("rate limited after %d retries", maxRetries)
+}
+
+func parseRetryAfter(errMsg string) time.Duration {
+	// Extract seconds from "rate limited (429), retry after 60"
+	for i := len(errMsg) - 1; i >= 0; i-- {
+		if errMsg[i] == ' ' {
+			numStr := errMsg[i+1:]
+			if n, err := strconv.Atoi(numStr); err == nil && n > 0 {
+				return time.Duration(n) * time.Second
+			}
+			break
+		}
+	}
+	return 60 * time.Second // default
 }
 
 func (c *InSalesClient) doRequestRaw(ctx context.Context, method, path string, body any) ([]byte, int, error) {
