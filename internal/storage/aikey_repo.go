@@ -90,7 +90,7 @@ func (r *AIKeyRepository) ListByUserIDFiltered(userID string, page, perPage int)
 	}
 
 	rows, err := r.db.Query(context.Background(),
-		`SELECT id, user_id, key_hash, COALESCE(name,''), COALESCE(last_used_at::text,''), created_at::text
+		`SELECT id, user_id, key_hash, COALESCE(name,''), pdn_enabled, COALESCE(last_used_at::text,''), created_at::text
 		 FROM ai_keys WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
 		userID, perPage, offset,
 	)
@@ -102,7 +102,7 @@ func (r *AIKeyRepository) ListByUserIDFiltered(userID string, page, perPage int)
 	var keys []AIKey
 	for rows.Next() {
 		var k AIKey
-		if err := rows.Scan(&k.ID, &k.UserID, &k.KeyHash, &k.Name, &k.LastUsedAt, &k.CreatedAt); err != nil {
+		if err := rows.Scan(&k.ID, &k.UserID, &k.KeyHash, &k.Name, &k.PDNEnabled, &k.LastUsedAt, &k.CreatedAt); err != nil {
 			return nil, 0, fmt.Errorf("scan ai key: %w", err)
 		}
 		keys = append(keys, k)
