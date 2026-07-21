@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/chubuk/mcp-is/internal/ratelimit"
 	"github.com/chubuk/mcp-is/internal/resilience"
 )
 
@@ -20,6 +21,8 @@ type InSalesClient struct {
 	Password       string
 	HTTPClient     *http.Client
 	CircuitBreaker *resilience.CircuitBreaker
+	RateTracker    *ratelimit.RateTracker
+	BreakerPool    *ratelimit.PerKeyBreaker
 }
 
 func NewClient(shopDomain, apiKey, password string) (*InSalesClient, error) {
@@ -38,33 +41,35 @@ func NewClient(shopDomain, apiKey, password string) (*InSalesClient, error) {
 			Timeout: 30 * time.Second,
 		},
 		CircuitBreaker: resilience.NewCircuitBreaker(5, 30*time.Second),
+		RateTracker:    ratelimit.NewRateTracker(500, 5*time.Minute),
+		BreakerPool:    ratelimit.NewPerKeyBreaker(5, 30*time.Second),
 	}, nil
 }
 
 func (c *InSalesClient) doRequest(ctx context.Context, method, path string, body any) ([]byte, int, error) {
-	var result []byte
-	var statusCode int
+	// Throttle if approaching rate limit
+	delay := c.RateTracker.GetThrottleDelay(c.APIKey)
+	if delay > 0 {
+		slog.Debug("throttling request", "delay", delay, "shop", c.ShopDomain)
+		time.Sleep(delay)
+	}
 
-	err := c.CircuitBreaker.Execute(func() error {
-		var reqErr error
-		result, statusCode, reqErr = c.doRequestRaw(ctx, method, path, body)
-		if reqErr != nil && resilience.IsRetryable(reqErr) {
-			return reqErr
-		}
-		if statusCode >= 500 {
-			return fmt.Errorf("server error %d", statusCode)
-		}
-		return nil
-	})
+	// Use per-key circuit breaker
+	breaker := c.BreakerPool.GetBreaker(c.APIKey)
+	if !breaker.Allow() {
+		slog.Warn("circuit breaker open", "shop", c.ShopDomain, "path", path)
+		return nil, 0, fmt.Errorf("service temporarily unavailable (circuit breaker open)")
+	}
+
+	result, statusCode, err := c.doRequestRaw(ctx, method, path, body)
 
 	if err != nil {
-		if resilience.IsCircuitOpen(err) {
-			slog.Warn("circuit breaker open", "shop", c.ShopDomain, "path", path)
-			return nil, 0, fmt.Errorf("service temporarily unavailable (circuit breaker open)")
-		}
-		return result, statusCode, err
+		breaker.RecordFailure()
+	} else {
+		breaker.RecordSuccess()
 	}
-	return result, statusCode, nil
+
+	return result, statusCode, err
 }
 
 func (c *InSalesClient) doRequestRaw(ctx context.Context, method, path string, body any) ([]byte, int, error) {
@@ -97,6 +102,9 @@ func (c *InSalesClient) doRequestRaw(ctx context.Context, method, path string, b
 	if err != nil {
 		return nil, resp.StatusCode, fmt.Errorf("read response: %w", err)
 	}
+
+	// Record request for rate tracking
+	c.RateTracker.RecordRequest(c.APIKey)
 
 	slog.Debug("insales api response", "method", method, "path", path, "status", resp.StatusCode)
 
