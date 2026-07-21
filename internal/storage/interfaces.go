@@ -26,7 +26,7 @@ type ShopRepositoryInterface interface {
 	ListByUserID(userID string) ([]Shop, error)
 	ListByUserIDFiltered(userID string, page, perPage int) ([]Shop, int, error)
 	GetDefault(userID string) (*Shop, error)
-	Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) error
+	Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) error
 	Delete(id string) error
 }
 

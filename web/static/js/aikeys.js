@@ -33,12 +33,12 @@ const AIKeys = {
                     : '<span style="color:#888">ПДн —</span>';
                 rows += `
                     <tr>
-                        <td>${k.name || 'Без названия'}</td>
-                        <td><code>${k.key_hash.substring(0, 16)}...</code></td>
-                        <td>${pdnBadge}</td>
-                        <td>${k.created_at ? k.created_at.split('T')[0] : '—'}</td>
-                        <td>${k.last_used_at ? k.last_used_at.split('T')[0] : '—'}</td>
-                        <td>
+                        <td data-label="Название">${k.name || 'Без названия'}</td>
+                        <td data-label="Хэш"><code>${k.key_hash.substring(0, 16)}...</code></td>
+                        <td data-label="ПДн">${pdnBadge}</td>
+                        <td data-label="Создан">${k.created_at ? k.created_at.split('T')[0] : '—'}</td>
+                        <td data-label="Использован">${k.last_used_at ? k.last_used_at.split('T')[0] : '—'}</td>
+                        <td data-label="">
                             <button class="btn btn--danger btn--sm" onclick="AIKeys.delete('${k.id}')">Отозвать</button>
                         </td>
                     </tr>`;

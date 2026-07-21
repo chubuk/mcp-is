@@ -165,12 +165,12 @@ func (h *ShopHandler) Update(w http.ResponseWriter, r *http.Request) {
 		req.APIKeyID = existing.APIKeyID
 	}
 
-	if err := h.shopRepo.Update(shopID, req.Name, req.ShopURL, req.APIKeyID, encrypted, req.IsDefault, req.IsReadOnly); err != nil {
+	if err := h.shopRepo.Update(shopID, req.Name, req.ShopURL, req.APIKeyID, encrypted, req.IsDefault, req.IsReadOnly, req.PDNEnabled); err != nil {
 		writeJSON(w, http.StatusInternalServerError, ShopResponse{Error: "failed to update shop"})
 		return
 	}
 
-	writeJSON(w, http.StatusOK, ShopResponse{ID: shopID, Name: req.Name, ShopURL: req.ShopURL, APIKeyID: req.APIKeyID, IsDefault: req.IsDefault, IsReadOnly: req.IsReadOnly})
+	writeJSON(w, http.StatusOK, ShopResponse{ID: shopID, Name: req.Name, ShopURL: req.ShopURL, APIKeyID: req.APIKeyID, IsDefault: req.IsDefault, IsReadOnly: req.IsReadOnly, PDNEnabled: req.PDNEnabled})
 }
 
 func (h *ShopHandler) Delete(w http.ResponseWriter, r *http.Request) {

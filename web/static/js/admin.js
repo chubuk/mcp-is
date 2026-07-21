@@ -27,12 +27,12 @@ const Admin = {
 
                 rows += `
                     <tr>
-                        <td>${u.nickname}</td>
-                        <td>${u.email || '—'}</td>
-                        <td>${roleBadge}</td>
-                        <td>${statusBadge}</td>
-                        <td>${u.created_at ? u.created_at.split('T')[0] : '—'}</td>
-                        <td>
+                        <td data-label="Никнейм">${u.nickname}</td>
+                        <td data-label="Email">${u.email || '—'}</td>
+                        <td data-label="Роль">${roleBadge}</td>
+                        <td data-label="Статус">${statusBadge}</td>
+                        <td data-label="Создан">${u.created_at ? u.created_at.split('T')[0] : '—'}</td>
+                        <td data-label="">
                             <button class="btn btn--ghost btn--sm" onclick="Admin.showUser('${u.id}')">Подробнее</button>
                         </td>
                     </tr>`;
@@ -378,12 +378,12 @@ const Admin = {
             log.entries.forEach(e => {
                 logRows += `
                     <tr>
-                        <td>${e.timestamp ? new Date(e.timestamp).toLocaleString('ru-RU') : '—'}</td>
-                        <td><code>${e.tool}</code></td>
-                        <td>${(e.data_types || []).join(', ')}</td>
-                        <td>${e.jurisdiction || '—'}</td>
-                        <td>${e.llm_provider || '—'}</td>
-                        <td>${e.masked ? '<span style="color:#27ae60">Да</span>' : 'Нет'}</td>
+                        <td data-label="Время">${e.timestamp ? new Date(e.timestamp).toLocaleString('ru-RU') : '—'}</td>
+                        <td data-label="Команда"><code>${e.tool}</code></td>
+                        <td data-label="Данные">${(e.data_types || []).join(', ')}</td>
+                        <td data-label="Юрисдикция">${e.jurisdiction || '—'}</td>
+                        <td data-label="LLM">${e.llm_provider || '—'}</td>
+                        <td data-label="Маска">${e.masked ? '<span style="color:#27ae60">Да</span>' : 'Нет'}</td>
                     </tr>`;
             });
         } else {

@@ -298,7 +298,7 @@ func (m *mockShopRepo) GetDefault(userID string) (*storage.Shop, error) {
 	return nil, fmt.Errorf("not found")
 }
 
-func (m *mockShopRepo) Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) error {
+func (m *mockShopRepo) Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -309,6 +309,7 @@ func (m *mockShopRepo) Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted 
 		s.APIPasswordEncrypted = apiPasswordEncrypted
 		s.IsDefault = isDefault
 		s.IsReadOnly = isReadOnly
+		s.PDNEnabled = pdnEnabled
 		return nil
 	}
 	return fmt.Errorf("not found")

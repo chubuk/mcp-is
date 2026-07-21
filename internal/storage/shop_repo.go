@@ -127,10 +127,10 @@ func (r *ShopRepository) GetDefault(userID string) (*Shop, error) {
 	return &s, nil
 }
 
-func (r *ShopRepository) Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) error {
+func (r *ShopRepository) Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) error {
 	_, err := r.db.Exec(context.Background(),
-		`UPDATE shops SET name=$1, shop_url=$2, api_key_id=$3, api_password_encrypted=$4, is_default=$5, is_read_only=$6, updated_at=NOW()
-		 WHERE id=$7`, name, shopURL, apiKeyID, apiPasswordEncrypted, isDefault, isReadOnly, id,
+		`UPDATE shops SET name=$1, shop_url=$2, api_key_id=$3, api_password_encrypted=$4, is_default=$5, is_read_only=$6, pdn_enabled=$7, updated_at=NOW()
+		 WHERE id=$8`, name, shopURL, apiKeyID, apiPasswordEncrypted, isDefault, isReadOnly, pdnEnabled, id,
 	)
 	if err != nil {
 		return fmt.Errorf("update shop: %w", err)

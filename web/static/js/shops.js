@@ -24,11 +24,12 @@ const Shops = {
                 const jurBadge = isAdmin && s.jurisdiction ? `<br><small style="color:#888">Юрисдикция: ${s.jurisdiction}</small>` : '';
                 rows += `
                     <tr>
-                        <td><strong>${s.name || 'Без названия'}</strong><br><small style="color:#888">${s.shop_url}</small>${jurBadge}</td>
-                        <td><code>${s.api_key_id.substring(0, 12)}...</code></td>
-                        <td>${s.is_default ? 'Да' : 'Нет'}</td>
-                        <td>${roBadge}<br>${pdnBadge}</td>
-                        <td>
+                        <td data-label="Магазин"><strong>${s.name || 'Без названия'}</strong><br><small style="color:#888">${s.shop_url}</small>${jurBadge}</td>
+                        <td data-label="API Key"><code>${s.api_key_id.substring(0, 12)}...</code></td>
+                        <td data-label="По умолчанию">${s.is_default ? 'Да' : 'Нет'}</td>
+                        <td data-label="Режим">${roBadge}<br>${pdnBadge}</td>
+                        <td data-label="">
+                            <button class="btn btn--ghost btn--sm" onclick="Shops.edit('${s.id}')">Редактировать</button>
                             <button class="btn btn--ghost btn--sm" onclick="Shops.checkCommands('${s.id}')">Команды</button>
                             <button class="btn btn--danger btn--sm" onclick="Shops.delete('${s.id}')">Удалить</button>
                         </td>
@@ -100,6 +101,44 @@ const Shops = {
                 </div>
             </div>
 
+            <div id="edit-shop-form" style="display:none">
+                <div class="card">
+                    <div class="card__title">Редактирование магазина</div>
+                    <div id="edit-shop-alert"></div>
+                    <form id="edit-shop-frm">
+                        <input type="hidden" id="edit-shop-id">
+                        <div class="form-group">
+                            <label>Название магазина *</label>
+                            <input type="text" id="edit-shop-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Домен магазина</label>
+                            <input type="text" id="edit-shop-url" required>
+                        </div>
+                        <div class="form-group">
+                            <label>ID ключа API</label>
+                            <input type="text" id="edit-shop-apikey" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Пароль ключа (оставьте пустым чтобы не менять)</label>
+                            <input type="password" id="edit-shop-apipass">
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="edit-shop-default"> Магазин по умолчанию</label>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="edit-shop-readonly"> Только чтение (запрет записи)</label>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="edit-shop-pdn"> Защита персональных данных (152-ФЗ)</label>
+                            <small style="color:#888">Маскировка email, телефона, ФИО для AI</small>
+                        </div>
+                        <button type="submit" class="btn btn--primary">Сохранить</button>
+                        <button type="button" class="btn btn--ghost" onclick="Shops.hideEditForm()">Отмена</button>
+                    </form>
+                </div>
+            </div>
+
             <div id="commands-modal" style="display:none">
                 <div class="card">
                     <div class="card__title">Доступные команды</div>
@@ -133,6 +172,29 @@ const Shops = {
 
     hideForm() {
         document.getElementById('shop-form').style.display = 'none';
+    },
+
+    async edit(id) {
+        const res = await API.get(`/api/shops?page=1&per_page=100`);
+        if (!res || !res.ok) return;
+        const shop = (res.data.items || []).find(s => s.id === id);
+        if (!shop) return;
+
+        document.getElementById('edit-shop-id').value = shop.id;
+        document.getElementById('edit-shop-name').value = shop.name || '';
+        document.getElementById('edit-shop-url').value = shop.shop_url || '';
+        document.getElementById('edit-shop-apikey').value = shop.api_key_id || '';
+        document.getElementById('edit-shop-apipass').value = '';
+        document.getElementById('edit-shop-default').checked = shop.is_default;
+        document.getElementById('edit-shop-readonly').checked = shop.is_read_only;
+        document.getElementById('edit-shop-pdn').checked = shop.pdn_enabled;
+
+        document.getElementById('edit-shop-form').style.display = 'block';
+        document.getElementById('shop-form').style.display = 'none';
+    },
+
+    hideEditForm() {
+        document.getElementById('edit-shop-form').style.display = 'none';
     },
 
     parseInsalesData(text) {
@@ -229,6 +291,41 @@ const Shops = {
                     '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
             }
         });
+
+        // Edit form binding
+        const editForm = document.getElementById('edit-shop-frm');
+        if (editForm) {
+            editForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('edit-shop-id').value;
+                const name = document.getElementById('edit-shop-name').value.trim();
+                if (!name) {
+                    document.getElementById('edit-shop-alert').innerHTML =
+                        '<div class="alert alert--error">Название магазина обязательно</div>';
+                    return;
+                }
+
+                const body = {
+                    name: name,
+                    shop_url: document.getElementById('edit-shop-url').value,
+                    api_key_id: document.getElementById('edit-shop-apikey').value,
+                    is_default: document.getElementById('edit-shop-default').checked,
+                    is_read_only: document.getElementById('edit-shop-readonly').checked,
+                    pdn_enabled: document.getElementById('edit-shop-pdn').checked,
+                };
+
+                const pass = document.getElementById('edit-shop-apipass').value;
+                if (pass) body.api_password = pass;
+
+                const res = await API.put('/api/shops/' + id, body);
+                if (res && res.ok) {
+                    App.navigate('/shops');
+                } else {
+                    document.getElementById('edit-shop-alert').innerHTML =
+                        '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+                }
+            });
+        }
     },
 
     async delete(id) {
