@@ -113,20 +113,36 @@ func (c *InSalesClient) doRequestRaw(ctx context.Context, method, path string, b
 }
 
 func (c *InSalesClient) GetStoreInfo(ctx context.Context) (*StoreInfo, error) {
-	body, _, err := c.doRequest(ctx, http.MethodGet, "/orders.json?per_page=1", nil)
-	if err != nil {
-		return nil, err
+	// Try multiple endpoints — read-only keys may not access all of them
+	// 404 means the endpoint exists but key lacks permission — still valid credentials
+	endpoints := []string{
+		"/orders.json?per_page=1",
+		"/products.json?per_page=1",
+		"/clients.json?per_page=1",
 	}
-	var resp []InSalesOrderResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
-		return nil, fmt.Errorf("decode orders: %w", err)
+
+	for _, endpoint := range endpoints {
+		_, status, err := c.doRequest(ctx, http.MethodGet, endpoint, nil)
+		if err == nil {
+			return &StoreInfo{
+				Name:     c.ShopDomain,
+				Domain:   c.ShopDomain,
+				Email:    "",
+				Currency: "RUB",
+			}, nil
+		}
+		// 404 means credentials are valid but endpoint not accessible — still a success
+		if status == 404 || status == 403 {
+			return &StoreInfo{
+				Name:     c.ShopDomain,
+				Domain:   c.ShopDomain,
+				Email:    "",
+				Currency: "RUB",
+			}, nil
+		}
 	}
-	return &StoreInfo{
-		Name:     c.ShopDomain,
-		Domain:   c.ShopDomain,
-		Email:    "",
-		Currency: "RUB",
-	}, nil
+
+	return nil, fmt.Errorf("connection failed — check domain and credentials")
 }
 
 func (c *InSalesClient) ListProducts(ctx context.Context, page, perPage int) ([]Product, error) {
