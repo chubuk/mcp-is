@@ -3,7 +3,9 @@ package config
 import (
 	"log/slog"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/joho/godotenv"
 )
@@ -26,6 +28,7 @@ type Config struct {
 	Domain           string
 	AllowedOrigins   []string
 	MaxBodySize      int64
+	JWTExpiry        time.Duration
 }
 
 func Load() *Config {
@@ -49,6 +52,7 @@ func Load() *Config {
 		Domain:         getEnv("DOMAIN", "localhost"),
 		AllowedOrigins: parseOrigins(getEnv("ALLOWED_ORIGINS", "*")),
 		MaxBodySize:    1 << 20, // 1MB default
+		JWTExpiry:      parseDuration(getEnv("JWT_EXPIRY_HOURS", "24"), time.Hour),
 	}
 
 	// Security warnings
@@ -85,4 +89,12 @@ func getEnv(key, fallback string) string {
 		return v
 	}
 	return fallback
+}
+
+func parseDuration(s string, unit time.Duration) time.Duration {
+	n, err := strconv.Atoi(s)
+	if err != nil || n <= 0 {
+		return 24 * time.Hour
+	}
+	return time.Duration(n) * unit
 }

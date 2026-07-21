@@ -43,7 +43,7 @@ func main() {
 	settingsRepo := storage.NewSettingsRepository(pool)
 	_ = settingsRepo.InitDefaults()
 
-	jwtMgr := auth.NewJWTManager(cfg.JWTSecret)
+	jwtMgr := auth.NewJWTManager(cfg.JWTSecret, cfg.JWTExpiry)
 	aesCipher, err := auth.NewAESCipher(cfg.EncryptionKey)
 	if err != nil {
 		slog.Error("invalid encryption key", "error", err)

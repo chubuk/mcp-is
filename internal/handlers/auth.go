@@ -4,9 +4,11 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
-	"regexp"
+	"net/mail"
+	"strings"
 	"time"
 
 	"github.com/chubuk/mcp-is/internal/auth"
@@ -14,8 +16,6 @@ import (
 	"github.com/chubuk/mcp-is/internal/storage"
 	"golang.org/x/crypto/bcrypt"
 )
-
-var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
 
 type AuthHandler struct {
 	userRepo storage.UserRepositoryInterface
@@ -99,7 +99,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	count, _ := h.userRepo.Count()
+	count, err := h.userRepo.Count()
+	if err != nil {
+		slog.Error("count users", "error", err)
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
+		return
+	}
 	role := "user"
 	if count == 0 {
 		role = "super_admin"
@@ -113,8 +118,12 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if role == "super_admin" {
-		h.userRepo.UpdateRole(user.ID, role)
-		h.userRepo.UpdateRequirePasswordChange(user.ID, true)
+		if err := h.userRepo.UpdateRole(user.ID, role); err != nil {
+			slog.Error("update role", "error", err)
+		}
+		if err := h.userRepo.UpdateRequirePasswordChange(user.ID, true); err != nil {
+			slog.Error("set require_password_change", "error", err)
+		}
 	}
 
 	slog.Info("user registered", "id", user.ID, "nickname", user.Nickname, "role", role)
@@ -145,7 +154,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user.Email == "" {
-		token, _ := h.jwtMgr.GenerateToken(user.ID, user.Nickname, user.Role)
+		token, err := h.jwtMgr.GenerateToken(user.ID, user.Nickname, user.Role)
+		if err != nil {
+			slog.Error("generate token", "error", err)
+			writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
+			return
+		}
 		writeJSON(w, http.StatusOK, AuthResponse{
 			Token:        token,
 			UserID:       user.ID,
@@ -157,7 +171,12 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if user.RequirePasswordChange {
-		token, _ := h.jwtMgr.GenerateToken(user.ID, user.Nickname, user.Role)
+		token, err := h.jwtMgr.GenerateToken(user.ID, user.Nickname, user.Role)
+		if err != nil {
+			slog.Error("generate token", "error", err)
+			writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
+			return
+		}
 		writeJSON(w, http.StatusOK, AuthResponse{
 			Token:                token,
 			UserID:               user.ID,
@@ -180,7 +199,11 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(auth.UserIDKey).(string)
+	userID, ok := r.Context().Value(auth.UserIDKey).(string)
+	if !ok || userID == "" {
+		writeJSON(w, http.StatusUnauthorized, AuthResponse{Error: "unauthorized"})
+		return
+	}
 
 	var req ChangePasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -249,7 +272,12 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := generateResetToken()
+	token, err := generateResetToken()
+	if err != nil {
+		slog.Error("generate reset token", "error", err)
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
+		return
+	}
 	expiresAt := time.Now().Add(1 * time.Hour).Format(time.RFC3339)
 
 	if err := h.userRepo.CreateResetToken(user.ID, token, expiresAt); err != nil {
@@ -316,7 +344,11 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) SetEmail(w http.ResponseWriter, r *http.Request) {
-	userID := r.Context().Value(auth.UserIDKey).(string)
+	userID, ok := r.Context().Value(auth.UserIDKey).(string)
+	if !ok || userID == "" {
+		writeJSON(w, http.StatusUnauthorized, AuthResponse{Error: "unauthorized"})
+		return
+	}
 
 	var req SetEmailRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -343,10 +375,12 @@ func (h *AuthHandler) SetEmail(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, AuthResponse{UserID: userID})
 }
 
-func generateResetToken() string {
+func generateResetToken() (string, error) {
 	b := make([]byte, 32)
-	rand.Read(b)
-	return hex.EncodeToString(b)
+	if _, err := rand.Read(b); err != nil {
+		return "", fmt.Errorf("generate reset token: %w", err)
+	}
+	return hex.EncodeToString(b), nil
 }
 
 func hasUpperCase(s string) bool {
@@ -368,7 +402,8 @@ func hasDigit(s string) bool {
 }
 
 func isValidEmail(email string) bool {
-	return emailRegex.MatchString(email)
+	_, err := mail.ParseAddress(email)
+	return err == nil && strings.Contains(email, "@")
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

@@ -14,7 +14,7 @@ import (
 
 func setupAuthHandler() (*AuthHandler, *mockUserRepo) {
 	repo := newMockUserRepo()
-	jwtMgr := auth.NewJWTManager("test-secret-key-for-testing1234")
+	jwtMgr := auth.NewJWTManager("test-secret-key-for-testing1234", 0)
 	return NewAuthHandler(repo, jwtMgr, nil), repo
 }
 

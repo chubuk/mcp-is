@@ -18,6 +18,16 @@ type MCPServer struct {
 	readOnly   bool
 }
 
+type mcpContextKey string
+
+const (
+	mcpShopNameKey      mcpContextKey = "shop_name"
+	mcpKeyNameKey       mcpContextKey = "key_name"
+	mcpReadOnlyKey      mcpContextKey = "read_only"
+	mcpShopPDNKey       mcpContextKey = "shop_pdn_enabled"
+	mcpAIKeyPDNKey      mcpContextKey = "ai_key_pdn_enabled"
+)
+
 func NewMCPServer(svc *service.Service, readOnly bool) *MCPServer {
 	s := server.NewMCPServer(
 		"mcp-is",
@@ -75,9 +85,9 @@ func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if shopName != "" || keyName != "" {
-		ctx = context.WithValue(ctx, "shop_name", shopName)
-		ctx = context.WithValue(ctx, "key_name", keyName)
-		ctx = context.WithValue(ctx, "read_only", readOnly)
+		ctx = context.WithValue(ctx, mcpShopNameKey, shopName)
+		ctx = context.WithValue(ctx, mcpKeyNameKey, keyName)
+		ctx = context.WithValue(ctx, mcpReadOnlyKey, readOnly)
 	}
 
 	s.httpServer.ServeHTTP(w, r.WithContext(ctx))

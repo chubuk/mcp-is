@@ -30,6 +30,17 @@ var (
 func shouldUpdateLastUsed(keyID string) bool {
 	lastKeyUpdateMu.Lock()
 	defer lastKeyUpdateMu.Unlock()
+
+	// Cleanup entries older than 10 minutes periodically
+	if len(lastKeyUpdate) > 1000 {
+		now := time.Now()
+		for k, v := range lastKeyUpdate {
+			if now.Sub(v) > 10*time.Minute {
+				delete(lastKeyUpdate, k)
+			}
+		}
+	}
+
 	last, exists := lastKeyUpdate[keyID]
 	if !exists {
 		lastKeyUpdate[keyID] = time.Now()
@@ -109,7 +120,7 @@ func RequireRole(roles ...string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			role, _ := r.Context().Value(RoleKey).(string)
-			if !allowed[role] {
+			if role == "" || !allowed[role] {
 				http.Error(w, `{"error":"insufficient permissions"}`, http.StatusForbidden)
 				return
 			}
@@ -149,7 +160,7 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 			}
 
 			if shouldUpdateLastUsed(keyID) {
-				go db.Exec(r.Context(), `UPDATE ai_keys SET last_used_at = NOW() WHERE id = $1`, keyID)
+				go db.Exec(context.Background(), `UPDATE ai_keys SET last_used_at = NOW() WHERE id = $1`, keyID)
 			}
 
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)

@@ -6,7 +6,7 @@ import (
 )
 
 func TestJWTManager_GenerateAndValidate(t *testing.T) {
-	mgr := NewJWTManager("test-secret-key-32-bytes-long!!")
+	mgr := NewJWTManager("test-secret-key-32-bytes-long!!", 0)
 
 	token, err := mgr.GenerateToken("user-123", "testuser", "user")
 	if err != nil {
@@ -40,7 +40,7 @@ func TestJWTManager_GenerateAndValidate(t *testing.T) {
 }
 
 func TestJWTManager_InvalidToken(t *testing.T) {
-	mgr := NewJWTManager("test-secret-key")
+	mgr := NewJWTManager("test-secret-key", 0)
 
 	_, err := mgr.ValidateToken("invalid-token-string")
 	if err == nil {
@@ -49,8 +49,8 @@ func TestJWTManager_InvalidToken(t *testing.T) {
 }
 
 func TestJWTManager_WrongSecret(t *testing.T) {
-	mgr1 := NewJWTManager("secret-one")
-	mgr2 := NewJWTManager("secret-two")
+	mgr1 := NewJWTManager("secret-one", 0)
+	mgr2 := NewJWTManager("secret-two", 0)
 
 	token, _ := mgr1.GenerateToken("user-1", "user1", "user")
 

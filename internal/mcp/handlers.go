@@ -29,8 +29,8 @@ func getFloat(args map[string]any, key string, def float64) float64 {
 }
 
 func applyPDNToResult(ctx context.Context, result any, toolName string) any {
-	shopPDN, _ := ctx.Value("shop_pdn_enabled").(bool)
-	aiKeyPDN, _ := ctx.Value("ai_key_pdn_enabled").(bool)
+	shopPDN, _ := ctx.Value(mcpShopPDNKey).(bool)
+	aiKeyPDN, _ := ctx.Value(mcpAIKeyPDNKey).(bool)
 
 	if !shopPDN && !aiKeyPDN {
 		return result

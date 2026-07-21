@@ -118,7 +118,9 @@ func (r *UserRepository) ListFiltered(page, perPage int, query string) ([]User, 
 		return nil, 0, fmt.Errorf("count users: %w", err)
 	}
 
-	dataArgs := append(args, perPage, offset)
+	dataArgs := make([]any, len(args))
+	copy(dataArgs, args)
+	dataArgs = append(dataArgs, perPage, offset)
 	dataQuery := `SELECT id, nickname, COALESCE(email,''), COALESCE(phone,''),
 	       COALESCE(first_name,''), COALESCE(last_name,''), role, is_active, require_password_change, created_at::text
 		FROM users ` + where + ` ORDER BY created_at DESC LIMIT $` + fmt.Sprintf("%d", len(args)+1) + ` OFFSET $` + fmt.Sprintf("%d", len(args)+2)
