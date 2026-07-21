@@ -33,7 +33,7 @@ const Admin = {
                         <td data-label="Статус">${statusBadge}</td>
                         <td data-label="Создан">${u.created_at ? u.created_at.split('T')[0] : '—'}</td>
                         <td data-label="">
-                            <button class="btn btn--ghost btn--sm" onclick="Admin.showUser('${u.id}')">Подробнее</button>
+                            <button class="btn btn--ghost btn--sm" onclick="App.navigate('/admin/users/${u.id}')">👁️ Подробнее</button>
                         </td>
                     </tr>`;
             });
@@ -111,20 +111,20 @@ const Admin = {
         let actions = '';
         if (!isSuperAdmin && !isMe) {
             actions += `
-                <button class="btn btn--danger btn--sm" onclick="Admin.deleteUser('${u.id}')">Удалить</button>`;
+                <button class="btn btn--danger btn--sm" onclick="Admin.deleteUser('${u.id}')">🗑️ Удалить</button>`;
             if (myRole === 'super_admin') {
                 const newRole = u.role === 'admin' ? 'user' : 'admin';
                 actions += `
                     <button class="btn btn--ghost btn--sm" onclick="Admin.changeRole('${u.id}', '${newRole}')">
-                        ${u.role === 'admin' ? 'Понизить до User' : 'Повысить до Admin'}
+                        ${u.role === 'admin' ? '⬇️ Понизить' : '⬆️ Повысить'}
                     </button>`;
             }
             if (u.is_active) {
                 actions += `
-                    <button class="btn btn--ghost btn--sm" onclick="Admin.blockUser('${u.id}')">Заблокировать</button>`;
+                    <button class="btn btn--ghost btn--sm" onclick="Admin.blockUser('${u.id}')">🔒 Заблокировать</button>`;
             } else {
                 actions += `
-                    <button class="btn btn--ghost btn--sm" onclick="Admin.unblockUser('${u.id}')">Разблокировать</button>`;
+                    <button class="btn btn--ghost btn--sm" onclick="Admin.unblockUser('${u.id}')">🔓 Разблокировать</button>`;
             }
         } else if (isMe) {
             actions = '<span style="color:#888;font-size:13px">Вы не можете изменить свой профиль через админку</span>';
@@ -292,7 +292,7 @@ const Admin = {
                     <label>Обновлять за (дней до окончания)</label>
                     <input type="number" id="srv-renew-days" value="${s.renew_days_before || 30}" min="14" max="60" ${!isSuperAdmin ? 'disabled' : ''}>
                 </div>
-                ${isSuperAdmin ? '<button class="btn btn--primary" onclick="Admin.saveServer()">Сохранить</button>' : ''}
+                ${isSuperAdmin ? '<button class="btn btn--primary" onclick="Admin.saveServer()">💾 Сохранить</button>' : ''}
             </div>
 
             <div class="card">
@@ -308,8 +308,8 @@ const Admin = {
                 </table>
                 </div>
                 <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-                    <button class="btn btn--secondary" onclick="Admin.issueCert()">Выпустить сертификат</button>
-                    <button class="btn btn--ghost" onclick="Admin.renewCert()">Продлить сертификат</button>
+                    <button class="btn btn--secondary" onclick="Admin.issueCert()">📜 Выпустить сертификат</button>
+                    <button class="btn btn--ghost" onclick="Admin.renewCert()">🔐 Продлить сертификат</button>
                 </div>
             </div>`;
     },
@@ -427,7 +427,7 @@ const Admin = {
                         <input type="checkbox" id="pdn-mask" ${s.mask_pii ? 'checked' : ''}> Маскировка ПДн
                     </label>
                 </div>
-                <button class="btn btn--primary" onclick="Admin.savePDN()">Сохранить</button>
+                <button class="btn btn--primary" onclick="Admin.savePDN()">💾 Сохранить</button>
             </div>
 
             <div class="card">

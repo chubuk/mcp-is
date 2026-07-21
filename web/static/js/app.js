@@ -151,7 +151,7 @@ const Settings = {
                     <label>Email</label>
                     <input type="email" id="settings-email" value="${email}" placeholder="your@email.com">
                 </div>
-                <button class="btn btn--primary btn--sm" onclick="Settings.saveEmail()">Сохранить email</button>
+                <button class="btn btn--primary btn--sm" onclick="Settings.saveEmail()">💾 Сохранить email</button>
             </div>
             <div class="card">
                 <div class="card__title">Смена пароля</div>
@@ -168,7 +168,7 @@ const Settings = {
                     <label>Повторите новый пароль</label>
                     <input type="password" id="pwd-new2" minlength="6">
                 </div>
-                <button class="btn btn--primary btn--sm" onclick="Settings.changePassword()">Изменить пароль</button>
+                <button class="btn btn--primary btn--sm" onclick="Settings.changePassword()">🔑 Изменить пароль</button>
             </div>`;
     },
 
@@ -217,5 +217,14 @@ const Settings = {
         }
     }
 };
+
+function showToast(message, type = 'success', duration = 3000) {
+    document.querySelectorAll('.toast').forEach(t => t.remove());
+    const toast = document.createElement('div');
+    toast.className = 'toast toast--' + type;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), duration);
+}
 
 document.addEventListener('DOMContentLoaded', () => App.init());

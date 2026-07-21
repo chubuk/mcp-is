@@ -29,9 +29,11 @@ const Shops = {
                         <td data-label="По умолчанию">${s.is_default ? 'Да' : 'Нет'}</td>
                         <td data-label="Режим">${roBadge}<br>${pdnBadge}</td>
                         <td data-label="">
-                            <button class="btn btn--ghost btn--sm" onclick="Shops.edit('${s.id}')">Редактировать</button>
-                            <button class="btn btn--ghost btn--sm" onclick="Shops.checkCommands('${s.id}')">Команды</button>
-                            <button class="btn btn--danger btn--sm" onclick="Shops.delete('${s.id}')">Удалить</button>
+                            <div style="display:flex;gap:4px;flex-wrap:nowrap">
+                                <button class="btn btn--ghost btn--sm" onclick="Shops.edit('${s.id}')">✏️ Ред.</button>
+                                <button class="btn btn--ghost btn--sm" onclick="Shops.checkCommands('${s.id}')">⚙️ Команды</button>
+                                <button class="btn btn--danger btn--sm" onclick="Shops.delete('${s.id}')">🗑️ Удалить</button>
+                            </div>
                         </td>
                     </tr>`;
             });
@@ -94,9 +96,9 @@ const Shops = {
                             <small style="color:#888">Маскировка email, телефона, ФИО для AI</small>
                         </div>
                         <div id="test-connection-result" style="display:none;margin-bottom:16px"></div>
-                        <button type="button" class="btn btn--secondary" onclick="Shops.testConnection()">Проверить соединение</button>
-                        <button type="submit" class="btn btn--primary">Сохранить</button>
-                        <button type="button" class="btn btn--ghost" onclick="Shops.hideForm()">Отмена</button>
+                        <button type="button" class="btn btn--secondary" onclick="Shops.testConnection()">🔍 Проверить соединение</button>
+                        <button type="submit" class="btn btn--primary">💾 Сохранить</button>
+                        <button type="button" class="btn btn--ghost" onclick="Shops.hideForm()">✖️ Отмена</button>
                     </form>
                 </div>
             </div>
@@ -133,8 +135,8 @@ const Shops = {
                             <label><input type="checkbox" id="edit-shop-pdn"> Защита персональных данных (152-ФЗ)</label>
                             <small style="color:#888">Маскировка email, телефона, ФИО для AI</small>
                         </div>
-                        <button type="submit" class="btn btn--primary">Сохранить</button>
-                        <button type="button" class="btn btn--ghost" onclick="Shops.hideEditForm()">Отмена</button>
+                        <button type="submit" class="btn btn--primary">💾 Сохранить</button>
+                        <button type="button" class="btn btn--ghost" onclick="Shops.hideEditForm()">✖️ Отмена</button>
                     </form>
                 </div>
             </div>
@@ -143,7 +145,7 @@ const Shops = {
                 <div class="card">
                     <div class="card__title">Доступные команды</div>
                     <div id="commands-result"></div>
-                    <button class="btn btn--ghost" onclick="document.getElementById('commands-modal').style.display='none'">Закрыть</button>
+                    <button class="btn btn--ghost" onclick="document.getElementById('commands-modal').style.display='none'">✖️ Закрыть</button>
                 </div>
             </div>
 

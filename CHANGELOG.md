@@ -3,7 +3,14 @@
 ## [Unreleased]
 
 ### Добавлено
-- **Circuit Breaker** — защита от каскадных сбоев при запросах к InSales API
+- **MCP URL** — при создании AI-ключа показывается MCP URL с портом
+- **Copy buttons** — копирование ключа, URL и конфигурации для Claude/VS Code
+- **AI key PDN toggle** — клик по бейджу ПДн включает/выключает защиту
+- **Shop edit** — редактирование магазинов (название, домен, ключ, is_read_only, pdn_enabled)
+- **UI/UX скил** — универсальные паттерны (copy, toast, loading, empty states)
+- **Responsive Web Design скил** — breakpoints, mobile-first, Flexbox, Grid
+- **DB schema check скил** — проверка схемы БД перед коммитом
+- **Shop paste feature** — быстрое заполнение ключа из InSales
 - **Retry with backoff** — автоматические повторы с exponential backoff + jitter
 - **Prometheus метрики** — http_requests_total, http_request_duration_seconds, mcp_tool_calls_total, active_connections
 - **pprof** — профилирование CPU/memory/goroutine на порту 6060

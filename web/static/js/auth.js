@@ -15,7 +15,7 @@ const Auth = {
                             <label>Пароль</label>
                             <input type="password" id="password" required autocomplete="current-password">
                         </div>
-                        <button type="submit" class="btn btn--primary" style="width:100%">Войти</button>
+                        <button type="submit" class="btn btn--primary" style="width:100%">🔑 Войти</button>
                     </form>
                     <p class="link"><a href="/forgot-password">Забыли пароль?</a></p>
                     <p class="link">Нет аккаунта? <a href="/register">Зарегистрироваться</a></p>
@@ -55,7 +55,7 @@ const Auth = {
                             <label>Пароль *</label>
                             <input type="password" id="reg-password" required minlength="6" autocomplete="new-password">
                         </div>
-                        <button type="submit" class="btn btn--primary" style="width:100%">Зарегистрироваться</button>
+                        <button type="submit" class="btn btn--primary" style="width:100%">➕ Зарегистрироваться</button>
                     </form>
                     <p class="link">Уже есть аккаунт? <a href="/login">Войти</a></p>
                 </div>
@@ -132,7 +132,7 @@ const Auth = {
                             <label>Email</label>
                             <input type="email" id="forgot-email" required>
                         </div>
-                        <button type="submit" class="btn btn--primary" style="width:100%">Отправить</button>
+                        <button type="submit" class="btn btn--primary" style="width:100%">📧 Отправить</button>
                     </form>
                     <p class="link"><a href="/login">← Вернуться к входу</a></p>
                 </div>
@@ -171,7 +171,7 @@ const Auth = {
                             <label>Повторите пароль</label>
                             <input type="password" id="reset-password2" required minlength="6" autocomplete="new-password">
                         </div>
-                        <button type="submit" class="btn btn--primary" style="width:100%">Сохранить</button>
+                        <button type="submit" class="btn btn--primary" style="width:100%">💾 Сохранить</button>
                     </form>
                     <p class="link"><a href="/login">← Вернуться к входу</a></p>
                 </div>
@@ -217,7 +217,7 @@ const Auth = {
                             <label>Повторите пароль</label>
                             <input type="password" id="force-new-password2" required minlength="6" autocomplete="new-password">
                         </div>
-                        <button type="submit" class="btn btn--primary" style="width:100%">Сменить пароль</button>
+                        <button type="submit" class="btn btn--primary" style="width:100%">🔑 Сменить пароль</button>
                     </form>
                 </div>
             </div>`;

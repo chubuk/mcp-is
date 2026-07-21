@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/storage"
@@ -29,6 +30,7 @@ type AIKeyResponse struct {
 	Name       string `json:"name"`
 	Key        string `json:"key,omitempty"`
 	KeyHash    string `json:"key_hash,omitempty"`
+	MCPUrl     string `json:"mcp_url,omitempty"`
 	PDNEnabled bool   `json:"pdn_enabled"`
 	CreatedAt  string `json:"created_at,omitempty"`
 	Error      string `json:"error,omitempty"`
@@ -61,8 +63,23 @@ func (h *AIKeyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("ai key created", "id", key.ID, "name", key.Name, "pdn", req.PDNEnabled)
+
+	scheme := "https"
+	if r.TLS == nil && r.Header.Get("X-Forwarded-Proto") != "https" {
+		scheme = "http"
+	}
+	host := r.Host
+	if !strings.Contains(host, ":") {
+		if scheme == "https" {
+			host += ":443"
+		} else {
+			host += ":8080"
+		}
+	}
+	mcpURL := scheme + "://" + host + "/mcp"
+
 	writeJSON(w, http.StatusCreated, AIKeyResponse{
-		ID: key.ID, Name: key.Name, Key: rawKey, KeyHash: keyHash, PDNEnabled: req.PDNEnabled,
+		ID: key.ID, Name: key.Name, Key: rawKey, KeyHash: keyHash, MCPUrl: mcpURL, PDNEnabled: req.PDNEnabled,
 	})
 }
 
@@ -97,6 +114,23 @@ func (h *AIKeyHandler) List(w http.ResponseWriter, r *http.Request) {
 		"page":     page,
 		"per_page": perPage,
 	})
+}
+
+func (h *AIKeyHandler) Update(w http.ResponseWriter, r *http.Request) {
+	keyID := r.PathValue("id")
+
+	var req AIKeyRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, AIKeyResponse{Error: "invalid request body"})
+		return
+	}
+
+	if err := h.keyRepo.UpdatePDNEnabled(keyID, req.PDNEnabled); err != nil {
+		writeJSON(w, http.StatusInternalServerError, AIKeyResponse{Error: "failed to update key"})
+		return
+	}
+
+	writeJSON(w, http.StatusOK, AIKeyResponse{ID: keyID, PDNEnabled: req.PDNEnabled})
 }
 
 func (h *AIKeyHandler) Delete(w http.ResponseWriter, r *http.Request) {
