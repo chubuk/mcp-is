@@ -8,17 +8,18 @@ import (
 )
 
 type User struct {
-	ID           string
-	Nickname     string
-	Email        string
-	Phone        string
-	FirstName    string
-	LastName     string
-	PasswordHash string
-	Role         string
-	IsActive     bool
-	CreatedAt    string
-	UpdatedAt    string
+	ID                    string
+	Nickname              string
+	Email                 string
+	Phone                 string
+	FirstName             string
+	LastName              string
+	PasswordHash          string
+	Role                  string
+	IsActive              bool
+	RequirePasswordChange bool
+	CreatedAt             string
+	UpdatedAt             string
 }
 
 type UserRepository struct {
@@ -35,9 +36,9 @@ func (r *UserRepository) Create(nickname, email, phone, firstName, lastName, pas
 		`INSERT INTO users (nickname, email, phone, first_name, last_name, password_hash)
 		 VALUES ($1, $2, $3, $4, $5, $6)
 		 RETURNING id, nickname, COALESCE(email,''), COALESCE(phone,''),
-		           COALESCE(first_name,''), COALESCE(last_name,''), role, is_active, created_at::text`,
+		           COALESCE(first_name,''), COALESCE(last_name,''), role, is_active, require_password_change, created_at::text`,
 		nickname, nullStr(email), nullStr(phone), nullStr(firstName), nullStr(lastName), passwordHash,
-	).Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.Role, &u.IsActive, &u.CreatedAt)
+	).Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.Role, &u.IsActive, &u.RequirePasswordChange, &u.CreatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("create user: %w", err)
@@ -49,9 +50,9 @@ func (r *UserRepository) GetByID(id string) (*User, error) {
 	var u User
 	err := r.db.QueryRow(context.Background(),
 		`SELECT id, nickname, COALESCE(email,''), COALESCE(phone,''),
-		        COALESCE(first_name,''), COALESCE(last_name,''), password_hash, role, is_active, created_at::text, updated_at::text
+		        COALESCE(first_name,''), COALESCE(last_name,''), password_hash, role, is_active, require_password_change, created_at::text, updated_at::text
 		 FROM users WHERE id = $1`, id,
-	).Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.PasswordHash, &u.Role, &u.IsActive, &u.CreatedAt, &u.UpdatedAt)
+	).Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.PasswordHash, &u.Role, &u.IsActive, &u.RequirePasswordChange, &u.CreatedAt, &u.UpdatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
@@ -63,9 +64,9 @@ func (r *UserRepository) GetByLogin(login string) (*User, error) {
 	var u User
 	err := r.db.QueryRow(context.Background(),
 		`SELECT id, nickname, COALESCE(email,''), COALESCE(phone,''),
-		        COALESCE(first_name,''), COALESCE(last_name,''), password_hash, role, is_active, created_at::text, updated_at::text
+		        COALESCE(first_name,''), COALESCE(last_name,''), password_hash, role, is_active, require_password_change, created_at::text, updated_at::text
 		 FROM users WHERE (email = $1 OR phone = $1 OR nickname = $1) AND is_active = TRUE`, login,
-	).Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.PasswordHash, &u.Role, &u.IsActive, &u.CreatedAt, &u.UpdatedAt)
+	).Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.PasswordHash, &u.Role, &u.IsActive, &u.RequirePasswordChange, &u.CreatedAt, &u.UpdatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
@@ -76,7 +77,7 @@ func (r *UserRepository) GetByLogin(login string) (*User, error) {
 func (r *UserRepository) ListAll() ([]User, error) {
 	rows, err := r.db.Query(context.Background(),
 		`SELECT id, nickname, COALESCE(email,''), COALESCE(phone,''),
-		        COALESCE(first_name,''), COALESCE(last_name,''), role, is_active, created_at::text
+		        COALESCE(first_name,''), COALESCE(last_name,''), role, is_active, require_password_change, created_at::text
 		 FROM users ORDER BY created_at DESC`)
 	if err != nil {
 		return nil, fmt.Errorf("list users: %w", err)
@@ -86,7 +87,7 @@ func (r *UserRepository) ListAll() ([]User, error) {
 	var users []User
 	for rows.Next() {
 		var u User
-		if err := rows.Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.Role, &u.IsActive, &u.CreatedAt); err != nil {
+		if err := rows.Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.Role, &u.IsActive, &u.RequirePasswordChange, &u.CreatedAt); err != nil {
 			return nil, fmt.Errorf("scan user: %w", err)
 		}
 		users = append(users, u)
@@ -119,7 +120,7 @@ func (r *UserRepository) ListFiltered(page, perPage int, query string) ([]User, 
 
 	dataArgs := append(args, perPage, offset)
 	dataQuery := `SELECT id, nickname, COALESCE(email,''), COALESCE(phone,''),
-	       COALESCE(first_name,''), COALESCE(last_name,''), role, is_active, created_at::text
+	       COALESCE(first_name,''), COALESCE(last_name,''), role, is_active, require_password_change, created_at::text
 		FROM users ` + where + ` ORDER BY created_at DESC LIMIT $` + fmt.Sprintf("%d", len(args)+1) + ` OFFSET $` + fmt.Sprintf("%d", len(args)+2)
 
 	rows, err := r.db.Query(context.Background(), dataQuery, dataArgs...)
@@ -131,7 +132,7 @@ func (r *UserRepository) ListFiltered(page, perPage int, query string) ([]User, 
 	var users []User
 	for rows.Next() {
 		var u User
-		if err := rows.Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.Role, &u.IsActive, &u.CreatedAt); err != nil {
+		if err := rows.Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.Role, &u.IsActive, &u.RequirePasswordChange, &u.CreatedAt); err != nil {
 			return nil, 0, fmt.Errorf("scan user: %w", err)
 		}
 		users = append(users, u)
@@ -165,6 +166,12 @@ func (r *UserRepository) Count() (int, error) {
 func (r *UserRepository) UpdatePassword(id, passwordHash string) error {
 	_, err := r.db.Exec(context.Background(),
 		`UPDATE users SET password_hash=$1, updated_at=NOW() WHERE id=$2`, passwordHash, id)
+	return err
+}
+
+func (r *UserRepository) UpdateRequirePasswordChange(id string, value bool) error {
+	_, err := r.db.Exec(context.Background(),
+		`UPDATE users SET require_password_change=$1, updated_at=NOW() WHERE id=$2`, value, id)
 	return err
 }
 

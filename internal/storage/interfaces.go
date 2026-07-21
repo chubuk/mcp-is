@@ -10,6 +10,7 @@ type UserRepositoryInterface interface {
 	UpdateRole(id, role string) error
 	UpdateStatus(id string, isActive bool) error
 	UpdatePassword(id, passwordHash string) error
+	UpdateRequirePasswordChange(id string, value bool) error
 	UpdateEmail(id, email string) error
 	Delete(id string) error
 	Count() (int, error)

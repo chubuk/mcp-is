@@ -150,6 +150,17 @@ func (m *mockUserRepo) UpdatePassword(id, passwordHash string) error {
 	return fmt.Errorf("not found")
 }
 
+func (m *mockUserRepo) UpdateRequirePasswordChange(id string, value bool) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if u, ok := m.users[id]; ok {
+		u.RequirePasswordChange = value
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
+
 func (m *mockUserRepo) UpdateEmail(id, email string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

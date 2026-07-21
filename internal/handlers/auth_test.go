@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/chubuk/mcp-is/internal/auth"
+	"github.com/chubuk/mcp-is/internal/storage"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func setupAuthHandler() (*AuthHandler, *mockUserRepo) {
@@ -267,5 +269,92 @@ func TestSetEmail_Success(t *testing.T) {
 
 	if setW.Code != http.StatusOK {
 		t.Errorf("expected 200, got %d: %s", setW.Code, setW.Body.String())
+	}
+}
+
+func TestLogin_RequirePasswordChange(t *testing.T) {
+	h, repo := setupAuthHandler()
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte("Pass1234"), bcrypt.DefaultCost)
+	user := &storage.User{
+		ID:                    "sa-1",
+		Nickname:              "admin",
+		Email:                 "admin@test.com",
+		PasswordHash:          string(hash),
+		Role:                  "super_admin",
+		IsActive:              true,
+		RequirePasswordChange: true,
+	}
+	repo.users[user.ID] = user
+
+	loginBody, _ := json.Marshal(LoginRequest{Login: "admin", Password: "Pass1234"})
+	loginReq := httptest.NewRequest(http.MethodPost, "/api/login", bytes.NewReader(loginBody))
+	loginW := httptest.NewRecorder()
+	h.Login(loginW, loginReq)
+
+	if loginW.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", loginW.Code, loginW.Body.String())
+	}
+
+	var resp AuthResponse
+	json.NewDecoder(loginW.Body).Decode(&resp)
+	if !resp.RequirePasswordChange {
+		t.Error("expected require_password_change=true")
+	}
+	if resp.Token == "" {
+		t.Error("expected token in response")
+	}
+}
+
+func TestLogin_NoForceChange_WhenFlagFalse(t *testing.T) {
+	h, _ := setupAuthHandler()
+
+	body, _ := json.Marshal(RegisterRequest{Nickname: "nouser", Password: "Pass1234"})
+	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	h.Register(w, req)
+
+	loginBody, _ := json.Marshal(LoginRequest{Login: "nouser", Password: "Pass1234"})
+	loginReq := httptest.NewRequest(http.MethodPost, "/api/login", bytes.NewReader(loginBody))
+	loginW := httptest.NewRecorder()
+	h.Login(loginW, loginReq)
+
+	if loginW.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", loginW.Code, loginW.Body.String())
+	}
+
+	var resp AuthResponse
+	json.NewDecoder(loginW.Body).Decode(&resp)
+	if resp.RequirePasswordChange {
+		t.Error("expected require_password_change=false (not set)")
+	}
+}
+
+func TestChangePassword_ClearsForceFlag(t *testing.T) {
+	h, repo := setupAuthHandler()
+
+	hash, _ := bcrypt.GenerateFromPassword([]byte("Old12345"), bcrypt.DefaultCost)
+	user := &storage.User{
+		ID:                    "cp-1",
+		Nickname:              "chpwd",
+		PasswordHash:          string(hash),
+		Role:                  "super_admin",
+		IsActive:              true,
+		RequirePasswordChange: true,
+	}
+	repo.users[user.ID] = user
+
+	chgBody, _ := json.Marshal(ChangePasswordRequest{OldPassword: "Old12345", NewPassword: "New12345"})
+	chgReq := httptest.NewRequest(http.MethodPost, "/api/change-password", bytes.NewReader(chgBody))
+	chgReq = chgReq.WithContext(withUserID(chgReq.Context(), "cp-1"))
+	chgW := httptest.NewRecorder()
+	h.ChangePassword(chgW, chgReq)
+
+	if chgW.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", chgW.Code, chgW.Body.String())
+	}
+
+	if user.RequirePasswordChange {
+		t.Error("expected require_password_change to be cleared after password change")
 	}
 }

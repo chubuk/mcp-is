@@ -114,6 +114,7 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 
 	if role == "super_admin" {
 		h.userRepo.UpdateRole(user.ID, role)
+		h.userRepo.UpdateRequirePasswordChange(user.ID, true)
 	}
 
 	slog.Info("user registered", "id", user.ID, "nickname", user.Nickname, "role", role)
@@ -155,7 +156,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if user.Role == "super_admin" && isDefaultPassword(user.PasswordHash) {
+	if user.RequirePasswordChange {
 		token, _ := h.jwtMgr.GenerateToken(user.ID, user.Nickname, user.Role)
 		writeJSON(w, http.StatusOK, AuthResponse{
 			Token:                token,
@@ -223,6 +224,8 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "failed to update password"})
 		return
 	}
+
+	h.userRepo.UpdateRequirePasswordChange(userID, false)
 
 	slog.Info("password changed", "user_id", userID)
 	writeJSON(w, http.StatusOK, AuthResponse{UserID: userID})
@@ -306,6 +309,7 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	h.userRepo.UpdateRequirePasswordChange(user.ID, false)
 	h.userRepo.ClearResetTokens(user.ID)
 	slog.Info("password reset", "user_id", user.ID)
 	writeJSON(w, http.StatusOK, AuthResponse{Message: "Password updated successfully"})
@@ -365,11 +369,6 @@ func hasDigit(s string) bool {
 
 func isValidEmail(email string) bool {
 	return emailRegex.MatchString(email)
-}
-
-func isDefaultPassword(hash string) bool {
-	defaultHash, _ := bcrypt.GenerateFromPassword([]byte("password"), bcrypt.DefaultCost)
-	return hash == string(defaultHash)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

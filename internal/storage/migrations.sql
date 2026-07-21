@@ -10,3 +10,6 @@ ALTER TABLE shops ADD COLUMN IF NOT EXISTS is_read_only BOOLEAN DEFAULT FALSE;
 
 -- Миграция v0.3.0 (будущее)
 -- ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
+
+-- Миграция v0.4.0 - Require password change flag
+ALTER TABLE users ADD COLUMN IF NOT EXISTS require_password_change BOOLEAN DEFAULT FALSE;

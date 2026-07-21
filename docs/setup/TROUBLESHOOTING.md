@@ -50,7 +50,7 @@ sudo lsof -i :5432
 # Получить токен
 TOKEN=$(curl -s -X POST http://localhost:8080/api/login \
   -H "Content-Type: application/json" \
-  -d '{"login": "admin", "password": "password"}' | \
+  -d '{"login": "admin@mcp-is.local", "password": "Admin123"}' | \
   python3 -c "import sys,json; print(json.load(sys.stdin)['token'])")
 ```
 
