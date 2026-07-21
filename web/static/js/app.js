@@ -4,7 +4,7 @@ const App = {
         { path: '/register', render: () => Auth.renderRegister(), auth: false, onMount: () => Auth.bindRegister() },
         { path: '/dashboard', render: () => Dashboard.render(), auth: true },
         { path: '/shops', render: () => Shops.render(), auth: true, onMount: () => Shops.bind() },
-        { path: '/ai-keys', render: () => AIKeys.render(), auth: true },
+        { path: '/ai-keys', render: () => AIKeys.render(), auth: true, onMount: () => AIKeys.bind() },
         { path: '/settings', render: () => Settings.render(), auth: true },
         { path: '/forgot-password', render: () => Auth.renderForgotPassword(), auth: false, onMount: () => Auth.bindForgotPassword() },
         { path: '/reset-password', render: () => Auth.renderResetPassword(), auth: false, onMount: () => Auth.bindResetPassword() },
