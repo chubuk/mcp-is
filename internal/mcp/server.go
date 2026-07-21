@@ -106,7 +106,7 @@ func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if s.autoPDN {
 		serverInRU := s.serverCountry == "RU"
 		shopInRU := shopJurisdiction == "RU"
-		llmForeign := llmJurisdiction != "RU" && llmJurisdiction != "UNKNOWN"
+		llmForeign := llmJurisdiction != "RU"
 		
 		if (!serverInRU && shopInRU) || (serverInRU && shopInRU && llmForeign) {
 			shopPDN = true

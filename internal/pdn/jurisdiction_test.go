@@ -138,3 +138,49 @@ func TestShouldAutoProtectPDN_AllCombinations(t *testing.T) {
 		}
 	}
 }
+
+func TestAutoPDN_Logic(t *testing.T) {
+	tests := []struct {
+		name          string
+		serverCountry string
+		shopDomain    string
+		clientName    string
+		want          bool
+	}{
+		// Server NOT in Russia, shop IS Russian → protect
+		{"server INTL + shop RU + any LLM", "INTL", "myshop.myinsales.ru", "Claude Desktop", true},
+		{"server KZ + shop RU", "KZ", "myshop.myinsales.ru", "YandexGPT", true},
+		
+		// Server IS in Russia, shop IS Russian, LLM is foreign → protect
+		{"server RU + shop RU + US LLM", "RU", "myshop.myinsales.ru", "Claude Desktop", true},
+		{"server RU + shop RU + UNKNOWN LLM", "RU", "myshop.myinsales.ru", "custom-client", true},
+		
+		// Server IS in Russia, shop IS Russian, LLM is Russian → no protect
+		{"server RU + shop RU + RU LLM", "RU", "myshop.myinsales.ru", "YandexGPT", false},
+		{"server RU + shop RU + Sber", "RU", "myshop.myinsales.ru", "SberGPT", false},
+		
+		// Server NOT in Russia, shop NOT Russian → no protect
+		{"server INTL + shop INTL", "INTL", "myshop.shopify.com", "Claude Desktop", false},
+		{"server RU + shop KZ", "RU", "myshop.myinsales.kz", "Claude Desktop", false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			shopJurisdiction := DetectJurisdiction(tt.shopDomain)
+			llmJurisdiction := DetectLLMProvider(tt.clientName)
+			serverInRU := tt.serverCountry == "RU"
+			shopInRU := shopJurisdiction == "RU"
+			llmForeign := llmJurisdiction != "RU"
+			
+			got := false
+			if (!serverInRU && shopInRU) || (serverInRU && shopInRU && llmForeign) {
+				got = true
+			}
+			
+			if got != tt.want {
+				t.Errorf("autoPDN(server=%s, shop=%s, llm=%s) = %v, want %v",
+					tt.serverCountry, tt.shopDomain, tt.clientName, got, tt.want)
+			}
+		})
+	}
+}
