@@ -9,9 +9,9 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/your-project/mcp-insales/internal/auth"
-	"github.com/your-project/mcp-insales/internal/email"
-	"github.com/your-project/mcp-insales/internal/storage"
+	"github.com/chubuk/mcp-is/internal/auth"
+	"github.com/chubuk/mcp-is/internal/email"
+	"github.com/chubuk/mcp-is/internal/storage"
 	"golang.org/x/crypto/bcrypt"
 )
 

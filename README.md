@@ -1,4 +1,4 @@
-# MCP InSales
+# MCP IS
 
 MCP-сервер (Model Context Protocol) для интеграции AI-агентов с интернет-магазином на платформе InSales.
 
@@ -47,7 +47,7 @@ web/
 
 ```bash
 git clone <url_repos>
-cd mcp-insales
+cd mcp-is
 ```
 
 ### 2. Настройка
@@ -399,7 +399,7 @@ SMTP_HOST=smtp.gmail.com
 SMTP_PORT=587
 SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
-SMTP_FROM=MCP InSales <noreply@your-domain.com>
+SMTP_FROM=MCP IS <noreply@your-domain.com>
 ```
 
 Если SMTP не настроен — токены сброса логируются в консоль.
@@ -451,7 +451,7 @@ SMTP_FROM=MCP InSales <noreply@your-domain.com>
 ```json
 {
   "serverInfo": {
-    "name": "mcp-insales",
+    "name": "mcp-is",
     "shop": "Моя Аптека",
     "key": "Cursor MCP",
     "read_only": true
@@ -550,7 +550,7 @@ docker compose up -d --force-recreate app
 ```bash
 # Клонировать проект
 git clone <url_repos>
-cd mcp-insales
+cd mcp-is
 
 # Настроить .env
 cp .env.example .env
@@ -564,13 +564,13 @@ docker compose up -d
 
 ```ini
 [Unit]
-Description=MCP InSales Server
+Description=MCP IS Server
 After=network.target docker.service
 Requires=docker.service
 
 [Service]
 Type=simple
-WorkingDirectory=/opt/mcp-insales
+WorkingDirectory=/opt/mcp-is
 ExecStart=/usr/bin/docker compose up
 ExecStop=/usr/bin/docker compose down
 Restart=on-failure
@@ -666,7 +666,7 @@ go test ./internal/storage/... -tags=integration -v
 Сервер использует структурное JSON-логирование через `slog`. Пример вывода:
 
 ```json
-{"time":"2026-06-29T11:44:24Z","level":"INFO","msg":"starting mcp-insales server","port":"8080"}
+{"time":"2026-06-29T11:44:24Z","level":"INFO","msg":"starting mcp-is server","port":"8080"}
 {"time":"2026-06-29T11:44:24Z","level":"INFO","msg":"insales account configured","shop":"myshop.myinsales.ru"}
 {"time":"2026-06-29T11:44:24Z","level":"INFO","msg":"mcp server mode","read_only":true}
 ```

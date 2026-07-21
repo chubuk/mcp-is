@@ -1,8 +1,8 @@
-# MCP InSales — Пошаговое руководство
+# MCP IS — Пошаговое руководство
 
-## Что такое MCP InSales
+## Что такое MCP IS
 
-MCP InSales — это сервер, который подключает AI-агентов (Claude, Cursor, ChatGPT и др.) к вашему интернет-магазину на платформе InSales. Через MCP-протокол AI получает доступ к товарам, заказам, клиентам и другим данным магазина.
+MCP IS — это сервер, который подключает AI-агентов (Claude, Cursor, ChatGPT и др.) к вашему интернет-магазину на платформе InSales. Через MCP-протокол AI получает доступ к товарам, заказам, клиентам и другим данным магазина.
 
 ## Предварительные требования
 
@@ -14,8 +14,8 @@ MCP InSales — это сервер, который подключает AI-аг
 
 ```bash
 # Клонировать проект
-git clone https://github.com/chubuk/MCP-InSales.git
-cd MCP-InSales
+git clone https://github.com/chubuk/MCP-IS.git
+cd MCP-IS
 
 # Настроить переменные окружения
 cp .env.example .env
@@ -89,7 +89,7 @@ curl http://localhost:8080/health
 ```json
 {
   "servers": {
-    "mcp-insales": {
+    "mcp-is": {
       "type": "http",
       "url": "http://localhost:8080/mcp",
       "headers": {
@@ -105,7 +105,7 @@ curl http://localhost:8080/health
 В `librechat.yaml`:
 ```yaml
 mcpServers:
-  mcp-insales:
+  mcp-is:
     type: streamable-http
     url: http://localhost:8080/mcp
     headers:

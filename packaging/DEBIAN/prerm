@@ -2,18 +2,18 @@
 set -e
 
 # Stop and disable service
-if systemctl is-active --quiet mcp-insales 2>/dev/null; then
-    echo "Stopping mcp-insales service..."
-    systemctl stop mcp-insales
+if systemctl is-active --quiet mcp-is 2>/dev/null; then
+    echo "Stopping mcp-is service..."
+    systemctl stop mcp-is
 fi
 
-if systemctl is-enabled --quiet mcp-insales 2>/dev/null; then
-    systemctl disable mcp-insales
+if systemctl is-enabled --quiet mcp-is 2>/dev/null; then
+    systemctl disable mcp-is
 fi
 
 # Stop Docker containers
-if [ -d "/opt/mcp-insales" ]; then
-    cd /opt/mcp-insales
+if [ -d "/opt/mcp-is" ]; then
+    cd /opt/mcp-is
     docker compose down 2>/dev/null || true
 fi
 

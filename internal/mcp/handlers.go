@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/your-project/mcp-insales/internal/pdn"
-	"github.com/your-project/mcp-insales/internal/service"
+	"github.com/chubuk/mcp-is/internal/pdn"
+	"github.com/chubuk/mcp-is/internal/service"
 )
 
 func formatResult(v any) string {

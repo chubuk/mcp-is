@@ -1,10 +1,10 @@
-Package: mcp-insales
+Package: mcp-is
 Version: 0.1.0
 Section: net
 Priority: optional
 Architecture: amd64
 Depends: docker.io, docker-compose-v2, adduser
-Maintainer: MCP InSales Team
+Maintainer: MCP IS Team
 Description: MCP server for InSales e-commerce platform
  Model Context Protocol server that integrates AI agents with
  the InSales e-commerce platform via REST API.

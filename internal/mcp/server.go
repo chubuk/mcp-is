@@ -7,9 +7,9 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"github.com/your-project/mcp-insales/internal/auth"
-	"github.com/your-project/mcp-insales/internal/core"
-	"github.com/your-project/mcp-insales/internal/service"
+	"github.com/chubuk/mcp-is/internal/auth"
+	"github.com/chubuk/mcp-is/internal/core"
+	"github.com/chubuk/mcp-is/internal/service"
 )
 
 type MCPServer struct {
@@ -20,7 +20,7 @@ type MCPServer struct {
 
 func NewMCPServer(svc *service.Service, readOnly bool) *MCPServer {
 	s := server.NewMCPServer(
-		"mcp-insales",
+		"mcp-is",
 		"0.2.0",
 		server.WithToolCapabilities(true),
 		server.WithToolFilter(toolFilter(readOnly)),

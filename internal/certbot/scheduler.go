@@ -4,7 +4,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/your-project/mcp-insales/internal/storage"
+	"github.com/chubuk/mcp-is/internal/storage"
 )
 
 type Scheduler struct {

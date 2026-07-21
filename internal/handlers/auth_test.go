@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/your-project/mcp-insales/internal/auth"
+	"github.com/chubuk/mcp-is/internal/auth"
 )
 
 func setupAuthHandler() (*AuthHandler, *mockUserRepo) {

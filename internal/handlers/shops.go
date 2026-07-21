@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/your-project/mcp-insales/internal/auth"
-	"github.com/your-project/mcp-insales/internal/integration/insales"
-	"github.com/your-project/mcp-insales/internal/mcp"
-	"github.com/your-project/mcp-insales/internal/storage"
+	"github.com/chubuk/mcp-is/internal/auth"
+	"github.com/chubuk/mcp-is/internal/integration/insales"
+	"github.com/chubuk/mcp-is/internal/mcp"
+	"github.com/chubuk/mcp-is/internal/storage"
 )
 
 type ShopHandler struct {

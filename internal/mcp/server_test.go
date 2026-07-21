@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/your-project/mcp-insales/internal/core"
+	"github.com/chubuk/mcp-is/internal/core"
 )
 
 func TestToolFilterReadOnly(t *testing.T) {

@@ -9,23 +9,23 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/your-project/mcp-insales/internal/auth"
-	"github.com/your-project/mcp-insales/internal/certbot"
-	"github.com/your-project/mcp-insales/internal/config"
-	"github.com/your-project/mcp-insales/internal/core"
-	"github.com/your-project/mcp-insales/internal/email"
-	"github.com/your-project/mcp-insales/internal/handlers"
-	"github.com/your-project/mcp-insales/internal/logger"
-	"github.com/your-project/mcp-insales/internal/mcp"
-	"github.com/your-project/mcp-insales/internal/service"
-	"github.com/your-project/mcp-insales/internal/storage"
+	"github.com/chubuk/mcp-is/internal/auth"
+	"github.com/chubuk/mcp-is/internal/certbot"
+	"github.com/chubuk/mcp-is/internal/config"
+	"github.com/chubuk/mcp-is/internal/core"
+	"github.com/chubuk/mcp-is/internal/email"
+	"github.com/chubuk/mcp-is/internal/handlers"
+	"github.com/chubuk/mcp-is/internal/logger"
+	"github.com/chubuk/mcp-is/internal/mcp"
+	"github.com/chubuk/mcp-is/internal/service"
+	"github.com/chubuk/mcp-is/internal/storage"
 )
 
 func main() {
 	cfg := config.Load()
 	logger.Init(cfg.LogLevel)
 
-	slog.Info("starting mcp-insales server", "port", cfg.ServerPort)
+	slog.Info("starting mcp-is server", "port", cfg.ServerPort)
 
 	db, err := storage.NewDB(cfg.DatabaseURL)
 	if err != nil {

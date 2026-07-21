@@ -1,4 +1,4 @@
-# MCP InSales — Архитектура
+# MCP IS — Архитектура
 
 ## Обзор системы
 
@@ -141,7 +141,7 @@ Tool filtering (tools/list возвращает только read-команды
 
 ```bash
 # Установка
-sudo dpkg -i mcp-insales_0.1.0_amd64.deb
-sudo nano /etc/mcp-insales/.env
-sudo systemctl start mcp-insales
+sudo dpkg -i mcp-is_0.1.0_amd64.deb
+sudo nano /etc/mcp-is/.env
+sudo systemctl start mcp-is
 ```

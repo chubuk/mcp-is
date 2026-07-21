@@ -8,14 +8,14 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/your-project/mcp-insales/internal/auth"
-	"github.com/your-project/mcp-insales/internal/storage"
+	"github.com/chubuk/mcp-is/internal/auth"
+	"github.com/chubuk/mcp-is/internal/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func setupServerHandler(t *testing.T) (*ServerHandler, *pgxpool.Pool) {
 	t.Helper()
-	dbURL := "postgres://admin:password@localhost:5432/mcp_insales?sslmode=disable"
+	dbURL := "postgres://admin:password@localhost:5432/mcp_is?sslmode=disable"
 	pool, err := pgxpool.New(context.Background(), dbURL)
 	if err != nil {
 		t.Skip("PostgreSQL not available, skipping server handler tests")

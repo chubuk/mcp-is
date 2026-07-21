@@ -1,10 +1,10 @@
 services:
   db:
     image: postgres:15-alpine
-    container_name: mcp_insales_db
+    container_name: mcp_is_db
     restart: always
     environment:
-      POSTGRES_DB: mcp_insales
+      POSTGRES_DB: mcp_is
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
     ports:
@@ -13,21 +13,21 @@ services:
       - db_data:/var/lib/postgresql/data
       - ./internal/storage/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d mcp_insales"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d mcp_is"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   app:
     build: .
-    container_name: mcp_insales_app
+    container_name: mcp_is_app
     restart: always
     expose:
       - "8080"
     env_file:
       - .env
     environment:
-      DB_URL: postgres://admin:${DB_PASSWORD:-password}@db:5432/mcp_insales?sslmode=disable
+      DB_URL: postgres://admin:${DB_PASSWORD:-password}@db:5432/mcp_is?sslmode=disable
       SERVER_PORT: "8080"
     depends_on:
       db:
@@ -40,7 +40,7 @@ services:
 
   nginx:
     build: ./web/nginx
-    container_name: mcp_insales_nginx
+    container_name: mcp_is_nginx
     restart: always
     ports:
       - "${NGINX_HTTP_PORT:-80}:80"

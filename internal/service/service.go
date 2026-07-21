@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/your-project/mcp-insales/internal/core"
-	"github.com/your-project/mcp-insales/internal/integration/insales"
+	"github.com/chubuk/mcp-is/internal/core"
+	"github.com/chubuk/mcp-is/internal/integration/insales"
 )
 
 type Service struct {

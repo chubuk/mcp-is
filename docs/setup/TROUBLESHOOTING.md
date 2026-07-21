@@ -1,4 +1,4 @@
-# MCP InSales — Решение проблем
+# MCP IS — Решение проблем
 
 ## Docker
 
@@ -115,7 +115,7 @@ EOF
 )
 
 # Обновить в БД
-docker exec mcp_insales_db psql -U admin -d mcp_insales \
+docker exec mcp_is_db psql -U admin -d mcp_is \
   -c "UPDATE users SET password_hash = '$HASH' WHERE nickname = 'admin';"
 ```
 
@@ -125,7 +125,7 @@ docker exec mcp_insales_db psql -U admin -d mcp_insales \
 
 **Решение:**
 1. Web UI → Сервер → Продлить сертификат
-2. Или: `docker exec mcp_insales_nginx certbot renew`
+2. Или: `docker exec mcp_is_nginx certbot renew`
 
 ### Let's Encrypt не работает на localhost
 

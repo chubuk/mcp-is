@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-INSTALL_DIR="/opt/mcp-insales"
-CONF_DIR="/etc/mcp-insales"
+INSTALL_DIR="/opt/mcp-is"
+CONF_DIR="/etc/mcp-is"
 ENV_FILE="${CONF_DIR}/.env"
 VERSION_FILE="${INSTALL_DIR}/VERSION"
 BACKUP_DIR="${INSTALL_DIR}/backups"
@@ -23,11 +23,11 @@ fi
 # Check if this is an update or fresh install
 if [ -f "${VERSION_FILE}" ]; then
     CURRENT_VERSION=$(cat "${VERSION_FILE}")
-    NEW_VERSION=$(dpkg -s mcp-insales 2>/dev/null | grep "^Version:" | awk '{print $2}' || echo "unknown")
+    NEW_VERSION=$(dpkg -s mcp-is 2>/dev/null | grep "^Version:" | awk '{print $2}' || echo "unknown")
 
     echo ""
     echo "====================================="
-    echo "  MCP InSales Update"
+    echo "  MCP IS Update"
     echo "====================================="
     echo ""
     echo "  Current version: ${CURRENT_VERSION}"
@@ -38,7 +38,7 @@ if [ -f "${VERSION_FILE}" ]; then
         echo "  Same version. Skipping backup."
         echo ""
     else
-        echo "  This will update MCP InSales."
+        echo "  This will update MCP IS."
         echo ""
         read -p "  Create backup before update? [Y/n]: " CREATE_BACKUP
         CREATE_BACKUP=${CREATE_BACKUP:-Y}
@@ -53,10 +53,10 @@ if [ -f "${VERSION_FILE}" ]; then
             TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
             # Backup database if container is running
-            if docker ps --format '{{.Names}}' | grep -q "mcp_insales_db"; then
+            if docker ps --format '{{.Names}}' | grep -q "mcp_is_db"; then
                 echo "  Backing up database..."
                 cd "${INSTALL_DIR}"
-                docker compose exec -T db pg_dump -U admin mcp_insales > "${BACKUP_DIR}/db_${TIMESTAMP}.sql" 2>/dev/null || true
+                docker compose exec -T db pg_dump -U admin mcp_is > "${BACKUP_DIR}/db_${TIMESTAMP}.sql" 2>/dev/null || true
                 if [ -s "${BACKUP_DIR}/db_${TIMESTAMP}.sql" ]; then
                     echo "  Database backup: ${BACKUP_DIR}/db_${TIMESTAMP}.sql"
                 else
@@ -92,9 +92,9 @@ if [ -f "${VERSION_FILE}" ]; then
 fi
 
 # Stop service if running
-if systemctl is-active --quiet mcp-insales 2>/dev/null; then
-    echo "Stopping mcp-insales service..."
-    systemctl stop mcp-insales
+if systemctl is-active --quiet mcp-is 2>/dev/null; then
+    echo "Stopping mcp-is service..."
+    systemctl stop mcp-is
 fi
 
 exit 0

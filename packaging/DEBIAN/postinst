@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-INSTALL_DIR="/opt/mcp-insales"
-CONF_DIR="/etc/mcp-insales"
+INSTALL_DIR="/opt/mcp-is"
+CONF_DIR="/etc/mcp-is"
 ENV_FILE="${CONF_DIR}/.env"
 VERSION_FILE="${INSTALL_DIR}/VERSION"
 
@@ -14,7 +14,7 @@ if [ ! -f "${ENV_FILE}" ]; then
     cp "${INSTALL_DIR}/.env.example" "${ENV_FILE}"
     echo ""
     echo "====================================="
-    echo "  MCP InSales installed!"
+    echo "  MCP IS installed!"
     echo "====================================="
     echo ""
     echo "  IMPORTANT: Edit configuration file:"
@@ -26,7 +26,7 @@ if [ ! -f "${ENV_FILE}" ]; then
     echo "    INSALES_PASSWORD=your_password"
     echo ""
     echo "  Then start the service:"
-    echo "  sudo systemctl start mcp-insales"
+    echo "  sudo systemctl start mcp-is"
     echo ""
 else
     echo "Config file ${ENV_FILE} already exists, preserving."
@@ -36,7 +36,7 @@ fi
 systemctl daemon-reload
 
 # Enable service
-systemctl enable mcp-insales
+systemctl enable mcp-is
 
 # Start containers
 echo ""
@@ -49,7 +49,7 @@ echo "Waiting for database..."
 WAIT_COUNT=0
 MAX_WAIT=30
 while [ ${WAIT_COUNT} -lt ${MAX_WAIT} ]; do
-    if docker compose exec -T db pg_isready -U admin -d mcp_insales &>/dev/null; then
+    if docker compose exec -T db pg_isready -U admin -d mcp_is &>/dev/null; then
         echo "Database is ready."
         break
     fi
@@ -66,7 +66,7 @@ echo ""
 echo "Running database migrations..."
 MIGRATIONS_FILE="${INSTALL_DIR}/internal/storage/migrations.sql"
 if [ -f "${MIGRATIONS_FILE}" ]; then
-    docker compose exec -T db psql -U admin -d mcp_insales -f /dev/stdin < "${MIGRATIONS_FILE}" 2>/dev/null && \
+    docker compose exec -T db psql -U admin -d mcp_is -f /dev/stdin < "${MIGRATIONS_FILE}" 2>/dev/null && \
         echo "Migrations applied successfully." || \
         echo "WARNING: Some migrations may have failed (this is normal for first install)"
 else
@@ -86,12 +86,12 @@ else
 fi
 
 # Save version
-NEW_VERSION=$(dpkg -s mcp-insales 2>/dev/null | grep "^Version:" | awk '{print $2}' || echo "unknown")
+NEW_VERSION=$(dpkg -s mcp-is 2>/dev/null | grep "^Version:" | awk '{print $2}' || echo "unknown")
 echo "${NEW_VERSION}" > "${VERSION_FILE}"
 
 echo ""
 echo "====================================="
-echo "  MCP InSales update complete!"
+echo "  MCP IS update complete!"
 echo "====================================="
 echo ""
 echo "  Version: ${NEW_VERSION}"

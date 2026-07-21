@@ -1,4 +1,4 @@
-# Использование MCP InSales
+# Использование MCP IS
 
 ## Быстрый старт
 
@@ -99,7 +99,7 @@ URL: `http://localhost:8080/mcp`
 ```json
 {
   "mcpServers": {
-    "mcp-insales": {
+    "mcp-is": {
       "url": "http://localhost:8080/mcp",
       "headers": {
         "Authorization": "Bearer <ВАШ_AI_КЛЮЧ>"
@@ -116,7 +116,7 @@ URL: `http://localhost:8080/mcp`
 ```json
 {
   "servers": {
-    "mcp-insales": {
+    "mcp-is": {
       "type": "http",
       "url": "http://localhost:8080/mcp",
       "headers": {
@@ -134,10 +134,10 @@ URL: `http://localhost:8080/mcp`
 
 ### Continue
 
-Создайте файл `.continue/mcpServers/mcp-insales.yaml`:
+Создайте файл `.continue/mcpServers/mcp-is.yaml`:
 
 ```yaml
-name: MCP InSales
+name: MCP IS
 version: 0.1.0
 schema: v1
 mcpServers:
@@ -165,7 +165,7 @@ mcpServers:
 
 ```yaml
 mcpServers:
-  mcp-insales:
+  mcp-is:
     type: streamable-http
     url: http://localhost:8080/mcp
     headers:
@@ -177,11 +177,11 @@ mcpServers:
 
 В `.env` LibreChat добавьте:
 ```bash
-INSALES_MCP_API_KEY=<ваш_AI_ключ_из_mcp-insales>
+INSALES_MCP_API_KEY=<ваш_AI_ключ_из_mcp-is>
 ```
 
 > **Примечание:** LibreChat работает через Docker, поэтому инструкции одинаковы для всех платформ.
-> Если mcp-insales тоже в Docker, используйте `http://host.docker.internal:8080/mcp`.
+> Если mcp-is тоже в Docker, используйте `http://host.docker.internal:8080/mcp`.
 
 ### Open WebUI (v0.6.31+)
 
@@ -189,7 +189,7 @@ INSALES_MCP_API_KEY=<ваш_AI_ключ_из_mcp-insales>
 1. Admin Settings → External Tools → + (Add Server)
 2. Type: **MCP (Streamable HTTP)**
 3. URL: `http://localhost:8080/mcp`
-4. Auth: **Bearer** → ввести API-ключ mcp-insales
+4. Auth: **Bearer** → ввести API-ключ mcp-is
 5. Save → Restart
 
 **Если Open WebUI в Docker:**
@@ -198,7 +198,7 @@ INSALES_MCP_API_KEY=<ваш_AI_ключ_из_mcp-insales>
 **Через конфигурацию:**
 ```yaml
 mcpServers:
-  mcp-insales:
+  mcp-is:
     type: streamable-http
     url: http://host.docker.internal:8080/mcp
     headers:
@@ -206,7 +206,7 @@ mcpServers:
 ```
 
 > **Примечание:** Open WebUI работает через Docker, поэтому инструкции одинаковы для всех платформ.
-> Если mcp-insales тоже в Docker, используйте `http://host.docker.internal:8080/mcp`.
+> Если mcp-is тоже в Docker, используйте `http://host.docker.internal:8080/mcp`.
 
 ## Примеры запросов через curl
 

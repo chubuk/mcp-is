@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/your-project/mcp-insales/internal/storage"
+	"github.com/chubuk/mcp-is/internal/storage"
 )
 
 type mockUserRepo struct {

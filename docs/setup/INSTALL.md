@@ -1,4 +1,4 @@
-# Установка MCP InSales
+# Установка MCP IS
 
 ## Быстрый старт
 
@@ -28,7 +28,7 @@ docker compose version
 
 ```bash
 git clone <url_repos>
-cd mcp-insales
+cd mcp-is
 ```
 
 ### 3. Получение ключа InSales
@@ -136,7 +136,7 @@ SMTP_FROM=noreply@example.com
 
 ```bash
 # Скачайте новый deb-пакет
-sudo dpkg -i mcp-insales_X.Y.Z_amd64.deb
+sudo dpkg -i mcp-is_X.Y.Z_amd64.deb
 ```
 
 Скрипт автоматически:
@@ -150,14 +150,14 @@ sudo dpkg -i mcp-insales_X.Y.Z_amd64.deb
 ### Через git (для разработчиков)
 
 ```bash
-cd mcp-insales
+cd mcp-is
 git pull
 docker compose up -d --build
 ```
 
 ## Восстановление из бэкапа
 
-Бэкапы хранятся в `/opt/mcp-insales/backups/`:
+Бэкапы хранятся в `/opt/mcp-is/backups/`:
 - `db_YYYYMMDD_HHMMSS.sql` — дамп базы данных
 - `files_YYYYMMDD_HHMMSS.tar.gz` — файлы проекта
 
@@ -165,50 +165,50 @@ docker compose up -d --build
 
 ```bash
 # 1. Остановите сервис
-sudo systemctl stop mcp-insales
+sudo systemctl stop mcp-is
 
 # 2. Восстановите БД
-sudo docker compose -f /opt/mcp-insales/docker-compose.yaml \
-  exec -T db psql -U admin -d mcp_insales < /opt/mcp-insales/backups/db_YYYYMMDD_HHMMSS.sql
+sudo docker compose -f /opt/mcp-is/docker-compose.yaml \
+  exec -T db psql -U admin -d mcp_is < /opt/mcp-is/backups/db_YYYYMMDD_HHMMSS.sql
 
 # 3. Запустите сервис
-sudo systemctl start mcp-insales
+sudo systemctl start mcp-is
 ```
 
 ### Восстановление файлов
 
 ```bash
 # 1. Остановите сервис
-sudo systemctl stop mcp-insales
+sudo systemctl stop mcp-is
 
 # 2. Распакуйте бэкап
-sudo tar xzf /opt/mcp-insales/backups/files_YYYYMMDD_HHMMSS.tar.gz -C /opt/mcp-insales/
+sudo tar xzf /opt/mcp-is/backups/files_YYYYMMDD_HHMMSS.tar.gz -C /opt/mcp-is/
 
 # 3. Пересоберите контейнеры
-cd /opt/mcp-insales && sudo docker compose up -d --build
+cd /opt/mcp-is && sudo docker compose up -d --build
 
 # 4. Запустите сервис
-sudo systemctl start mcp-insales
+sudo systemctl start mcp-is
 ```
 
 ### Полное восстановление
 
 ```bash
 # 1. Остановите сервис
-sudo systemctl stop mcp-insales
+sudo systemctl stop mcp-is
 
 # 2. Восстановите файлы
-sudo tar xzf /opt/mcp-insales/backups/files_YYYYMMDD_HHMMSS.tar.gz -C /opt/mcp-insales/
+sudo tar xzf /opt/mcp-is/backups/files_YYYYMMDD_HHMMSS.tar.gz -C /opt/mcp-is/
 
 # 3. Пересоберите и запустите
-cd /opt/mcp-insales && sudo docker compose up -d --build
+cd /opt/mcp-is && sudo docker compose up -d --build
 
 # 4. Восстановите БД (если нужно)
-sudo docker compose -f /opt/mcp-insales/docker-compose.yaml \
-  exec -T db psql -U admin -d mcp_insales < /opt/mcp-insales/backups/db_YYYYMMDD_HHMMSS.sql
+sudo docker compose -f /opt/mcp-is/docker-compose.yaml \
+  exec -T db psql -U admin -d mcp_is < /opt/mcp-is/backups/db_YYYYMMDD_HHMMSS.sql
 
 # 5. Запустите сервис
-sudo systemctl start mcp-insales
+sudo systemctl start mcp-is
 ```
 
 ## Остановка

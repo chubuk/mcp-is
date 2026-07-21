@@ -1,7 +1,7 @@
 .PHONY: build run test docker-up docker-down logs clean deb
 
 build:
-	CGO_ENABLED=0 go build -tags netgo -o bin/mcp-insales ./cmd/server
+	CGO_ENABLED=0 go build -tags netgo -o bin/mcp-is ./cmd/server
 
 run:
 	go run ./cmd/server
@@ -20,7 +20,7 @@ logs:
 
 clean:
 	rm -rf bin/
-	rm -rf packaging/mcp-insales_*
+	rm -rf packaging/mcp-is_*
 	docker compose down -v
 
 deb:

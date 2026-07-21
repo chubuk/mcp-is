@@ -48,7 +48,7 @@ func (s *Service) SendResetPassword(to, name, token string) error {
 		return fmt.Errorf("render template: %w", err)
 	}
 
-	return s.send(to, "Сброс пароля — MCP InSales", body)
+	return s.send(to, "Сброс пароля — MCP IS", body)
 }
 
 func (s *Service) SendVerifyEmail(to, name, token string) error {
@@ -67,7 +67,7 @@ func (s *Service) SendVerifyEmail(to, name, token string) error {
 		return fmt.Errorf("render template: %w", err)
 	}
 
-	return s.send(to, "Подтвердите email — MCP InSales", body)
+	return s.send(to, "Подтвердите email — MCP IS", body)
 }
 
 func (s *Service) renderTemplate(name string, data any) (string, error) {

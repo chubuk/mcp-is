@@ -3,7 +3,7 @@ const Auth = {
         return `
             <div class="auth-page">
                 <div class="auth-card">
-                    <h1>MCP InSales</h1>
+                    <h1>MCP IS</h1>
                     <p class="subtitle">Вход в панель управления</p>
                     <div id="alert"></div>
                     <form id="login-form">

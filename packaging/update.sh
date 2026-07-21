@@ -1,15 +1,15 @@
 #!/bin/bash
 set -e
 
-INSTALL_DIR="/opt/mcp-insales"
-CONF_DIR="/etc/mcp-insales"
+INSTALL_DIR="/opt/mcp-is"
+CONF_DIR="/etc/mcp-is"
 ENV_FILE="${CONF_DIR}/.env"
 VERSION_FILE="${INSTALL_DIR}/VERSION"
 BACKUP_DIR="${INSTALL_DIR}/backups"
 
 echo ""
 echo "====================================="
-echo "  MCP InSales Manual Update"
+echo "  MCP IS Manual Update"
 echo "====================================="
 echo ""
 
@@ -22,7 +22,7 @@ else
 fi
 
 # Check if new package is available
-NEW_VERSION=$(dpkg -s mcp-insales 2>/dev/null | grep "^Version:" | awk '{print $2}' || echo "unknown")
+NEW_VERSION=$(dpkg -s mcp-is 2>/dev/null | grep "^Version:" | awk '{print $2}' || echo "unknown")
 echo "Package version: ${NEW_VERSION}"
 echo ""
 
@@ -42,10 +42,10 @@ mkdir -p "${BACKUP_DIR}"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
 # Backup database
-if docker ps --format '{{.Names}}' | grep -q "mcp_insales_db"; then
+if docker ps --format '{{.Names}}' | grep -q "mcp_is_db"; then
     echo "  Backing up database..."
     cd "${INSTALL_DIR}"
-    docker compose exec -T db pg_dump -U admin mcp_insales > "${BACKUP_DIR}/db_${TIMESTAMP}.sql" 2>/dev/null || true
+    docker compose exec -T db pg_dump -U admin mcp_is > "${BACKUP_DIR}/db_${TIMESTAMP}.sql" 2>/dev/null || true
     if [ -s "${BACKUP_DIR}/db_${TIMESTAMP}.sql" ]; then
         echo "  Database backup: ${BACKUP_DIR}/db_${TIMESTAMP}.sql"
     else
@@ -73,7 +73,7 @@ echo ""
 
 # Stop service
 echo "Stopping service..."
-systemctl stop mcp-insales 2>/dev/null || true
+systemctl stop mcp-is 2>/dev/null || true
 
 # Rebuild containers
 echo "Rebuilding containers..."
@@ -85,7 +85,7 @@ echo "Waiting for database..."
 WAIT_COUNT=0
 MAX_WAIT=30
 while [ ${WAIT_COUNT} -lt ${MAX_WAIT} ]; do
-    if docker compose exec -T db pg_isready -U admin -d mcp_insales &>/dev/null; then
+    if docker compose exec -T db pg_isready -U admin -d mcp_is &>/dev/null; then
         echo "Database is ready."
         break
     fi
@@ -98,7 +98,7 @@ echo ""
 echo "Running migrations..."
 MIGRATIONS_FILE="${INSTALL_DIR}/internal/storage/migrations.sql"
 if [ -f "${MIGRATIONS_FILE}" ]; then
-    docker compose exec -T db psql -U admin -d mcp_insales -f /dev/stdin < "${MIGRATIONS_FILE}" 2>/dev/null && \
+    docker compose exec -T db psql -U admin -d mcp_is -f /dev/stdin < "${MIGRATIONS_FILE}" 2>/dev/null && \
         echo "Migrations applied." || \
         echo "WARNING: Some migrations may have failed"
 fi
@@ -119,7 +119,7 @@ echo "${NEW_VERSION}" > "${VERSION_FILE}"
 # Start service
 echo ""
 echo "Starting service..."
-systemctl start mcp-insales
+systemctl start mcp-is
 
 echo ""
 echo "====================================="

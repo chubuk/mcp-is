@@ -1,4 +1,4 @@
-module github.com/your-project/mcp-insales
+module github.com/chubuk/mcp-is
 
 go 1.25.5
 

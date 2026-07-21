@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/your-project/mcp-insales/internal/storage"
+	"github.com/chubuk/mcp-is/internal/storage"
 )
 
 const (
@@ -43,7 +43,7 @@ func NewCertbotService(settingsRepo *storage.SettingsRepository) *CertbotService
 func (s *CertbotService) IssueCert(domain, email string) error {
 	slog.Info("issuing certificate via certbot", "domain", domain, "email", email)
 
-	cmd := exec.Command("docker", "exec", "mcp_insales_nginx",
+	cmd := exec.Command("docker", "exec", "mcp_is_nginx",
 		"certbot", "certonly", "--webroot",
 		"--webroot-path=/var/www/certbot",
 		"-d", domain,
@@ -69,7 +69,7 @@ func (s *CertbotService) IssueCert(domain, email string) error {
 func (s *CertbotService) RenewCert(domain string) error {
 	slog.Info("renewing certificate via certbot", "domain", domain)
 
-	cmd := exec.Command("docker", "exec", "mcp_insales_nginx",
+	cmd := exec.Command("docker", "exec", "mcp_is_nginx",
 		"certbot", "renew", "--non-interactive",
 	)
 	output, err := cmd.CombinedOutput()
@@ -172,7 +172,7 @@ func (s *CertbotService) incrementRetry(errorMsg string) {
 }
 
 func (s *CertbotService) reloadNginx() {
-	cmd := exec.Command("docker", "exec", "mcp_insales_nginx", "nginx", "-s", "reload")
+	cmd := exec.Command("docker", "exec", "mcp_is_nginx", "nginx", "-s", "reload")
 	if err := cmd.Run(); err != nil {
 		slog.Error("failed to reload nginx", "error", err)
 	} else {

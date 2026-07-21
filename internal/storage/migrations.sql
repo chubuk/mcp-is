@@ -1,4 +1,4 @@
--- MCP InSales - Database Migrations
+-- MCP IS - Database Migrations
 -- Этот файл выполняется при каждом обновлении deb-пакета.
 -- Используйте ADD COLUMN IF NOT EXISTS для безопасного повторного выполнения.
 

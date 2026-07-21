@@ -5,7 +5,7 @@ import (
 
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"github.com/your-project/mcp-insales/internal/service"
+	"github.com/chubuk/mcp-is/internal/service"
 )
 
 type ToolInfo struct {

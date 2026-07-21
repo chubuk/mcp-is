@@ -1,4 +1,4 @@
-# MCP InSales — API Reference
+# MCP IS — API Reference
 
 ## REST API
 
@@ -597,7 +597,7 @@ Authorization: Bearer <AI_KEY>
     "protocolVersion": "2024-11-05",
     "capabilities": {"tools": {}},
     "serverInfo": {
-      "name": "mcp-insales",
+      "name": "mcp-is",
       "version": "0.1.0"
     }
   }

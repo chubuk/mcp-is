@@ -15,7 +15,7 @@ func setupTestDB(t *testing.T) *pgxpool.Pool {
 
 	dbURL := os.Getenv("TEST_DB_URL")
 	if dbURL == "" {
-		dbURL = "postgres://admin:password@localhost:5432/mcp_insales?sslmode=disable"
+		dbURL = "postgres://admin:password@localhost:5432/mcp_is?sslmode=disable"
 	}
 
 	pool, err := pgxpool.New(context.Background(), dbURL)

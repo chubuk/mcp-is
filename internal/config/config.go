@@ -32,7 +32,7 @@ func Load() *Config {
 	_ = godotenv.Load()
 
 	cfg := &Config{
-		DatabaseURL:    getEnv("DB_URL", "postgres://admin:password@localhost:5432/mcp_insales?sslmode=disable"),
+		DatabaseURL:    getEnv("DB_URL", "postgres://admin:password@localhost:5432/mcp_is?sslmode=disable"),
 		ServerPort:     getEnv("SERVER_PORT", "8080"),
 		LogLevel:       getEnv("LOG_LEVEL", "info"),
 		InSalesShop:    getEnv("INSALES_SHOP", ""),
@@ -45,7 +45,7 @@ func Load() *Config {
 		SMTPPort:       getEnv("SMTP_PORT", "587"),
 		SMTPUser:       getEnv("SMTP_USER", ""),
 		SMTPPass:       getEnv("SMTP_PASS", ""),
-		SMTPFrom:       getEnv("SMTP_FROM", "MCP InSales <noreply@localhost>"),
+		SMTPFrom:       getEnv("SMTP_FROM", "MCP IS <noreply@localhost>"),
 		Domain:         getEnv("DOMAIN", "localhost"),
 		AllowedOrigins: parseOrigins(getEnv("ALLOWED_ORIGINS", "*")),
 		MaxBodySize:    1 << 20, // 1MB default
