@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
@@ -17,6 +18,7 @@ import (
 	"github.com/chubuk/mcp-is/internal/handlers"
 	"github.com/chubuk/mcp-is/internal/logger"
 	"github.com/chubuk/mcp-is/internal/mcp"
+	"github.com/chubuk/mcp-is/internal/metrics"
 	"github.com/chubuk/mcp-is/internal/service"
 	"github.com/chubuk/mcp-is/internal/storage"
 )
@@ -123,6 +125,11 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
+
+	mux.Handle("GET /metrics", metrics.Handler())
+
+	startupTime := time.Now()
+	metrics.StartupTime.Set(time.Since(startupTime).Seconds())
 
 	httpServer := &http.Server{
 		Addr:         ":" + cfg.ServerPort,
