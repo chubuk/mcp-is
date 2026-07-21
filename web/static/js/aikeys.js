@@ -134,7 +134,22 @@ const AIKeys = {
     copyKey() {
         if (this.newKey) {
             navigator.clipboard.writeText(this.newKey).then(() => {
-                alert('Ключ скопирован!');
+                const btn = document.querySelector('.key-display + .btn, .key-display ~ .btn');
+                if (btn) {
+                    const orig = btn.textContent;
+                    btn.textContent = 'Скопировано!';
+                    setTimeout(() => btn.textContent = orig, 2000);
+                }
+            }).catch(() => {
+                // Fallback: select text for manual copy
+                const el = document.querySelector('.key-display');
+                if (el) {
+                    const range = document.createRange();
+                    range.selectNodeContents(el);
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                }
             });
         }
     },
