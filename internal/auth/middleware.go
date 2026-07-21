@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -14,13 +16,14 @@ import (
 type contextKey string
 
 const (
-	UserIDKey   contextKey = "user_id"
-	NicknameKey contextKey = "nickname"
-	RoleKey     contextKey = "role"
-	ShopIDKey   contextKey = "shop_id"
-	KeyNameKey  contextKey = "key_name"
-	KeyIDKey    contextKey = "key_id"
-	KeyPDNKey   contextKey = "ai_key_pdn_enabled"
+	UserIDKey      contextKey = "user_id"
+	NicknameKey    contextKey = "nickname"
+	RoleKey        contextKey = "role"
+	ShopIDKey      contextKey = "shop_id"
+	KeyNameKey     contextKey = "key_name"
+	KeyIDKey       contextKey = "key_id"
+	KeyPDNKey      contextKey = "ai_key_pdn_enabled"
+	RequestIDKey   contextKey = "request_id"
 )
 
 var (
@@ -52,6 +55,41 @@ func shouldUpdateLastUsed(keyID string) bool {
 		return true
 	}
 	return false
+}
+
+func Chain(h http.Handler, middlewares ...func(http.Handler) http.Handler) http.Handler {
+	for i := len(middlewares) - 1; i >= 0; i-- {
+		h = middlewares[i](h)
+	}
+	return h
+}
+
+func RequestIDMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := r.Header.Get("X-Request-ID")
+		if id == "" {
+			b := make([]byte, 16)
+			rand.Read(b)
+			id = hex.EncodeToString(b)
+		}
+		w.Header().Set("X-Request-ID", id)
+		ctx := context.WithValue(r.Context(), RequestIDKey, id)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func RecoveryMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		defer func() {
+			if rec := recover(); rec != nil {
+				slog.Error("panic recovered", "error", rec, "path", r.URL.Path)
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusInternalServerError)
+				w.Write([]byte(`{"error":"internal error"}`))
+			}
+		}()
+		next.ServeHTTP(w, r)
+	})
 }
 
 func CORSMiddleware(allowedOrigins []string) func(http.Handler) http.Handler {

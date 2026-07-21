@@ -2,8 +2,8 @@
 
 ## Supported Versions
 
-| Version | Supported          |
-| ------- | ------------------ |
+| Version | Supported |
+| ------- | --------- |
 | 0.2.x   | ✅ Yes |
 | < 0.2   | ❌ No |
 
@@ -22,13 +22,6 @@ Send an email to **chubuk@mail.ru** with:
 3. Potential impact
 4. Suggested fix (if any)
 
-### What to Include
-
-- Affected component (auth, API, MCP, etc.)
-- Attack vector
-- Proof of concept (if possible)
-- Your assessment of severity
-
 ### Response Timeline
 
 - **Acknowledgment**: Within 48 hours
@@ -42,29 +35,23 @@ Send an email to **chubuk@mail.ru** with:
 - We will develop and test a fix
 - We will release the fix and credit you (unless you prefer anonymity)
 
-## Security Best Practices
+## Security Features
 
-### For Deployment
+- **Authentication**: JWT tokens with configurable expiry
+- **Authorization**: Role-based access (user, admin, super_admin)
+- **Password hashing**: bcrypt with default cost
+- **Rate limiting**: 10 req/min on auth endpoints
+- **CORS**: Configurable allowed origins
+- **CSP**: Content Security Policy headers
+- **Input validation**: All endpoints validated
+- **SQL injection**: Parameterized queries throughout
+- **PDN protection**: Auto-protection for Russian shops + foreign LLMs
+
+## Best Practices for Deployment
 
 - Change default JWT_SECRET and ENCRYPTION_KEY
-- Use HTTPS in production (Let's Encrypt or self-signed)
-- Set `MCP_READ_ONLY=true` if write operations are not needed
+- Use HTTPS (Let's Encrypt or self-signed)
+- Set `MCP_READ_ONLY=true` if write operations not needed
 - Configure `ALLOWED_ORIGINS` instead of using `*`
 - Use strong passwords (8+ chars, uppercase, digit)
-
-### For Development
-
-- Never commit `.env` files
-- Use environment variables for secrets
-- Keep dependencies updated
-- Run `govulncheck ./...` periodically
-
-## Known Security Features
-
-- **Rate limiting**: 10 req/min on login/register/forgot-password
-- **Password hashing**: bcrypt with default cost
-- **JWT tokens**: HS256 with configurable expiry
-- **CORS**: Configurable allowed origins
-- **Body size limit**: 1MB on MCP endpoint
-- **SQL injection prevention**: Parameterized queries throughout
-- **Password policy**: 8+ chars, 1 uppercase, 1 digit
+- Keep dependencies updated (`govulncheck ./...`)

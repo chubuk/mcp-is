@@ -138,7 +138,7 @@ func main() {
 
 	httpServer := &http.Server{
 		Addr:         ":" + cfg.ServerPort,
-		Handler:      auth.CORSMiddleware(cfg.AllowedOrigins)(mux),
+		Handler:      auth.Chain(mux, auth.RecoveryMiddleware, auth.RequestIDMiddleware, auth.CORSMiddleware(cfg.AllowedOrigins)),
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 	}
