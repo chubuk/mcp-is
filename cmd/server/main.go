@@ -39,6 +39,8 @@ func main() {
 
 	pool := db.Pool()
 
+	storage.RunMigrations(pool)
+
 	userRepo := storage.NewUserRepository(pool)
 	shopRepo := storage.NewShopRepository(pool)
 	aiKeyRepo := storage.NewAIKeyRepository(pool)
@@ -86,6 +88,7 @@ func main() {
 
 	jwtMW := auth.JWTMiddleware(jwtMgr)
 	mux.Handle("POST /api/change-password", jwtMW(http.HandlerFunc(authHandler.ChangePassword)))
+	mux.Handle("POST /api/force-change-password", jwtMW(http.HandlerFunc(authHandler.ForceChangePassword)))
 	mux.Handle("POST /api/set-email", jwtMW(http.HandlerFunc(authHandler.SetEmail)))
 
 	mux.Handle("POST /api/shops", jwtMW(http.HandlerFunc(shopHandler.Create)))

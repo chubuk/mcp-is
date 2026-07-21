@@ -251,6 +251,51 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, AuthResponse{UserID: userID})
 }
 
+func (h *AuthHandler) ForceChangePassword(w http.ResponseWriter, r *http.Request) {
+	userID, ok := r.Context().Value(auth.UserIDKey).(string)
+	if !ok || userID == "" {
+		writeJSON(w, http.StatusUnauthorized, AuthResponse{Error: "unauthorized"})
+		return
+	}
+
+	var req ChangePasswordRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "invalid request body"})
+		return
+	}
+
+	if req.NewPassword == "" {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "new password is required"})
+		return
+	}
+
+	if len(req.NewPassword) < 8 {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "new password must be at least 8 characters"})
+		return
+	}
+
+	if !hasUpperCase(req.NewPassword) || !hasDigit(req.NewPassword) {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "new password must contain at least one uppercase letter and one digit"})
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
+		return
+	}
+
+	if err := h.userRepo.UpdatePassword(userID, string(hash)); err != nil {
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "failed to update password"})
+		return
+	}
+
+	h.userRepo.UpdateRequirePasswordChange(userID, false)
+
+	slog.Info("password force changed", "user_id", userID)
+	writeJSON(w, http.StatusOK, AuthResponse{UserID: userID})
+}
+
 func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	var req ForgotPasswordRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {

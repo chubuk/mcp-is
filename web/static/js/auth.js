@@ -239,8 +239,7 @@ const Auth = {
                 return;
             }
 
-            const res = await API.post('/api/change-password', {
-                old_password: 'password',
+            const res = await API.post('/api/force-change-password', {
                 new_password: password,
             });
 

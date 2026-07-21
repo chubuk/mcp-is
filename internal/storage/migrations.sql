@@ -13,3 +13,6 @@ ALTER TABLE shops ADD COLUMN IF NOT EXISTS is_read_only BOOLEAN DEFAULT FALSE;
 
 -- Миграция v0.4.0 - Require password change flag
 ALTER TABLE users ADD COLUMN IF NOT EXISTS require_password_change BOOLEAN DEFAULT FALSE;
+
+-- Миграция v0.5.0 - PDN enabled flag for AI keys
+ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS pdn_enabled BOOLEAN DEFAULT FALSE;
