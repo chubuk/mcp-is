@@ -43,6 +43,16 @@ func (m *mockUserRepo) Create(nickname, email, phone, firstName, lastName, passw
 	return u, nil
 }
 
+func (m *mockUserRepo) CreateSuperAdmin(nickname, email, phone, firstName, lastName, passwordHash string) (*storage.User, error) {
+	u, err := m.Create(nickname, email, phone, firstName, lastName, passwordHash)
+	if err != nil {
+		return nil, err
+	}
+	u.Role = "super_admin"
+	u.RequirePasswordChange = true
+	return u, nil
+}
+
 func (m *mockUserRepo) GetByID(id string) (*storage.User, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()

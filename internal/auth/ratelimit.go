@@ -1,7 +1,9 @@
 package auth
 
 import (
+	"net"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -26,6 +28,17 @@ func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
 func (rl *RateLimiter) isAllowed(key string) bool {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
+
+	// Cleanup if too many keys
+	if len(rl.requests) > 10000 {
+		now := time.Now()
+		windowStart := now.Add(-rl.window)
+		for k, reqs := range rl.requests {
+			if len(reqs) == 0 || reqs[len(reqs)-1].Before(windowStart) {
+				delete(rl.requests, k)
+			}
+		}
+	}
 
 	now := time.Now()
 	windowStart := now.Add(-rl.window)
@@ -75,7 +88,14 @@ func (rl *RateLimiter) Middleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		ip := r.RemoteAddr
 		if fwd := r.Header.Get("X-Forwarded-For"); fwd != "" {
-			ip = fwd
+			// Take first IP (client) from X-Forwarded-For
+			if idx := strings.Index(fwd, ","); idx > 0 {
+				fwd = strings.TrimSpace(fwd[:idx])
+			}
+			// Basic validation: must be a valid IP
+			if net.ParseIP(fwd) != nil {
+				ip = fwd
+			}
 		}
 
 		if !rl.isAllowed(ip) {

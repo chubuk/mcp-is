@@ -222,6 +222,41 @@ func (r *UserRepository) ClearResetTokens(userID string) error {
 	return err
 }
 
+func (r *UserRepository) CreateSuperAdmin(nickname, email, phone, firstName, lastName, passwordHash string) (*User, error) {
+	tx, err := r.db.Begin(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("begin transaction: %w", err)
+	}
+	defer tx.Rollback(context.Background())
+
+	var u User
+	err = tx.QueryRow(context.Background(),
+		`INSERT INTO users (nickname, email, phone, first_name, last_name, password_hash)
+		 VALUES ($1, $2, $3, $4, $5, $6)
+		 RETURNING id, nickname, COALESCE(email,''), COALESCE(phone,''),
+		           COALESCE(first_name,''), COALESCE(last_name,''), role, is_active, require_password_change, created_at::text`,
+		nickname, nullStr(email), nullStr(phone), nullStr(firstName), nullStr(lastName), passwordHash,
+	).Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.Role, &u.IsActive, &u.RequirePasswordChange, &u.CreatedAt)
+
+	if err != nil {
+		return nil, fmt.Errorf("create user: %w", err)
+	}
+
+	_, err = tx.Exec(context.Background(),
+		`UPDATE users SET role='super_admin', require_password_change=true, updated_at=NOW() WHERE id=$1`, u.ID)
+	if err != nil {
+		return nil, fmt.Errorf("set super_admin role: %w", err)
+	}
+
+	if err := tx.Commit(context.Background()); err != nil {
+		return nil, fmt.Errorf("commit transaction: %w", err)
+	}
+
+	u.Role = "super_admin"
+	u.RequirePasswordChange = true
+	return &u, nil
+}
+
 func nullStr(s string) any {
 	if s == "" {
 		return nil

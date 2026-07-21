@@ -2,6 +2,7 @@ package storage
 
 type UserRepositoryInterface interface {
 	Create(nickname, email, phone, firstName, lastName, passwordHash string) (*User, error)
+	CreateSuperAdmin(nickname, email, phone, firstName, lastName, passwordHash string) (*User, error)
 	GetByID(id string) (*User, error)
 	GetByLogin(login string) (*User, error)
 	GetByEmail(email string) (*User, error)

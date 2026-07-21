@@ -105,28 +105,25 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
 		return
 	}
-	role := "user"
+
+	var user *storage.User
 	if count == 0 {
-		role = "super_admin"
-	}
-
-	user, err := h.userRepo.Create(req.Nickname, req.Email, req.Phone, req.FirstName, req.LastName, string(hash))
-	if err != nil {
-		slog.Warn("register failed", "error", err)
-		writeJSON(w, http.StatusConflict, AuthResponse{Error: "user with this nickname, email or phone already exists"})
-		return
-	}
-
-	if role == "super_admin" {
-		if err := h.userRepo.UpdateRole(user.ID, role); err != nil {
-			slog.Error("update role", "error", err)
+		user, err = h.userRepo.CreateSuperAdmin(req.Nickname, req.Email, req.Phone, req.FirstName, req.LastName, string(hash))
+		if err != nil {
+			slog.Error("create super_admin", "error", err)
+			writeJSON(w, http.StatusConflict, AuthResponse{Error: "user with this nickname, email or phone already exists"})
+			return
 		}
-		if err := h.userRepo.UpdateRequirePasswordChange(user.ID, true); err != nil {
-			slog.Error("set require_password_change", "error", err)
+	} else {
+		user, err = h.userRepo.Create(req.Nickname, req.Email, req.Phone, req.FirstName, req.LastName, string(hash))
+		if err != nil {
+			slog.Warn("register failed", "error", err)
+			writeJSON(w, http.StatusConflict, AuthResponse{Error: "user with this nickname, email or phone already exists"})
+			return
 		}
 	}
 
-	slog.Info("user registered", "id", user.ID, "nickname", user.Nickname, "role", role)
+	slog.Info("user registered", "id", user.ID, "nickname", user.Nickname, "role", user.Role)
 	writeJSON(w, http.StatusCreated, AuthResponse{UserID: user.ID, Nickname: user.Nickname})
 }
 
@@ -285,7 +282,7 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("password reset requested", "user_id", user.ID, "email", user.Email)
+	slog.Info("password reset requested", "user_id", user.ID, "email", maskEmail(user.Email))
 
 	if h.emailSvc != nil {
 		name := user.Nickname
@@ -371,7 +368,7 @@ func (h *AuthHandler) SetEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("email set", "user_id", userID, "email", req.Email)
+	slog.Info("email set", "user_id", userID, "email", maskEmail(req.Email))
 	writeJSON(w, http.StatusOK, AuthResponse{UserID: userID})
 }
 
@@ -404,6 +401,18 @@ func hasDigit(s string) bool {
 func isValidEmail(email string) bool {
 	_, err := mail.ParseAddress(email)
 	return err == nil && strings.Contains(email, "@")
+}
+
+func maskEmail(email string) string {
+	parts := strings.SplitN(email, "@", 2)
+	if len(parts) != 2 {
+		return "***"
+	}
+	local := parts[0]
+	if len(local) > 2 {
+		return local[:2] + "***@" + parts[1]
+	}
+	return "***@" + parts[1]
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

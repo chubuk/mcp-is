@@ -81,3 +81,7 @@ CREATE TABLE IF NOT EXISTS pdn_access_log (
     llm_provider TEXT,
     masked BOOLEAN
 );
+
+CREATE INDEX IF NOT EXISTS idx_pdn_user_id ON pdn_access_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_pdn_shop_id ON pdn_access_log(shop_id);
+CREATE INDEX IF NOT EXISTS idx_pdn_ts ON pdn_access_log(ts);
