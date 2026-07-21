@@ -1,5 +1,23 @@
 # Changelog
 
+## [Unreleased]
+
+### Добавлено
+- **Circuit Breaker** — защита от каскадных сбоев при запросах к InSales API
+- **Retry with backoff** — автоматические повторы с exponential backoff + jitter
+- **Prometheus метрики** — http_requests_total, http_request_duration_seconds, mcp_tool_calls_total, active_connections
+- **pprof** — профилирование CPU/memory/goroutine на порту 6060
+- **OpenAPI spec** — полная спецификация REST API (28 эндпоинтов)
+- **GitHub Actions CI/CD** — lint → test → build → docker → deploy
+- **Backup script** — автоматический бэкап PostgreSQL с retention 7 дней
+
+### Улучшено
+- **Docker** — non-root user (appuser), resource limits (2 CPU/512MB), cap_drop: ALL, logging rotation
+- **Nginx** — server_tokens off, request size limits, JSON logging, request ID, stricter login rate limit
+- **PostgreSQL** — connection pool tuning (MaxConns=20, MinConns=2), pdn_access_log indexes
+- **Auth** — transactional CreateUser+UpdateRole, email masking in logs
+- **Config** — JWT expiry configurable (JWT_EXPIRY_HOURS)
+
 ## [0.2.0] — 2026-07-16
 
 ### Добавлено

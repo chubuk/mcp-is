@@ -20,10 +20,14 @@ internal/
   storage/                  — работа с PostgreSQL (репозитории)
   auth/                     — JWT, AES-GCM, API-ключи, middleware
   logger/                   — структурное логирование (slog)
+  metrics/                  — Prometheus метрики
+  resilience/               — circuit breaker, retry с backoff
   webhooks/                 — обработка вебхуков InSales
 web/
   nginx/                    — Dockerfile, nginx.conf, entrypoint.sh
   static/                   — HTML, CSS, JS (SPA фронтенд)
+scripts/
+  backup.sh                 — автоматический бэкап PostgreSQL
 ```
 
 ## Технологии
