@@ -53,6 +53,14 @@ const Shops = {
                     <div id="shop-alert"></div>
                     <form id="add-shop-form">
                         <div class="form-group">
+                            <label>Быстрое заполнение из InSales</label>
+                            <textarea id="shop-paste" rows="10" style="width:100%;min-height:180px;font-family:monospace;font-size:13px;padding:8px;cursor:text"
+                                placeholder="Вставьте данные ключа из InSales:&#10;&#10;Название ключа&#10;Идентификатор&#10;c06a4060214a31ad...&#10;Пароль&#10;802a7fc14bafd094...&#10;Пример URL&#10;https://...@myshop.myinsales.ru/..."></textarea>
+                            <div id="paste-status"></div>
+                            <small style="color:#888">Скопируйте ключ в InSales и вставьте сюда — поля заполнятся автоматически</small>
+                        </div>
+                        <hr style="border:none;border-top:1px solid #eee;margin:12px 0">
+                        <div class="form-group">
                             <label>Название магазина *</label>
                             <input type="text" id="shop-name" placeholder="Моя Аптека" required>
                         </div>
@@ -127,9 +135,73 @@ const Shops = {
         document.getElementById('shop-form').style.display = 'none';
     },
 
+    parseInsalesData(text) {
+        if (!text || text.length < 20) return null;
+
+        const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+        const result = {};
+        const markers = ['Идентификатор', 'Пароль', 'Формат URL', 'Пример URL', 'Дата подключения'];
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            const next = lines[i + 1];
+
+            if (line === 'Идентификатор' && next) {
+                result.api_key_id = next;
+            } else if (line === 'Пароль' && next) {
+                result.api_password = next;
+            } else if (line === 'Пример URL' && next) {
+                const match = next.match(/@([^/]+)\//);
+                if (match) result.shop_url = match[1];
+            } else if (!result.name && !markers.includes(line) &&
+                       !line.includes('http') && !line.includes(':') &&
+                       line.length < 50 && line.length > 0) {
+                result.name = line;
+            }
+        }
+
+        return result.api_key_id && result.api_password ? result : null;
+    },
+
+    onPasteData() {
+        const textarea = document.getElementById('shop-paste');
+        if (!textarea) return;
+
+        const self = this;
+        const parseAndFill = () => {
+            const text = textarea.value;
+            const data = self.parseInsalesData(text);
+            if (!data) return;
+
+            if (data.name) document.getElementById('shop-name').value = data.name;
+            if (data.shop_url) document.getElementById('shop-url').value = data.shop_url;
+            if (data.api_key_id) document.getElementById('shop-apikey').value = data.api_key_id;
+            if (data.api_password) document.getElementById('shop-apipass').value = data.api_password;
+
+            const statusEl = document.getElementById('paste-status');
+            if (statusEl) {
+                statusEl.innerHTML = '<div class="alert alert--success">Данные заполнены автоматически! Проверьте и нажмите «Сохранить».</div>';
+            }
+
+            textarea.value = '';
+        };
+
+        textarea.addEventListener('input', () => {
+            clearTimeout(self._parseTimer);
+            self._parseTimer = setTimeout(parseAndFill, 800);
+        });
+
+        textarea.addEventListener('focus', () => {
+            const statusEl = document.getElementById('paste-status');
+            if (statusEl) statusEl.innerHTML = '';
+        });
+    },
+
     bind() {
         const form = document.getElementById('add-shop-form');
         if (!form) return;
+
+        this.onPasteData();
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();

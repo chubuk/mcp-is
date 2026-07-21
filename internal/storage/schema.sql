@@ -29,6 +29,8 @@ CREATE TABLE IF NOT EXISTS shops (
     api_password_encrypted TEXT NOT NULL,
     is_default BOOLEAN DEFAULT FALSE,
     is_read_only BOOLEAN DEFAULT FALSE,
+    jurisdiction TEXT DEFAULT 'AUTO',
+    pdn_enabled BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

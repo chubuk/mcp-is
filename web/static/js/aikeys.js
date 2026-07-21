@@ -12,11 +12,12 @@ const AIKeys = {
 
         let keyAlert = '';
         if (this.newKey) {
+            const keyToShow = this.newKey;
             keyAlert = `
                 <div class="card" style="border:2px solid #27ae60">
                     <div class="card__title" style="color:#27ae60">Ключ создан!</div>
                     <div class="card__desc">Скопируйте его СЕЙЧАС. Он больше не будет отображаться.</div>
-                    <div class="key-display">${this.newKey}</div>
+                    <div class="key-display">${keyToShow}</div>
                     <button class="btn btn--primary btn--sm" onclick="AIKeys.copyKey()">Скопировать</button>
                 </div>`;
             this.newKey = null;
@@ -132,24 +133,22 @@ const AIKeys = {
     },
 
     copyKey() {
-        if (this.newKey) {
-            navigator.clipboard.writeText(this.newKey).then(() => {
-                const btn = document.querySelector('.key-display + .btn, .key-display ~ .btn');
+        const el = document.querySelector('.key-display');
+        if (el) {
+            const key = el.textContent.trim();
+            navigator.clipboard.writeText(key).then(() => {
+                const btn = el.parentElement.querySelector('.btn');
                 if (btn) {
-                    const orig = btn.textContent;
                     btn.textContent = 'Скопировано!';
-                    setTimeout(() => btn.textContent = orig, 2000);
+                    setTimeout(() => btn.textContent = 'Скопировать', 2000);
                 }
             }).catch(() => {
                 // Fallback: select text for manual copy
-                const el = document.querySelector('.key-display');
-                if (el) {
-                    const range = document.createRange();
-                    range.selectNodeContents(el);
-                    const sel = window.getSelection();
-                    sel.removeAllRanges();
-                    sel.addRange(range);
-                }
+                const range = document.createRange();
+                range.selectNodeContents(el);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
             });
         }
     },

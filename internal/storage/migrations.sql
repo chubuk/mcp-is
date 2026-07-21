@@ -8,6 +8,12 @@
 -- Миграция v0.2.0 - Per-shop read-only
 ALTER TABLE shops ADD COLUMN IF NOT EXISTS is_read_only BOOLEAN DEFAULT FALSE;
 
+-- Миграция v0.2.1 - Jurisdiction for shops
+ALTER TABLE shops ADD COLUMN IF NOT EXISTS jurisdiction TEXT DEFAULT 'AUTO';
+
+-- Миграция v0.2.2 - PDN enabled for shops
+ALTER TABLE shops ADD COLUMN IF NOT EXISTS pdn_enabled BOOLEAN DEFAULT FALSE;
+
 -- Миграция v0.3.0 (будущее)
 -- ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 
