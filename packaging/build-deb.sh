@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-VERSION="0.1.2"
+VERSION="0.2.1"
 ARCH="amd64"
 PKG_NAME="mcp-is_${VERSION}_${ARCH}"
 BUILD_DIR="packaging/${PKG_NAME}"
