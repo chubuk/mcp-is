@@ -19,10 +19,15 @@
 - **OpenAPI spec** — полная спецификация REST API (28 эндпоинтов)
 - **GitHub Actions CI/CD** — lint → test → build → docker → deploy
 - **Backup script** — автоматический бэкап PostgreSQL с retention 7 дней
+- **Certbot unit tests** — 13 тестов для `internal/certbot` (GetCertInfo, CheckRenewal, ShouldRetry, incrementRetry)
+
+### Исправлено
+- **Certbot в nginx** — добавлен `certbot` в nginx Dockerfile, выпуск/продление сертификатов Let's Encrypt теперь работает
+- **SettingsStore interface** — `internal/certbot` использует интерфейс вместо конкретного типа, улучшает тестируемость
 
 ### Улучшено
 - **Docker** — non-root user (appuser), resource limits (2 CPU/512MB), cap_drop: ALL, logging rotation
-- **Nginx** — server_tokens off, request size limits, JSON logging, request ID, stricter login rate limit
+- **Nginx** — server_tokens off, request size limits, JSON logging, request ID, stricter login rate limit, certbot для Let's Encrypt
 - **PostgreSQL** — connection pool tuning (MaxConns=20, MinConns=2), pdn_access_log indexes
 - **Auth** — transactional CreateUser+UpdateRole, email masking in logs
 - **Config** — JWT expiry configurable (JWT_EXPIRY_HOURS)

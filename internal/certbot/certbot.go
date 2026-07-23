@@ -9,8 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"time"
-
-	"github.com/chubuk/mcp-is/internal/storage"
 )
 
 const (
@@ -26,13 +24,19 @@ type CertInfo struct {
 	IsValid   bool
 }
 
+// SettingsStore is the interface certbot needs from the settings repository.
+type SettingsStore interface {
+	GetDefault(key, fallback string) string
+	Set(key, value string) error
+}
+
 type CertbotService struct {
-	settingsRepo *storage.SettingsRepository
+	settingsRepo SettingsStore
 	certPath     string
 	keyPath      string
 }
 
-func NewCertbotService(settingsRepo *storage.SettingsRepository) *CertbotService {
+func NewCertbotService(settingsRepo SettingsStore) *CertbotService {
 	return &CertbotService{
 		settingsRepo: settingsRepo,
 		certPath:     "/etc/letsencrypt/live",

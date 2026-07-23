@@ -3,17 +3,15 @@ package certbot
 import (
 	"log/slog"
 	"time"
-
-	"github.com/chubuk/mcp-is/internal/storage"
 )
 
 type Scheduler struct {
 	certbot      *CertbotService
-	settingsRepo *storage.SettingsRepository
+	settingsRepo SettingsStore
 	stopCh       chan struct{}
 }
 
-func NewScheduler(certbot *CertbotService, settingsRepo *storage.SettingsRepository) *Scheduler {
+func NewScheduler(certbot *CertbotService, settingsRepo SettingsStore) *Scheduler {
 	return &Scheduler{
 		certbot:      certbot,
 		settingsRepo: settingsRepo,
