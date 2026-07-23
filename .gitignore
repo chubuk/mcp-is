@@ -5,3 +5,8 @@ bin/
 server
 .insales-ip-key
 .mimocode/
+*.pem
+*.key
+ssh/
+id_*
+*_deploy*
