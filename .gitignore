@@ -2,7 +2,7 @@
 *.deb
 packaging/mcp-is_0.1.0_amd64/
 bin/
-server
+/server
 .insales-ip-key
 .mimocode/
 *.pem
