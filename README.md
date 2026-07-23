@@ -541,19 +541,19 @@ MCP_READ_ONLY=false
 docker compose up -d --force-recreate app
 ```
 
-## Развёртывание на VPS
+## Развёртывание на VDS
 
 ### Требования
 
-- Ubuntu 24.04 LTS
+- Ubuntu 24.04 LTS (или Debian/Fedora)
 - Docker и Docker Compose v2
-- 1 CPU / 512MB RAM (минимум)
+- 1 CPU / 256MB RAM (минимум)
 
-### Установка на VPS
+### Быстрый старт
 
 ```bash
 # Клонировать проект
-git clone <url_repos>
+git clone https://github.com/chubuk/mcp-is.git
 cd mcp-is
 
 # Настроить .env
@@ -562,7 +562,54 @@ nano .env
 
 # Запустить
 docker compose up -d
+
+# Проверить
+curl -k https://YOUR_DOMAIN/health
 ```
+
+### Автоматический деплой (deploy.sh)
+
+Скрипт `scripts/deploy.sh` автоматизирует все операции:
+
+```bash
+# Проверка системы (pre-flight)
+./scripts/deploy.sh check
+
+# Полная установка на чистый сервер
+./scripts/deploy.sh install
+
+# Обновление существующей установки
+./scripts/deploy.sh update
+
+# Ручной бэкап
+./scripts/deploy.sh backup
+
+# Проверка статуса
+./scripts/deploy.sh status
+```
+
+### Автоматические бэкапы
+
+Бэкапы настраиваются через админку (`/admin/backup`) или `.env`:
+
+| Параметр | Описание | По умолчанию |
+|----------|----------|--------------|
+| `BACKUP_ENABLED` | Включить бэкапы | true |
+| `BACKUP_METHOD` | pg_basebackup / pg_dump | pg_basebackup |
+| `BACKUP_INTERVAL_HOURS` | Интервал (часов) | 24 |
+| `BACKUP_RETENTION_DAYS` | Хранение (дней) | 14 |
+
+### CI/CD (GitHub Actions)
+
+Автоматический деплой при пуше в main:
+
+1. Бэкап перед деплоем
+2. Сборка Docker образов
+3. Деплой на VDS
+4. Health check
+5. Rollback при ошибке
+
+Требуются GitHub Secrets: `SERVER_HOST`, `SERVER_USER`, `SSH_KEY`.
 
 ### Systemd (опционально)
 
