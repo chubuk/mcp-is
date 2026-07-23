@@ -20,6 +20,9 @@
 - `.gitignore` — паттерн `server` заменён на `/server` (binaries only)
 - `stop-impersonate` — убрана лишняя проверка adminMW (impersonated user имеет роль `user`)
 - `server_settings` — `InitDefaults()` перезаписывала domain/https/cert_issuer при каждом старте. Заменена на `SetDefaultsIfMissing()` (вставка только отсутствующих ключей)
+- **MCP read-only фильтр** — mcp-go по умолчанию считает `ReadOnlyHint=false`, инструменты без аннотации фильтровались в read-only режиме. Добавлены `WithReadOnlyHintAnnotation(true)` к 31 read-инструменту
+- **HTML-ошибки InSales API** — MCP-сервер возвращал сырой HTML при 404/500 ошибках API. Теперь возвращает чистые JSON-ошибки
+- **Название магазина** — `get_shop_info` возвращал домен вместо реального названия. Теперь парсит `<title>` из storefront HTML
 
 ### Тесты
 - 19 новых unit-тестов (3 JWT + 6 middleware + 10 handler)

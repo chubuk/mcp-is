@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/chubuk/mcp-is/internal/ratelimit"
@@ -163,25 +164,76 @@ func (c *InSalesClient) GetStoreInfo(ctx context.Context) (*StoreInfo, error) {
 	for _, endpoint := range endpoints {
 		_, status, err := c.doRequest(ctx, http.MethodGet, endpoint, nil)
 		if err == nil {
-			return &StoreInfo{
-				Name:     c.ShopDomain,
-				Domain:   c.ShopDomain,
-				Email:    "",
-				Currency: "RUB",
-			}, nil
+			return c.buildStoreInfo(ctx), nil
 		}
 		// 404 means credentials are valid but endpoint not accessible — still a success
 		if status == 404 || status == 403 {
-			return &StoreInfo{
-				Name:     c.ShopDomain,
-				Domain:   c.ShopDomain,
-				Email:    "",
-				Currency: "RUB",
-			}, nil
+			return c.buildStoreInfo(ctx), nil
 		}
 	}
 
 	return nil, fmt.Errorf("connection failed — check domain and credentials")
+}
+
+func (c *InSalesClient) buildStoreInfo(ctx context.Context) *StoreInfo {
+	name := c.ShopDomain
+	if title := c.fetchStoreTitle(ctx); title != "" {
+		name = title
+	}
+	return &StoreInfo{
+		Name:     name,
+		Domain:   c.ShopDomain,
+		Email:    "",
+		Currency: "RUB",
+	}
+}
+
+func (c *InSalesClient) fetchStoreTitle(ctx context.Context) string {
+	url := fmt.Sprintf("https://%s/", c.ShopDomain)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return ""
+	}
+	req.Header.Set("User-Agent", "MCP-IS/1.0")
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20))
+	if err != nil {
+		return ""
+	}
+
+	return parseTitleFromHTML(string(body))
+}
+
+func parseTitleFromHTML(html string) string {
+	// Find <title>...</title>
+	start := strings.Index(html, "<title>")
+	if start == -1 {
+		start = strings.Index(html, "<TITLE>")
+	}
+	if start == -1 {
+		return ""
+	}
+	start += 7 // len("<title>")
+	end := strings.Index(html[start:], "</title>")
+	if end == -1 {
+		end = strings.Index(html[start:], "</TITLE>")
+	}
+	if end == -1 {
+		return ""
+	}
+	title := strings.TrimSpace(html[start : start+end])
+	// Take part before " | " if present (InSales format: "Name | Subtitle")
+	if idx := strings.Index(title, " | "); idx > 0 {
+		title = strings.TrimSpace(title[:idx])
+	}
+	return title
 }
 
 func (c *InSalesClient) ListProducts(ctx context.Context, page, perPage int) ([]Product, error) {
