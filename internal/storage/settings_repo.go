@@ -82,3 +82,31 @@ func (r *SettingsRepository) InitDefaults() error {
 	}
 	return nil
 }
+
+func (r *SettingsRepository) SetDefaultsIfMissing() error {
+	defaults := map[string]string{
+		"domain":              "localhost",
+		"https_enabled":       "false",
+		"auto_renew":          "true",
+		"renew_days_before":   "30",
+		"cert_expires_at":     "",
+		"cert_issuer":         "",
+		"cert_needs_attention": "false",
+		"last_renew_error":    "",
+		"retry_count":         "0",
+		"last_retry_at":       "",
+		"letsencrypt_email":   "",
+	}
+	for key, value := range defaults {
+		_, err := r.db.Exec(context.Background(),
+			`INSERT INTO server_settings (key, value, updated_at)
+			 SELECT $1, $2, NOW()
+			 WHERE NOT EXISTS (SELECT 1 FROM server_settings WHERE key = $1)`,
+			key, value,
+		)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}

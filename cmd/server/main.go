@@ -45,7 +45,7 @@ func main() {
 	shopRepo := storage.NewShopRepository(pool)
 	aiKeyRepo := storage.NewAIKeyRepository(pool)
 	settingsRepo := storage.NewSettingsRepository(pool)
-	_ = settingsRepo.InitDefaults()
+	_ = settingsRepo.SetDefaultsIfMissing()
 
 	jwtMgr := auth.NewJWTManager(cfg.JWTSecret, cfg.JWTExpiry)
 	aesCipher, err := auth.NewAESCipher(cfg.EncryptionKey)
