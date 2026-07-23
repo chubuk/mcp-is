@@ -799,6 +799,9 @@ cmd_update() {
         die "Проект не найден в ${PROJECT_DIR}. Выполните сначала: install"
     fi
 
+    # Проверка Docker Compose
+    check_docker || die "Docker не найден"
+
     # Бэкап перед обновлением
     if confirm "Создать бэкап перед обновлением?"; then
         cmd_backup || print_status "WARN" "Бэкап не удался, продолжаем обновление"
