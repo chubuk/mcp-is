@@ -8,9 +8,10 @@ import (
 )
 
 type JWTClaims struct {
-	UserID   string `json:"user_id"`
-	Nickname string `json:"nickname"`
-	Role     string `json:"role"`
+	UserID         string `json:"user_id"`
+	Nickname       string `json:"nickname"`
+	Role           string `json:"role"`
+	ImpersonatorID string `json:"impersonator_id,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -27,10 +28,15 @@ func NewJWTManager(secret string, expiry time.Duration) *JWTManager {
 }
 
 func (m *JWTManager) GenerateToken(userID, nickname, role string) (string, error) {
+	return m.GenerateTokenWithImpersonator(userID, nickname, role, "")
+}
+
+func (m *JWTManager) GenerateTokenWithImpersonator(userID, nickname, role, impersonatorID string) (string, error) {
 	claims := JWTClaims{
-		UserID:   userID,
-		Nickname: nickname,
-		Role:     role,
+		UserID:         userID,
+		Nickname:       nickname,
+		Role:           role,
+		ImpersonatorID: impersonatorID,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(m.expiry)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

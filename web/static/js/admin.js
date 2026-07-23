@@ -112,6 +112,15 @@ const Admin = {
         if (!isSuperAdmin && !isMe) {
             actions += `
                 <button class="btn btn--danger btn--sm" onclick="Admin.deleteUser('${u.id}')">🗑️ Удалить</button>`;
+            if (myRole === 'super_admin' || myRole === 'admin') {
+                const canImpersonate = (myRole === 'super_admin') || (myRole === 'admin' && u.role === 'user');
+                if (canImpersonate) {
+                    actions += `
+                        <button class="btn btn--ghost btn--sm" onclick="Admin.impersonate('${u.id}', '${u.nickname}')">
+                            👤 Войти как ${u.nickname}
+                        </button>`;
+                }
+            }
             if (myRole === 'super_admin') {
                 const newRole = u.role === 'admin' ? 'user' : 'admin';
                 actions += `
@@ -197,6 +206,17 @@ const Admin = {
         const res = await API.del('/api/admin/users/' + id);
         if (res && res.ok) {
             App.navigate('/admin/users');
+        } else {
+            alert('Ошибка: ' + (res ? res.data.error : 'Сервер недоступен'));
+        }
+    },
+
+    async impersonate(userId, nickname) {
+        if (!confirm('Войти как ' + nickname + '? Вы сможете вернуться кнопкой в баннере.')) return;
+        const res = await API.post('/api/admin/users/' + userId + '/impersonate');
+        if (res && res.ok) {
+            API.impersonate(res.data.token, res.data.user_id, res.data.nickname, res.data.role);
+            App.navigate('/dashboard');
         } else {
             alert('Ошибка: ' + (res ? res.data.error : 'Сервер недоступен'));
         }

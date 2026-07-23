@@ -59,3 +59,63 @@ func TestJWTManager_WrongSecret(t *testing.T) {
 		t.Error("expected error when validating with wrong secret")
 	}
 }
+
+func TestJWTManager_GenerateTokenWithImpersonator(t *testing.T) {
+	mgr := NewJWTManager("test-secret-key", 0)
+
+	token, err := mgr.GenerateTokenWithImpersonator("user-1", "user1", "user", "admin-1")
+	if err != nil {
+		t.Fatalf("GenerateTokenWithImpersonator failed: %v", err)
+	}
+
+	claims, err := mgr.ValidateToken(token)
+	if err != nil {
+		t.Fatalf("ValidateToken failed: %v", err)
+	}
+
+	if claims.UserID != "user-1" {
+		t.Errorf("expected UserID 'user-1', got '%s'", claims.UserID)
+	}
+	if claims.ImpersonatorID != "admin-1" {
+		t.Errorf("expected ImpersonatorID 'admin-1', got '%s'", claims.ImpersonatorID)
+	}
+	if claims.Role != "user" {
+		t.Errorf("expected Role 'user', got '%s'", claims.Role)
+	}
+}
+
+func TestJWTManager_GenerateToken_NoImpersonator(t *testing.T) {
+	mgr := NewJWTManager("test-secret-key", 0)
+
+	token, err := mgr.GenerateToken("user-1", "user1", "admin")
+	if err != nil {
+		t.Fatalf("GenerateToken failed: %v", err)
+	}
+
+	claims, err := mgr.ValidateToken(token)
+	if err != nil {
+		t.Fatalf("ValidateToken failed: %v", err)
+	}
+
+	if claims.ImpersonatorID != "" {
+		t.Errorf("expected empty ImpersonatorID, got '%s'", claims.ImpersonatorID)
+	}
+}
+
+func TestJWTManager_ImpersonatorID_EmptyString(t *testing.T) {
+	mgr := NewJWTManager("test-secret-key", 0)
+
+	token, err := mgr.GenerateTokenWithImpersonator("user-1", "user1", "user", "")
+	if err != nil {
+		t.Fatalf("GenerateTokenWithImpersonator failed: %v", err)
+	}
+
+	claims, err := mgr.ValidateToken(token)
+	if err != nil {
+		t.Fatalf("ValidateToken failed: %v", err)
+	}
+
+	if claims.ImpersonatorID != "" {
+		t.Errorf("expected empty ImpersonatorID for empty input, got '%s'", claims.ImpersonatorID)
+	}
+}

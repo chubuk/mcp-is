@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/chubuk/mcp-is/internal/auth"
 )
@@ -15,7 +16,8 @@ func setupAdminHandler() (*AdminHandler, *mockUserRepo, *mockShopRepo, *mockAIKe
 	userRepo := newMockUserRepo()
 	shopRepo := newMockShopRepo()
 	aiKeyRepo := newMockAIKeyRepo()
-	return NewAdminHandler(userRepo, shopRepo, aiKeyRepo), userRepo, shopRepo, aiKeyRepo
+	jwtMgr := auth.NewJWTManager("test-secret", 24*time.Hour)
+	return NewAdminHandler(userRepo, shopRepo, aiKeyRepo, jwtMgr), userRepo, shopRepo, aiKeyRepo
 }
 
 func adminContext(userID, role string) context.Context {
@@ -357,5 +359,223 @@ func TestStats_Empty(t *testing.T) {
 	json.NewDecoder(w.Body).Decode(&stats)
 	if stats.TotalUsers != 0 || stats.TotalShops != 0 || stats.TotalAIKeys != 0 {
 		t.Errorf("expected all zeros, got %+v", stats)
+	}
+}
+
+// ==================== IMPERSONATE ====================
+
+func TestImpersonate_Success(t *testing.T) {
+	h, userRepo, _, _ := setupAdminHandler()
+
+	admin, _ := userRepo.Create("admin", "admin@test.com", "", "", "", "hash")
+	admin.Role = "super_admin"
+
+	target, _ := userRepo.Create("user1", "u1@test.com", "", "", "", "hash")
+
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/users/"+target.ID+"/impersonate", nil)
+	req.SetPathValue("id", target.ID)
+	req = req.WithContext(adminContext(admin.ID, "super_admin"))
+	w := httptest.NewRecorder()
+
+	h.Impersonate(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp ImpersonateResponse
+	json.NewDecoder(w.Body).Decode(&resp)
+	if resp.Token == "" {
+		t.Error("expected non-empty token")
+	}
+	if resp.UserID != target.ID {
+		t.Errorf("expected user_id '%s', got '%s'", target.ID, resp.UserID)
+	}
+	if resp.Nickname != "user1" {
+		t.Errorf("expected nickname 'user1', got '%s'", resp.Nickname)
+	}
+}
+
+func TestImpersonate_AdminCanImpersonateUser(t *testing.T) {
+	h, userRepo, _, _ := setupAdminHandler()
+
+	admin, _ := userRepo.Create("admin", "admin@test.com", "", "", "", "hash")
+	admin.Role = "admin"
+
+	target, _ := userRepo.Create("user1", "u1@test.com", "", "", "", "hash")
+
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/users/"+target.ID+"/impersonate", nil)
+	req.SetPathValue("id", target.ID)
+	req = req.WithContext(adminContext(admin.ID, "admin"))
+	w := httptest.NewRecorder()
+
+	h.Impersonate(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestImpersonate_CannotImpersonateYourself(t *testing.T) {
+	h, userRepo, _, _ := setupAdminHandler()
+
+	admin, _ := userRepo.Create("admin", "admin@test.com", "", "", "", "hash")
+	admin.Role = "super_admin"
+
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/users/"+admin.ID+"/impersonate", nil)
+	req.SetPathValue("id", admin.ID)
+	req = req.WithContext(adminContext(admin.ID, "super_admin"))
+	w := httptest.NewRecorder()
+
+	h.Impersonate(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", w.Code)
+	}
+}
+
+func TestImpersonate_CannotImpersonateSuperAdmin(t *testing.T) {
+	h, userRepo, _, _ := setupAdminHandler()
+
+	caller, _ := userRepo.Create("caller", "c@test.com", "", "", "", "hash")
+	caller.Role = "super_admin"
+
+	sa, _ := userRepo.Create("superadmin", "sa@test.com", "", "", "", "hash")
+	sa.Role = "super_admin"
+
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/users/"+sa.ID+"/impersonate", nil)
+	req.SetPathValue("id", sa.ID)
+	req = req.WithContext(adminContext(caller.ID, "super_admin"))
+	w := httptest.NewRecorder()
+
+	h.Impersonate(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", w.Code)
+	}
+}
+
+func TestImpersonate_AdminCannotImpersonateAdmin(t *testing.T) {
+	h, userRepo, _, _ := setupAdminHandler()
+
+	admin, _ := userRepo.Create("admin", "a@test.com", "", "", "", "hash")
+	admin.Role = "admin"
+
+	otherAdmin, _ := userRepo.Create("otheradmin", "oa@test.com", "", "", "", "hash")
+	otherAdmin.Role = "admin"
+
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/users/"+otherAdmin.ID+"/impersonate", nil)
+	req.SetPathValue("id", otherAdmin.ID)
+	req = req.WithContext(adminContext(admin.ID, "admin"))
+	w := httptest.NewRecorder()
+
+	h.Impersonate(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", w.Code)
+	}
+}
+
+func TestImpersonate_OnlyAdminsCanImpersonate(t *testing.T) {
+	h, userRepo, _, _ := setupAdminHandler()
+
+	user, _ := userRepo.Create("user1", "u1@test.com", "", "", "", "hash")
+
+	target, _ := userRepo.Create("target", "t@test.com", "", "", "", "hash")
+
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/users/"+target.ID+"/impersonate", nil)
+	req.SetPathValue("id", target.ID)
+	req = req.WithContext(adminContext(user.ID, "user"))
+	w := httptest.NewRecorder()
+
+	h.Impersonate(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d", w.Code)
+	}
+}
+
+func TestImpersonate_UserNotFound(t *testing.T) {
+	h, userRepo, _, _ := setupAdminHandler()
+
+	admin, _ := userRepo.Create("admin", "a@test.com", "", "", "", "hash")
+	admin.Role = "super_admin"
+
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/users/nonexistent/impersonate", nil)
+	req.SetPathValue("id", "nonexistent")
+	req = req.WithContext(adminContext(admin.ID, "super_admin"))
+	w := httptest.NewRecorder()
+
+	h.Impersonate(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", w.Code)
+	}
+}
+
+func TestStopImpersonate_Success(t *testing.T) {
+	h, userRepo, _, _ := setupAdminHandler()
+
+	admin, _ := userRepo.Create("admin", "a@test.com", "", "", "", "hash")
+	admin.Role = "super_admin"
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, auth.UserIDKey, admin.ID)
+	ctx = context.WithValue(ctx, auth.RoleKey, admin.Role)
+	ctx = context.WithValue(ctx, auth.ImpersonatorIDKey, admin.ID)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/stop-impersonate", nil)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	h.StopImpersonate(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp ImpersonateResponse
+	json.NewDecoder(w.Body).Decode(&resp)
+	if resp.Token == "" {
+		t.Error("expected non-empty token")
+	}
+	if resp.UserID != admin.ID {
+		t.Errorf("expected user_id '%s', got '%s'", admin.ID, resp.UserID)
+	}
+}
+
+func TestStopImpersonate_NotImpersonating(t *testing.T) {
+	h, userRepo, _, _ := setupAdminHandler()
+
+	admin, _ := userRepo.Create("admin", "a@test.com", "", "", "", "hash")
+	admin.Role = "super_admin"
+
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/stop-impersonate", nil)
+	req = req.WithContext(adminContext(admin.ID, "super_admin"))
+	w := httptest.NewRecorder()
+
+	h.StopImpersonate(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestStopImpersonate_AdminNotFound(t *testing.T) {
+	h, _, _, _ := setupAdminHandler()
+
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, auth.UserIDKey, "user1")
+	ctx = context.WithValue(ctx, auth.RoleKey, "user")
+	ctx = context.WithValue(ctx, auth.ImpersonatorIDKey, "nonexistent")
+
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/stop-impersonate", nil)
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	h.StopImpersonate(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("expected 404, got %d", w.Code)
 	}
 }

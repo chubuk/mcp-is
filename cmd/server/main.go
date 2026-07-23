@@ -70,7 +70,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(userRepo, jwtMgr, emailSvc)
 	shopHandler := handlers.NewShopHandler(shopRepo, aiKeyRepo, aesCipher, mcpServer)
 	aiKeyHandler := handlers.NewAIKeyHandler(aiKeyRepo)
-	adminHandler := handlers.NewAdminHandler(userRepo, shopRepo, aiKeyRepo)
+	adminHandler := handlers.NewAdminHandler(userRepo, shopRepo, aiKeyRepo, jwtMgr)
 	serverHandler := handlers.NewServerHandler(settingsRepo)
 	pdnHandler := handlers.NewPDNHandler(pool)
 
@@ -110,6 +110,8 @@ func main() {
 	mux.Handle("PUT /api/admin/users/{id}/status", jwtMW(adminMW(http.HandlerFunc(adminHandler.UpdateStatus))))
 	mux.Handle("DELETE /api/admin/users/{id}", jwtMW(adminMW(http.HandlerFunc(adminHandler.DeleteUser))))
 	mux.Handle("GET /api/admin/stats", jwtMW(adminMW(http.HandlerFunc(adminHandler.Stats))))
+	mux.Handle("POST /api/admin/users/{id}/impersonate", jwtMW(adminMW(http.HandlerFunc(adminHandler.Impersonate))))
+	mux.Handle("POST /api/admin/stop-impersonate", jwtMW(adminMW(http.HandlerFunc(adminHandler.StopImpersonate))))
 
 	superAdminMW := auth.RequireRole("super_admin")
 	mux.Handle("GET /api/admin/server", jwtMW(adminMW(http.HandlerFunc(serverHandler.GetSettings))))

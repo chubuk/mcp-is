@@ -98,6 +98,17 @@ const App = {
             document.querySelectorAll('.admin-link').forEach(link => {
                 link.style.display = (role === 'admin' || role === 'super_admin') ? 'inline' : 'none';
             });
+
+            const banner = document.getElementById('impersonate-banner');
+            if (API.isImpersonating()) {
+                banner.style.display = 'block';
+                document.getElementById('impersonate-text').textContent =
+                    'Вы зашли как ' + localStorage.getItem('nickname');
+                header.style.top = '32px';
+            } else {
+                banner.style.display = 'none';
+                header.style.top = '0';
+            }
         } else {
             header.style.display = 'none';
         }
@@ -115,11 +126,29 @@ const App = {
     },
 
     logout() {
+        if (API.isImpersonating()) {
+            this.stopImpersonate();
+            return;
+        }
         API.clearToken();
         localStorage.removeItem('nickname');
         localStorage.removeItem('role');
         localStorage.removeItem('user_id');
         this.navigate('/login');
+    },
+
+    async stopImpersonate() {
+        const res = await API.post('/api/admin/stop-impersonate');
+        if (res && res.ok) {
+            API.stopImpersonate();
+            API.setToken(res.data.token);
+            localStorage.setItem('user_id', res.data.user_id);
+            localStorage.setItem('nickname', res.data.nickname);
+            localStorage.setItem('role', res.data.role);
+            this.navigate('/admin/users');
+        } else {
+            alert('Ошибка: ' + (res ? res.data.error : 'Сервер недоступен'));
+        }
     },
 
     toggleNav() {

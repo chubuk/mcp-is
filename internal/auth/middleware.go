@@ -16,14 +16,15 @@ import (
 type contextKey string
 
 const (
-	UserIDKey      contextKey = "user_id"
-	NicknameKey    contextKey = "nickname"
-	RoleKey        contextKey = "role"
-	ShopIDKey      contextKey = "shop_id"
-	KeyNameKey     contextKey = "key_name"
-	KeyIDKey       contextKey = "key_id"
-	KeyPDNKey      contextKey = "ai_key_pdn_enabled"
-	RequestIDKey   contextKey = "request_id"
+	UserIDKey         contextKey = "user_id"
+	NicknameKey       contextKey = "nickname"
+	RoleKey           contextKey = "role"
+	ShopIDKey         contextKey = "shop_id"
+	KeyNameKey        contextKey = "key_name"
+	KeyIDKey          contextKey = "key_id"
+	KeyPDNKey         contextKey = "ai_key_pdn_enabled"
+	RequestIDKey      contextKey = "request_id"
+	ImpersonatorIDKey contextKey = "impersonator_id"
 )
 
 var (
@@ -145,6 +146,9 @@ func JWTMiddleware(jwtMgr *JWTManager) func(http.Handler) http.Handler {
 			ctx := context.WithValue(r.Context(), UserIDKey, claims.UserID)
 			ctx = context.WithValue(ctx, NicknameKey, claims.Nickname)
 			ctx = context.WithValue(ctx, RoleKey, claims.Role)
+			if claims.ImpersonatorID != "" {
+				ctx = context.WithValue(ctx, ImpersonatorIDKey, claims.ImpersonatorID)
+			}
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

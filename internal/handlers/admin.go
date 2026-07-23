@@ -14,10 +14,11 @@ type AdminHandler struct {
 	userRepo storage.UserRepositoryInterface
 	shopRepo storage.ShopRepositoryInterface
 	aiKeyRepo storage.AIKeyRepositoryInterface
+	jwtMgr   *auth.JWTManager
 }
 
-func NewAdminHandler(userRepo storage.UserRepositoryInterface, shopRepo storage.ShopRepositoryInterface, aiKeyRepo storage.AIKeyRepositoryInterface) *AdminHandler {
-	return &AdminHandler{userRepo: userRepo, shopRepo: shopRepo, aiKeyRepo: aiKeyRepo}
+func NewAdminHandler(userRepo storage.UserRepositoryInterface, shopRepo storage.ShopRepositoryInterface, aiKeyRepo storage.AIKeyRepositoryInterface, jwtMgr *auth.JWTManager) *AdminHandler {
+	return &AdminHandler{userRepo: userRepo, shopRepo: shopRepo, aiKeyRepo: aiKeyRepo, jwtMgr: jwtMgr}
 }
 
 type UserResponse struct {
@@ -221,5 +222,87 @@ func (h *AdminHandler) Stats(w http.ResponseWriter, r *http.Request) {
 		TotalUsers:  users,
 		TotalShops:  shops,
 		TotalAIKeys: keys,
+	})
+}
+
+type ImpersonateResponse struct {
+	Token    string `json:"token"`
+	UserID   string `json:"user_id"`
+	Nickname string `json:"nickname"`
+	Role     string `json:"role"`
+}
+
+func (h *AdminHandler) Impersonate(w http.ResponseWriter, r *http.Request) {
+	callerID := r.Context().Value(auth.UserIDKey).(string)
+	callerRole := r.Context().Value(auth.RoleKey).(string)
+
+	if callerRole != "super_admin" && callerRole != "admin" {
+		writeJSON(w, http.StatusForbidden, UserResponse{Error: "only admins can impersonate"})
+		return
+	}
+
+	targetID := r.PathValue("id")
+	if targetID == callerID {
+		writeJSON(w, http.StatusForbidden, UserResponse{Error: "cannot impersonate yourself"})
+		return
+	}
+
+	target, err := h.userRepo.GetByID(targetID)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, UserResponse{Error: "user not found"})
+		return
+	}
+
+	if target.Role == "super_admin" {
+		writeJSON(w, http.StatusForbidden, UserResponse{Error: "cannot impersonate super_admin"})
+		return
+	}
+
+	if callerRole == "admin" && target.Role == "admin" {
+		writeJSON(w, http.StatusForbidden, UserResponse{Error: "admin cannot impersonate another admin"})
+		return
+	}
+
+	token, err := h.jwtMgr.GenerateTokenWithImpersonator(target.ID, target.Nickname, target.Role, callerID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, UserResponse{Error: "failed to generate token"})
+		return
+	}
+
+	slog.Info("impersonate started", "target", targetID, "target_nickname", target.Nickname, "by", callerID, "by_role", callerRole)
+	writeJSON(w, http.StatusOK, ImpersonateResponse{
+		Token:    token,
+		UserID:   target.ID,
+		Nickname: target.Nickname,
+		Role:     target.Role,
+	})
+}
+
+func (h *AdminHandler) StopImpersonate(w http.ResponseWriter, r *http.Request) {
+	callerID := r.Context().Value(auth.UserIDKey).(string)
+	impersonatorID, ok := r.Context().Value(auth.ImpersonatorIDKey).(string)
+	if !ok || impersonatorID == "" {
+		writeJSON(w, http.StatusBadRequest, UserResponse{Error: "not impersonating"})
+		return
+	}
+
+	admin, err := h.userRepo.GetByID(impersonatorID)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, UserResponse{Error: "admin not found"})
+		return
+	}
+
+	token, err := h.jwtMgr.GenerateToken(admin.ID, admin.Nickname, admin.Role)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, UserResponse{Error: "failed to generate token"})
+		return
+	}
+
+	slog.Info("impersonate stopped", "impersonator", impersonatorID, "was_using", callerID)
+	writeJSON(w, http.StatusOK, ImpersonateResponse{
+		Token:    token,
+		UserID:   admin.ID,
+		Nickname: admin.Nickname,
+		Role:     admin.Role,
 	})
 }

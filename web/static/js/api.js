@@ -40,5 +40,36 @@ const API = {
 
     isLoggedIn() {
         return !!this.token;
+    },
+
+    impersonate(token, userId, nickname, role) {
+        localStorage.setItem('admin_token', this.token);
+        localStorage.setItem('admin_user_id', localStorage.getItem('user_id'));
+        localStorage.setItem('admin_nickname', localStorage.getItem('nickname'));
+        localStorage.setItem('admin_role', localStorage.getItem('role'));
+
+        this.setToken(token);
+        localStorage.setItem('user_id', userId);
+        localStorage.setItem('nickname', nickname);
+        localStorage.setItem('role', role);
+        localStorage.setItem('impersonating', 'true');
+    },
+
+    stopImpersonate() {
+        const adminToken = localStorage.getItem('admin_token');
+        this.setToken(adminToken);
+        localStorage.setItem('user_id', localStorage.getItem('admin_user_id'));
+        localStorage.setItem('nickname', localStorage.getItem('admin_nickname'));
+        localStorage.setItem('role', localStorage.getItem('admin_role'));
+
+        localStorage.removeItem('admin_token');
+        localStorage.removeItem('admin_user_id');
+        localStorage.removeItem('admin_nickname');
+        localStorage.removeItem('admin_role');
+        localStorage.removeItem('impersonating');
+    },
+
+    isImpersonating() {
+        return localStorage.getItem('impersonating') === 'true';
     }
 };
