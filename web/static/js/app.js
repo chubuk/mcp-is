@@ -13,6 +13,7 @@ const App = {
         { path: '/admin/stats', render: () => Admin.renderStats(), auth: true, role: ['admin', 'super_admin'] },
         { path: '/admin/server', render: () => Admin.renderServer(), auth: true, role: ['admin', 'super_admin'] },
         { path: '/admin/pdn', render: () => Admin.renderPDN(), auth: true, role: ['admin', 'super_admin'] },
+        { path: '/admin/backup', render: () => Admin.renderBackup(), auth: true, role: ['admin', 'super_admin'] },
         { path: '/force-change-password', render: () => Auth.renderForceChangePassword(), auth: true, onMount: () => Auth.bindForceChangePassword() },
     ],
 

@@ -512,5 +512,201 @@ const Admin = {
             document.getElementById('pdn-alert').innerHTML =
                 '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
         }
+    },
+
+    // ==================== BACKUP ====================
+
+    async renderBackup() {
+        const [statusRes, logRes, incidentsRes, settingsRes] = await Promise.all([
+            API.get('/api/admin/backup/status'),
+            API.get('/api/admin/backup/log'),
+            API.get('/api/admin/backup/incidents'),
+            API.get('/api/admin/backup'),
+        ]);
+
+        const status = (statusRes && statusRes.ok) ? statusRes.data : {};
+        const log = (logRes && logRes.ok) ? logRes.data : { entries: [] };
+        const incidents = (incidentsRes && incidentsRes.ok) ? incidentsRes.data : { incidents: [] };
+        const settings = (settingsRes && settingsRes.ok) ? settingsRes.data : {};
+
+        // Stats
+        const lastBackup = status.last_backup;
+        const lastBackupTime = lastBackup ? new Date(lastBackup.timestamp).toLocaleString('ru-RU') : 'Нет данных';
+        const lastBackupStatus = lastBackup ? (lastBackup.status === 'ok' ? '<span style="color:#27ae60">OK</span>' : '<span style="color:#e74c3c">Ошибка</span>') : '—';
+        const totalBackups = status.total_backups || 0;
+        const load = status.load_5m ? status.load_5m.toFixed(2) : '0.00';
+
+        // Log rows
+        let logRows = '';
+        if (!log.entries || log.entries.length === 0) {
+            logRows = '<tr><td colspan="6" class="empty">Нет записей</td></tr>';
+        } else {
+            log.entries.forEach(e => {
+                const statusClass = e.status === 'ok' ? 'color:#27ae60' : e.status === 'error' ? 'color:#e74c3c' : 'color:#f39c12';
+                const size = e.size_bytes ? (e.size_bytes / 1024 / 1024).toFixed(1) + ' MB' : '—';
+                const time = new Date(e.timestamp).toLocaleString('ru-RU');
+                logRows += `
+                    <tr>
+                        <td data-label="Время">${time}</td>
+                        <td data-label="Статус"><span style="${statusClass}">${e.status}</span></td>
+                        <td data-label="Размер">${size}</td>
+                        <td data-label="Нагрузка">${e.load_5m || '—'}</td>
+                        <td data-label="Длительность">${e.duration_ms ? e.duration_ms + 'мс' : '—'}</td>
+                        <td data-label="Ошибка">${e.error_msg || '—'}</td>
+                    </tr>`;
+            });
+        }
+
+        // Incidents rows
+        let incidentRows = '';
+        if (!incidents.incidents || incidents.incidents.length === 0) {
+            incidentRows = '<tr><td colspan="5" class="empty">Нет инцидентов</td></tr>';
+        } else {
+            incidents.incidents.forEach(i => {
+                const sevClass = i.severity === 'critical' ? 'color:#e74c3c' : i.severity === 'warning' ? 'color:#f39c12' : 'color:#3498db';
+                const time = new Date(i.timestamp).toLocaleString('ru-RU');
+                incidentRows += `
+                    <tr>
+                        <td data-label="Время">${time}</td>
+                        <td data-label="Тип">${i.type}</td>
+                        <td data-label="Серьёзность"><span style="${sevClass}">${i.severity}</span></td>
+                        <td data-label="Сообщение">${i.message}</td>
+                        <td data-label="">${i.resolved ? '✅' : ''}</td>
+                    </tr>`;
+            });
+        }
+
+        return `
+            <div class="page-header">
+                <div>
+                    <h1>Бэкапы</h1>
+                    <p class="desc">Мониторинг и управление резервными копиями</p>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="card">
+                    <div class="card__title">Последний бэкап</div>
+                    <div style="font-size:24px;font-weight:700">${lastBackupTime}</div>
+                    <div style="margin-top:8px">${lastBackupStatus}</div>
+                </div>
+                <div class="card">
+                    <div class="card__title">Всего бэкапов</div>
+                    <div style="font-size:32px;font-weight:700">${totalBackups}</div>
+                </div>
+                <div class="card">
+                    <div class="card__title">Нагрузка (5min)</div>
+                    <div style="font-size:32px;font-weight:700">${load}</div>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:24px">
+                <div class="card__title">Настройки</div>
+                <div id="backup-alert"></div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                    <div class="form-group">
+                        <label>Метод</label>
+                        <select id="backup-method" class="input">
+                            <option value="pg_basebackup" ${settings.method === 'pg_basebackup' ? 'selected' : ''}>pg_basebackup (файловый снэпшот)</option>
+                            <option value="pg_dump" ${settings.method === 'pg_dump' ? 'selected' : ''}>pg_dump (SQL-дамп)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Интервал (часов)</label>
+                        <select id="backup-interval" class="input">
+                            <option value="6" ${settings.interval_hours === 6 ? 'selected' : ''}>6 часов</option>
+                            <option value="12" ${settings.interval_hours === 12 ? 'selected' : ''}>12 часов</option>
+                            <option value="24" ${settings.interval_hours === 24 ? 'selected' : ''}>24 часа</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Хранение (дней)</label>
+                        <input type="number" id="backup-retention" class="input" value="${settings.retention_days || 14}" min="1" max="365">
+                    </div>
+                    <div class="form-group">
+                        <label>Макс. нагрузка CPU (%)</label>
+                        <input type="number" id="backup-load" class="input" value="${settings.max_load_pct || 50}" min="10" max="100">
+                    </div>
+                </div>
+                <div style="margin-top:16px;display:flex;gap:8px">
+                    <button class="btn btn--primary" onclick="Admin.saveBackup()">💾 Сохранить</button>
+                    <button class="btn btn--ghost" onclick="Admin.runBackup()">▶️ Бэкап сейчас</button>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:24px">
+                <div class="card__title">Журнал бэкапов</div>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Статус</th>
+                                <th>Размер</th>
+                                <th>Нагрузка</th>
+                                <th>Длительность</th>
+                                <th>Ошибка</th>
+                            </tr>
+                        </thead>
+                        <tbody>${logRows}</tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card" style="margin-top:24px">
+                <div class="card__title">Инциденты</div>
+                <div class="table-wrap">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Время</th>
+                                <th>Тип</th>
+                                <th>Серьёзность</th>
+                                <th>Сообщение</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>${incidentRows}</tbody>
+                    </table>
+                </div>
+            </div>`;
+    },
+
+    async saveBackup() {
+        const method = document.getElementById('backup-method').value;
+        const interval = parseInt(document.getElementById('backup-interval').value);
+        const retention = parseInt(document.getElementById('backup-retention').value);
+        const load = parseInt(document.getElementById('backup-load').value);
+
+        const res = await API.put('/api/admin/backup', {
+            method: method,
+            interval_hours: interval,
+            retention_days: retention,
+            max_load_pct: load,
+        });
+
+        if (res && res.ok) {
+            document.getElementById('backup-alert').innerHTML =
+                '<div class="alert alert--success">Настройки сохранены</div>';
+            setTimeout(() => Admin.renderBackup().then(html => {
+                document.getElementById('app').innerHTML = html;
+            }), 1000);
+        } else {
+            document.getElementById('backup-alert').innerHTML =
+                '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+        }
+    },
+
+    async runBackup() {
+        if (!confirm('Запустить бэкап сейчас?')) return;
+
+        const res = await API.post('/api/admin/backup/run');
+        if (res && res.ok) {
+            document.getElementById('backup-alert').innerHTML =
+                '<div class="alert alert--success">Бэкап запущен</div>';
+        } else {
+            document.getElementById('backup-alert').innerHTML =
+                '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+        }
     }
 };
