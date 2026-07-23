@@ -111,7 +111,7 @@ func main() {
 	mux.Handle("DELETE /api/admin/users/{id}", jwtMW(adminMW(http.HandlerFunc(adminHandler.DeleteUser))))
 	mux.Handle("GET /api/admin/stats", jwtMW(adminMW(http.HandlerFunc(adminHandler.Stats))))
 	mux.Handle("POST /api/admin/users/{id}/impersonate", jwtMW(adminMW(http.HandlerFunc(adminHandler.Impersonate))))
-	mux.Handle("POST /api/admin/stop-impersonate", jwtMW(adminMW(http.HandlerFunc(adminHandler.StopImpersonate))))
+	mux.Handle("POST /api/admin/stop-impersonate", jwtMW(http.HandlerFunc(adminHandler.StopImpersonate)))
 
 	superAdminMW := auth.RequireRole("super_admin")
 	mux.Handle("GET /api/admin/server", jwtMW(adminMW(http.HandlerFunc(serverHandler.GetSettings))))
