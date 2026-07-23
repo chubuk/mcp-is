@@ -1150,8 +1150,23 @@ func (c *InSalesClient) DeleteBlog(ctx context.Context, blogID string) error {
 	return err
 }
 
+func (c *InSalesClient) getBlogHandle(ctx context.Context, blogID string) (string, error) {
+	blog, err := c.GetBlog(ctx, blogID)
+	if err != nil {
+		return "", err
+	}
+	if blog.Handle == "" {
+		return "", fmt.Errorf("blog %s has no handle", blogID)
+	}
+	return blog.Handle, nil
+}
+
 func (c *InSalesClient) ListBlogPosts(ctx context.Context, blogID string) ([]BlogPost, error) {
-	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/blogs/%s/blog_posts.json", blogID), nil)
+	handle, err := c.getBlogHandle(ctx, blogID)
+	if err != nil {
+		return nil, err
+	}
+	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/blogs/%s/blog_posts.json", handle), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1167,7 +1182,11 @@ func (c *InSalesClient) ListBlogPosts(ctx context.Context, blogID string) ([]Blo
 }
 
 func (c *InSalesClient) GetBlogPost(ctx context.Context, blogID, postID string) (*BlogPost, error) {
-	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/blogs/%s/blog_posts/%s.json", blogID, postID), nil)
+	handle, err := c.getBlogHandle(ctx, blogID)
+	if err != nil {
+		return nil, err
+	}
+	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/blogs/%s/blog_posts/%s.json", handle, postID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1179,13 +1198,17 @@ func (c *InSalesClient) GetBlogPost(ctx context.Context, blogID, postID string) 
 }
 
 func (c *InSalesClient) CreateBlogPost(ctx context.Context, blogID, title, bodyHTML string) (*BlogPost, error) {
+	handle, err := c.getBlogHandle(ctx, blogID)
+	if err != nil {
+		return nil, err
+	}
 	payload := map[string]any{
 		"blog_post": map[string]any{
 			"title":     title,
 			"body_html": bodyHTML,
 		},
 	}
-	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/blogs/%s/blog_posts.json", blogID), payload)
+	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/blogs/%s/blog_posts.json", handle), payload)
 	if err != nil {
 		return nil, err
 	}
