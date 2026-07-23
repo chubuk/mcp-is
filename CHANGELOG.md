@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.2.3] - 2026-07-23
+
+### Безопасность
+- Убрана экспозиция PostgreSQL порта 5432 на хост
+- Добавлена Docker-сеть с изоляцией БД (internal/public)
+- Заблокирован /metrics эндпоинт (Prometheus)
+- Rate limiting: /api/reset-password (3 req/min), /mcp (30 req/min)
+- Добавлен Permissions-Policy header
+- Автоматическая генерация паролей в deploy.sh
+- Пароли сохраняются в /root/.mcp-is-credentials (chmod 600)
+- CORS ограниченALLOWED_ORIGINS
+
+### Деплой
+- deploy.sh: install, update, check, rollback, status, backup
+- backup.sh: pg_basebackup, мониторинг нагрузки, retention, удалённые хранилища
+- CI/CD: бэкап перед деплоем, rollback при ошибке, проверка версии
+
+### API
+- /api/admin/backup: настройки, журнал, инциденты, статус, ручной бэкап
+
+### Frontend
+- Страница /admin/backup: статистика, настройки, журнал, инциденты
+
+### Документация
+- INSTALL.md: раздел автодеплоя и безопасности
+- README.md: секция автодеплоя и безопасности
+- TROUBLESHOOTING.md: раздел доступа к БД
+
 ## [0.2.2] - 2026-07-21
 
 ## [Unreleased]
