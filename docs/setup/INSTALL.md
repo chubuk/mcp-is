@@ -244,3 +244,67 @@ cat .env | grep INSALES
 ### Предупреждение "INSALES_TOKEN variable is not set"
 
 Можно игнорировать. Эта переменная больше не используется.
+
+---
+
+## Автоматический деплой на VDS
+
+### Быстрый старт (чистый сервер)
+
+```bash
+# Подключиться к VDS
+ssh root@YOUR_SERVER_IP
+
+# Клонировать и установить
+cd /opt
+git clone https://github.com/chubuk/mcp-is.git
+cd mcp-is
+cp .env.example .env
+nano .env  # Заполнить настройки
+
+# Запустить
+docker compose up -d
+
+# Проверить
+curl -k https://YOUR_DOMAIN/health
+```
+
+### Использование deploy.sh
+
+Скрипт `scripts/deploy.sh` автоматизирует все операции:
+
+```bash
+# Проверка системы (pre-flight)
+./scripts/deploy.sh check
+
+# Полная установка на чистый сервер
+./scripts/deploy.sh install
+
+# Обновление существующей установки
+./scripts/deploy.sh update
+
+# Ручной бэкап
+./scripts/deploy.sh backup
+
+# Проверка статуса
+./scripts/deploy.sh status
+```
+
+### Автоматические бэкапы
+
+Бэкапы настраиваются через админку (`/admin/backup`) или `.env`:
+
+| Параметр | Описание | По умолчанию |
+|----------|----------|--------------|
+| `BACKUP_ENABLED` | Включить бэкапы | true |
+| `BACKUP_METHOD` | pg_basebackup / pg_dump | pg_basebackup |
+| `BACKUP_INTERVAL_HOURS` | Интервал (часов) | 24 |
+| `BACKUP_RETENTION_DAYS` | Хранение (дней) | 14 |
+
+Cron настроен автоматически при установке через deploy.sh.
+
+### Безопасность
+
+- `.env` файл заблокирован в nginx (403 Forbidden)
+- Скрытые файлы (`.git`, `.env`) недоступны через веб
+- Доступ к админке только для admin/super_admin ролей

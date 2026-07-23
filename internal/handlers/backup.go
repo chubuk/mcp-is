@@ -102,7 +102,7 @@ func (h *BackupHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	resp := BackupSettingsResponse{
 		Enabled:       h.getSettingBool("backup_enabled", true),
 		Method:        h.getSetting("backup_method", "pg_basebackup"),
-		IntervalHours: h.getSettingInt("backup_interval_hours", 12),
+		IntervalHours: h.getSettingInt("backup_interval_hours", 24),
 		HourStart:     h.getSettingInt("backup_hour_start", 1),
 		HourEnd:       h.getSettingInt("backup_hour_end", 6),
 		MaxLoadPct:    h.getSettingInt("backup_max_load_pct", 50),
