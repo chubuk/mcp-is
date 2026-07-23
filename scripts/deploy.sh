@@ -52,7 +52,7 @@ readonly DEFAULT_APP_PORT=8080
 
 # Пороговые значения
 readonly MIN_DISK_SPACE_MB=1024      # 1 GB минимум
-readonly MIN_MEMORY_MB=512           # 512 MB минимум
+readonly MIN_MEMORY_MB=256           # 512 MB минимум
 readonly MAX_LOAD_THRESHOLD=4.0      # Максимальная загрузка перед бэкапом
 readonly BACKUP_RETENTION_DAYS=7     # Хранение бэкапов
 
