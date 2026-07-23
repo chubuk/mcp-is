@@ -61,7 +61,7 @@ readonly BACKUP_DIR="${BACKUP_DIR:-/opt/mcp-is/backups}"
 readonly BACKUP_PID_FILE="/tmp/mcp-is-backup.pid"
 readonly BACKUP_LOCK_FILE="/tmp/mcp-is-backup.lock"
 readonly COMPOSE_FILE="${PROJECT_DIR}/docker-compose.yaml"
-readonly DB_CONTAINER="mcp_is_db"
+readonly DB_CONTAINER="db"
 readonly DB_NAME="mcp_is"
 readonly DB_USER="admin"
 
@@ -299,7 +299,7 @@ do_backup_pg_basebackup() {
         pg_basebackup -U "$DB_USER" -Ft -z -P -Xs -f /tmp/backup.tar.gz 2>&1; then
         
         # Скопировать из контейнера
-        docker cp "${DB_CONTAINER}:/tmp/backup.tar.gz" "$backup_file"
+        docker cp "mcp_is_db:/tmp/backup.tar.gz" "$backup_file"
         docker compose -f "$COMPOSE_FILE" exec -T "$DB_CONTAINER" rm -f /tmp/backup.tar.gz
         
         local end_time
