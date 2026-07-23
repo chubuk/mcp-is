@@ -70,6 +70,7 @@ NO_COLOR=false
 AUTO_YES=false
 DRY_RUN=false
 FORCE=false
+COMPOSE_CMD=""
 
 # Цвета (только для TTY)
 RED='\033[0;31m'
