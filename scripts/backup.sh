@@ -294,13 +294,16 @@ do_backup_pg_basebackup() {
     local start_time
     start_time=$(date +%s%N)
     
-    # pg_basebackup с gzip-сжатием, без остановки сервера
+    # pg_basebackup: tar format + gzip, без остановки сервера
+    # -Ft = tar format, -z = gzip, -Xs = stream WAL, -D = output dir
     if docker compose -f "$COMPOSE_FILE" exec -T "$DB_CONTAINER" \
-        pg_basebackup -U "$DB_USER" -Ft -z -P -Xs -f /tmp/backup.tar.gz 2>&1; then
+        pg_basebackup -U "$DB_USER" -Ft -z -Xs -D /tmp/pgbackup 2>&1; then
         
         # Скопировать из контейнера
-        docker cp "mcp_is_db:/tmp/backup.tar.gz" "$backup_file"
-        docker compose -f "$COMPOSE_FILE" exec -T "$DB_CONTAINER" rm -f /tmp/backup.tar.gz
+        docker cp "mcp_is_db:/tmp/pgbackup/" "/tmp/pgbackup/"
+        tar -czf "$backup_file" -C /tmp/pgbackup .
+        rm -rf /tmp/pgbackup/
+        docker compose -f "$COMPOSE_FILE" exec -T "$DB_CONTAINER" rm -rf /tmp/pgbackup
         
         local end_time
         end_time=$(date +%s%N)
