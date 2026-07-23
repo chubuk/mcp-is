@@ -400,6 +400,61 @@
 }
 ```
 
+#### POST /api/admin/users/:id/impersonate
+
+Войти в аккаунт пользователя ( impersonation ).
+
+**Доступ:** admin, super_admin
+
+**Ограничения:**
+- super_admin может impersonate: user, admin
+- admin может impersonate: только user
+- Нельзя impersonate super_admin
+- Нельзя impersonate самого себя
+- Нельзя impersonate другого admin (если вы admin)
+
+**Ответ (200):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "user_id": "uuid",
+  "nickname": "username",
+  "role": "user"
+}
+```
+
+> Токен содержит поле `impersonator_id` с ID админа, вошедшего в аккаунт.
+
+**Ответ (403):**
+```json
+{
+  "error": "cannot impersonate super_admin"
+}
+```
+
+#### POST /api/admin/stop-impersonate
+
+Вернуться в аккаунт админа (выход из impersonation).
+
+**Доступ:** JWT (impersonated user)
+
+**Ответ (200):**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIs...",
+  "user_id": "uuid",
+  "nickname": "admin",
+  "role": "super_admin"
+}
+```
+
+**Ответ (400):**
+```json
+{
+  "error": "not impersonating"
+}
+```
+
 ---
 
 ### Персональные данные / 152-ФЗ (требуется JWT + admin/super_admin)

@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.2.4] - 2026-07-23
+
+### Добавлено
+- **Impersonation** — admin/super_admin может войти в аккаунт пользователя и вернуться обратно
+  - super_admin → любой user или admin
+  - admin → только user
+  - Запрет на impersonate super_admin, себя, другого admin
+  - Жёлтый баннер «Вы зашли как [имя] | Выйти»
+  - Журнал действий через slog
+
+### Исправлено
+- `.gitignore` — паттерн `server` заменён на `/server` (binaries only)
+- `stop-impersonate` — убрана лишняя проверка adminMW (impersonated user имеет роль `user`)
+
+### Тесты
+- 19 новых unit-тестов (3 JWT + 6 middleware + 10 handler)
+
 ## [0.2.3] - 2026-07-23
 
 ### Безопасность
