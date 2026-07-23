@@ -50,3 +50,17 @@ CREATE TABLE IF NOT EXISTS backup_incidents (
 
 CREATE INDEX IF NOT EXISTS idx_backup_incidents_ts ON backup_incidents(ts DESC);
 CREATE INDEX IF NOT EXISTS idx_backup_incidents_severity ON backup_incidents(severity);
+
+-- Миграция v0.7.0 - MCP client types
+CREATE TABLE IF NOT EXISTS mcp_client_types (
+    id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+    name TEXT NOT NULL UNIQUE,
+    config_key TEXT NOT NULL,
+    config_format TEXT NOT NULL DEFAULT 'json',
+    config_template TEXT NOT NULL,
+    file_name TEXT NOT NULL DEFAULT '',
+    file_description TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER DEFAULT 0,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);

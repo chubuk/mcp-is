@@ -1,6 +1,7 @@
 const AIKeys = {
     newKey: null,
     newMCPUrl: null,
+    _mcpTypes: [],
 
     async render(page, perPage) {
         page = page || 1;
@@ -14,9 +15,7 @@ const AIKeys = {
         let keyAlert = '';
         if (this.newKey) {
             const keyToShow = this.newKey;
-            const mcpUrl = this.newMCPUrl || 'https://localhost:8443/mcp';
-            const configClaude = JSON.stringify({mcpServers:{"mcp-is":{url:mcpUrl,headers:{"Authorization":"Bearer "+keyToShow}}}}, null, 2);
-            const configVSCode = JSON.stringify({servers:{"mcp-is":{type:"http",url:mcpUrl,headers:{"Authorization":"Bearer "+keyToShow}}}}, null, 2);
+            const mcpUrl = this.newMCPUrl || (location.origin + '/mcp');
             keyAlert = `
                 <div class="card" style="border:2px solid #27ae60">
                     <div class="card__title" style="color:#27ae60">Ключ создан!</div>
@@ -34,16 +33,23 @@ const AIKeys = {
                         <button class="btn btn--secondary btn--sm" onclick="AIKeys.copyMCPUrl()">🌐 Копировать URL</button>
                         <button class="btn btn--ghost btn--sm" onclick="AIKeys.copyAll()">📋 Копировать всё</button>
                     </div>
-                    <details>
-                        <summary style="cursor:pointer;color:#4a6cf7;font-size:13px">📦 Конфигурация для AI-клиента</summary>
-                        <div style="margin-top:8px">
-                            <div style="display:flex;gap:4px;margin-bottom:8px">
-                                <button class="btn btn--ghost btn--sm" onclick="AIKeys.copyConfig('claude',this)">Claude Desktop</button>
-                                <button class="btn btn--ghost btn--sm" onclick="AIKeys.copyConfig('vscode',this)">VS Code</button>
-                            </div>
-                            <pre style="background:#f8f9fa;padding:12px;border-radius:6px;font-size:12px;overflow-x:auto;white-space:pre-wrap">${configClaude}</pre>
+                    <div style="margin-top:12px">
+                        <div class="card__title">Подключение MCP-клиента</div>
+                        <div class="form-group" style="margin-bottom:8px">
+                            <label>Выберите систему</label>
+                            <select id="mcp-client-type" onchange="AIKeys.generateMCPConfig()">
+                                <option value="">— Выберите —</option>
+                            </select>
                         </div>
-                    </details>
+                        <div id="mcp-config-output" style="display:none">
+                            <p id="mcp-file-hint" style="color:#888;font-size:13px;margin-bottom:8px"></p>
+                            <pre style="background:#f8f9fa;padding:12px;border-radius:6px;font-size:12px;overflow-x:auto;white-space:pre-wrap"><code id="mcp-config-code"></code></pre>
+                            <div style="display:flex;gap:8px;margin-top:8px">
+                                <button class="btn btn--ghost btn--sm" onclick="AIKeys.copyMCPConfig()">📋 Копировать</button>
+                                <button class="btn btn--ghost btn--sm" id="mcp-download-btn" style="display:none" onclick="AIKeys.downloadMCPConfig()">💾 Скачать файл</button>
+                            </div>
+                        </div>
+                    </div>
                 </div>`;
             this.newKey = null;
             this.newMCPUrl = null;
@@ -181,6 +187,10 @@ const AIKeys = {
     },
 
     bind() {
+        if (document.getElementById('mcp-client-type')) {
+            AIKeys.loadMCPClientTypes();
+        }
+
         const form = document.getElementById('add-aikey-form');
         if (!form) return;
 
@@ -291,6 +301,77 @@ const AIKeys = {
                 showToast('Конфигурация скопирована!');
             }).catch(() => {});
         }
+    },
+
+    async loadMCPClientTypes() {
+        const res = await API.get('/api/mcp-client-types');
+        if (res && res.ok) {
+            AIKeys._mcpTypes = res.data || [];
+            const select = document.getElementById('mcp-client-type');
+            if (select) {
+                select.innerHTML = '<option value="">— Выберите —</option>';
+                AIKeys._mcpTypes.forEach(t => {
+                    select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+                });
+                const saved = localStorage.getItem('mcp_client_type');
+                if (saved) {
+                    select.value = saved;
+                    AIKeys.generateMCPConfig();
+                }
+            }
+        }
+    },
+
+    generateMCPConfig() {
+        const select = document.getElementById('mcp-client-type');
+        if (!select) return;
+        const type = AIKeys._mcpTypes.find(t => t.id === select.value);
+        if (!type) {
+            document.getElementById('mcp-config-output').style.display = 'none';
+            localStorage.removeItem('mcp_client_type');
+            return;
+        }
+
+        localStorage.setItem('mcp_client_type', type.id);
+
+        const keyEl = document.querySelectorAll('.key-display')[0];
+        const urlEl = document.querySelectorAll('.key-display')[1];
+        if (!keyEl || !urlEl) return;
+
+        const url = urlEl.textContent.trim();
+        const apiKey = keyEl.textContent.trim();
+        const config = type.config_template
+            .replace(/\{\{URL\}\}/g, url)
+            .replace(/\{\{API_KEY\}\}/g, apiKey);
+
+        document.getElementById('mcp-config-code').textContent = config;
+        document.getElementById('mcp-file-hint').textContent =
+            type.file_description ? 'Файл: ' + (type.file_name || '—') + ' → ' + type.file_description : '';
+        document.getElementById('mcp-download-btn').style.display = type.file_name ? 'inline-block' : 'none';
+        document.getElementById('mcp-config-output').style.display = 'block';
+    },
+
+    copyMCPConfig() {
+        const code = document.getElementById('mcp-config-code');
+        if (!code) return;
+        navigator.clipboard.writeText(code.textContent).then(() => {
+            showToast('Конфигурация скопирована!');
+        }).catch(() => {});
+    },
+
+    downloadMCPConfig() {
+        const code = document.getElementById('mcp-config-code');
+        const select = document.getElementById('mcp-client-type');
+        if (!code || !select) return;
+        const type = AIKeys._mcpTypes.find(t => t.id === select.value);
+        if (!type || !type.file_name) return;
+
+        const blob = new Blob([code.textContent], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = type.file_name;
+        a.click();
+        URL.revokeObjectURL(a.href);
     },
 
     async delete(id) {

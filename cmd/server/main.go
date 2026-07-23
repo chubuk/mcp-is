@@ -126,12 +126,17 @@ func main() {
 	mux.Handle("GET /api/admin/pdn/jurisdictions", jwtMW(adminMW(http.HandlerFunc(pdnHandler.GetJurisdictions))))
 
 	backupHandler := handlers.NewBackupHandler(pool)
+	mcpClientTypeRepo := storage.NewMCPClientTypeRepository(pool)
+	_ = mcpClientTypeRepo.Seed()
+	mcpClientTypeHandler := handlers.NewMCPClientTypeHandler(mcpClientTypeRepo)
 	mux.Handle("GET /api/admin/backup", jwtMW(adminMW(http.HandlerFunc(backupHandler.GetSettings))))
 	mux.Handle("PUT /api/admin/backup", jwtMW(superAdminMW(http.HandlerFunc(backupHandler.UpdateSettings))))
 	mux.Handle("GET /api/admin/backup/log", jwtMW(adminMW(http.HandlerFunc(backupHandler.GetLog))))
 	mux.Handle("GET /api/admin/backup/incidents", jwtMW(adminMW(http.HandlerFunc(backupHandler.GetIncidents))))
 	mux.Handle("GET /api/admin/backup/status", jwtMW(adminMW(http.HandlerFunc(backupHandler.GetStatus))))
 	mux.Handle("POST /api/admin/backup/run", jwtMW(adminMW(http.HandlerFunc(backupHandler.RunBackup))))
+
+	mux.HandleFunc("GET /api/mcp-client-types", mcpClientTypeHandler.List)
 
 	apiKeyMW := auth.APIKeyMiddleware(pool)
 	mux.Handle("/mcp", apiKeyMW(http.HandlerFunc(mcpServer.ServeHTTP)))

@@ -15,6 +15,18 @@ func RunMigrations(pool *pgxpool.Pool) {
 		`ALTER TABLE shops ADD COLUMN IF NOT EXISTS pdn_enabled BOOLEAN DEFAULT FALSE`,
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS require_password_change BOOLEAN DEFAULT FALSE`,
 		`ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS pdn_enabled BOOLEAN DEFAULT FALSE`,
+		`CREATE TABLE IF NOT EXISTS mcp_client_types (
+			id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+			name TEXT NOT NULL UNIQUE,
+			config_key TEXT NOT NULL,
+			config_format TEXT NOT NULL DEFAULT 'json',
+			config_template TEXT NOT NULL,
+			file_name TEXT NOT NULL DEFAULT '',
+			file_description TEXT NOT NULL DEFAULT '',
+			sort_order INTEGER DEFAULT 0,
+			is_active BOOLEAN DEFAULT true,
+			created_at TIMESTAMPTZ DEFAULT NOW()
+		)`,
 	}
 
 	for i, migration := range migrations {
