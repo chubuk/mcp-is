@@ -13,6 +13,7 @@
 ### Исправлено
 - `.gitignore` — паттерн `server` заменён на `/server` (binaries only)
 - `stop-impersonate` — убрана лишняя проверка adminMW (impersonated user имеет роль `user`)
+- `server_settings` — `InitDefaults()` перезаписывала domain/https/cert_issuer при каждом старте. Заменена на `SetDefaultsIfMissing()` (вставка только отсутствующих ключей)
 
 ### Тесты
 - 19 новых unit-тестов (3 JWT + 6 middleware + 10 handler)
