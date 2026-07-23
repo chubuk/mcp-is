@@ -305,6 +305,32 @@ Cron настроен автоматически при установке че�
 
 ### Безопасность
 
-- `.env` файл заблокирован в nginx (403 Forbidden)
-- Скрытые файлы (`.git`, `.env`) недоступны через веб
-- Доступ к админке только для admin/super_admin ролей
+#### Пароли
+
+При установке через `deploy.sh install` пароли генерируются автоматически и сохраняются в:
+
+```bash
+/root/.mcp-is-credentials  # chmod 600
+```
+
+**НИКОГДА не используйте дефолтные пароли в production!**
+
+#### Docker-сеть
+
+- PostgreSQL доступен только из контейнера `app` (internal сеть)
+- Порт 5432 НЕ экспортирован на хост
+- Доступ к БД: `docker compose exec db psql -U admin -d mcp_is`
+
+#### Nginx
+
+- `.env`, `.git`, `.sql`, `.log` — заблокированы (403)
+- `/metrics` — заблокирован (Prometheus не доступен снаружи)
+- Rate limiting: login (5 req/min), API (10 req/s), reset-password (3 req/min), MCP (30 req/min)
+- Security headers: HSTS, CSP, X-Frame-Options, Permissions-Policy
+
+#### API
+
+- JWT аутентификация для всех `/api/` эндпоинтов
+- API-ключи для `/mcp` эндпоинта
+- Role-based access control (user, admin, super_admin)
+- Rate limiting на auth-эндпоинтах

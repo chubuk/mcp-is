@@ -611,6 +611,19 @@ curl -k https://YOUR_DOMAIN/health
 
 Требуются GitHub Secrets: `SERVER_HOST`, `SERVER_USER`, `SSH_KEY`.
 
+### Безопасность
+
+| Мера | Описание |
+|------|----------|
+| **Пароли** | Генерируются автоматически deploy.sh, сохраняются в `/root/.mcp-is-credentials` |
+| **Docker-сеть** | PostgreSQL доступен только из контейнера app (internal сеть) |
+| **Порт 5432** | НЕ экспортирован на хост |
+| **Rate limiting** | login: 5/min, API: 10/s, reset-password: 3/min, MCP: 30/min |
+| **Блокировка файлов** | .env, .git, .sql, .log — 403 Forbidden |
+| **Security headers** | HSTS, CSP, X-Frame-Options, Permissions-Policy |
+| **Аутентификация** | JWT для API, API-ключи для MCP |
+| **RBAC** | user, admin, super_admin роли |
+
 ### Systemd (опционально)
 
 ```ini

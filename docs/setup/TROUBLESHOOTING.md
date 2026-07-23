@@ -131,6 +131,46 @@ docker exec mcp_is_db psql -U admin -d mcp_is \
 
 **Нормально.** Let's Encrypt требует публичный домен. На localhost используется self-signed сертификат.
 
+## Доступ к базе данных
+
+### PostgreSQL не доступен снаружи (port 5432)
+
+**Нормально.** PostgreSQL intentionally не экспортирован на хост для безопасности.
+
+**Доступ к БД:**
+
+```bash
+# Через Docker exec
+docker compose exec db psql -U admin -d mcp_is
+
+# С паролем
+PGASSWORD=$(grep DB_PASSWORD .env | cut -d= -f2) docker compose exec db psql -U admin -d mcp_is
+```
+
+### Ошибка "connection refused" при подключении к БД
+
+**Причина:** PostgreSQL контейнер не запущен или не healthy.
+
+**Решение:**
+```bash
+docker compose ps
+docker compose logs db --tail=20
+docker compose restart db
+```
+
+### Ошибка "password authentication failed"
+
+**Причина:** Неверный пароль в DB_URL или .env.
+
+**Решение:**
+```bash
+# Проверить пароль в .env
+grep DB_PASSWORD .env
+
+# Проверить переменную в контейнере
+docker compose exec db env | grep POSTGRES
+```
+
 ## Логи
 
 ```bash
