@@ -246,7 +246,7 @@ func (h *BackupHandler) GetIncidents(w http.ResponseWriter, r *http.Request) {
 
 func (h *BackupHandler) RunBackup(w http.ResponseWriter, r *http.Request) {
 	role := r.Context().Value(auth.RoleKey).(string)
-	if role != "super_admin" {
+	if role != "super_admin" && role != "admin" {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied"})
 		return
 	}
