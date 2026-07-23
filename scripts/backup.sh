@@ -590,7 +590,7 @@ show_status() {
         local age_hours=$(( (now - last_time) / 3600 ))
         local size
         size=$(du -h "$last_backup" | cut -f1)
-        ok "Последний бэкап: $(basename "$backup_file") ($size, ${age_hours}ч назад)"
+        ok "Последний бэкап: $(basename "$last_backup") ($size, ${age_hours}ч назад)"
     else
         warn "Бэкапов не найдено"
     fi
