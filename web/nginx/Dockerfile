@@ -1,6 +1,6 @@
 FROM nginx:alpine
 
-RUN apk --no-cache add openssl envsubst
+RUN apk --no-cache add openssl envsubst certbot
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY entrypoint.sh /entrypoint.sh
