@@ -67,6 +67,15 @@ jobs:
     permissions:
       contents: read
       packages: write
+    strategy:
+      matrix:
+        include:
+          - context: .
+            image: ghcr.io/${{ github.repository }}
+            dockerfile: Dockerfile
+          - context: ./web/nginx
+            image: ghcr.io/${{ github.repository }}-nginx
+            dockerfile: Dockerfile
     steps:
       - uses: actions/checkout@v4
 
@@ -80,8 +89,9 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
+          context: ${{ matrix.context }}
           push: true
-          tags: ghcr.io/${{ github.repository }}:${{ github.sha }},ghcr.io/${{ github.repository }}:latest
+          tags: ${{ matrix.image }}:${{ github.sha }},${{ matrix.image }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
