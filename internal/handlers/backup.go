@@ -252,14 +252,9 @@ func (h *BackupHandler) RunBackup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	method := h.getSetting("backup_method", "pg_basebackup")
-	backupDir := h.getSetting("backup_dir", "/opt/mcp-is/backups")
 
-	var cmd *exec.Cmd
-	if method == "pg_basebackup" {
-		cmd = exec.Command("/opt/mcp-is/scripts/backup.sh")
-	} else {
-		cmd = exec.Command("/opt/mcp-is/scripts/backup.sh")
-	}
+	// Запускаем backup.sh ( примонтирован в контейнер)
+	cmd := exec.Command("/opt/mcp-is/scripts/backup.sh")
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -271,7 +266,7 @@ func (h *BackupHandler) RunBackup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("backup completed", "method", method, "dir", backupDir)
+	slog.Info("backup completed", "method", method)
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
 
