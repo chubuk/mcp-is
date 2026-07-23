@@ -67,8 +67,8 @@ func toolFilter(globalReadOnly bool) server.ToolFilterFunc {
 
 		filtered := make([]mcp.Tool, 0, len(tools))
 		for _, t := range tools {
-			isReadOnly := t.Annotations.ReadOnlyHint != nil && *t.Annotations.ReadOnlyHint
-			if isReadOnly {
+			isWrite := t.Annotations.ReadOnlyHint != nil && !*t.Annotations.ReadOnlyHint
+			if !isWrite {
 				filtered = append(filtered, t)
 			}
 		}
