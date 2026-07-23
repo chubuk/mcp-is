@@ -1,14 +1,20 @@
+networks:
+  internal:
+    internal: true
+  public:
+    driver: bridge
+
 services:
   db:
     image: postgres:15-alpine
     container_name: mcp_is_db
     restart: always
+    networks:
+      - internal
     environment:
       POSTGRES_DB: mcp_is
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
-    ports:
-      - "5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./internal/storage/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
@@ -23,6 +29,9 @@ services:
     build: .
     container_name: mcp_is_app
     restart: always
+    networks:
+      - internal
+      - public
     expose:
       - "8080"
     env_file:
@@ -65,6 +74,8 @@ services:
     build: ./web/nginx
     container_name: mcp_is_nginx
     restart: always
+    networks:
+      - public
     ports:
       - "${NGINX_HTTP_PORT:-80}:80"
       - "${NGINX_HTTPS_PORT:-443}:443"

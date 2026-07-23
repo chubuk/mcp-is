@@ -547,10 +547,23 @@ generate_env() {
     # Установка прав доступа
     run_cmd chmod 600 "$env_path"
 
+    # Сохранить пароли в отдельный файл
+    local credentials_file="/root/.mcp-is-credentials"
+    cat > "$credentials_file" << EOF
+# MCP-IS Credentials
+# Generated: $(date)
+# DO NOT COMMIT OR SHARE THIS FILE
+
+DB_PASSWORD=${db_password}
+JWT_SECRET=${jwt_secret}
+ENCRYPTION_KEY=${encryption_key}
+EOF
+    chmod 600 "$credentials_file"
+
     print_status "OK" "Файл .env создан с безопасными паролями"
-    print_status "INFO" "DB_PASSWORD: ${db_password}"
-    print_status "INFO" "JWT_SECRET: ${jwt_secret}"
-    print_status "INFO" "ENCRYPTION_KEY: ${encryption_key}"
+    print_status "INFO" "Пароли сохранены в: $credentials_file"
+    print_status "INFO" "Для доступа к БД: PGPASSWORD=$db_password psql -h localhost -U admin -d mcp_is"
+    print_status "INFO" "Для доступа к VDS: ~/.ssh/mimo_deploy"
 
     return 0
 }
@@ -673,8 +686,10 @@ load_backup_config() {
         print_status "WARN" "Файл .env не найден, используются значения по умолчанию"
     fi
 
-    # Установка значений по умолчанию
-    export DB_PASSWORD="${DB_PASSWORD:-password}"
+    # Установка значений по умолчанию (БЕЗ дефолтных паролей!)
+    if [[ -z "${DB_PASSWORD:-}" ]]; then
+        print_status "WARN" "DB_PASSWORD не установлен! Запустите deploy.sh install для генерации паролей."
+    fi
     export SERVER_PORT="${SERVER_PORT:-8080}"
     export DOMAIN="${DOMAIN:-localhost}"
     export LETSENCRYPT_EMAIL="${LETSENCRYPT_EMAIL:-}"

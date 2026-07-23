@@ -84,7 +84,7 @@ func main() {
 	mux.Handle("POST /api/register", authRateLimiter.Middleware(authHandler.Register))
 	mux.Handle("POST /api/login", authRateLimiter.Middleware(authHandler.Login))
 	mux.Handle("POST /api/forgot-password", authRateLimiter.Middleware(authHandler.ForgotPassword))
-	mux.HandleFunc("POST /api/reset-password", authHandler.ResetPassword)
+	mux.Handle("POST /api/reset-password", authRateLimiter.Middleware(authHandler.ResetPassword))
 
 	jwtMW := auth.JWTMiddleware(jwtMgr)
 	mux.Handle("POST /api/change-password", jwtMW(http.HandlerFunc(authHandler.ChangePassword)))
