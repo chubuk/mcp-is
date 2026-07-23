@@ -87,3 +87,32 @@ CREATE TABLE IF NOT EXISTS pdn_access_log (
 CREATE INDEX IF NOT EXISTS idx_pdn_user_id ON pdn_access_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_pdn_shop_id ON pdn_access_log(shop_id);
 CREATE INDEX IF NOT EXISTS idx_pdn_ts ON pdn_access_log(ts);
+
+-- Backup log
+CREATE TABLE IF NOT EXISTS backup_log (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ts TIMESTAMPTZ DEFAULT NOW(),
+    status TEXT NOT NULL,
+    size_bytes BIGINT DEFAULT 0,
+    error_msg TEXT DEFAULT '',
+    load_1m NUMERIC(4,2),
+    load_5m NUMERIC(4,2),
+    load_15m NUMERIC(4,2),
+    iowait_pct NUMERIC(5,2),
+    duration_ms INTEGER DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_backup_log_ts ON backup_log(ts DESC);
+
+-- Backup incidents
+CREATE TABLE IF NOT EXISTS backup_incidents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ts TIMESTAMPTZ DEFAULT NOW(),
+    type TEXT NOT NULL,
+    message TEXT NOT NULL,
+    severity TEXT NOT NULL,
+    resolved BOOLEAN DEFAULT false
+);
+
+CREATE INDEX IF NOT EXISTS idx_backup_incidents_ts ON backup_incidents(ts DESC);
+CREATE INDEX IF NOT EXISTS idx_backup_incidents_severity ON backup_incidents(severity);
