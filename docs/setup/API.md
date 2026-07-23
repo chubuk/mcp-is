@@ -283,6 +283,38 @@
 
 ---
 
+### Конфигурация MCP-клиентов
+
+#### GET /api/mcp-client-types
+
+Список поддерживаемых MCP-систем для генерации конфигурации.
+
+**Доступ:** публичный (без JWT)
+
+**Ответ (200):**
+```json
+[
+  {
+    "id": "uuid",
+    "name": "Claude Desktop",
+    "config_key": "mcpServers",
+    "config_format": "json",
+    "config_template": "{...}",
+    "file_name": "claude_desktop_config.json",
+    "file_description": "~/Library/Application Support/Claude/",
+    "sort_order": 1,
+    "is_active": true
+  }
+]
+```
+
+**Поля:**
+- `config_template` — шаблон с плейсхолдерами `{{URL}}` и `{{API_KEY}}`
+- `file_name` — имя файла для скачивания (пусто если файл не нужен, например Open WebUI)
+- `file_description` — путь куда положить файл
+
+---
+
 ### Админ-панель (требуется JWT + роль admin/super_admin)
 
 #### GET /api/admin/users

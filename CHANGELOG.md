@@ -9,6 +9,12 @@
   - Запрет на impersonate super_admin, себя, другого admin
   - Жёлтый баннер «Вы зашли как [имя] | Выйти»
   - Журнал действий через slog
+- **MCP client config generator** — на странице AI-ключа выпадающий список из 10 MCP-систем (Claude Desktop, Cursor, VS Code, MiMoCode, OpenCode, LibreChat, Open WebUI, Cline, Cherry Studio, Continue)
+  - Генерация готового конфига с подстановкой URL и ключа
+  - Кнопки «Копировать» и «Скачать файл» (с правильным именем/расширением)
+  - Подсказка «куда класть файл»
+  - Запоминание выбранной системы в localStorage
+  - Список систем хранится в БД — расширяемый без обновления кода
 
 ### Исправлено
 - `.gitignore` — паттерн `server` заменён на `/server` (binaries only)
