@@ -152,30 +152,47 @@ func (c *InSalesClient) doRequestRaw(ctx context.Context, method, path string, b
 	return respBody, resp.StatusCode, nil
 }
 
-func (c *InSalesClient) GetStoreInfo(ctx context.Context) (*StoreInfo, error) {
-	// Try multiple endpoints — read-only keys may not access all of them
-	// 404 means the endpoint exists but key lacks permission — still valid credentials
-	endpoints := []string{
-		"/orders.json?per_page=1",
-		"/products.json?per_page=1",
-		"/clients.json?per_page=1",
-	}
-
-	for _, endpoint := range endpoints {
-		_, status, err := c.doRequest(ctx, http.MethodGet, endpoint, nil)
-		if err == nil {
-			return c.buildStoreInfo(ctx), nil
-		}
-		// 404 means credentials are valid but endpoint not accessible — still a success
-		if status == 404 || status == 403 {
-			return c.buildStoreInfo(ctx), nil
-		}
-	}
-
-	return nil, fmt.Errorf("connection failed — check domain and credentials")
+type AccountInfo struct {
+	ID          int    `json:"id"`
+	Title       string `json:"title"`
+	Subdomain   string `json:"subdomain"`
+	Email       string `json:"email"`
+	Phone       string `json:"phone"`
+	ContactPhone string `json:"contact_phone"`
 }
 
-func (c *InSalesClient) buildStoreInfo(ctx context.Context) *StoreInfo {
+func (c *InSalesClient) GetStoreInfo(ctx context.Context) (*StoreInfo, error) {
+	body, _, err := c.doRequest(ctx, http.MethodGet, "/account.json", nil)
+	if err != nil {
+		// Fallback: try validating credentials via products endpoint
+		_, status, err2 := c.doRequest(ctx, http.MethodGet, "/products.json?per_page=1", nil)
+		if err2 == nil || status == 404 || status == 403 {
+			return c.buildStoreInfoFallback(ctx), nil
+		}
+		return nil, fmt.Errorf("connection failed — check domain and credentials")
+	}
+
+	var account AccountInfo
+	if err := json.Unmarshal(body, &account); err != nil {
+		return c.buildStoreInfoFallback(ctx), nil
+	}
+
+	name := c.ShopDomain
+	if account.Title != "" {
+		name = account.Title
+	} else if title := c.fetchStoreTitle(ctx); title != "" {
+		name = title
+	}
+
+	return &StoreInfo{
+		Name:     name,
+		Domain:   c.ShopDomain,
+		Email:    account.Email,
+		Currency: "RUB",
+	}, nil
+}
+
+func (c *InSalesClient) buildStoreInfoFallback(ctx context.Context) *StoreInfo {
 	name := c.ShopDomain
 	if title := c.fetchStoreTitle(ctx); title != "" {
 		name = title
@@ -858,7 +875,7 @@ func (c *InSalesClient) GetAccessory(ctx context.Context, accessoryID string) (*
 func (c *InSalesClient) CreateAccessory(ctx context.Context, title string) (*Accessory, error) {
 	payload := map[string]any{
 		"accessory": map[string]any{
-			"title": title,
+			"name": title,
 		},
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/accessories.json", payload)
@@ -939,7 +956,7 @@ func (c *InSalesClient) DeleteVariant(ctx context.Context, productID, variantID 
 // === ЗНАЧЕНИЯ СВОЙСТВ ===
 
 func (c *InSalesClient) ListPropertyValues(ctx context.Context, accessoryID string) ([]PropertyValue, error) {
-	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/accessories/%s/property_values.json", accessoryID), nil)
+	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/accessories/%s/values.json", accessoryID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -956,12 +973,12 @@ func (c *InSalesClient) ListPropertyValues(ctx context.Context, accessoryID stri
 
 func (c *InSalesClient) CreatePropertyValue(ctx context.Context, accessoryID, title string) (*PropertyValue, error) {
 	payload := map[string]any{
-		"property_value": map[string]any{
-			"accessory_id": accessoryID,
-			"title":        title,
+		"accessory_value": map[string]any{
+			"name":  title,
+			"price": 0,
 		},
 	}
-	body, _, err := c.doRequest(ctx, http.MethodPost, "/property_values.json", payload)
+	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/accessories/%s/values.json", accessoryID), payload)
 	if err != nil {
 		return nil, err
 	}
@@ -973,8 +990,8 @@ func (c *InSalesClient) CreatePropertyValue(ctx context.Context, accessoryID, ti
 }
 
 func (c *InSalesClient) UpdatePropertyValue(ctx context.Context, propertyValueID string, args map[string]any) (*PropertyValue, error) {
-	payload := map[string]any{"property_value": args}
-	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/property_values/%s.json", propertyValueID), payload)
+	payload := map[string]any{"accessory_value": args}
+	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/accessory_values/%s.json", propertyValueID), payload)
 	if err != nil {
 		return nil, err
 	}
@@ -986,7 +1003,7 @@ func (c *InSalesClient) UpdatePropertyValue(ctx context.Context, propertyValueID
 }
 
 func (c *InSalesClient) DeletePropertyValue(ctx context.Context, propertyValueID string) error {
-	_, _, err := c.doRequest(ctx, http.MethodDelete, fmt.Sprintf("/property_values/%s.json", propertyValueID), nil)
+	_, _, err := c.doRequest(ctx, http.MethodDelete, fmt.Sprintf("/accessory_values/%s.json", propertyValueID), nil)
 	return err
 }
 
@@ -1150,23 +1167,8 @@ func (c *InSalesClient) DeleteBlog(ctx context.Context, blogID string) error {
 	return err
 }
 
-func (c *InSalesClient) getBlogHandle(ctx context.Context, blogID string) (string, error) {
-	blog, err := c.GetBlog(ctx, blogID)
-	if err != nil {
-		return "", err
-	}
-	if blog.Handle == "" {
-		return "", fmt.Errorf("blog %s has no handle", blogID)
-	}
-	return blog.Handle, nil
-}
-
 func (c *InSalesClient) ListBlogPosts(ctx context.Context, blogID string) ([]BlogPost, error) {
-	handle, err := c.getBlogHandle(ctx, blogID)
-	if err != nil {
-		return nil, err
-	}
-	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/blogs/%s/blog_posts.json", handle), nil)
+	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/blogs/%s/articles.json", blogID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1182,11 +1184,7 @@ func (c *InSalesClient) ListBlogPosts(ctx context.Context, blogID string) ([]Blo
 }
 
 func (c *InSalesClient) GetBlogPost(ctx context.Context, blogID, postID string) (*BlogPost, error) {
-	handle, err := c.getBlogHandle(ctx, blogID)
-	if err != nil {
-		return nil, err
-	}
-	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/blogs/%s/blog_posts/%s.json", handle, postID), nil)
+	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/blogs/%s/articles/%s.json", blogID, postID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1198,17 +1196,13 @@ func (c *InSalesClient) GetBlogPost(ctx context.Context, blogID, postID string) 
 }
 
 func (c *InSalesClient) CreateBlogPost(ctx context.Context, blogID, title, bodyHTML string) (*BlogPost, error) {
-	handle, err := c.getBlogHandle(ctx, blogID)
-	if err != nil {
-		return nil, err
-	}
 	payload := map[string]any{
 		"blog_post": map[string]any{
 			"title":     title,
 			"body_html": bodyHTML,
 		},
 	}
-	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/blogs/%s/blog_posts.json", handle), payload)
+	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/blogs/%s/articles.json", blogID), payload)
 	if err != nil {
 		return nil, err
 	}
@@ -1221,7 +1215,7 @@ func (c *InSalesClient) CreateBlogPost(ctx context.Context, blogID, title, bodyH
 
 func (c *InSalesClient) UpdateBlogPost(ctx context.Context, blogID, postID string, args map[string]any) (*BlogPost, error) {
 	payload := map[string]any{"blog_post": args}
-	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/blogs/%s/blog_posts/%s.json", blogID, postID), payload)
+	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/blogs/%s/articles/%s.json", blogID, postID), payload)
 	if err != nil {
 		return nil, err
 	}
@@ -1233,6 +1227,6 @@ func (c *InSalesClient) UpdateBlogPost(ctx context.Context, blogID, postID strin
 }
 
 func (c *InSalesClient) DeleteBlogPost(ctx context.Context, blogID, postID string) error {
-	_, _, err := c.doRequest(ctx, http.MethodDelete, fmt.Sprintf("/blogs/%s/blog_posts/%s.json", blogID, postID), nil)
+	_, _, err := c.doRequest(ctx, http.MethodDelete, fmt.Sprintf("/blogs/%s/articles/%s.json", blogID, postID), nil)
 	return err
 }

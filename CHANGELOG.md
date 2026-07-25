@@ -27,7 +27,11 @@
 - `server_settings` — `InitDefaults()` перезаписывала domain/https/cert_issuer при каждом старте. Заменена на `SetDefaultsIfMissing()` (вставка только отсутствующих ключей)
 - **MCP read-only фильтр** — mcp-go по умолчанию считает `ReadOnlyHint=false`, инструменты без аннотации фильтровались в read-only режиме. Добавлены `WithReadOnlyHintAnnotation(true)` к 31 read-инструменту
 - **HTML-ошибки InSales API** — MCP-сервер возвращал сырой HTML при 404/500 ошибках API. Теперь возвращает чистые JSON-ошибки
-- **Название магазина** — `get_shop_info` возвращал домен вместо реального названия. Теперь парсит `<title>` из storefront HTML
+- **get_shop_info** — парсил storefront HTML. Теперь использует `GET /admin/account.json` (официальный API)
+- **PropertyValue URL** — использовал legacy `/property_values.json`. Исправлен на `/accessories/:id/values.json` (официальный API)
+- **Accessory** — поле `title` заменено на `name` (соответствует официальному API)
+- **BlogPost URL** — `/blog_posts.json` заменён на `/articles.json` (официальный API)
+- blog_posts/articles — InSales API возвращает 404 для read-only ключа (ограничение API)
 
 ### Тесты
 - 19 новых unit-тестов (3 JWT + 6 middleware + 10 handler)
