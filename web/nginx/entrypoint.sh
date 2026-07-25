@@ -42,8 +42,8 @@ else
     echo "Search bots blocking: DISABLED"
 fi
 
-# Generate robots.txt
-ROBOTS_FILE="/usr/share/nginx/html/robots.txt"
+# Generate robots.txt (writable location, not in :ro volume)
+ROBOTS_FILE="/etc/nginx/robots.txt"
 > "$ROBOTS_FILE"
 
 if [ "$BLOCK_AI_BOTS" = "true" ]; then
