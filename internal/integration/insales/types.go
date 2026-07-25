@@ -31,7 +31,7 @@ type InSalesProductResponse struct {
 	Properties            []InSalesProductProperty `json:"properties"`
 	Characteristics       []InSalesCharacteristic  `json:"characteristics"`
 	OptionNames           []InSalesOptionName      `json:"option_names"`
-	VideoLinks            []string                 `json:"video_links"`
+	VideoLinks            []any                    `json:"video_links"`
 	ProductAccessoryLinks []any                    `json:"product_accessory_links"`
 	CollectionsIds        []int                    `json:"collections_ids"`
 }
