@@ -86,6 +86,8 @@ services:
     environment:
       DOMAIN: ${DOMAIN:-localhost}
       LETSENCRYPT_EMAIL: ${LETSENCRYPT_EMAIL:-}
+      BLOCK_AI_BOTS: ${BLOCK_AI_BOTS:-true}
+      BLOCK_SEARCH_BOTS: ${BLOCK_SEARCH_BOTS:-false}
     depends_on:
       - app
     healthcheck:
