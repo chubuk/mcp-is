@@ -216,6 +216,7 @@ type BlogPost struct {
 	Title       string `json:"title"`
 	Handle      string `json:"handle"`
 	BodyHTML    string `json:"body_html"`
+	Author      string `json:"author"`
 	PublishedAt string `json:"published_at"`
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`

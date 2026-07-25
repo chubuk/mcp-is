@@ -215,12 +215,23 @@ func MapBlog(resp *InSalesBlogResponse) *Blog {
 }
 
 func MapBlogPost(resp *InSalesBlogPostResponse) *BlogPost {
+	// InSales API uses "content" but we expose as "body_html"
+	bodyHTML := resp.Content
+	if bodyHTML == "" {
+		bodyHTML = resp.BodyHTML
+	}
+	// InSales API uses "permalink" but we expose as "handle"
+	handle := resp.Permalink
+	if handle == "" {
+		handle = resp.Handle
+	}
 	return &BlogPost{
 		ID:          fmt.Sprintf("%d", resp.ID),
 		BlogID:      resp.BlogID,
 		Title:       resp.Title,
-		Handle:      resp.Handle,
-		BodyHTML:    resp.BodyHTML,
+		Handle:      handle,
+		BodyHTML:    bodyHTML,
+		Author:      resp.Author,
 		PublishedAt: resp.PublishedAt,
 		CreatedAt:   resp.CreatedAt,
 		UpdatedAt:   resp.UpdatedAt,

@@ -182,6 +182,9 @@ type InSalesBlogPostResponse struct {
 	ID          int    `json:"id"`
 	BlogID      int    `json:"blog_id"`
 	Title       string `json:"title"`
+	Content     string `json:"content"`
+	Permalink   string `json:"permalink"`
+	Author      string `json:"author"`
 	Handle      string `json:"handle"`
 	BodyHTML    string `json:"body_html"`
 	PublishedAt string `json:"published_at"`
