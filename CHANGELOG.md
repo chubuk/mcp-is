@@ -31,6 +31,9 @@
 - **PropertyValue URL** — использовал legacy `/property_values.json`. Исправлен на `/accessories/:id/values.json` (официальный API)
 - **Accessory** — поле `title` заменено на `name` (соответствует официальному API)
 - **BlogPost URL** — `/blog_posts.json` заменён на `/articles.json` (официальный API)
+- **Blog articles** — URL исправлен на официальный `/blogs/:id/articles.json` (был `/articles.json`)
+- **Create Article** — добавлены обязательные поля `content`, `published_at`, `author`
+- **Update Blog** — добавлен новый инструмент (PUT /blogs/:id.json)
 - blog_posts/articles — InSales API возвращает 404 для read-only ключа (ограничение API)
 
 ### Тесты
