@@ -86,6 +86,29 @@ curl -X POST http://localhost:8080/mcp \
 
 ## Подключение MCP-клиента
 
+### Совместимые системы
+
+MCP IS совместим с любым клиентом, поддерживающим MCP протокол через Streamable HTTP. Ниже перечислены наиболее популярные системы.
+
+| Система | Тип | Файл конфигурации | Формат |
+|---------|-----|-------------------|--------|
+| Claude Desktop | Desktop app | `claude_desktop_config.json` | JSON |
+| Cursor | IDE | `~/.cursor/mcp.json` | JSON |
+| VS Code (Copilot) | IDE | `.vscode/mcp.json` | JSON |
+| MiMoCode | CLI | `.mimocode/mcp.json` | JSON |
+| OpenCode | CLI | `.opencode/config.json` | JSON |
+| Continue | IDE ext | `~/.continue/config.json` | JSON |
+| LibreChat | Web UI | `librechat.yaml` | YAML |
+| Open WebUI | Web UI | через Admin Panel | — |
+| Cline | VS Code ext | `cline_mcp_settings.json` | JSON |
+| Cherry Studio | Desktop app | через Settings | — |
+| ChatGPT Desktop | Desktop app | через Settings | — |
+| Windsurf | IDE | через Settings | — |
+| Zed | IDE | `settings.json` | JSON |
+| Aider | CLI | через `--mcp` флаг | — |
+
+> Если вашей системы нет в списке — попробуйте подключить через URL `https://your-domain/mcp` с заголовком `Authorization: Bearer <API_KEY>`.
+
 ### Claude Desktop
 
 **Путь к конфигурации:**

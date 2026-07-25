@@ -15,6 +15,11 @@
   - Подсказка «куда класть файл»
   - Запоминание выбранной системы в localStorage
   - Список систем хранится в БД — расширяемый без обновления кода
+- **Bot access control** — переменные `BLOCK_AI_BOTS` и `BLOCK_SEARCH_BOTS` в .env
+  - Блокировка AI-скраперов (GPTBot, CCBot, Anthropic-AI, Bytespider и др.) через nginx User-Agent
+  - Генерация `robots.txt` из переменных окружения
+  - 21 unit-тест для entrypoint.sh
+- **Расширен список совместимых MCP-клиентов** — 14 систем в документации (Claude Desktop, Cursor, VS Code, MiMoCode, OpenCode, Continue, LibreChat, Open WebUI, Cline, Cherry Studio, ChatGPT Desktop, Windsurf, Zed, Aider)
 
 ### Исправлено
 - `.gitignore` — паттерн `server` заменён на `/server` (binaries only)
@@ -26,6 +31,7 @@
 
 ### Тесты
 - 19 новых unit-тестов (3 JWT + 6 middleware + 10 handler)
+- 21 bash-тест для entrypoint.sh (robots.txt, nginx config)
 
 ## [0.2.3] - 2026-07-23
 

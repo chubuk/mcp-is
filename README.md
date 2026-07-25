@@ -43,7 +43,7 @@ scripts/
 
 - Docker и Docker Compose v2
 - Ключ доступа InSales (Расширения → Разработчикам → Ключи доступа)
-- AI-клиент с поддержкой MCP: Claude Desktop, Cursor, VS Code/Copilot, Continue, LibreChat, Open WebUI
+- AI-клиент с поддержкой MCP: Claude Desktop, Cursor, VS Code/Copilot, MiMoCode, OpenCode, Continue, LibreChat, Open WebUI, Cline, Cherry Studio, ChatGPT Desktop, Windsurf, Zed, Aider и другие совместимые MCP-клиенты
 
 ## Установка
 
