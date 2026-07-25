@@ -994,4 +994,34 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === UNITS ===
 	s.AddTool(mcp.NewTool("list_units", mcp.WithDescription("Список единиц измерения"), mcp.WithReadOnlyHintAnnotation(true)), genericListHandler(svc, svc.ListUnits))
+
+	// === PIPELINE TOOLS ===
+	s.AddTool(mcp.NewTool("search_product_details",
+		mcp.WithDescription("Поиск товара с полной информацией: кастомные поля, метаполя, изображения. Возвращает полную карточку товара одним вызовом."),
+		mcp.WithString("query", mcp.Description("Поисковый запрос (название товара)")),
+		mcp.WithString("product_id", mcp.Description("ID товара (альтернатива query)")),
+		mcp.WithReadOnlyHintAnnotation(true),
+	), searchProductDetailsHandler(svc))
+
+	s.AddTool(mcp.NewTool("order_full_details",
+		mcp.WithDescription("Полная информация о заказе: позиции, адрес доставки, клиент, кастомные поля. Всё одним вызовом."),
+		mcp.WithString("order_id", mcp.Required(), mcp.Description("ID заказа")),
+		mcp.WithReadOnlyHintAnnotation(true),
+	), orderFullDetailsHandler(svc))
+
+	s.AddTool(mcp.NewTool("client_full_profile",
+		mcp.WithDescription("Полный профиль клиента: данные, последние заказы, бонусы, метаполя. Всё одним вызовом."),
+		mcp.WithString("client_id", mcp.Required(), mcp.Description("ID клиента")),
+		mcp.WithReadOnlyHintAnnotation(true),
+	), clientFullProfileHandler(svc))
+
+	s.AddTool(mcp.NewTool("product_catalog_search",
+		mcp.WithDescription("Поиск по каталогу товаров с фильтрами, пагинацией и подсчётом."),
+		mcp.WithString("query", mcp.Description("Поисковый запрос")),
+		mcp.WithString("category_id", mcp.Description("Фильтр по категории")),
+		mcp.WithString("collection_id", mcp.Description("Фильтр по коллекции")),
+		mcp.WithNumber("page", mcp.DefaultNumber(1)),
+		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
+		mcp.WithReadOnlyHintAnnotation(true),
+	), productCatalogSearchHandler(svc))
 }

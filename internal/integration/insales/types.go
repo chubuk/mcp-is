@@ -9,19 +9,56 @@ type InSalesShopResponse struct {
 }
 
 type InSalesProductResponse struct {
-	ID          int                    `json:"id"`
-	Title       string                 `json:"title"`
-	Description string                 `json:"description"`
-	Price       string                 `json:"price"`
-	CategoryID  *int                   `json:"category_id"`
-	Vendor      string                 `json:"vendor"`
-	SKU         string                 `json:"sku"`
-	Quantity    int                    `json:"quantity"`
-	Weight      string                 `json:"weight"`
-	CreatedAt   string                 `json:"created_at"`
-	UpdatedAt   string                 `json:"updated_at"`
-	Variants    []InSalesVariant       `json:"variants"`
-	Images      []InSalesImage         `json:"images"`
+	ID                    int                      `json:"id"`
+	Title                 string                   `json:"title"`
+	Description           string                   `json:"description"`
+	ShortDescription      string                   `json:"short_description"`
+	Price                 string                   `json:"price"`
+	CategoryID            *int                     `json:"category_id"`
+	Vendor                string                   `json:"vendor"`
+	SKU                   string                   `json:"sku"`
+	Quantity              int                      `json:"quantity"`
+	Weight                string                   `json:"weight"`
+	Permalink             string                   `json:"permalink"`
+	IsHidden              bool                     `json:"is_hidden"`
+	Available             *bool                    `json:"available"`
+	Archived              bool                     `json:"archived"`
+	CreatedAt             string                   `json:"created_at"`
+	UpdatedAt             string                   `json:"updated_at"`
+	Variants              []InSalesVariant         `json:"variants"`
+	Images                []InSalesImage           `json:"images"`
+	ProductFieldValues    []InSalesFieldValue      `json:"product_field_values"`
+	Properties            []InSalesProductProperty `json:"properties"`
+	Characteristics       []InSalesCharacteristic  `json:"characteristics"`
+	OptionNames           []InSalesOptionName      `json:"option_names"`
+	VideoLinks            []string                 `json:"video_links"`
+	ProductAccessoryLinks []any                    `json:"product_accessory_links"`
+	CollectionsIds        []int                    `json:"collections_ids"`
+}
+
+type InSalesFieldValue struct {
+	ID             int    `json:"id"`
+	ProductFieldID int    `json:"product_field_id"`
+	Value          string `json:"value"`
+}
+
+type InSalesProductProperty struct {
+	ID       int    `json:"id"`
+	Title    string `json:"title"`
+	Position int    `json:"position"`
+}
+
+type InSalesCharacteristic struct {
+	ID          int    `json:"id"`
+	PropertyID  int    `json:"property_id"`
+	Title       string `json:"title"`
+	Position    int    `json:"position"`
+}
+
+type InSalesOptionName struct {
+	ID       int    `json:"id"`
+	Title    string `json:"title"`
+	Position int    `json:"position"`
 }
 
 type InSalesVariant struct {
@@ -59,6 +96,19 @@ type InSalesOrderResponse struct {
 	CreatedAt         string                 `json:"created_at"`
 	UpdatedAt         string                 `json:"updated_at"`
 	OrderLines        []InSalesOrderLine     `json:"order_lines"`
+	FieldsValues      []InSalesFieldValue    `json:"fields_values"`
+	ShippingAddress   *InSalesShippingAddress `json:"shipping_address"`
+}
+
+type InSalesShippingAddress struct {
+	ID                  int    `json:"id"`
+	Name                string `json:"name"`
+	Surname             string `json:"surname"`
+	Middlename          string `json:"middlename"`
+	Phone               string `json:"phone"`
+	FormattedPhone      string `json:"formatted_phone"`
+	FullName            string `json:"full_name"`
+	FullDeliveryAddress string `json:"full_delivery_address"`
 }
 
 type InSalesClientRef struct {
@@ -81,13 +131,37 @@ type InSalesOrderLine struct {
 }
 
 type InSalesClientResponse struct {
-	ID        int    `json:"id"`
-	Email     string `json:"email"`
-	FirstName string `json:"first_name"`
-	LastName  string `json:"last_name"`
-	Phone     string `json:"phone"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID                   int                    `json:"id"`
+	Email                string                 `json:"email"`
+	Name                 string                 `json:"name"`
+	Surname              string                 `json:"surname"`
+	Middlename           string                 `json:"middlename"`
+	FirstName            string                 `json:"first_name"`
+	LastName             string                 `json:"last_name"`
+	Phone                string                 `json:"phone"`
+	FullName             string                 `json:"full_name"`
+	Comment              string                 `json:"comment"`
+	Registered           bool                   `json:"registered"`
+	Subscribe            bool                   `json:"subscribe"`
+	ClientGroupID        *int                   `json:"client_group_id"`
+	BonusPoints          int                    `json:"bonus_points"`
+	Type                 string                 `json:"type"`
+	ProgressiveDiscount  string                 `json:"progressive_discount"`
+	GroupDiscount        string                 `json:"group_discount"`
+	ConsentToPersonalData bool                  `json:"consent_to_personal_data"`
+	CreatedAt            string                 `json:"created_at"`
+	UpdatedAt            string                 `json:"updated_at"`
+	FieldsValues         []InSalesFieldValue    `json:"fields_values"`
+	ClientTags           []string               `json:"client_tags"`
+	DefaultAddress       *InSalesClientAddress  `json:"default_address"`
+}
+
+type InSalesClientAddress struct {
+	ID                  int    `json:"id"`
+	Name                string `json:"name"`
+	Surname             string `json:"surname"`
+	Phone               string `json:"phone"`
+	FullDeliveryAddress string `json:"full_delivery_address"`
 }
 
 type InSalesCategoryResponse struct {

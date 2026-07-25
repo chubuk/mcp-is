@@ -215,3 +215,134 @@ func TestListMetaFields_NoFilters(t *testing.T) {
 		t.Errorf("URL should not have query params when no filters:\n  got:  %s\n  want: %s", receivedURL, expected)
 	}
 }
+
+// === Product field values tests ===
+
+func TestMapProduct_IncludesFieldValues(t *testing.T) {
+	resp := &InSalesProductResponse{
+		ID:    12345,
+		Title: "Одуванчик П 100",
+		ProductFieldValues: []InSalesFieldValue{
+			{ID: 1, ProductFieldID: 1, Value: "Противопоказания: Беременность"},
+			{ID: 2, ProductFieldID: 2, Value: "Дозировка: 100 мг"},
+		},
+	}
+
+	product := MapProduct(resp)
+
+	fvs := product.FieldValues
+	if fvs == nil {
+		t.Fatal("FieldValues should not be nil")
+	}
+	if len(fvs) != 2 {
+		t.Fatalf("expected 2 field values, got %d", len(fvs))
+	}
+
+	fv1 := fvs[0].(map[string]any)
+	if fv1["value"] != "Противопоказания: Беременность" {
+		t.Errorf("expected field value 'Противопоказания: Беременность', got %v", fv1["value"])
+	}
+	if fv1["product_field_id"] != 1 {
+		t.Errorf("expected product_field_id 1, got %v", fv1["product_field_id"])
+	}
+}
+
+func TestMapProduct_IncludesAllNestedData(t *testing.T) {
+	resp := &InSalesProductResponse{
+		ID:               1,
+		Title:            "Тест",
+		Description:      "Описание",
+		ShortDescription: "Краткое",
+		Permalink:        "test",
+		IsHidden:         false,
+		Variants:         []InSalesVariant{{ID: 1, Title: "Red", Price: "100"}},
+		Images:           []InSalesImage{{ID: 1, URL: "http://img.jpg", Filename: "img.jpg"}},
+		Properties:       []InSalesProductProperty{{ID: 1, Title: "Бренд"}},
+		Characteristics:  []InSalesCharacteristic{{ID: 1, PropertyID: 1, Title: "Nike"}},
+		OptionNames:      []InSalesOptionName{{ID: 1, Title: "Размер"}},
+		ProductFieldValues: []InSalesFieldValue{{ID: 1, ProductFieldID: 1, Value: "test"}},
+	}
+
+	product := MapProduct(resp)
+
+	if product.Description != "Описание" {
+		t.Errorf("expected Description 'Описание', got %q", product.Description)
+	}
+	if product.ShortDescription != "Краткое" {
+		t.Errorf("expected ShortDescription 'Краткое', got %q", product.ShortDescription)
+	}
+	if product.Permalink != "test" {
+		t.Errorf("expected Permalink 'test', got %q", product.Permalink)
+	}
+	if len(product.Images) != 1 {
+		t.Errorf("expected 1 image, got %d", len(product.Images))
+	}
+	if len(product.FieldValues) != 1 {
+		t.Errorf("expected 1 field value, got %d", len(product.FieldValues))
+	}
+	if len(product.Properties) != 1 {
+		t.Errorf("expected 1 property, got %d", len(product.Properties))
+	}
+}
+
+func TestMapOrder_IncludesShippingAddress(t *testing.T) {
+	resp := &InSalesOrderResponse{
+		ID:           1,
+		TotalPrice:   1500.0,
+		ShippingAddress: &InSalesShippingAddress{
+			ID:                  9,
+			Name:                "Иван",
+			FullName:            "Иванов Иван",
+			FullDeliveryAddress: "Москва, ул. Тестовая",
+			Phone:               "+79991234567",
+		},
+	}
+
+	order := MapOrder(resp)
+
+	sa := order.ShippingAddress
+	if sa == nil {
+		t.Fatal("ShippingAddress should not be nil")
+	}
+	if sa["full_name"] != "Иванов Иван" {
+		t.Errorf("expected full_name 'Иванов Иван', got %v", sa["full_name"])
+	}
+	if sa["full_delivery_address"] != "Москва, ул. Тестовая" {
+		t.Errorf("expected full_delivery_address, got %v", sa["full_delivery_address"])
+	}
+}
+
+func TestMapClient_IncludesFields(t *testing.T) {
+	resp := &InSalesClientResponse{
+		ID:                 1,
+		Email:              "test@example.com",
+		Name:               "Иван",
+		Surname:            "Иванов",
+		FullName:           "Иванов Иван Иванович",
+		BonusPoints:        500,
+		ProgressiveDiscount: "10.0",
+		GroupDiscount:      "5.0",
+		ClientTags:         []string{"vip", "regular"},
+		FieldsValues:       []InSalesFieldValue{{ID: 1, ProductFieldID: 1, Value: "text"}},
+	}
+
+	client := MapClient(resp)
+
+	if client["bonus_points"] != 500 {
+		t.Errorf("expected bonus_points 500, got %v", client["bonus_points"])
+	}
+	if client["progressive_discount"] != "10.0" {
+		t.Errorf("expected progressive_discount '10.0', got %v", client["progressive_discount"])
+	}
+	if client["full_name"] != "Иванов Иван Иванович" {
+		t.Errorf("expected full_name, got %v", client["full_name"])
+	}
+	tags, ok := client["client_tags"].([]string)
+	if !ok || len(tags) != 2 {
+		t.Errorf("expected 2 client_tags, got %v", client["client_tags"])
+	}
+	fvs, ok := client["fields_values"].([]any)
+	if !ok || len(fvs) != 1 {
+		t.Errorf("expected 1 fields_values, got %v", client["fields_values"])
+	}
+}

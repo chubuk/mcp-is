@@ -1819,3 +1819,61 @@ func listSimilarsByProductHandler(svc *service.Service) func(ctx context.Context
 		return mcp.NewToolResultText(formatResult(result)), nil
 	}
 }
+
+// === PIPELINE HANDLERS ===
+
+func searchProductDetailsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		query, _ := args["query"].(string)
+		productID, _ := args["product_id"].(string)
+		if query == "" && productID == "" {
+			return toolError(fmt.Errorf("query или product_id обязательны")), nil
+		}
+		result, err := svc.SearchProductDetails(ctx, query, productID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func orderFullDetailsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		orderID, err := req.RequireString("order_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.OrderFullDetails(ctx, orderID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func clientFullProfileHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		clientID, err := req.RequireString("client_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.ClientFullProfile(ctx, clientID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func productCatalogSearchHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		query, _ := args["query"].(string)
+		result, err := svc.ProductCatalogSearch(ctx, query, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}

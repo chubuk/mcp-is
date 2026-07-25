@@ -13,16 +13,31 @@ func MapShop(resp *InSalesShopResponse) *StoreInfo {
 }
 
 func MapProduct(resp *InSalesProductResponse) *Product {
+	available := false
+	if resp.Available != nil {
+		available = *resp.Available
+	}
 	return &Product{
-		ID:        fmt.Sprintf("%d", resp.ID),
-		Title:     resp.Title,
-		SKU:       resp.SKU,
-		Price:     resp.Price,
-		Quantity:  resp.Quantity,
-		Vendor:    resp.Vendor,
-		CreatedAt: resp.CreatedAt,
-		UpdatedAt: resp.UpdatedAt,
-		Variants:  mapVariants(resp.Variants),
+		ID:               fmt.Sprintf("%d", resp.ID),
+		Title:            resp.Title,
+		Description:      resp.Description,
+		ShortDescription: resp.ShortDescription,
+		Permalink:        resp.Permalink,
+		IsHidden:         resp.IsHidden,
+		Available:        available,
+		SKU:              resp.SKU,
+		Price:            resp.Price,
+		Quantity:         resp.Quantity,
+		Vendor:           resp.Vendor,
+		CategoryID:       resp.CategoryID,
+		CreatedAt:        resp.CreatedAt,
+		UpdatedAt:        resp.UpdatedAt,
+		Variants:         mapVariants(resp.Variants),
+		Images:           mapImages(resp.Images),
+		FieldValues:      mapFieldValues(resp.ProductFieldValues),
+		Properties:       mapProductProperties(resp.Properties),
+		Characteristics:  mapCharacteristics(resp.Characteristics),
+		OptionNames:      mapOptionNames(resp.OptionNames),
 	}
 }
 
@@ -42,6 +57,69 @@ func mapVariants(v []InSalesVariant) []Variant {
 	return result
 }
 
+func mapImages(images []InSalesImage) []any {
+	result := make([]any, len(images))
+	for i, img := range images {
+		result[i] = map[string]any{
+			"id":        img.ID,
+			"url":       img.URL,
+			"filename":  img.Filename,
+			"position":  img.Position,
+			"product_id": img.ProductID,
+		}
+	}
+	return result
+}
+
+func mapFieldValues(fvs []InSalesFieldValue) []any {
+	result := make([]any, len(fvs))
+	for i, fv := range fvs {
+		result[i] = map[string]any{
+			"id":               fv.ID,
+			"product_field_id": fv.ProductFieldID,
+			"value":            fv.Value,
+		}
+	}
+	return result
+}
+
+func mapProductProperties(props []InSalesProductProperty) []any {
+	result := make([]any, len(props))
+	for i, p := range props {
+		result[i] = map[string]any{
+			"id":       p.ID,
+			"title":    p.Title,
+			"position": p.Position,
+		}
+	}
+	return result
+}
+
+func mapCharacteristics(chars []InSalesCharacteristic) []any {
+	result := make([]any, len(chars))
+	for i, c := range chars {
+		result[i] = map[string]any{
+			"id":          c.ID,
+			"property_id": c.PropertyID,
+			"title":       c.Title,
+			"position":    c.Position,
+		}
+	}
+	return result
+}
+
+func mapOptionNames(opts []InSalesOptionName) []any {
+	result := make([]any, len(opts))
+	for i, o := range opts {
+		result[i] = map[string]any{
+			"id":       o.ID,
+			"title":    o.Title,
+			"position": o.Position,
+		}
+	}
+	return result
+}
+
 func MapOrder(resp *InSalesOrderResponse) *Order {
 	var clientID int
 	var clientName string
@@ -53,6 +131,20 @@ func MapOrder(resp *InSalesOrderResponse) *Order {
 	discountAmount := 0.0
 	if d, ok := resp.Discount["amount"].(float64); ok {
 		discountAmount = d
+	}
+
+	var shippingAddress map[string]any
+	if resp.ShippingAddress != nil {
+		shippingAddress = map[string]any{
+			"id":                    resp.ShippingAddress.ID,
+			"name":                  resp.ShippingAddress.Name,
+			"surname":               resp.ShippingAddress.Surname,
+			"middlename":            resp.ShippingAddress.Middlename,
+			"phone":                 resp.ShippingAddress.Phone,
+			"formatted_phone":       resp.ShippingAddress.FormattedPhone,
+			"full_name":             resp.ShippingAddress.FullName,
+			"full_delivery_address": resp.ShippingAddress.FullDeliveryAddress,
+		}
 	}
 
 	return &Order{
@@ -72,6 +164,8 @@ func MapOrder(resp *InSalesOrderResponse) *Order {
 		CreatedAt:         resp.CreatedAt,
 		UpdatedAt:         resp.UpdatedAt,
 		Lines:             mapOrderLines(resp.OrderLines),
+		FieldsValues:      mapFieldValues(resp.FieldsValues),
+		ShippingAddress:   shippingAddress,
 	}
 }
 
@@ -94,13 +188,28 @@ func mapOrderLines(l []InSalesOrderLine) []OrderLine {
 
 func MapClient(resp *InSalesClientResponse) map[string]any {
 	return map[string]any{
-		"id":         resp.ID,
-		"email":      resp.Email,
-		"first_name": resp.FirstName,
-		"last_name":  resp.LastName,
-		"phone":      resp.Phone,
-		"created_at": resp.CreatedAt,
-		"updated_at": resp.UpdatedAt,
+		"id":                    resp.ID,
+		"email":                 resp.Email,
+		"name":                  resp.Name,
+		"surname":               resp.Surname,
+		"middlename":            resp.Middlename,
+		"first_name":            resp.FirstName,
+		"last_name":             resp.LastName,
+		"phone":                 resp.Phone,
+		"full_name":             resp.FullName,
+		"comment":               resp.Comment,
+		"registered":            resp.Registered,
+		"subscribe":             resp.Subscribe,
+		"client_group_id":       resp.ClientGroupID,
+		"bonus_points":          resp.BonusPoints,
+		"type":                  resp.Type,
+		"progressive_discount":  resp.ProgressiveDiscount,
+		"group_discount":        resp.GroupDiscount,
+		"consent_to_personal_data": resp.ConsentToPersonalData,
+		"created_at":            resp.CreatedAt,
+		"updated_at":            resp.UpdatedAt,
+		"fields_values":         mapFieldValues(resp.FieldsValues),
+		"client_tags":           resp.ClientTags,
 	}
 }
 

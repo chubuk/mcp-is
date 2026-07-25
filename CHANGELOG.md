@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.3.2] - 2026-07-25
+
+### Добавлено
+- **Пайплайн-инструменты** — композитные инструменты для частых сценариев:
+  - `search_product_details` — поиск товара с кастомными полями, метаполями и изображениями за 1 вызов
+  - `order_full_details` — полная информация о заказе (клиент, адрес, позиции, метаполя) за 1 вызов
+  - `client_full_profile` — полный профиль клиента (заказы, бонусы, метаполя) за 1 вызов
+  - `product_catalog_search` — поиск по каталогу с фильтрами и пагинацией
+- **product_field_values** — `get_product` теперь возвращает кастомные поля товара (Противопоказания, Состав и т.д.)
+- **Расширены типы Product** — добавлены description, short_description, permalink, is_hidden, available, properties, characteristics, option_names, images, field_values
+- **Расширены типы Order** — добавлены shipping_address, fields_values
+- **Расширены типы Client** — добавлены bonus_points, progressive_discount, group_discount, client_tags, full_name, fields_values
+
+### Исправлено
+- **URL-кодирование** — ListProducts и ListOrders теперь кодируют кириллицу и спецсимволы через `url.QueryEscape()`
+- **Meta fields фильтрация** — `list_meta_fields` теперь поддерживает фильтры `resource_type` и `resource_id`
+
+### Тесты
+- 5 тестов URL-кодирования (кириллица, пробелы, спецсимволы)
+- 4 теста мапперов (Product field values, Order shipping address, Client fields)
+- 2 теста MetaFields фильтрации
+
 ## [0.3.0] - 2026-07-23
 
 ### Добавлено

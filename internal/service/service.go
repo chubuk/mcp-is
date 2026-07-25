@@ -1263,3 +1263,145 @@ func (s *Service) DeleteSimilar(ctx context.Context, id string) error { c, ctx, 
 
 // === UNITS ===
 func (s *Service) ListUnits(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListUnits(ctx) }
+
+// === PIPELINE TOOLS ===
+
+func (s *Service) SearchProductDetails(ctx context.Context, query string, productID string) (map[string]any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var product *insales.Product
+	if productID != "" {
+		product, err = client.GetProduct(ctx, productID)
+	} else {
+		products, err2 := client.ListProducts(ctx, 1, 5, map[string]any{"q": query})
+		if err2 != nil {
+			return nil, err2
+		}
+		if len(products) == 0 {
+			return map[string]any{"products": []any{}, "message": "Товары не найдены"}, nil
+		}
+		product = &products[0]
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Get meta fields for this product
+	metaFields, _ := client.ListMetaFields(ctx, map[string]any{
+		"resource_type": "Product",
+		"resource_id":   product.ID,
+	})
+
+	result := map[string]any{
+		"product":     product,
+		"meta_fields": metaFields,
+	}
+	return result, nil
+}
+
+func (s *Service) OrderFullDetails(ctx context.Context, orderID string) (map[string]any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	order, err := client.GetOrder(ctx, orderID)
+	if err != nil {
+		return nil, err
+	}
+
+	var clientData any
+	if order.ClientID > 0 {
+		clientData, _ = client.GetClient(ctx, fmt.Sprintf("%d", order.ClientID))
+	}
+
+	// Get meta fields for this order
+	metaFields, _ := client.ListMetaFields(ctx, map[string]any{
+		"resource_type": "Order",
+		"resource_id":   order.ID,
+	})
+
+	result := map[string]any{
+		"order":      order,
+		"client":     clientData,
+		"meta_fields": metaFields,
+	}
+	return result, nil
+}
+
+func (s *Service) ClientFullProfile(ctx context.Context, clientID string) (map[string]any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	clientData, err := client.GetClient(ctx, clientID)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get orders for this client
+	orders, _ := client.ListOrders(ctx, 1, 10, map[string]any{})
+
+	// Get meta fields for this client
+	metaFields, _ := client.ListMetaFields(ctx, map[string]any{
+		"resource_type": "Client",
+		"resource_id":   clientID,
+	})
+
+	// Get bonus transactions
+	bonusTxns, _ := client.ListClientBonusSystemTransactions(ctx, clientID)
+
+	result := map[string]any{
+		"client":            clientData,
+		"recent_orders":     orders,
+		"meta_fields":       metaFields,
+		"bonus_transactions": bonusTxns,
+	}
+	return result, nil
+}
+
+func (s *Service) ProductCatalogSearch(ctx context.Context, query string, filters map[string]any) (map[string]any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	page := 1
+	perPage := 25
+	if v, ok := filters["page"].(float64); ok && v > 0 {
+		page = int(v)
+	}
+	if v, ok := filters["per_page"].(float64); ok && v > 0 {
+		perPage = int(v)
+	}
+
+	searchFilters := map[string]any{
+		"page":    page,
+		"per_page": perPage,
+	}
+	if query != "" {
+		searchFilters["q"] = query
+	}
+	if v, ok := filters["category_id"].(string); ok && v != "" {
+		searchFilters["category_id"] = v
+	}
+	if v, ok := filters["collection_id"].(string); ok && v != "" {
+		searchFilters["collection_id"] = v
+	}
+
+	products, err := client.ListProducts(ctx, page, perPage, searchFilters)
+	if err != nil {
+		return nil, err
+	}
+
+	result := map[string]any{
+		"products": products,
+		"page":     page,
+		"per_page": perPage,
+	}
+	return result, nil
+}
