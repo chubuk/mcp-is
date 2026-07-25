@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -256,16 +257,16 @@ func parseTitleFromHTML(html string) string {
 func (c *InSalesClient) ListProducts(ctx context.Context, page, perPage int, filters map[string]any) ([]Product, error) {
 	path := fmt.Sprintf("/products.json?page=%d&per_page=%d", page, perPage)
 	if v, ok := filters["category_id"].(string); ok && v != "" {
-		path += "&category_id=" + v
+		path += "&category_id=" + url.QueryEscape(v)
 	}
 	if v, ok := filters["collection_id"].(string); ok && v != "" {
-		path += "&collection_id=" + v
+		path += "&collection_id=" + url.QueryEscape(v)
 	}
 	if v, ok := filters["q"].(string); ok && v != "" {
-		path += "&q=" + v
+		path += "&q=" + url.QueryEscape(v)
 	}
 	if v, ok := filters["updated_since"].(string); ok && v != "" {
-		path += "&updated_since=" + v
+		path += "&updated_since=" + url.QueryEscape(v)
 	}
 	if v, ok := filters["from_id"].(float64); ok && v > 0 {
 		path += fmt.Sprintf("&from_id=%d", int(v))
@@ -348,10 +349,10 @@ func (c *InSalesClient) DeleteProduct(ctx context.Context, productID string) err
 func (c *InSalesClient) ListOrders(ctx context.Context, page, perPage int, filters map[string]any) ([]Order, error) {
 	path := fmt.Sprintf("/orders.json?page=%d&per_page=%d", page, perPage)
 	if v, ok := filters["fulfillment_status"].(string); ok && v != "" {
-		path += "&fulfillment_status[]=" + v
+		path += "&fulfillment_status[]=" + url.QueryEscape(v)
 	}
 	if v, ok := filters["updated_since"].(string); ok && v != "" {
-		path += "&updated_since=" + v
+		path += "&updated_since=" + url.QueryEscape(v)
 	}
 	if v, ok := filters["from_id"].(int); ok && v > 0 {
 		path += fmt.Sprintf("&from_id=%d", v)
@@ -665,6 +666,18 @@ func (c *InSalesClient) DeleteImage(ctx context.Context, productID, imageID stri
 
 func (c *InSalesClient) ListMetaFields(ctx context.Context, args map[string]any) ([]any, error) {
 	path := "/meta_fields.json"
+	params := []string{}
+	if v, ok := args["resource_type"].(string); ok && v != "" {
+		params = append(params, "meta_field[owner_type]="+url.QueryEscape(v))
+	}
+	if v, ok := args["resource_id"].(string); ok && v != "" {
+		params = append(params, "meta_field[owner_id]="+url.QueryEscape(v))
+	} else if v, ok := args["resource_id"].(float64); ok && v > 0 {
+		params = append(params, fmt.Sprintf("meta_field[owner_id]=%d", int(v)))
+	}
+	if len(params) > 0 {
+		path += "?" + strings.Join(params, "&")
+	}
 	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
 	if err != nil {
 		return nil, err
