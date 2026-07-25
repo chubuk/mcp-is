@@ -1168,7 +1168,7 @@ func (c *InSalesClient) DeleteBlog(ctx context.Context, blogID string) error {
 }
 
 func (c *InSalesClient) ListBlogPosts(ctx context.Context, blogID string) ([]BlogPost, error) {
-	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/blogs/%s/articles.json", blogID), nil)
+	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/articles.json?blog_id=%s", blogID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1184,7 +1184,7 @@ func (c *InSalesClient) ListBlogPosts(ctx context.Context, blogID string) ([]Blo
 }
 
 func (c *InSalesClient) GetBlogPost(ctx context.Context, blogID, postID string) (*BlogPost, error) {
-	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/blogs/%s/articles/%s.json", blogID, postID), nil)
+	body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("/articles/%s.json", postID), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1197,12 +1197,13 @@ func (c *InSalesClient) GetBlogPost(ctx context.Context, blogID, postID string) 
 
 func (c *InSalesClient) CreateBlogPost(ctx context.Context, blogID, title, bodyHTML string) (*BlogPost, error) {
 	payload := map[string]any{
-		"blog_post": map[string]any{
+		"article": map[string]any{
+			"blog_id":   blogID,
 			"title":     title,
 			"body_html": bodyHTML,
 		},
 	}
-	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/blogs/%s/articles.json", blogID), payload)
+	body, _, err := c.doRequest(ctx, http.MethodPost, "/articles.json", payload)
 	if err != nil {
 		return nil, err
 	}
@@ -1214,8 +1215,8 @@ func (c *InSalesClient) CreateBlogPost(ctx context.Context, blogID, title, bodyH
 }
 
 func (c *InSalesClient) UpdateBlogPost(ctx context.Context, blogID, postID string, args map[string]any) (*BlogPost, error) {
-	payload := map[string]any{"blog_post": args}
-	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/blogs/%s/articles/%s.json", blogID, postID), payload)
+	payload := map[string]any{"article": args}
+	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/articles/%s.json", postID), payload)
 	if err != nil {
 		return nil, err
 	}
@@ -1227,6 +1228,6 @@ func (c *InSalesClient) UpdateBlogPost(ctx context.Context, blogID, postID strin
 }
 
 func (c *InSalesClient) DeleteBlogPost(ctx context.Context, blogID, postID string) error {
-	_, _, err := c.doRequest(ctx, http.MethodDelete, fmt.Sprintf("/blogs/%s/articles/%s.json", blogID, postID), nil)
+	_, _, err := c.doRequest(ctx, http.MethodDelete, fmt.Sprintf("/articles/%s.json", postID), nil)
 	return err
 }
