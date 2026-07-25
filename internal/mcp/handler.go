@@ -31,7 +31,7 @@ func (h *Handler) HandleTool(ctx context.Context, toolName string, args map[stri
 		if v, ok := args["per_page"].(float64); ok {
 			perPage = int(v)
 		}
-		return h.service.GetProducts(ctx, page, perPage)
+		return h.service.GetProducts(ctx, page, perPage, args)
 
 	case "get_product":
 		productID, _ := args["product_id"].(string)
@@ -71,7 +71,17 @@ func (h *Handler) HandleTool(ctx context.Context, toolName string, args map[stri
 		if v, ok := args["per_page"].(float64); ok {
 			perPage = int(v)
 		}
-		return h.service.GetOrders(ctx, page, perPage)
+		filters := make(map[string]any)
+		if v, ok := args["fulfillment_status"].(string); ok && v != "" {
+			filters["fulfillment_status"] = v
+		}
+		if v, ok := args["updated_since"].(string); ok && v != "" {
+			filters["updated_since"] = v
+		}
+		if v, ok := args["from_id"].(float64); ok && v > 0 {
+			filters["from_id"] = int(v)
+		}
+		return h.service.GetOrders(ctx, page, perPage, filters)
 
 	case "get_order":
 		orderID, _ := args["order_id"].(string)
@@ -113,11 +123,12 @@ func (h *Handler) HandleTool(ctx context.Context, toolName string, args map[stri
 		return h.service.GetClient(ctx, clientID)
 
 	case "create_client":
-		email, _ := args["email"].(string)
-		if email == "" {
-			return nil, fmt.Errorf("missing required parameter: email")
+		name, _ := args["name"].(string)
+		surname, _ := args["surname"].(string)
+		if name == "" || surname == "" {
+			return nil, fmt.Errorf("name and surname are required")
 		}
-		return h.service.CreateClient(ctx, email, args)
+		return h.service.CreateClient(ctx, args)
 
 	case "update_client":
 		clientID, _ := args["client_id"].(string)
@@ -341,7 +352,7 @@ func (h *Handler) HandleTool(ctx context.Context, toolName string, args map[stri
 
 	case "create_accessory":
 		title, _ := args["title"].(string)
-		return h.service.CreateAccessory(ctx, title)
+		return h.service.CreateAccessory(ctx, title, args)
 
 	case "update_accessory":
 		accessoryID, ok := args["accessory_id"].(string)
@@ -414,18 +425,20 @@ func (h *Handler) HandleTool(ctx context.Context, toolName string, args map[stri
 		return h.service.CreatePropertyValue(ctx, accessoryID, title)
 
 	case "update_property_value":
+		accessoryID, _ := args["accessory_id"].(string)
 		propertyValueID, _ := args["property_value_id"].(string)
-		if propertyValueID == "" {
-			return nil, fmt.Errorf("property_value_id is required")
+		if accessoryID == "" || propertyValueID == "" {
+			return nil, fmt.Errorf("accessory_id and property_value_id are required")
 		}
-		return h.service.UpdatePropertyValue(ctx, propertyValueID, args)
+		return h.service.UpdatePropertyValue(ctx, accessoryID, propertyValueID, args)
 
 	case "delete_property_value":
+		accessoryID, _ := args["accessory_id"].(string)
 		propertyValueID, _ := args["property_value_id"].(string)
-		if propertyValueID == "" {
-			return nil, fmt.Errorf("property_value_id is required")
+		if accessoryID == "" || propertyValueID == "" {
+			return nil, fmt.Errorf("accessory_id and property_value_id are required")
 		}
-		return nil, h.service.DeletePropertyValue(ctx, propertyValueID)
+		return nil, h.service.DeletePropertyValue(ctx, accessoryID, propertyValueID)
 
 	// === МЕНЮ ===
 
@@ -500,6 +513,13 @@ func (h *Handler) HandleTool(ctx context.Context, toolName string, args map[stri
 			return nil, fmt.Errorf("title is required")
 		}
 		return h.service.CreateBlog(ctx, title, handle)
+
+	case "update_blog":
+		blogID, _ := args["blog_id"].(string)
+		if blogID == "" {
+			return nil, fmt.Errorf("blog_id is required")
+		}
+		return h.service.UpdateBlog(ctx, blogID, args)
 
 	case "delete_blog":
 		blogID, _ := args["blog_id"].(string)

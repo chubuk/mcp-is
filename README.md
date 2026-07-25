@@ -471,8 +471,8 @@ SMTP_FROM=MCP IS <noreply@your-domain.com>
 
 | Режим | Команд | Описание |
 |-------|--------|----------|
-| read-only | 30 | list_*, get_*, system команды |
-| read/write | 73 | Все команды включая create/update/delete |
+| read-only | ~120 | list_*, get_*, system команды |
+| read/write | 225 | Все команды включая create/update/delete |
 
 ## Примеры запросов
 

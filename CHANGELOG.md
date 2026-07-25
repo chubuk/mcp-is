@@ -1,5 +1,53 @@
 # Changelog
 
+## [0.3.0] - 2026-07-23
+
+### Добавлено
+- **~40 новых MCP-инструментов** по полному API InSales (225 инструментов итого)
+- **DiscountCodes** (промокоды) — list, get, create, update, delete
+- **Collects** (товар-коллекция) — list, getByProduct, add, remove
+- **Properties** (свойства товаров) — list, get, create, update, delete
+- **Characteristics** (характеристики свойств) — list, get, create, update, delete
+- **Reviews** (отзывы) — list, get, create, update, delete
+- **Files** (файлы) — list, get, create (URL), delete
+- **Domains** — CRUD
+- **ClientGroups** — CRUD
+- **CustomStatuses** — CRUD
+- **ProductFields, VariantFields, CollectionFields** — CRUD
+- **CollectionFilters** — CRUD
+- **JsTags** — CRUD
+- **ExternalDiscounts** — CRUD
+- **DiscountCollectionsGroups** — CRUD
+- **Warehouses** — CRUD
+- **SalesChannels** — CRUD
+- **StockCurrencies** — CRUD
+- **PriceKinds** — CRUD
+- **OptionNames** — CRUD
+- **OptionValues** — CRUD (nested under option_names)
+- **ApplicationActions** — CRUD
+- **ApplicationCharges** — list, get, create, decline
+- **ApplicationWidgets** — CRUD
+- **RecurringApplicationCharges** — CRUD
+- **BonusSystemTransactions** — list, get, create, listByClient
+- **OAuthApps** — CRUD
+- **UserTasks** — CRUD
+- **Supplementaries** — list, get, create, delete
+- **Similars** — listByProduct, create, delete
+- **Units** — list (read-only)
+- **update_blog** — инструмент для обновления блога (client метод уже был)
+
+### Исправлено
+- **UpdatePropertyValue/DeletePropertyValue** — URL изменён с legacy `/accessory_values/:id.json` на официальный `/accessories/:accessory_id/values/:value_id.json` (требуется accessory_id)
+- **CreateAccessory** — добавлены обязательные поля `max_count`, `min_count`, `permalink`
+- **CreateClient** — обязательные поля заменены с `first_name/last_name` на `name/surname/middlename` (по official API)
+- **list_orders** — добавлены фильтры `fulfillment_status`, `updated_since`, `from_id`
+- **list_products** — добавлены фильтры `updated_since`, `from_id`, `with_deleted`, `deleted`
+- Generic CRUD helpers для клиента, сервиса и хендлеров — сокращение дублирования кода
+
+### Файлы
+- Добавлен `docs/api/Insales-api-docs.txt` — полная документация API InSales
+- `docs/api/insales-api-reference.md` — структурированный MD-референс (в процессе)
+
 ## [0.2.4] - 2026-07-23
 
 ### Добавлено

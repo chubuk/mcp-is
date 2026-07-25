@@ -237,3 +237,294 @@ func MapBlogPost(resp *InSalesBlogPostResponse) *BlogPost {
 		UpdatedAt:   resp.UpdatedAt,
 	}
 }
+
+func MapDiscountCode(resp *InSalesDiscountCodeResponse) map[string]any {
+	return map[string]any{
+		"id":                resp.ID,
+		"code":              resp.Code,
+		"type_id":           resp.TypeID,
+		"discount":          resp.Discount,
+		"description":       resp.Description,
+		"disabled":          resp.Disabled,
+		"act_once":          resp.ActOnce,
+		"act_once_for_client": resp.ActOnceForClient,
+		"min_price":         resp.MinPrice,
+		"expired_at":        resp.ExpiredAt,
+		"created_at":        resp.CreatedAt,
+		"updated_at":        resp.UpdatedAt,
+	}
+}
+
+func MapCollect(resp *InSalesCollectResponse) map[string]any {
+	return map[string]any{
+		"id":             resp.ID,
+		"collection_id":  resp.CollectionID,
+		"product_id":     resp.ProductID,
+		"position":       resp.Position,
+		"created_at":     resp.CreatedAt,
+	}
+}
+
+func MapProperty(resp *InSalesPropertyResponse) map[string]any {
+	return map[string]any{
+		"id":              resp.ID,
+		"title":           resp.Title,
+		"position":        resp.Position,
+		"permalink":       resp.Permalink,
+		"backoffice":      resp.Backoffice,
+		"is_hidden":       resp.IsHidden,
+		"is_navigational": resp.IsNavigational,
+	}
+}
+
+func MapCharacteristic(resp *InSalesCharacteristicResponse) map[string]any {
+	return map[string]any{
+		"id":          resp.ID,
+		"property_id": resp.PropertyID,
+		"title":       resp.Title,
+		"position":    resp.Position,
+		"permalink":   resp.Permalink,
+	}
+}
+
+func MapReview(resp *InSalesReviewResponse) map[string]any {
+	return map[string]any{
+		"id":            resp.ID,
+		"product_id":    resp.ProductID,
+		"author":        resp.Author,
+		"content":       resp.Content,
+		"email":         resp.Email,
+		"rating":        resp.Rating,
+		"published":     resp.Published,
+		"manager_name":  resp.ManagerName,
+		"manager_reply": resp.ManagerReply,
+		"spam":          resp.Spam,
+		"created_at":    resp.CreatedAt,
+		"updated_at":    resp.UpdatedAt,
+	}
+}
+
+func MapFile(resp *InSalesFileResponse) map[string]any {
+	return map[string]any{
+		"id":           resp.ID,
+		"absolute_url": resp.AbsoluteURL,
+		"created_at":   resp.CreatedAt,
+	}
+}
+
+func MapDomain(resp *InSalesDomainResponse) map[string]any {
+	return map[string]any{
+		"id":         resp.ID,
+		"domain":     resp.Domain,
+		"main":       resp.Main,
+		"created_at": resp.CreatedAt,
+		"updated_at": resp.UpdatedAt,
+	}
+}
+
+func MapClientGroup(resp *InSalesClientGroupResponse) map[string]any {
+	return map[string]any{
+		"id":         resp.ID,
+		"title":      resp.Title,
+		"discount":   resp.Discount,
+		"created_at": resp.CreatedAt,
+		"updated_at": resp.UpdatedAt,
+	}
+}
+
+func MapCustomStatus(resp *InSalesCustomStatusResponse) map[string]any {
+	return map[string]any{
+		"id":          resp.ID,
+		"title":       resp.Title,
+		"status_type": resp.StatusType,
+		"position":    resp.Position,
+		"created_at":  resp.CreatedAt,
+		"updated_at":  resp.UpdatedAt,
+	}
+}
+
+func MapProductField(resp *InSalesProductFieldResponse) map[string]any {
+	return map[string]any{
+		"id":         resp.ID,
+		"title":      resp.Title,
+		"handle":     resp.Handle,
+		"field_type": resp.FieldType,
+		"position":   resp.Position,
+		"created_at": resp.CreatedAt,
+		"updated_at": resp.UpdatedAt,
+	}
+}
+
+func MapVariantField(resp *InSalesVariantFieldResponse) map[string]any {
+	return map[string]any{
+		"id":         resp.ID,
+		"title":      resp.Title,
+		"handle":     resp.Handle,
+		"field_type": resp.FieldType,
+		"position":   resp.Position,
+		"created_at": resp.CreatedAt,
+		"updated_at": resp.UpdatedAt,
+	}
+}
+
+func MapCollectionField(resp *InSalesCollectionFieldResponse) map[string]any {
+	return map[string]any{
+		"id":         resp.ID,
+		"title":      resp.Title,
+		"handle":     resp.Handle,
+		"field_type": resp.FieldType,
+		"position":   resp.Position,
+		"created_at": resp.CreatedAt,
+		"updated_at": resp.UpdatedAt,
+	}
+}
+
+func MapCollectionFilter(resp *InSalesCollectionFilterResponse) map[string]any {
+	return map[string]any{
+		"id":             resp.ID,
+		"title":          resp.Title,
+		"filter_type":    resp.FilterType,
+		"position":       resp.Position,
+		"collection_id":  resp.CollectionID,
+		"created_at":     resp.CreatedAt,
+		"updated_at":     resp.UpdatedAt,
+	}
+}
+
+func MapJsTag(resp *InSalesJsTagResponse) map[string]any {
+	return map[string]any{
+		"id":         resp.ID,
+		"title":      resp.Title,
+		"content":    resp.Content,
+		"position":   resp.Position,
+		"enabled":    resp.Enabled,
+		"created_at": resp.CreatedAt,
+		"updated_at": resp.UpdatedAt,
+	}
+}
+
+func MapExternalDiscount(resp *InSalesExternalDiscountResponse) map[string]any {
+	return map[string]any{
+		"id":         resp.ID,
+		"title":      resp.Title,
+		"percent":    resp.Percent,
+		"amount":     resp.Amount,
+		"created_at": resp.CreatedAt,
+		"updated_at": resp.UpdatedAt,
+	}
+}
+
+func MapDiscountCollectionsGroup(resp *InSalesDiscountCollectionsGroupResponse) map[string]any {
+	return map[string]any{
+		"id":             resp.ID,
+		"title":          resp.Title,
+		"account_id":     resp.AccountID,
+		"collection_ids": resp.CollectionIDs,
+		"created_at":     resp.CreatedAt,
+		"updated_at":     resp.UpdatedAt,
+	}
+}
+
+func MapWarehouse(resp *InSalesWarehouseResponse) map[string]any {
+	return map[string]any{
+		"id":         resp.ID,
+		"title":      resp.Title,
+		"address":    resp.Address,
+		"active":     resp.Active,
+		"created_at": resp.CreatedAt,
+		"updated_at": resp.UpdatedAt,
+	}
+}
+
+func MapSalesChannel(resp *InSalesSalesChannelResponse) map[string]any {
+	return map[string]any{
+		"id":          resp.ID,
+		"title":       resp.Title,
+		"system_name": resp.SystemName,
+		"created_at":  resp.CreatedAt,
+		"updated_at":  resp.UpdatedAt,
+	}
+}
+
+func MapStockCurrency(resp *InSalesStockCurrencyResponse) map[string]any {
+	return map[string]any{
+		"id":         resp.ID,
+		"title":      resp.Title,
+		"code":       resp.Code,
+		"rate":       resp.Rate,
+		"main":       resp.Main,
+		"created_at": resp.CreatedAt,
+		"updated_at": resp.UpdatedAt,
+	}
+}
+
+func MapPriceKind(resp *InSalesPriceKindResponse) map[string]any {
+	return map[string]any{
+		"id":         resp.ID,
+		"title":      resp.Title,
+		"position":   resp.Position,
+		"created_at": resp.CreatedAt,
+		"updated_at": resp.UpdatedAt,
+	}
+}
+
+func MapOptionName(resp *InSalesOptionNameResponse) map[string]any {
+	return map[string]any{
+		"id":            resp.ID,
+		"title":         resp.Title,
+		"position":      resp.Position,
+		"navigational":  resp.Navigational,
+		"permalink":     resp.Permalink,
+	}
+}
+
+func MapOptionValue(resp *InSalesOptionValueResponse) map[string]any {
+	return map[string]any{
+		"id":             resp.ID,
+		"option_name_id": resp.OptionNameID,
+		"title":          resp.Title,
+		"position":       resp.Position,
+		"permalink":      resp.Permalink,
+		"image_url":      resp.ImageURL,
+	}
+}
+
+func MapApplicationAction(resp *InSalesApplicationActionResponse) map[string]any {
+	return map[string]any{"id": resp.ID, "title": resp.Title, "handle": resp.Handle, "entity": resp.Entity, "url": resp.URL}
+}
+
+func MapApplicationCharge(resp *InSalesApplicationChargeResponse) map[string]any {
+	return map[string]any{"id": resp.ID, "name": resp.Name, "price": resp.Price, "status": resp.Status, "confirmation_url": resp.ConfirmationURL, "test": resp.Test, "created_at": resp.CreatedAt, "updated_at": resp.UpdatedAt}
+}
+
+func MapApplicationWidget(resp *InSalesApplicationWidgetResponse) map[string]any {
+	return map[string]any{"id": resp.ID, "title": resp.Title, "enabled": resp.Enabled, "created_at": resp.CreatedAt, "updated_at": resp.UpdatedAt}
+}
+
+func MapRecurringApplicationCharge(resp *InSalesRecurringApplicationChargeResponse) map[string]any {
+	return map[string]any{"id": resp.ID, "name": resp.Name, "price": resp.Price, "status": resp.Status, "created_at": resp.CreatedAt, "updated_at": resp.UpdatedAt}
+}
+
+func MapBonusSystemTransaction(resp *InSalesBonusSystemTransactionResponse) map[string]any {
+	return map[string]any{"id": resp.ID, "client_id": resp.ClientID, "amount": resp.Amount, "comment": resp.Comment, "created_at": resp.CreatedAt, "updated_at": resp.UpdatedAt}
+}
+
+func MapOAuthApp(resp *InSalesOAuthAppResponse) map[string]any {
+	return map[string]any{"id": resp.ID, "title": resp.Title, "app_key": resp.AppKey, "created_at": resp.CreatedAt, "updated_at": resp.UpdatedAt}
+}
+
+func MapUserTask(resp *InSalesUserTaskResponse) map[string]any {
+	return map[string]any{"id": resp.ID, "title": resp.Title, "status": resp.Status, "created_at": resp.CreatedAt, "updated_at": resp.UpdatedAt}
+}
+
+func MapSupplementary(resp *InSalesSupplementaryResponse) map[string]any {
+	return map[string]any{"id": resp.ID, "title": resp.Title, "price": resp.Price, "created_at": resp.CreatedAt, "updated_at": resp.UpdatedAt}
+}
+
+func MapSimilar(resp *InSalesSimilarResponse) map[string]any {
+	return map[string]any{"id": resp.ID, "product_id": resp.ProductID, "similar_product_id": resp.SimilarID, "position": resp.Position, "created_at": resp.CreatedAt}
+}
+
+func MapUnit(resp *InSalesUnitResponse) map[string]any {
+	return map[string]any{"id": resp.ID, "title": resp.Title, "unit": resp.Unit}
+}

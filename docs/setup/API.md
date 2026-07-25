@@ -178,14 +178,14 @@
     {"name": "list_products", "description": "Получить список товаров"},
     {"name": "get_product", "description": "Получить товар по ID"}
   ],
-  "count": 30,
+  "count": 225,
   "updated_at": "02.07.2026 14:30"
 }
 ```
 
 **Логика:**
-- `is_read_only=true` → 30 read-команд (list_*, get_*, system)
-- `is_read_only=false` → все 73 команды
+- `is_read_only=true` → read-команды (list_*, get_*, system)
+- `is_read_only=false` → все 225 команд
 ```
 
 #### GET /api/shops

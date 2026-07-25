@@ -97,7 +97,7 @@ func listProductsHandler(svc *service.Service) func(ctx context.Context, req mcp
 		args := req.GetArguments()
 		page := int(getFloat(args, "page", 1))
 		perPage := int(getFloat(args, "per_page", 25))
-		result, err := svc.GetProducts(ctx, page, perPage)
+		result, err := svc.GetProducts(ctx, page, perPage, args)
 		if err != nil {
 			return toolError(err), nil
 		}
@@ -173,7 +173,17 @@ func listOrdersHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		args := req.GetArguments()
 		page := int(getFloat(args, "page", 1))
 		perPage := int(getFloat(args, "per_page", 25))
-		result, err := svc.GetOrders(ctx, page, perPage)
+		filters := make(map[string]any)
+		if v, ok := args["fulfillment_status"].(string); ok && v != "" {
+			filters["fulfillment_status"] = v
+		}
+		if v, ok := args["updated_since"].(string); ok && v != "" {
+			filters["updated_since"] = v
+		}
+		if v, ok := args["from_id"].(float64); ok && v > 0 {
+			filters["from_id"] = int(v)
+		}
+		result, err := svc.GetOrders(ctx, page, perPage, filters)
 		if err != nil {
 			return toolError(err), nil
 		}
@@ -260,12 +270,8 @@ func getClientHandler(svc *service.Service) func(ctx context.Context, req mcp.Ca
 
 func createClientHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		email, err := req.RequireString("email")
-		if err != nil {
-			return toolError(err), nil
-		}
 		args := req.GetArguments()
-		result, err := svc.CreateClient(ctx, email, args)
+		result, err := svc.CreateClient(ctx, args)
 		if err != nil {
 			return toolError(err), nil
 		}
@@ -762,7 +768,8 @@ func createAccessoryHandler(svc *service.Service) func(ctx context.Context, req 
 		if err != nil {
 			return toolError(err), nil
 		}
-		result, err := svc.CreateAccessory(ctx, title)
+		args := req.GetArguments()
+		result, err := svc.CreateAccessory(ctx, title, args)
 		if err != nil {
 			return toolError(err), nil
 		}
@@ -904,12 +911,16 @@ func createPropertyValueHandler(svc *service.Service) func(ctx context.Context, 
 
 func updatePropertyValueHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		accessoryID, err := req.RequireString("accessory_id")
+		if err != nil {
+			return toolError(err), nil
+		}
 		propertyValueID, err := req.RequireString("property_value_id")
 		if err != nil {
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdatePropertyValue(ctx, propertyValueID, args)
+		result, err := svc.UpdatePropertyValue(ctx, accessoryID, propertyValueID, args)
 		if err != nil {
 			return toolError(err), nil
 		}
@@ -919,11 +930,15 @@ func updatePropertyValueHandler(svc *service.Service) func(ctx context.Context, 
 
 func deletePropertyValueHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		accessoryID, err := req.RequireString("accessory_id")
+		if err != nil {
+			return toolError(err), nil
+		}
 		propertyValueID, err := req.RequireString("property_value_id")
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeletePropertyValue(ctx, propertyValueID); err != nil {
+		if err := svc.DeletePropertyValue(ctx, accessoryID, propertyValueID); err != nil {
 			return toolError(err), nil
 		}
 		return mcp.NewToolResultText("Значение удалено"), nil
@@ -1096,6 +1111,21 @@ func deleteBlogHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 	}
 }
 
+func updateBlogHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		blogID, err := req.RequireString("blog_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		result, err := svc.UpdateBlog(ctx, blogID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
 // === ЗАПИСИ БЛОГА ===
 
 func listBlogPostsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -1185,5 +1215,607 @@ func deleteBlogPostHandler(svc *service.Service) func(ctx context.Context, req m
 			return toolError(err), nil
 		}
 		return mcp.NewToolResultText("Запись удалена"), nil
+	}
+}
+
+// === DISCOUNT CODES ===
+
+func listDiscountCodesHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		page := int(getFloat(args, "page", 1))
+		perPage := int(getFloat(args, "per_page", 25))
+		result, err := svc.ListDiscountCodes(ctx, page, perPage)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func getDiscountCodeHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		codeID, err := req.RequireString("discount_code_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.GetDiscountCode(ctx, codeID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func createDiscountCodeHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		result, err := svc.CreateDiscountCode(ctx, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func updateDiscountCodeHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		codeID, err := req.RequireString("discount_code_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		result, err := svc.UpdateDiscountCode(ctx, codeID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func deleteDiscountCodeHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		codeID, err := req.RequireString("discount_code_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		if err := svc.DeleteDiscountCode(ctx, codeID); err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText("Промокод удалён"), nil
+	}
+}
+
+// === COLLECTS ===
+
+func listCollectsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		page := int(getFloat(args, "page", 1))
+		perPage := int(getFloat(args, "per_page", 25))
+		result, err := svc.ListCollects(ctx, page, perPage)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func getCollectsByProductHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		productID, err := req.RequireString("product_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.GetCollectsByProduct(ctx, productID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func createCollectHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		collectionID := int(getFloat(args, "collection_id", 0))
+		productID := int(getFloat(args, "product_id", 0))
+		if collectionID == 0 || productID == 0 {
+			return toolError(fmt.Errorf("collection_id and product_id are required")), nil
+		}
+		result, err := svc.CreateCollect(ctx, collectionID, productID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func deleteCollectHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		collectID, err := req.RequireString("collect_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		if err := svc.DeleteCollect(ctx, collectID); err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText("Связь удалена"), nil
+	}
+}
+
+// === PROPERTIES ===
+
+func listPropertiesHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		result, err := svc.ListProperties(ctx)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func getPropertyHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		propertyID, err := req.RequireString("property_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.GetProperty(ctx, propertyID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func createPropertyHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		result, err := svc.CreateProperty(ctx, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func updatePropertyHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		propertyID, err := req.RequireString("property_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		result, err := svc.UpdateProperty(ctx, propertyID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func deletePropertyHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		propertyID, err := req.RequireString("property_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		if err := svc.DeleteProperty(ctx, propertyID); err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText("Свойство удалено"), nil
+	}
+}
+
+// === CHARACTERISTICS ===
+
+func listCharacteristicsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		propertyID, err := req.RequireString("property_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.ListCharacteristics(ctx, propertyID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func getCharacteristicHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		propertyID, err := req.RequireString("property_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		charID, err := req.RequireString("characteristic_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.GetCharacteristic(ctx, propertyID, charID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func createCharacteristicHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		propertyID, err := req.RequireString("property_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		result, err := svc.CreateCharacteristic(ctx, propertyID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func updateCharacteristicHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		propertyID, err := req.RequireString("property_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		charID, err := req.RequireString("characteristic_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		result, err := svc.UpdateCharacteristic(ctx, propertyID, charID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func deleteCharacteristicHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		propertyID, err := req.RequireString("property_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		charID, err := req.RequireString("characteristic_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		if err := svc.DeleteCharacteristic(ctx, propertyID, charID); err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText("Характеристика удалена"), nil
+	}
+}
+
+// === REVIEWS ===
+
+func listReviewsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		page := int(getFloat(args, "page", 1))
+		perPage := int(getFloat(args, "per_page", 25))
+		result, err := svc.ListReviews(ctx, page, perPage)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func getReviewHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		reviewID, err := req.RequireString("review_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.GetReview(ctx, reviewID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func createReviewHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		result, err := svc.CreateReview(ctx, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func updateReviewHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		reviewID, err := req.RequireString("review_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		result, err := svc.UpdateReview(ctx, reviewID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func deleteReviewHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		reviewID, err := req.RequireString("review_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		if err := svc.DeleteReview(ctx, reviewID); err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText("Отзыв удалён"), nil
+	}
+}
+
+// === FILES ===
+
+func listFilesHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		result, err := svc.ListFiles(ctx)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func getFileHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		fileID, err := req.RequireString("file_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.GetFile(ctx, fileID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func createFileHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		result, err := svc.CreateFile(ctx, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func deleteFileHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		fileID, err := req.RequireString("file_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		if err := svc.DeleteFile(ctx, fileID); err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText("Файл удалён"), nil
+	}
+}
+
+// Generic CRUD handlers for round 3+ resources
+
+func genericListHandler(svc *service.Service, listFn func(ctx context.Context) ([]any, error)) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		result, err := listFn(ctx)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func genericGetHandler(svc *service.Service, param string, getFn func(ctx context.Context, id string) (any, error)) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		id, err := req.RequireString(param)
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := getFn(ctx, id)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func genericCreateHandler(svc *service.Service, createFn func(ctx context.Context, args map[string]any) (any, error)) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		result, err := createFn(ctx, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func genericUpdateHandler(svc *service.Service, param string, updateFn func(ctx context.Context, id string, args map[string]any) (any, error)) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		id, err := req.RequireString(param)
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		result, err := updateFn(ctx, id, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func genericDeleteHandler(deleteFn func(ctx context.Context, id string) error, paramName, deletedMsg string) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		id, err := req.RequireString(paramName)
+		if err != nil {
+			return toolError(err), nil
+		}
+		if err := deleteFn(ctx, id); err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(deletedMsg), nil
+	}
+}
+
+// === OPTION VALUES handlers (nested resource) ===
+
+func genericListOptionValuesHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		optionNameID, err := req.RequireString("option_name_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.ListOptionValues(ctx, optionNameID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func genericGetOptionValueHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		optionNameID, err := req.RequireString("option_name_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		optionValueID, err := req.RequireString("option_value_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.GetOptionValue(ctx, optionNameID, optionValueID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func genericCreateOptionValueHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		optionNameID, err := req.RequireString("option_name_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		result, err := svc.CreateOptionValue(ctx, optionNameID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func genericUpdateOptionValueHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		optionNameID, err := req.RequireString("option_name_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		optionValueID, err := req.RequireString("option_value_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		result, err := svc.UpdateOptionValue(ctx, optionNameID, optionValueID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func genericDeleteOptionValueHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		optionNameID, err := req.RequireString("option_name_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		optionValueID, err := req.RequireString("option_value_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		if err := svc.DeleteOptionValue(ctx, optionNameID, optionValueID); err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText("Значение удалено"), nil
+	}
+}
+
+// === ROUND 4: Special handlers ===
+
+func declineApplicationChargeHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		id, err := req.RequireString("charge_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		if err := svc.DeclineApplicationCharge(ctx, id); err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText("Счёт отклонён"), nil
+	}
+}
+
+func createBonusSystemTransactionHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		clientID := int(getFloat(args, "client_id", 0))
+		if clientID == 0 {
+			return toolError(fmt.Errorf("client_id is required")), nil
+		}
+		result, err := svc.CreateBonusSystemTransaction(ctx, clientID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func listClientBonusTransactionsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		clientID, err := req.RequireString("client_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.ListClientBonusSystemTransactions(ctx, clientID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func listSimilarsByProductHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		productID, err := req.RequireString("product_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.ListSimilars(ctx, productID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
 	}
 }
