@@ -1820,6 +1820,58 @@ func listSimilarsByProductHandler(svc *service.Service) func(ctx context.Context
 	}
 }
 
+// === PROVIDER TOKEN handler ===
+
+func createProviderTokenHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		messengerType, err := req.RequireString("messenger_type")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.CreateProviderToken(ctx, messengerType)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+// === ACCOUNT handler ===
+
+func updateAccountHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		result, err := svc.UpdateAccount(ctx, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+// === COUNT handlers ===
+
+func getOrdersCountHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		count, err := svc.GetOrdersCount(ctx, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(map[string]any{"count": count})), nil
+	}
+}
+
+func getProductsCountHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		count, err := svc.GetProductsCount(ctx)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(map[string]any{"count": count})), nil
+	}
+}
+
 // === PIPELINE HANDLERS ===
 
 func searchProductDetailsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -1875,5 +1927,51 @@ func productCatalogSearchHandler(svc *service.Service) func(ctx context.Context,
 			return toolError(err), nil
 		}
 		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+func collectionProductsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		collectionID, err := req.RequireString("collection_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.CollectionProducts(ctx, collectionID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(formatResult(result)), nil
+	}
+}
+
+// === EXPORT handlers ===
+
+func exportProductsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		csv, err := svc.ExportProducts(ctx)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(csv), nil
+	}
+}
+
+func exportOrdersHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		csv, err := svc.ExportOrders(ctx)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(csv), nil
+	}
+}
+
+func exportClientsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		csv, err := svc.ExportClients(ctx)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(csv), nil
 	}
 }

@@ -2095,3 +2095,100 @@ func (c *InSalesClient) DeleteSimilar(ctx context.Context, id string) error { re
 // === UNITS ===
 
 func (c *InSalesClient) ListUnits(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/units.json") }
+
+// === OUTLETS ===
+
+func (c *InSalesClient) ListOutlets(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/outlets.json") }
+func (c *InSalesClient) GetOutlet(ctx context.Context, id string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/outlets/%s.json", id)) }
+func (c *InSalesClient) CreateOutlet(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/outlets.json", "outlet", args) }
+func (c *InSalesClient) UpdateOutlet(ctx context.Context, id string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/outlets/%s.json", id), "outlet", args) }
+func (c *InSalesClient) DeleteOutlet(ctx context.Context, id string) error { return c.crudDelete(ctx, fmt.Sprintf("/outlets/%s.json", id)) }
+
+// === MARKETPLACES ===
+
+func (c *InSalesClient) ListMarketplaces(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/marketplaces.json") }
+func (c *InSalesClient) GetMarketplace(ctx context.Context, id string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/marketplaces/%s.json", id)) }
+func (c *InSalesClient) CreateMarketplace(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/marketplaces.json", "marketplace", args) }
+func (c *InSalesClient) UpdateMarketplace(ctx context.Context, id string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/marketplaces/%s.json", id), "marketplace", args) }
+func (c *InSalesClient) DeleteMarketplace(ctx context.Context, id string) error { return c.crudDelete(ctx, fmt.Sprintf("/marketplaces/%s.json", id)) }
+
+// === PROVIDER TOKEN ===
+
+func (c *InSalesClient) CreateProviderToken(ctx context.Context, messengerType string) (any, error) {
+	payload := map[string]any{"messenger_type": messengerType}
+	body, _, err := c.doRequest(ctx, http.MethodPost, "/dialogs/provider_tokens.json", payload)
+	if err != nil {
+		return nil, err
+	}
+	var result map[string]any
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("decode provider token: %w", err)
+	}
+	return result, nil
+}
+
+// === ACCOUNT ===
+
+func (c *InSalesClient) UpdateAccount(ctx context.Context, args map[string]any) (any, error) {
+	payload := map[string]any{"account": args}
+	body, _, err := c.doRequest(ctx, http.MethodPut, "/account.json", payload)
+	if err != nil {
+		return nil, err
+	}
+	var result map[string]any
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("decode account: %w", err)
+	}
+	return result, nil
+}
+
+// === COUNTS ===
+
+func (c *InSalesClient) GetOrdersCount(ctx context.Context, filters map[string]any) (int, error) {
+	path := "/orders/count.json"
+	if len(filters) > 0 {
+		params := url.Values{}
+		for k, v := range filters {
+			switch val := v.(type) {
+			case string:
+				if val != "" {
+					params.Set(k, val)
+				}
+			case []any:
+				for _, item := range val {
+					if s, ok := item.(string); ok {
+						params.Add(k+"[]", s)
+					}
+				}
+			}
+		}
+		if qs := params.Encode(); qs != "" {
+			path += "?" + qs
+		}
+	}
+	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	if err != nil {
+		return 0, err
+	}
+	var resp struct {
+		Count int `json:"count"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return 0, fmt.Errorf("decode orders count: %w", err)
+	}
+	return resp.Count, nil
+}
+
+func (c *InSalesClient) GetProductsCount(ctx context.Context) (int, error) {
+	body, _, err := c.doRequest(ctx, http.MethodGet, "/products/count.json", nil)
+	if err != nil {
+		return 0, err
+	}
+	var resp struct {
+		Count int `json:"count"`
+	}
+	if err := json.Unmarshal(body, &resp); err != nil {
+		return 0, fmt.Errorf("decode products count: %w", err)
+	}
+	return resp.Count, nil
+}

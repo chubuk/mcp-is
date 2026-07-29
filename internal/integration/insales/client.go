@@ -302,6 +302,30 @@ type Client interface {
 
 	// Units
 	ListUnits(ctx context.Context) ([]any, error)
+
+	// Outlets
+	ListOutlets(ctx context.Context) ([]any, error)
+	GetOutlet(ctx context.Context, outletID string) (any, error)
+	CreateOutlet(ctx context.Context, args map[string]any) (any, error)
+	UpdateOutlet(ctx context.Context, outletID string, args map[string]any) (any, error)
+	DeleteOutlet(ctx context.Context, outletID string) error
+
+	// Marketplaces
+	ListMarketplaces(ctx context.Context) ([]any, error)
+	GetMarketplace(ctx context.Context, marketplaceID string) (any, error)
+	CreateMarketplace(ctx context.Context, args map[string]any) (any, error)
+	UpdateMarketplace(ctx context.Context, marketplaceID string, args map[string]any) (any, error)
+	DeleteMarketplace(ctx context.Context, marketplaceID string) error
+
+	// ProviderToken
+	CreateProviderToken(ctx context.Context, messengerType string) (any, error)
+
+	// Account
+	UpdateAccount(ctx context.Context, args map[string]any) (any, error)
+
+	// Counts
+	GetOrdersCount(ctx context.Context, filters map[string]any) (int, error)
+	GetProductsCount(ctx context.Context) (int, error)
 }
 
 type StoreInfo struct {

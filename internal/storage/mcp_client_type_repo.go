@@ -60,7 +60,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 			fileDescription: "~/Library/Application Support/Claude/ (macOS) или %APPDATA%\\Claude\\ (Windows)",
 			configTemplate: `{
   "mcpServers": {
-    "mcp-is": {
+    "{{KEY_NAME}}": {
       "url": "{{URL}}",
       "headers": {
         "Authorization": "Bearer {{API_KEY}}"
@@ -75,7 +75,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 			fileDescription: "~/.cursor/mcp.json",
 			configTemplate: `{
   "mcpServers": {
-    "mcp-is": {
+    "{{KEY_NAME}}": {
       "url": "{{URL}}",
       "headers": {
         "Authorization": "Bearer {{API_KEY}}"
@@ -90,7 +90,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 			fileDescription: ".vscode/mcp.json (в проекте)",
 			configTemplate: `{
   "servers": {
-    "mcp-is": {
+    "{{KEY_NAME}}": {
       "type": "http",
       "url": "{{URL}}",
       "headers": {
@@ -106,7 +106,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 			fileDescription: ".mimocode/mcp.json (в проекте)",
 			configTemplate: `{
   "mcp": {
-    "mcp-is": {
+    "{{KEY_NAME}}": {
       "type": "remote",
       "url": "{{URL}}",
       "headers": {
@@ -122,7 +122,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 			fileDescription: ".opencode/config.json",
 			configTemplate: `{
   "mcpServers": {
-    "mcp-is": {
+    "{{KEY_NAME}}": {
       "url": "{{URL}}",
       "headers": {
         "Authorization": "Bearer {{API_KEY}}"
@@ -136,7 +136,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 			fileName: "librechat.yaml",
 			fileDescription: "корень проекта LibreChat",
 			configTemplate: `mcpServers:
-  mcp-is:
+  {{KEY_NAME}}:
     type: streamable-http
     url: {{URL}}
     headers:
@@ -148,7 +148,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 			fileDescription: "Через Admin Panel → Settings → MCP",
 			configTemplate: `{
   "mcpServers": {
-    "mcp-is": {
+    "{{KEY_NAME}}": {
       "url": "{{URL}}",
       "headers": {
         "Authorization": "Bearer {{API_KEY}}"
@@ -163,7 +163,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 			fileDescription: "%APPDATA%\\cline\\ (Windows) или ~/.config/cline/ (Linux/macOS)",
 			configTemplate: `{
   "mcpServers": {
-    "mcp-is": {
+    "{{KEY_NAME}}": {
       "url": "{{URL}}",
       "headers": {
         "Authorization": "Bearer {{API_KEY}}"
@@ -178,7 +178,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 			fileDescription: "Через Settings → MCP Servers",
 			configTemplate: `{
   "mcpServers": {
-    "mcp-is": {
+    "{{KEY_NAME}}": {
       "url": "{{URL}}",
       "headers": {
         "Authorization": "Bearer {{API_KEY}}"
@@ -193,7 +193,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 			fileDescription: "~/.continue/config.json",
 			configTemplate: `{
   "mcpServers": {
-    "mcp-is": {
+    "{{KEY_NAME}}": {
       "url": "{{URL}}",
       "headers": {
         "Authorization": "Bearer {{API_KEY}}"

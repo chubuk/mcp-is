@@ -27,6 +27,9 @@ func RunMigrations(pool *pgxpool.Pool) {
 			is_active BOOLEAN DEFAULT true,
 			created_at TIMESTAMPTZ DEFAULT NOW()
 		)`,
+		// v0.4.0: Use {{KEY_NAME}} placeholder instead of hardcoded "mcp-is" in config templates
+		`UPDATE mcp_client_types SET config_template = REPLACE(config_template, '"mcp-is"', '"{{KEY_NAME}}"') WHERE config_template LIKE '%"mcp-is"%'`,
+		`UPDATE mcp_client_types SET config_template = REPLACE(config_template, E'  mcp-is:', E'  {{KEY_NAME}}:') WHERE config_template LIKE '%  mcp-is:%'`,
 	}
 
 	for i, migration := range migrations {

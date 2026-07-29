@@ -88,11 +88,20 @@ func TestAllCommandNamesComplete(t *testing.T) {
 		"list_redirects", "create_redirect", "delete_redirect",
 		"list_blogs", "get_blog", "create_blog", "delete_blog",
 		"list_blog_posts", "get_blog_post", "create_blog_post", "update_blog_post", "delete_blog_post",
+		// New tools (v0.4.0)
+		"list_outlets", "get_outlet", "create_outlet", "update_outlet", "delete_outlet",
+		"list_marketplaces", "get_marketplace", "create_marketplace", "update_marketplace", "delete_marketplace",
+		"create_provider_token", "update_account",
+		"get_orders_count", "get_products_count",
+		"collection_products",
+		"export_products", "export_orders", "export_clients",
+		// Pipeline tools
+		"search_product_details", "order_full_details", "client_full_profile", "product_catalog_search",
 	}
 
 	// Verify the list has the right count
-	if len(expectedTools) != 74 {
-		t.Errorf("expected 74 tools, got %d", len(expectedTools))
+	if len(expectedTools) != 96 {
+		t.Errorf("expected 96 tools, got %d", len(expectedTools))
 	}
 }
 

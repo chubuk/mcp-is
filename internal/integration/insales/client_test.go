@@ -2,6 +2,7 @@ package insales
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -344,5 +345,263 @@ func TestMapClient_IncludesFields(t *testing.T) {
 	fvs, ok := client["fields_values"].([]any)
 	if !ok || len(fvs) != 1 {
 		t.Errorf("expected 1 fields_values, got %v", client["fields_values"])
+	}
+}
+
+// === OUTLET tests ===
+
+func TestListOutlets(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/outlets.json" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`[{"id":1,"title":"Point 1","address":"addr","price":"300.0","latitude":"55.7","longitude":"37.6"}]`))
+	}))
+	defer srv.Close()
+
+	client := newTestClient(srv)
+	result, err := client.ListOutlets(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 outlet, got %d", len(result))
+	}
+	m := result[0].(map[string]any)
+	if m["title"] != "Point 1" {
+		t.Errorf("expected title 'Point 1', got %v", m["title"])
+	}
+}
+
+func TestGetOutlet(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/outlets/1.json" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"id":1,"title":"Point 1","address":"addr","price":"300.0"}`))
+	}))
+	defer srv.Close()
+
+	client := newTestClient(srv)
+	result, err := client.GetOutlet(context.Background(), "1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	m := result.(map[string]any)
+	if m["title"] != "Point 1" {
+		t.Errorf("expected title 'Point 1', got %v", m["title"])
+	}
+}
+
+func TestCreateOutlet(t *testing.T) {
+	var receivedBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		json.NewDecoder(r.Body).Decode(&receivedBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"id":2,"title":"New Point"}`))
+	}))
+	defer srv.Close()
+
+	client := newTestClient(srv)
+	args := map[string]any{"title": "New Point", "address": "addr", "price": "100", "latitude": "55.7", "longitude": "37.6"}
+	result, err := client.CreateOutlet(context.Background(), args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	m := result.(map[string]any)
+	if m["id"] != float64(2) {
+		t.Errorf("expected id 2, got %v", m["id"])
+	}
+	// Verify payload key
+	if _, ok := receivedBody["outlet"]; !ok {
+		t.Error("expected 'outlet' key in request body")
+	}
+}
+
+func TestDeleteOutlet(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("expected DELETE, got %s", r.Method)
+		}
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	client := newTestClient(srv)
+	err := client.DeleteOutlet(context.Background(), "1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+// === MARKETPLACE tests ===
+
+func TestListMarketplaces(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`[{"id":1,"name":"YM","type":"Marketplace::ModelYandexMarket","url":"http://test.xml"}]`))
+	}))
+	defer srv.Close()
+
+	client := newTestClient(srv)
+	result, err := client.ListMarketplaces(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 1 {
+		t.Fatalf("expected 1 marketplace, got %d", len(result))
+	}
+}
+
+func TestCreateMarketplace(t *testing.T) {
+	var receivedBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&receivedBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"id":57,"name":"YM","type":"Marketplace::ModelYandexMarket"}`))
+	}))
+	defer srv.Close()
+
+	client := newTestClient(srv)
+	args := map[string]any{"name": "YM", "type": "Marketplace::ModelYandexMarket", "vendor_id": "6", "page_encoding": "utf-8", "image_style": "large", "model_type": "name"}
+	result, err := client.CreateMarketplace(context.Background(), args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	m := result.(map[string]any)
+	if m["type"] != "Marketplace::ModelYandexMarket" {
+		t.Errorf("expected type, got %v", m["type"])
+	}
+	if _, ok := receivedBody["marketplace"]; !ok {
+		t.Error("expected 'marketplace' key in request body")
+	}
+}
+
+// === PROVIDER TOKEN test ===
+
+func TestCreateProviderToken(t *testing.T) {
+	var receivedBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/dialogs/provider_tokens.json" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		json.NewDecoder(r.Body).Decode(&receivedBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"api_token":"abc","webhook_token":"xyz"}`))
+	}))
+	defer srv.Close()
+
+	client := newTestClient(srv)
+	result, err := client.CreateProviderToken(context.Background(), "telegram")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	m := result.(map[string]any)
+	if m["api_token"] != "abc" {
+		t.Errorf("expected api_token 'abc', got %v", m["api_token"])
+	}
+	if receivedBody["messenger_type"] != "telegram" {
+		t.Errorf("expected messenger_type 'telegram', got %v", receivedBody["messenger_type"])
+	}
+}
+
+// === ACCOUNT test ===
+
+func TestUpdateAccount(t *testing.T) {
+	var receivedBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPut {
+			t.Errorf("expected PUT, got %s", r.Method)
+		}
+		json.NewDecoder(r.Body).Decode(&receivedBody)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"status":"ok"}`))
+	}))
+	defer srv.Close()
+
+	client := newTestClient(srv)
+	args := map[string]any{"client_cookies_whitelist": "test"}
+	result, err := client.UpdateAccount(context.Background(), args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	m := result.(map[string]any)
+	if m["status"] != "ok" {
+		t.Errorf("expected status 'ok', got %v", m["status"])
+	}
+	if _, ok := receivedBody["account"]; !ok {
+		t.Error("expected 'account' key in request body")
+	}
+}
+
+// === COUNT tests ===
+
+func TestGetOrdersCount(t *testing.T) {
+	var receivedURL string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedURL = r.URL.RequestURI()
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"count":42}`))
+	}))
+	defer srv.Close()
+
+	client := newTestClient(srv)
+	count, err := client.GetOrdersCount(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if count != 42 {
+		t.Errorf("expected count 42, got %d", count)
+	}
+	if receivedURL != "/orders/count.json" {
+		t.Errorf("unexpected URL: %s", receivedURL)
+	}
+}
+
+func TestGetOrdersCount_WithFilters(t *testing.T) {
+	var receivedURL string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedURL = r.URL.RequestURI()
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"count":5}`))
+	}))
+	defer srv.Close()
+
+	client := newTestClient(srv)
+	filters := map[string]any{"fulfillment_status": "new"}
+	count, err := client.GetOrdersCount(context.Background(), filters)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if count != 5 {
+		t.Errorf("expected count 5, got %d", count)
+	}
+	if receivedURL != "/orders/count.json?fulfillment_status=new" {
+		t.Errorf("unexpected URL: %s", receivedURL)
+	}
+}
+
+func TestGetProductsCount(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/products/count.json" {
+			t.Errorf("unexpected path: %s", r.URL.Path)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"count":100}`))
+	}))
+	defer srv.Close()
+
+	client := newTestClient(srv)
+	count, err := client.GetProductsCount(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if count != 100 {
+		t.Errorf("expected count 100, got %d", count)
 	}
 }

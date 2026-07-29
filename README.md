@@ -262,6 +262,58 @@ curl http://localhost:8080/health
 | `update_blog_post` | Обновить запись | `blog_id`, `post_id`, `title`, `body_html` |
 | `delete_blog_post` | Удалить запись | `blog_id`, `post_id` |
 
+### Точки выдачи (Outlets)
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `list_outlets` | Список точек выдачи | — |
+| `get_outlet` | Точка выдачи по ID | `outlet_id` |
+| `create_outlet` | Создать точку выдачи | `title`, `address`, `price`, `latitude`, `longitude`, `description` |
+| `update_outlet` | Обновить точку выдачи | `outlet_id`, `title`, `address`, `price`, `latitude`, `longitude`, `description` |
+| `delete_outlet` | Удалить точку выдачи | `outlet_id` |
+
+### Маркетплейсы
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `list_marketplaces` | Список маркетплейсов | — |
+| `get_marketplace` | Маркетплейс по ID | `marketplace_id` |
+| `create_marketplace` | Создать маркетплейс | `name`, `type` (обязательные), + параметры типа |
+| `update_marketplace` | Обновить маркетплейс | `marketplace_id` + параметры |
+| `delete_marketplace` | Удалить маркетплейс | `marketplace_id` |
+
+**Типы маркетплейсов:**
+- `Marketplace::GoogleMerchant` — Google Merchant Center
+- `Marketplace::LiquidYandexMarket` — Яндекс Маркет (Liquid шаблон)
+- `Marketplace::ModelYandexMarket` — Яндекс Маркет (модельный)
+
+### Токены мессенджеров
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `create_provider_token` | Создать токен провайдера | `messenger_type` (whats_app, telegram, viber, sms, email, vk, instagram) |
+
+### Настройки аккаунта
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `update_account` | Обновить настройки аккаунта | `client_cookies_whitelist` |
+
+### Счётчики
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `get_orders_count` | Количество заказов | `fulfillment_status` |
+| `get_products_count` | Количество товаров | — |
+
+### Экспорт данных (CSV)
+
+| Инструмент | Описание | Формат |
+|------------|----------|--------|
+| `export_products` | Экспорт товаров | CSV: id, title, price, sku, vendor, quantity, created_at |
+| `export_orders` | Экспорт заказов | CSV: id, number, fulfillment_status, total_price, client_name, created_at |
+| `export_clients` | Экспорт клиентов | CSV: id, name, surname, email, phone, created_at |
+
 ## Аутентификация
 
 ### Регистрация
@@ -325,6 +377,31 @@ curl -X POST http://localhost:8080/api/ai-keys \
 # Список ключей (без самих ключей)
 curl http://localhost:8080/api/ai-keys \
   -H "Authorization: Bearer <JWT_TOKEN>"
+```
+
+#### Имя ключа в конфиге
+
+Имя AI-ключа автоматически используется как JSON-ключ в MCP-конфиге. Slugify: кириллица → транслитерация, пробелы → дефисы, только латиница и цифры.
+
+| Имя ключа | JSON-ключ в конфиге |
+|-----------|---------------------|
+| `Cursor MCP` | `"cursor-mcp"` |
+| `Мой Ключ` | `"moy-klyuch"` |
+| `test` | `"test"` |
+| *(пустое)* | `"mcp-is"` |
+
+Пример конфига для Claude Desktop с ключом "Cursor MCP":
+```json
+{
+  "mcpServers": {
+    "cursor-mcp": {
+      "url": "https://mcp-is.ru:443/mcp",
+      "headers": {
+        "Authorization": "Bearer 59c213ef..."
+      }
+    }
+  }
+}
 ```
 
 ### MCP-запросы (требуется API-ключ)
@@ -471,8 +548,8 @@ SMTP_FROM=MCP IS <noreply@your-domain.com>
 
 | Режим | Команд | Описание |
 |-------|--------|----------|
-| read-only | ~120 | list_*, get_*, system, pipeline команды |
-| read/write | 229 | Все команды включая create/update/delete + пайплайны |
+| read-only | ~42 | list_*, get_*, system, pipeline, export команды |
+| read/write | 96 | Все команды включая create/update/delete + пайплайны |
 
 ## Пайплайн-инструменты
 
@@ -484,6 +561,7 @@ SMTP_FROM=MCP IS <noreply@your-domain.com>
 | `order_full_details` | Заказ + клиент + адрес + позиции + метаполя |
 | `client_full_profile` | Клиент + последние заказы + бонусы + метаполя |
 | `product_catalog_search` | Поиск по каталогу с фильтрами |
+| `collection_products` | Коллекция + все её товары |
 
 ## Примеры запросов
 

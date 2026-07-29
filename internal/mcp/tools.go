@@ -995,6 +995,30 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	// === UNITS ===
 	s.AddTool(mcp.NewTool("list_units", mcp.WithDescription("Список единиц измерения"), mcp.WithReadOnlyHintAnnotation(true)), genericListHandler(svc, svc.ListUnits))
 
+	// === OUTLETS ===
+	s.AddTool(mcp.NewTool("list_outlets", mcp.WithDescription("Список точек выдачи"), mcp.WithReadOnlyHintAnnotation(true)), genericListHandler(svc, svc.ListOutlets))
+	s.AddTool(mcp.NewTool("get_outlet", mcp.WithDescription("Получить точку выдачи по ID"), mcp.WithString("outlet_id", mcp.Required(), mcp.Description("ID точки выдачи")), mcp.WithReadOnlyHintAnnotation(true)), genericGetHandler(svc, "outlet_id", svc.GetOutlet))
+	s.AddTool(mcp.NewTool("create_outlet", mcp.WithDescription("Создать точку выдачи"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithString("address", mcp.Required(), mcp.Description("Адрес")), mcp.WithString("price", mcp.Required(), mcp.Description("Стоимость доставки")), mcp.WithString("latitude", mcp.Required(), mcp.Description("Широта")), mcp.WithString("longitude", mcp.Required(), mcp.Description("Долгота")), mcp.WithString("description", mcp.Description("Описание")), mcp.WithReadOnlyHintAnnotation(false)), genericCreateHandler(svc, svc.CreateOutlet))
+	s.AddTool(mcp.NewTool("update_outlet", mcp.WithDescription("Обновить точку выдачи"), mcp.WithString("outlet_id", mcp.Required(), mcp.Description("ID точки выдачи")), mcp.WithString("title", mcp.Description("Название")), mcp.WithString("address", mcp.Description("Адрес")), mcp.WithString("price", mcp.Description("Стоимость доставки")), mcp.WithString("latitude", mcp.Description("Широта")), mcp.WithString("longitude", mcp.Description("Долгота")), mcp.WithString("description", mcp.Description("Описание")), mcp.WithReadOnlyHintAnnotation(false)), genericUpdateHandler(svc, "outlet_id", svc.UpdateOutlet))
+	s.AddTool(mcp.NewTool("delete_outlet", mcp.WithDescription("Удалить точку выдачи"), mcp.WithString("outlet_id", mcp.Required(), mcp.Description("ID точки выдачи")), mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(true)), genericDeleteHandler(svc.DeleteOutlet, "outlet_id", "Точка выдачи удалена"))
+
+	// === MARKETPLACES ===
+	s.AddTool(mcp.NewTool("list_marketplaces", mcp.WithDescription("Список маркетплейсов"), mcp.WithReadOnlyHintAnnotation(true)), genericListHandler(svc, svc.ListMarketplaces))
+	s.AddTool(mcp.NewTool("get_marketplace", mcp.WithDescription("Получить маркетплейс по ID"), mcp.WithString("marketplace_id", mcp.Required(), mcp.Description("ID маркетплейса")), mcp.WithReadOnlyHintAnnotation(true)), genericGetHandler(svc, "marketplace_id", svc.GetMarketplace))
+	s.AddTool(mcp.NewTool("create_marketplace", mcp.WithDescription("Создать маркетплейс. Типы: Marketplace::GoogleMerchant, Marketplace::LiquidYandexMarket, Marketplace::ModelYandexMarket"), mcp.WithString("name", mcp.Required(), mcp.Description("Название")), mcp.WithString("type", mcp.Required(), mcp.Description("Тип: Marketplace::GoogleMerchant, Marketplace::LiquidYandexMarket, Marketplace::ModelYandexMarket")), mcp.WithString("page_encoding", mcp.Description("Кодировка (для Yandex): windows-1251, utf-8")), mcp.WithString("offer_liquid", mcp.Description("Liquid шаблон (для LiquidYandexMarket)")), mcp.WithString("vendor_id", mcp.Description("ID свойства (для ModelYandexMarket)")), mcp.WithString("image_style", mcp.Description("Стиль изображения (для ModelYandexMarket): thumb, compact, medium, large, original")), mcp.WithString("model_type", mcp.Description("Тип наименования (для ModelYandexMarket): name, sku")), mcp.WithString("shop_name", mcp.Description("Название магазина")), mcp.WithString("shop_company", mcp.Description("Название компании")), mcp.WithNumber("description_type", mcp.Description("Тип описания: 1=краткое, 2=полное")), mcp.WithString("local_delivery_cost", mcp.Description("Стоимость локальной доставки")), mcp.WithBoolean("adult", mcp.Description("Только для взрослых")), mcp.WithString("utm_label", mcp.Description("UTM метка")), mcp.WithReadOnlyHintAnnotation(false)), genericCreateHandler(svc, svc.CreateMarketplace))
+	s.AddTool(mcp.NewTool("update_marketplace", mcp.WithDescription("Обновить маркетплейс"), mcp.WithString("marketplace_id", mcp.Required(), mcp.Description("ID маркетплейса")), mcp.WithString("name", mcp.Description("Название")), mcp.WithString("page_encoding", mcp.Description("Кодировка")), mcp.WithString("offer_liquid", mcp.Description("Liquid шаблон")), mcp.WithString("vendor_id", mcp.Description("ID свойства")), mcp.WithString("image_style", mcp.Description("Стиль изображения")), mcp.WithString("model_type", mcp.Description("Тип наименования")), mcp.WithString("shop_name", mcp.Description("Название магазина")), mcp.WithString("shop_company", mcp.Description("Название компании")), mcp.WithNumber("description_type", mcp.Description("Тип описания")), mcp.WithString("local_delivery_cost", mcp.Description("Стоимость локальной доставки")), mcp.WithBoolean("adult", mcp.Description("Только для взрослых")), mcp.WithString("utm_label", mcp.Description("UTM метка")), mcp.WithReadOnlyHintAnnotation(false)), genericUpdateHandler(svc, "marketplace_id", svc.UpdateMarketplace))
+	s.AddTool(mcp.NewTool("delete_marketplace", mcp.WithDescription("Удалить маркетплейс"), mcp.WithString("marketplace_id", mcp.Required(), mcp.Description("ID маркетплейса")), mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(true)), genericDeleteHandler(svc.DeleteMarketplace, "marketplace_id", "Маркетплейс удалён"))
+
+	// === PROVIDER TOKEN ===
+	s.AddTool(mcp.NewTool("create_provider_token", mcp.WithDescription("Создать токен провайдера мессенджера"), mcp.WithString("messenger_type", mcp.Required(), mcp.Description("Тип мессенджера: whats_app, telegram, viber, sms, email, vk, instagram")), mcp.WithReadOnlyHintAnnotation(false)), createProviderTokenHandler(svc))
+
+	// === ACCOUNT ===
+	s.AddTool(mcp.NewTool("update_account", mcp.WithDescription("Обновить настройки аккаунта"), mcp.WithString("client_cookies_whitelist", mcp.Description("Белый список cookies")), mcp.WithReadOnlyHintAnnotation(false)), updateAccountHandler(svc))
+
+	// === COUNTS ===
+	s.AddTool(mcp.NewTool("get_orders_count", mcp.WithDescription("Количество заказов"), mcp.WithString("fulfillment_status", mcp.Description("Статус выполнения")), mcp.WithReadOnlyHintAnnotation(true)), getOrdersCountHandler(svc))
+	s.AddTool(mcp.NewTool("get_products_count", mcp.WithDescription("Количество товаров"), mcp.WithReadOnlyHintAnnotation(true)), getProductsCountHandler(svc))
+
 	// === PIPELINE TOOLS ===
 	s.AddTool(mcp.NewTool("search_product_details",
 		mcp.WithDescription("Поиск товара с полной информацией: кастомные поля, метаполя, изображения. Возвращает полную карточку товара одним вызовом."),
@@ -1024,4 +1048,24 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
 		mcp.WithReadOnlyHintAnnotation(true),
 	), productCatalogSearchHandler(svc))
+
+	s.AddTool(mcp.NewTool("collection_products",
+		mcp.WithDescription("Товары коллекции с полной информацией: данные коллекции + все её товары."),
+		mcp.WithString("collection_id", mcp.Required(), mcp.Description("ID коллекции")),
+		mcp.WithReadOnlyHintAnnotation(true),
+	), collectionProductsHandler(svc))
+
+	// === DATA EXPORT (CSV) ===
+	s.AddTool(mcp.NewTool("export_products",
+		mcp.WithDescription("Экспорт товаров в CSV. Возвращает CSV-файл с колонками: id, title, price, sku, vendor, quantity, created_at"),
+		mcp.WithReadOnlyHintAnnotation(true),
+	), exportProductsHandler(svc))
+	s.AddTool(mcp.NewTool("export_orders",
+		mcp.WithDescription("Экспорт заказов в CSV. Возвращает CSV-файл с колонками: id, number, status, fulfillment_status, total_price, client_name, created_at"),
+		mcp.WithReadOnlyHintAnnotation(true),
+	), exportOrdersHandler(svc))
+	s.AddTool(mcp.NewTool("export_clients",
+		mcp.WithDescription("Экспорт клиентов в CSV. Возвращает CSV-файл с колонками: id, name, surname, email, phone, created_at"),
+		mcp.WithReadOnlyHintAnnotation(true),
+	), exportClientsHandler(svc))
 }

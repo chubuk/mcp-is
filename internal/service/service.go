@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/chubuk/mcp-is/internal/core"
 	"github.com/chubuk/mcp-is/internal/integration/insales"
@@ -1404,4 +1405,198 @@ func (s *Service) ProductCatalogSearch(ctx context.Context, query string, filter
 		"per_page": perPage,
 	}
 	return result, nil
+}
+
+// === OUTLETS ===
+func (s *Service) ListOutlets(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListOutlets(ctx) }
+func (s *Service) GetOutlet(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetOutlet(ctx, id) }
+func (s *Service) CreateOutlet(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateOutlet(ctx, args) }
+func (s *Service) UpdateOutlet(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateOutlet(ctx, id, args) }
+func (s *Service) DeleteOutlet(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteOutlet(ctx, id) }
+
+// === MARKETPLACES ===
+func (s *Service) ListMarketplaces(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListMarketplaces(ctx) }
+func (s *Service) GetMarketplace(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetMarketplace(ctx, id) }
+func (s *Service) CreateMarketplace(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateMarketplace(ctx, args) }
+func (s *Service) UpdateMarketplace(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateMarketplace(ctx, id, args) }
+func (s *Service) DeleteMarketplace(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteMarketplace(ctx, id) }
+
+// === PROVIDER TOKEN ===
+func (s *Service) CreateProviderToken(ctx context.Context, messengerType string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateProviderToken(ctx, messengerType) }
+
+// === ACCOUNT ===
+func (s *Service) UpdateAccount(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateAccount(ctx, args) }
+
+// === COUNTS ===
+func (s *Service) GetOrdersCount(ctx context.Context, filters map[string]any) (int, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return 0, err }; return c.GetOrdersCount(ctx, filters) }
+func (s *Service) GetProductsCount(ctx context.Context) (int, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return 0, err }; return c.GetProductsCount(ctx) }
+
+// === PIPELINE: CollectionProducts ===
+func (s *Service) CollectionProducts(ctx context.Context, collectionID string) (map[string]any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	collection, err := client.GetCollection(ctx, collectionID)
+	if err != nil {
+		return nil, fmt.Errorf("get collection: %w", err)
+	}
+
+	products, err := client.ListProducts(ctx, 1, 250, map[string]any{"collection_id": collectionID})
+	if err != nil {
+		return nil, fmt.Errorf("list products: %w", err)
+	}
+
+	return map[string]any{
+		"collection": collection,
+		"products":   products,
+	}, nil
+}
+
+// === DATA EXPORT (CSV) ===
+
+func (s *Service) ExportProducts(ctx context.Context) (string, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	headers := []string{"id", "title", "price", "sku", "vendor", "quantity", "created_at"}
+	var rows [][]string
+
+	page := 1
+	for {
+		products, err := client.ListProducts(ctx, page, 250, nil)
+		if err != nil {
+			return "", fmt.Errorf("list products page %d: %w", page, err)
+		}
+		if len(products) == 0 {
+			break
+		}
+		for _, p := range products {
+			rows = append(rows, []string{
+				p.ID, p.Title, p.Price, p.SKU, p.Vendor,
+				fmt.Sprintf("%d", p.Quantity), p.CreatedAt,
+			})
+		}
+		if len(products) < 250 {
+			break
+		}
+		page++
+	}
+
+	return formatCSV(headers, rows), nil
+}
+
+func (s *Service) ExportOrders(ctx context.Context) (string, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	headers := []string{"id", "number", "fulfillment_status", "total_price", "client_name", "created_at"}
+	var rows [][]string
+
+	page := 1
+	for {
+		orders, err := client.ListOrders(ctx, page, 250, nil)
+		if err != nil {
+			return "", fmt.Errorf("list orders page %d: %w", page, err)
+		}
+		if len(orders) == 0 {
+			break
+		}
+		for _, o := range orders {
+			rows = append(rows, []string{
+				o.ID, o.Number, o.FulfillmentStatus, o.TotalPrice,
+				o.ClientName, o.CreatedAt,
+			})
+		}
+		if len(orders) < 250 {
+			break
+		}
+		page++
+	}
+
+	return formatCSV(headers, rows), nil
+}
+
+func (s *Service) ExportClients(ctx context.Context) (string, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	headers := []string{"id", "name", "surname", "email", "phone", "created_at"}
+	var rows [][]string
+
+	page := 1
+	for {
+		clients, err := client.ListClients(ctx, page, 250)
+		if err != nil {
+			return "", fmt.Errorf("list clients page %d: %w", page, err)
+		}
+		if len(clients) == 0 {
+			break
+		}
+		for _, c := range clients {
+			m, ok := c.(map[string]any)
+			if !ok {
+				continue
+			}
+			rows = append(rows, []string{
+				fmt.Sprintf("%v", m["id"]),
+				fmt.Sprintf("%v", m["name"]),
+				fmt.Sprintf("%v", m["surname"]),
+				fmt.Sprintf("%v", m["email"]),
+				fmt.Sprintf("%v", m["phone"]),
+				fmt.Sprintf("%v", m["created_at"]),
+			})
+		}
+		if len(clients) < 250 {
+			break
+		}
+		page++
+	}
+
+	return formatCSV(headers, rows), nil
+}
+
+func formatCSV(headers []string, rows [][]string) string {
+	result := ""
+	for i, h := range headers {
+		if i > 0 {
+			result += ","
+		}
+		result += csvEscape(h)
+	}
+	result += "\n"
+	for _, row := range rows {
+		for i, cell := range row {
+			if i > 0 {
+				result += ","
+			}
+			result += csvEscape(cell)
+		}
+		result += "\n"
+	}
+	return result
+}
+
+func csvEscape(s string) string {
+	if s == "" || s == "<nil>" {
+		return ""
+	}
+	needsQuote := false
+	for _, c := range s {
+		if c == ',' || c == '"' || c == '\n' || c == '\r' {
+			needsQuote = true
+			break
+		}
+	}
+	if needsQuote {
+		return "\"" + strings.ReplaceAll(s, "\"", "\"\"") + "\""
+	}
+	return s
 }

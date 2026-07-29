@@ -1,7 +1,21 @@
 const AIKeys = {
     newKey: null,
+    newKeyName: null,
     newMCPUrl: null,
     _mcpTypes: [],
+
+    slugify(str) {
+        if (!str || !str.trim()) return 'mcp-is';
+        // Cyrillic transliteration map
+        const cyr = {'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'shch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'};
+        let s = str.toLowerCase();
+        // Transliterate Cyrillic
+        let result = '';
+        for (const ch of s) { result += cyr[ch] !== undefined ? cyr[ch] : ch; }
+        // Keep only latin, digits, hyphens
+        result = result.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        return result || 'mcp-is';
+    },
 
     async render(page, perPage) {
         page = page || 1;
@@ -52,6 +66,7 @@ const AIKeys = {
                     </div>
                 </div>`;
             this.newKey = null;
+            this.newKeyName = null;
             this.newMCPUrl = null;
         }
 
@@ -207,6 +222,7 @@ const AIKeys = {
             const res = await API.post('/api/ai-keys', { name, pdn_enabled: pdn });
             if (res && res.ok && res.data.key) {
                 this.newKey = res.data.key;
+                this.newKeyName = name;
                 this.newMCPUrl = res.data.mcp_url;
                 App.navigate('/ai-keys');
             } else {
@@ -290,11 +306,12 @@ const AIKeys = {
         if (!keyEl || !urlEl) return;
         const key = keyEl.textContent.trim();
         const url = urlEl.textContent.trim();
+        const keyName = AIKeys.slugify(AIKeys.newKeyName || '');
         let config;
         if (client === 'claude') {
-            config = JSON.stringify({mcpServers:{"mcp-is":{url:url,headers:{"Authorization":"Bearer "+key}}}}, null, 2);
+            config = JSON.stringify({mcpServers:{[keyName]:{url:url,headers:{"Authorization":"Bearer "+key}}}}, null, 2);
         } else if (client === 'vscode') {
-            config = JSON.stringify({servers:{"mcp-is":{type:"http",url:url,headers:{"Authorization":"Bearer "+key}}}}, null, 2);
+            config = JSON.stringify({servers:{[keyName]:{type:"http",url:url,headers:{"Authorization":"Bearer "+key}}}}, null, 2);
         }
         if (config) {
             navigator.clipboard.writeText(config).then(() => {
@@ -340,7 +357,9 @@ const AIKeys = {
 
         const url = urlEl.textContent.trim();
         const apiKey = keyEl.textContent.trim();
+        const keyName = AIKeys.slugify(AIKeys.newKeyName || '');
         const config = type.config_template
+            .replace(/\{\{KEY_NAME\}\}/g, keyName)
             .replace(/\{\{URL\}\}/g, url)
             .replace(/\{\{API_KEY\}\}/g, apiKey);
 

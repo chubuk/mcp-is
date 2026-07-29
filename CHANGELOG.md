@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.1] - 2026-07-29
+
+### Добавлено
+- **AI Key Name в конфигах** — имя AI-ключа теперь используется как JSON-ключ в MCP-конфиге. Ключ "Cursor MCP" → конфиг с `"cursor-mcp"`. Slugify: кириллица → транслитерация, пробелы → дефисы, только латиница и цифры. Fallback на "mcp-is" если имя пустое
+- **Outlet (точки выдачи)** — CRUD: `list_outlets`, `get_outlet`, `create_outlet`, `update_outlet`, `delete_outlet`
+- **Marketplace (маркетплейсы)** — CRUD: `list_marketplaces`, `get_marketplace`, `create_marketplace`, `update_marketplace`, `delete_marketplace`. Поддержка 3 типов: Google Merchant, Liquid Yandex Market, Model Yandex Market
+- **ProviderToken** — `create_provider_token` для генерации токенов мессенджеров (WhatsApp, Telegram, Viber, SMS, Email, VK, Instagram)
+- **Account** — `update_account` для обновления настроек аккаунта
+- **Count endpoints** — `get_orders_count` и `get_products_count` для быстрого получения количества
+- **Пайплайн `collection_products`** — товары коллекции с полной информацией одним вызовом
+- **Data Export (CSV)** — экспорт данных в CSV-формате:
+  - `export_products` — товары (id, title, price, sku, vendor, quantity, created_at)
+  - `export_orders` — заказы (id, number, fulfillment_status, total_price, client_name, created_at)
+  - `export_clients` — клиенты (id, name, surname, email, phone, created_at)
+- **Integration tests** — тесты для InSales client (Outlet, Marketplace, ProviderToken, Account, Counts), MCP handlers (CSV, integration), storage (Settings, MCPClientTypes)
+
+### Статистика
+- 18 новых MCP-инструментов (74 → 92)
+- 25+ новых unit/integration тестов
+
 ## [0.3.2] - 2026-07-25
 
 ### Добавлено

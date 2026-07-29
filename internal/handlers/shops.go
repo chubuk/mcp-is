@@ -276,6 +276,12 @@ var readCommands = []string{
 	"list_blog_posts", "get_blog_post",
 	"get_shop_info",
 	"list_currencies", "list_delivery_variants", "list_payment_gateways",
+	"list_outlets", "get_outlet",
+	"list_marketplaces", "get_marketplace",
+	"get_orders_count", "get_products_count",
+	"collection_products",
+	"export_products", "export_orders", "export_clients",
+	"search_product_details", "order_full_details", "client_full_profile", "product_catalog_search",
 }
 
 var allCommandNames = []string{
@@ -296,6 +302,13 @@ var allCommandNames = []string{
 	"list_redirects", "create_redirect", "delete_redirect",
 	"list_blogs", "get_blog", "create_blog", "delete_blog",
 	"list_blog_posts", "get_blog_post", "create_blog_post", "update_blog_post", "delete_blog_post",
+	"list_outlets", "get_outlet", "create_outlet", "update_outlet", "delete_outlet",
+	"list_marketplaces", "get_marketplace", "create_marketplace", "update_marketplace", "delete_marketplace",
+	"create_provider_token", "update_account",
+	"get_orders_count", "get_products_count",
+	"collection_products",
+	"export_products", "export_orders", "export_clients",
+	"search_product_details", "order_full_details", "client_full_profile", "product_catalog_search",
 }
 
 var commandDescriptions = map[string]string{
@@ -373,6 +386,28 @@ var commandDescriptions = map[string]string{
 	"create_blog_post":      "Создать запись блога",
 	"update_blog_post":      "Обновить запись блога",
 	"delete_blog_post":      "Удалить запись блога",
+	"list_outlets":          "Получить список точек выдачи",
+	"get_outlet":            "Получить точку выдачи по ID",
+	"create_outlet":         "Создать точку выдачи",
+	"update_outlet":         "Обновить точку выдачи",
+	"delete_outlet":         "Удалить точку выдачи",
+	"list_marketplaces":     "Получить список маркетплейсов",
+	"get_marketplace":       "Получить маркетплейс по ID",
+	"create_marketplace":    "Создать маркетплейс",
+	"update_marketplace":    "Обновить маркетплейс",
+	"delete_marketplace":    "Удалить маркетплейс",
+	"create_provider_token": "Создать токен провайдера мессенджера",
+	"update_account":        "Обновить настройки аккаунта",
+	"get_orders_count":      "Получить количество заказов",
+	"get_products_count":    "Получить количество товаров",
+	"collection_products":   "Товары коллекции с полной информацией",
+	"export_products":       "Экспорт товаров в CSV",
+	"export_orders":         "Экспорт заказов в CSV",
+	"export_clients":        "Экспорт клиентов в CSV",
+	"search_product_details": "Поиск товара с полной информацией",
+	"order_full_details":    "Полная информация о заказе",
+	"client_full_profile":   "Полный профиль клиента",
+	"product_catalog_search": "Поиск по каталогу с фильтрами",
 }
 
 func (h *ShopHandler) CheckCommands(w http.ResponseWriter, r *http.Request) {
