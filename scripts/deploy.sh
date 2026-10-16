@@ -672,6 +672,22 @@ setup_cron() {
     return 0
 }
 
+# logrotate для /var/log/mcp-is-backup.log
+install_logrotate() {
+    local src="${PROJECT_DIR}/packaging/logrotate-mcp-is-backup"
+    local dst="/etc/logrotate.d/mcp-is-backup"
+    [[ -f "$src" ]] || return 0
+    if [[ -f "$dst" ]] && cmp -s "$src" "$dst"; then
+        return 0
+    fi
+    if [[ "$DRY_RUN" == "true" ]]; then
+        print_status "INFO" "Dry run: установит $dst"
+        return 0
+    fi
+    cp "$src" "$dst"
+    print_status "OK" "logrotate: $dst"
+}
+
 # Загрузка конфигурации из .env
 load_backup_config() {
     local env_file="${PROJECT_DIR}/${ENV_FILE}"
@@ -779,6 +795,9 @@ cmd_install() {
 
     # Настройка cron для бэкапов
     setup_cron
+
+    # Ротация лога бэкапов
+    install_logrotate
 
     # Проверка состояния
     check_containers

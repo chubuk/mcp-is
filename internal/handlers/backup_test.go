@@ -132,9 +132,13 @@ func TestBackupGetLog_AccessDenied(t *testing.T) {
 }
 
 func TestBackupGetLog_Admin(t *testing.T) {
-	h, _ := setupBackupHandler(t)
+	h, pool := setupBackupHandler(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/admin/backup/log", nil)
+	// seed one row so pagination fields are meaningful
+	_, _ = pool.Exec(context.Background(),
+		`INSERT INTO backup_log (status, size_bytes) VALUES ('ok', 1)`)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/admin/backup/log?page=1&per_page=2", nil)
 	ctx := context.WithValue(req.Context(), auth.RoleKey, "admin")
 	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -142,7 +146,49 @@ func TestBackupGetLog_Admin(t *testing.T) {
 	h.GetLog(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected 200, got %d", w.Code)
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+
+	var resp struct {
+		Entries  []BackupLogEntry `json:"entries"`
+		Total    int              `json:"total"`
+		Page     int              `json:"page"`
+		PerPage  int              `json:"per_page"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if resp.Page != 1 || resp.PerPage != 2 {
+		t.Errorf("expected page=1 per_page=2, got %d/%d", resp.Page, resp.PerPage)
+	}
+	if resp.Total < 1 {
+		t.Errorf("expected total >= 1, got %d", resp.Total)
+	}
+	if len(resp.Entries) > 2 {
+		t.Errorf("expected at most 2 entries, got %d", len(resp.Entries))
+	}
+}
+
+func TestBackupGetLog_InvalidPagingDefaults(t *testing.T) {
+	h, _ := setupBackupHandler(t)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/admin/backup/log?page=0&per_page=9999", nil)
+	ctx := context.WithValue(req.Context(), auth.RoleKey, "admin")
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+
+	h.GetLog(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+	var resp struct {
+		Page    int `json:"page"`
+		PerPage int `json:"per_page"`
+	}
+	json.NewDecoder(w.Body).Decode(&resp)
+	if resp.Page != 1 || resp.PerPage != 20 {
+		t.Errorf("expected defaults 1/20, got %d/%d", resp.Page, resp.PerPage)
 	}
 }
 
@@ -162,9 +208,12 @@ func TestBackupGetIncidents_AccessDenied(t *testing.T) {
 }
 
 func TestBackupGetIncidents_Admin(t *testing.T) {
-	h, _ := setupBackupHandler(t)
+	h, pool := setupBackupHandler(t)
 
-	req := httptest.NewRequest(http.MethodGet, "/api/admin/backup/incidents", nil)
+	_, _ = pool.Exec(context.Background(),
+		`INSERT INTO backup_incidents (type, message, severity) VALUES ('test', 'msg', 'info')`)
+
+	req := httptest.NewRequest(http.MethodGet, "/api/admin/backup/incidents?page=1&per_page=2", nil)
 	ctx := context.WithValue(req.Context(), auth.RoleKey, "admin")
 	req = req.WithContext(ctx)
 	w := httptest.NewRecorder()
@@ -172,7 +221,26 @@ func TestBackupGetIncidents_Admin(t *testing.T) {
 	h.GetIncidents(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Errorf("expected 200, got %d", w.Code)
+		t.Fatalf("expected 200, got %d", w.Code)
+	}
+
+	var resp struct {
+		Incidents []BackupIncident `json:"incidents"`
+		Total     int              `json:"total"`
+		Page      int              `json:"page"`
+		PerPage   int              `json:"per_page"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	if resp.Page != 1 || resp.PerPage != 2 {
+		t.Errorf("expected page=1 per_page=2, got %d/%d", resp.Page, resp.PerPage)
+	}
+	if resp.Total < 1 {
+		t.Errorf("expected total >= 1, got %d", resp.Total)
+	}
+	if len(resp.Incidents) > 2 {
+		t.Errorf("expected at most 2 incidents, got %d", len(resp.Incidents))
 	}
 }
 

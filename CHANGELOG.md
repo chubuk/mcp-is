@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.4.6] - 2026-10-16
+
+### Добавлено
+- **Пагинация журнала бэкапов и инцидентов** — `/api/admin/backup/log` и `/incidents` принимают `page`/`per_page` и возвращают `total`; в админке кнопки «Назад/Далее»
+- **Ротация журнала и инцидентов** — `cleanup_old_backups` удаляет из `backup_log`/`backup_incidents` записи старше `retention_days` (как и файлы бэкапов)
+- **Ротация системных логов** — logrotate для `/var/log/mcp-is-backup.log`, лимиты docker-логов (`10m×5`) для `db` и `nginx`
+
+### Исправлено
+- **Журнал бэкапов был пуст при `total > 0`** — pgx не сканирует `timestamptz` в `string`; добавлены `ts::text` и `COALESCE` (как в user_repo/pdn)
+- **Чистка не выполнялась при пропуске бэкапа** — `cleanup_old_backups` вызывается до проверок окна/нагрузки в `--scheduled`
+
 ## [0.4.5] - 2026-10-16
 
 ### Исправлено

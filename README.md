@@ -686,7 +686,7 @@ curl -k https://YOUR_DOMAIN/health
 | `BACKUP_ENABLED` | Включить бэкапы | true |
 | `BACKUP_METHOD` | pg_basebackup / pg_dump | pg_basebackup |
 | `BACKUP_INTERVAL_HOURS` | Интервал (часов) | 24 |
-| `BACKUP_RETENTION_DAYS` | Хранение (дней) | 14 |
+| `BACKUP_RETENTION_DAYS` | Хранение файлов, журнала и инцидентов (дней) | 14 |
 
 ### CI/CD (GitHub Actions)
 

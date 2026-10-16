@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os/exec"
+	"strconv"
 
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -187,6 +188,18 @@ func (h *BackupHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 	h.GetSettings(w, r)
 }
 
+func backupPageParams(r *http.Request) (page, perPage, offset int) {
+	page, _ = strconv.Atoi(r.URL.Query().Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	perPage, _ = strconv.Atoi(r.URL.Query().Get("per_page"))
+	if perPage < 1 || perPage > 100 {
+		perPage = 20
+	}
+	return page, perPage, (page - 1) * perPage
+}
+
 func (h *BackupHandler) GetLog(w http.ResponseWriter, r *http.Request) {
 	role := r.Context().Value(auth.RoleKey).(string)
 	if role != "super_admin" && role != "admin" {
@@ -194,11 +207,16 @@ func (h *BackupHandler) GetLog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	page, perPage, offset := backupPageParams(r)
+
+	var total int
+	h.db.QueryRow(context.Background(), "SELECT COUNT(*) FROM backup_log").Scan(&total)
+
 	rows, err := h.db.Query(context.Background(),
 		`SELECT id, ts::text, status, COALESCE(size_bytes, 0), COALESCE(error_msg, ''),
 		        COALESCE(load_1m, 0), COALESCE(load_5m, 0), COALESCE(load_15m, 0),
 		        COALESCE(iowait_pct, 0), COALESCE(duration_ms, 0)
-		 FROM backup_log ORDER BY ts DESC LIMIT 50`)
+		 FROM backup_log ORDER BY ts DESC LIMIT $1 OFFSET $2`, perPage, offset)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load log"})
 		return
@@ -215,7 +233,9 @@ func (h *BackupHandler) GetLog(w http.ResponseWriter, r *http.Request) {
 		entries = append(entries, e)
 	}
 
-	writeJSON(w, http.StatusOK, map[string]any{"entries": entries})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"entries": entries, "total": total, "page": page, "per_page": perPage,
+	})
 }
 
 func (h *BackupHandler) GetIncidents(w http.ResponseWriter, r *http.Request) {
@@ -225,9 +245,14 @@ func (h *BackupHandler) GetIncidents(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	page, perPage, offset := backupPageParams(r)
+
+	var total int
+	h.db.QueryRow(context.Background(), "SELECT COUNT(*) FROM backup_incidents").Scan(&total)
+
 	rows, err := h.db.Query(context.Background(),
 		`SELECT id, ts::text, type, message, severity, resolved
-		 FROM backup_incidents ORDER BY ts DESC LIMIT 50`)
+		 FROM backup_incidents ORDER BY ts DESC LIMIT $1 OFFSET $2`, perPage, offset)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load incidents"})
 		return
@@ -243,7 +268,9 @@ func (h *BackupHandler) GetIncidents(w http.ResponseWriter, r *http.Request) {
 		incidents = append(incidents, i)
 	}
 
-	writeJSON(w, http.StatusOK, map[string]any{"incidents": incidents})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"incidents": incidents, "total": total, "page": page, "per_page": perPage,
+	})
 }
 
 func (h *BackupHandler) RunBackup(w http.ResponseWriter, r *http.Request) {

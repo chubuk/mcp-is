@@ -590,17 +590,24 @@ const Admin = {
 
     // ==================== BACKUP ====================
 
-    async renderBackup() {
+    _backupLogPage: 1,
+    _incidentsPage: 1,
+
+    async renderBackup(logPage, incPage) {
+        logPage = logPage || Admin._backupLogPage || 1;
+        incPage = incPage || Admin._incidentsPage || 1;
+        const perPage = getPerPage();
+
         const [statusRes, logRes, incidentsRes, settingsRes] = await Promise.all([
             API.get('/api/admin/backup/status'),
-            API.get('/api/admin/backup/log'),
-            API.get('/api/admin/backup/incidents'),
+            API.get(`/api/admin/backup/log?page=${logPage}&per_page=${perPage}`),
+            API.get(`/api/admin/backup/incidents?page=${incPage}&per_page=${perPage}`),
             API.get('/api/admin/backup'),
         ]);
 
         const status = (statusRes && statusRes.ok) ? statusRes.data : {};
-        const log = (logRes && logRes.ok) ? logRes.data : { entries: [] };
-        const incidents = (incidentsRes && incidentsRes.ok) ? incidentsRes.data : { incidents: [] };
+        const log = (logRes && logRes.ok) ? logRes.data : { entries: [], total: 0, page: 1, per_page: perPage };
+        const incidents = (incidentsRes && incidentsRes.ok) ? incidentsRes.data : { incidents: [], total: 0, page: 1, per_page: perPage };
         const settings = (settingsRes && settingsRes.ok) ? settingsRes.data : {};
 
         // Stats
@@ -630,6 +637,7 @@ const Admin = {
                     </tr>`;
             });
         }
+        const logPagination = renderPagination(log.page || logPage, log.total || 0, log.per_page || perPage, Admin.goBackupLogPage);
 
         // Incidents rows
         let incidentRows = '';
@@ -649,6 +657,7 @@ const Admin = {
                     </tr>`;
             });
         }
+        const incPagination = renderPagination(incidents.page || incPage, incidents.total || 0, incidents.per_page || perPage, Admin.goIncidentsPage);
 
         return `
             <div class="page-header">
@@ -725,6 +734,7 @@ const Admin = {
                         <tbody>${logRows}</tbody>
                     </table>
                 </div>
+                ${logPagination}
             </div>
 
             <div class="card" style="margin-top:24px">
@@ -743,7 +753,24 @@ const Admin = {
                         <tbody>${incidentRows}</tbody>
                     </table>
                 </div>
+                ${incPagination}
             </div>`;
+    },
+
+    goBackupLogPage(page, perPage) {
+        setPerPage(perPage);
+        Admin._backupLogPage = page;
+        Admin.renderBackup(page, Admin._incidentsPage).then(html => {
+            document.getElementById('app').innerHTML = html;
+        });
+    },
+
+    goIncidentsPage(page, perPage) {
+        setPerPage(perPage);
+        Admin._incidentsPage = page;
+        Admin.renderBackup(Admin._backupLogPage, page).then(html => {
+            document.getElementById('app').innerHTML = html;
+        });
     },
 
     async saveBackup() {
@@ -762,7 +789,7 @@ const Admin = {
         if (res && res.ok) {
             document.getElementById('backup-alert').innerHTML =
                 '<div class="alert alert--success">Настройки сохранены</div>';
-            setTimeout(() => Admin.renderBackup().then(html => {
+            setTimeout(() => Admin.renderBackup(Admin._backupLogPage, Admin._incidentsPage).then(html => {
                 document.getElementById('app').innerHTML = html;
             }), 1000);
         } else {

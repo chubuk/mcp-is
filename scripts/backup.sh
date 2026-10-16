@@ -490,6 +490,14 @@ cleanup_old_backups() {
     fi
     
     ok "Бэкапов хранится: $count_after"
+
+    # Чистка журнала и инцидентов за пределами retention (интерполяция в SQL — только число)
+    local days="$BACKUP_RETENTION_DAYS"
+    [[ "$days" =~ ^[0-9]+$ ]] || days=14
+    docker exec -i "$DB_CONTAINER" \
+        psql -U "$DB_USER" -d "$DB_NAME" -c \
+        "DELETE FROM backup_log WHERE ts < NOW() - INTERVAL '$days days';
+         DELETE FROM backup_incidents WHERE ts < NOW() - INTERVAL '$days days';" 2>/dev/null || true
 }
 
 # ============================================================================
@@ -628,6 +636,9 @@ main() {
             load_backup_config
             check_stuck_backup
             
+            # Ротация всегда — иначе при пропуске бэкапа (load_high) журнал и файлы копятся
+            cleanup_old_backups
+            
             if ! check_backup_window; then
                 info "Вне временного окна ($BACKUP_HOUR_START:00 - $BACKUP_HOUR_END:00)"
                 return 0
@@ -650,7 +661,6 @@ main() {
                 do_backup_pg_dump
             fi
             
-            cleanup_old_backups
             check_missed_backups
             ;;
             
