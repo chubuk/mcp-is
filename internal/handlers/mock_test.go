@@ -9,9 +9,10 @@ import (
 )
 
 type mockUserRepo struct {
-	mu      sync.RWMutex
-	users   map[string]*storage.User
-	counter int
+	mu                sync.RWMutex
+	users             map[string]*storage.User
+	counter           int
+	cleanExpiredCalls int
 }
 
 func newMockUserRepo() *mockUserRepo {
@@ -210,6 +211,9 @@ func (m *mockUserRepo) ClearResetTokens(userID string) error {
 }
 
 func (m *mockUserRepo) CleanExpiredResetTokens() error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.cleanExpiredCalls++
 	return nil
 }
 

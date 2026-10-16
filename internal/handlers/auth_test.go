@@ -236,7 +236,7 @@ func TestChangePassword_WrongOldPassword(t *testing.T) {
 }
 
 func TestForgotPassword_Success(t *testing.T) {
-	h, _ := setupAuthHandler()
+	h, repo := setupAuthHandler()
 
 	body, _ := json.Marshal(RegisterRequest{Nickname: "forgot", Email: "forgot@test.com", Password: "Pass1234"})
 	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
@@ -250,6 +250,13 @@ func TestForgotPassword_Success(t *testing.T) {
 
 	if forgotW.Code != http.StatusOK {
 		t.Errorf("expected 200, got %d", forgotW.Code)
+	}
+
+	repo.mu.RLock()
+	calls := repo.cleanExpiredCalls
+	repo.mu.RUnlock()
+	if calls == 0 {
+		t.Error("expected CleanExpiredResetTokens to be called on forgot-password")
 	}
 }
 
