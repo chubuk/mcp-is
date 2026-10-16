@@ -122,9 +122,14 @@ docker compose up -d
 
 ### Как сделать бэкап?
 
+Автоматические бэкапы настраиваются в админке (Настройки сервера → Бэкапы) и выполняются по расписанию. Вручную:
+
 ```bash
 # Бэкап БД
-docker exec mcp_is_db pg_dump -U admin mcp_is > backup.sql
+docker exec mcp_is_db pg_dump -U admin mcp_is | gzip > backup.sql.gz
+
+# Или через скрипт проекта
+/opt/mcp-is/scripts/backup.sh
 
 # Бэкап .env
 cp .env .env.backup

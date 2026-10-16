@@ -160,58 +160,29 @@ docker compose up -d --build
 ## Восстановление из бэкапа
 
 Бэкапы хранятся в `/opt/mcp-is/backups/`:
-- `db_YYYYMMDD_HHMMSS.sql` — дамп базы данных
-- `files_YYYYMMDD_HHMMSS.tar.gz` — файлы проекта
+- `db_YYYYMMDD_HHMMSS.tar.gz` — файловый снэпшот pg_basebackup (метод по умолчанию)
+- `db_YYYYMMDD_HHMMSS.sql.gz` — SQL-дамп pg_dump (если в настройках выбран pg_dump)
 
-### Восстановление БД
+Выполняйте команды **на хосте от root** (не из app-контейнера — restore останавливает контейнеры).
 
-```bash
-# 1. Остановите сервис
-sudo systemctl stop mcp-is
-
-# 2. Восстановите БД
-sudo docker compose -f /opt/mcp-is/docker-compose.yaml \
-  exec -T db psql -U admin -d mcp_is < /opt/mcp-is/backups/db_YYYYMMDD_HHMMSS.sql
-
-# 3. Запустите сервис
-sudo systemctl start mcp-is
-```
-
-### Восстановление файлов
+### Восстановление из снэпшота (tar.gz)
 
 ```bash
-# 1. Остановите сервис
-sudo systemctl stop mcp-is
-
-# 2. Распакуйте бэкап
-sudo tar xzf /opt/mcp-is/backups/files_YYYYMMDD_HHMMSS.tar.gz -C /opt/mcp-is/
-
-# 3. Пересоберите контейнеры
-cd /opt/mcp-is && sudo docker compose up -d --build
-
-# 4. Запустите сервис
-sudo systemctl start mcp-is
+# Скрипт остановит app/nginx, распакует снэпшот в БД, запустит всё обратно
+sudo /opt/mcp-is/scripts/backup.sh --restore /opt/mcp-is/backups/db_YYYYMMDD_HHMMSS.tar.gz
 ```
 
-### Полное восстановление
+### Восстановление из SQL-дампа (sql.gz)
 
 ```bash
-# 1. Остановите сервис
-sudo systemctl stop mcp-is
-
-# 2. Восстановите файлы
-sudo tar xzf /opt/mcp-is/backups/files_YYYYMMDD_HHMMSS.tar.gz -C /opt/mcp-is/
-
-# 3. Пересоберите и запустите
-cd /opt/mcp-is && sudo docker compose up -d --build
-
-# 4. Восстановите БД (если нужно)
-sudo docker compose -f /opt/mcp-is/docker-compose.yaml \
-  exec -T db psql -U admin -d mcp_is < /opt/mcp-is/backups/db_YYYYMMDD_HHMMSS.sql
-
-# 5. Запустите сервис
-sudo systemctl start mcp-is
+# Дамп применяется поверх работающей БД (без остановки)
+gunzip -c /opt/mcp-is/backups/db_YYYYMMDD_HHMMSS.sql.gz | \
+  docker exec -i mcp_is_db psql -U admin -d mcp_is
 ```
+
+### Файлы проекта
+
+Отдельного «файлового» бэкапа нет: код восстанавливается через `git pull` (или повторную установку), затем `docker compose up -d`. Не забудьте про `.env` (пароли БД и ключи) — храните его копию отдельно.
 
 ## Остановка
 
@@ -294,16 +265,24 @@ curl -k https://YOUR_DOMAIN/health
 
 ### Автоматические бэкапы
 
-Бэкапы настраиваются через админку (`/admin/backup`) или `.env`:
+Настройки хранятся в БД и редактируются в админке (Настройки сервера → Бэкапы); значения из `.env` используются как fallback:
 
 | Параметр | Описание | По умолчанию |
 |----------|----------|--------------|
 | `BACKUP_ENABLED` | Включить бэкапы | true |
 | `BACKUP_METHOD` | pg_basebackup / pg_dump | pg_basebackup |
 | `BACKUP_INTERVAL_HOURS` | Интервал (часов) | 24 |
+| `BACKUP_HOUR_START` / `BACKUP_HOUR_END` | Окно запуска (часы) | 1–6 |
+| `BACKUP_MAX_LOAD_PCT` | Макс. нагрузка, % от ядер | 50 |
 | `BACKUP_RETENTION_DAYS` | Хранение (дней) | 14 |
 
-Cron настроен автоматически при установке через deploy.sh.
+Расписание: cron на хосте (`/etc/cron.d/mcp-is-backup`) запускает `backup.sh --scheduled` каждый час; бэкап выполняется в пределах окна, если прошёл интервал и нагрузка ниже порога. Порог считается в % от ядра (на 1-ядерном VDS 50% = load 0.5; если машина почти не грузится в среднем выше — поднимите порог, иначе бэкапы будут откладываться).
+
+Если при запуске из админки («Бэкап сейчас») ошибка прав на запись в `/opt/mcp-is/backups`:
+
+```bash
+chown -R 1001:1001 /opt/mcp-is/backups   # appuser контейнера app
+```
 
 ### Безопасность
 
