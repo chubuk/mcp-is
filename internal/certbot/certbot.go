@@ -75,6 +75,8 @@ func (s *CertbotService) RenewCert(domain string) error {
 
 	cmd := exec.Command("docker", "exec", "mcp_is_nginx",
 		"certbot", "renew", "--non-interactive",
+		// certbot в неинтерактивном режиме спит случайное время (до ~8 мин) перед renew
+		"--no-random-sleep-on-renew",
 	)
 	output, err := cmd.CombinedOutput()
 	if err != nil {

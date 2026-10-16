@@ -42,6 +42,13 @@ services:
     volumes:
       - ./scripts:/opt/mcp-is/scripts:ro
       - ./backups:/opt/mcp-is/backups
+      # docker.sock: certbot/backup вызывают docker exec из app-контейнера
+      - /var/run/docker.sock:/var/run/docker.sock
+      # /etc/letsencrypt: GetCertInfo читает серт напрямую (статус/планировщик)
+      - certbot_data:/etc/letsencrypt:ro
+    group_add:
+      # GID группы docker на хосте (сокет root:docker)
+      - "${DOCKER_GID:-110}"
     depends_on:
       db:
         condition: service_healthy

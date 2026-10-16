@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.4.4] - 2026-10-16
+
+### Исправлено
+- **Auto-renew Let's Encrypt** — `certbot.go` вызывал `docker exec` из app-контейнера, где нет docker-клиента: все 10 попыток обновления падали. В образ добавлен `docker-cli`, в compose — `docker.sock` и монтирование `/etc/letsencrypt` (чтение статуса сертификата). Отключён random-delay certbot (`--no-random-sleep-on-renew`)
+
 ## [0.4.3] - 2026-10-16
 
 ### Добавлено
