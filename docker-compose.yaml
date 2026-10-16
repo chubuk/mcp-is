@@ -91,7 +91,8 @@ services:
     depends_on:
       - app
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/health"]
+      # 127.0.0.1 (not localhost) — wget tries ::1 first and fails; HTTPS — :80 only redirects
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "--no-check-certificate", "https://127.0.0.1/health"]
       interval: 30s
       timeout: 5s
       retries: 3
