@@ -28,7 +28,33 @@ const App = {
                 this.navigate(link.getAttribute('href'));
             }
         });
+        this.enhancePasswordInputs(document);
+        new MutationObserver(() => this.enhancePasswordInputs(document))
+            .observe(document.body, { childList: true, subtree: true });
         this.route();
+    },
+
+    // Adds a show/hide toggle to every password input (existing and dynamically rendered)
+    enhancePasswordInputs(root) {
+        root.querySelectorAll('input[type="password"]:not(.pw-done)').forEach((input) => {
+            input.classList.add('pw-done');
+            const wrap = document.createElement('div');
+            wrap.className = 'pw-wrap';
+            input.parentNode.insertBefore(wrap, input);
+            wrap.appendChild(input);
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'pw-toggle';
+            btn.title = 'Показать пароль';
+            btn.textContent = '👁';
+            btn.addEventListener('click', () => {
+                const show = input.type === 'password';
+                input.type = show ? 'text' : 'password';
+                btn.textContent = show ? '🙈' : '👁';
+                btn.title = show ? 'Скрыть пароль' : 'Показать пароль';
+            });
+            wrap.appendChild(btn);
+        });
     },
 
     navigate(path) {
