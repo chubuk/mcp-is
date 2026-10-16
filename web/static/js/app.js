@@ -11,7 +11,7 @@ const App = {
         { path: '/admin/users', render: () => Admin.renderUsers(), auth: true, role: ['admin', 'super_admin'] },
         { path: '/admin/users/:id', render: (params) => Admin.showUser(params.id), auth: true, role: ['admin', 'super_admin'] },
         { path: '/admin/stats', render: () => Admin.renderStats(), auth: true, role: ['admin', 'super_admin'] },
-        { path: '/admin/server', render: () => Admin.renderServer(), auth: true, role: ['admin', 'super_admin'] },
+        { path: '/admin/server', render: () => Admin.renderServer(), auth: true, role: ['admin', 'super_admin'], onMount: () => Admin.loadSMTPStatus() },
         { path: '/admin/pdn', render: () => Admin.renderPDN(), auth: true, role: ['admin', 'super_admin'] },
         { path: '/admin/backup', render: () => Admin.renderBackup(), auth: true, role: ['admin', 'super_admin'] },
         { path: '/force-change-password', render: () => Auth.renderForceChangePassword(), auth: true, onMount: () => Auth.bindForceChangePassword() },

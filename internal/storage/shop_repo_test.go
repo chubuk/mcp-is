@@ -13,7 +13,7 @@ func TestShopRepo_Create(t *testing.T) {
 
 	user, _ := userRepo.Create("shopuser", "", "", "", "", "hash")
 
-	shop, err := shopRepo.Create(user.ID, "myshop.myinsales.ru", "key123", "encrypted_pass", true)
+	shop, err := shopRepo.Create(user.ID, "myshop.myinsales.ru", "myshop.myinsales.ru", "key123", "encrypted_pass", true, false)
 	if err != nil {
 		t.Fatalf("Create failed: %v", err)
 	}
@@ -35,7 +35,7 @@ func TestShopRepo_GetByID(t *testing.T) {
 	shopRepo := NewShopRepository(pool)
 
 	user, _ := userRepo.Create("getshop", "", "", "", "", "hash")
-	created, _ := shopRepo.Create(user.ID, "shop.ru", "k", "enc", false)
+	created, _ := shopRepo.Create(user.ID, "shop.ru", "shop.ru", "k", "enc", false, false)
 
 	found, err := shopRepo.GetByID(created.ID)
 	if err != nil {
@@ -52,8 +52,8 @@ func TestShopRepo_ListByUserID(t *testing.T) {
 	shopRepo := NewShopRepository(pool)
 
 	user, _ := userRepo.Create("listshop", "", "", "", "", "hash")
-	shopRepo.Create(user.ID, "s1.ru", "k1", "e1", true)
-	shopRepo.Create(user.ID, "s2.ru", "k2", "e2", false)
+	shopRepo.Create(user.ID, "s1.ru", "s1.ru", "k1", "e1", true, false)
+	shopRepo.Create(user.ID, "s2.ru", "s2.ru", "k2", "e2", false, false)
 
 	shops, err := shopRepo.ListByUserID(user.ID)
 	if err != nil {
@@ -70,8 +70,8 @@ func TestShopRepo_GetDefault(t *testing.T) {
 	shopRepo := NewShopRepository(pool)
 
 	user, _ := userRepo.Create("defshop", "", "", "", "", "hash")
-	shopRepo.Create(user.ID, "other.ru", "k", "e", false)
-	shopRepo.Create(user.ID, "default.ru", "k", "e", true)
+	shopRepo.Create(user.ID, "other.ru", "other.ru", "k", "e", false, false)
+	shopRepo.Create(user.ID, "default.ru", "default.ru", "k", "e", true, false)
 
 	shop, err := shopRepo.GetDefault(user.ID)
 	if err != nil {
@@ -88,9 +88,9 @@ func TestShopRepo_Update(t *testing.T) {
 	shopRepo := NewShopRepository(pool)
 
 	user, _ := userRepo.Create("updshop", "", "", "", "", "hash")
-	shop, _ := shopRepo.Create(user.ID, "old.ru", "k", "e", false)
+	shop, _ := shopRepo.Create(user.ID, "old.ru", "old.ru", "k", "e", false, false)
 
-	err := shopRepo.Update(shop.ID, "new.ru", "k2", "e2", true)
+	err := shopRepo.Update(shop.ID, "new.ru", "new.ru", "k2", "e2", true, false, false)
 	if err != nil {
 		t.Fatalf("Update failed: %v", err)
 	}
@@ -110,7 +110,7 @@ func TestShopRepo_Delete(t *testing.T) {
 	shopRepo := NewShopRepository(pool)
 
 	user, _ := userRepo.Create("delshop", "", "", "", "", "hash")
-	shop, _ := shopRepo.Create(user.ID, "del.ru", "k", "e", false)
+	shop, _ := shopRepo.Create(user.ID, "del.ru", "del.ru", "k", "e", false, false)
 
 	err := shopRepo.Delete(shop.ID)
 	if err != nil {
@@ -129,9 +129,9 @@ func TestShopRepo_ListByUserIDFiltered(t *testing.T) {
 	shopRepo := NewShopRepository(pool)
 
 	user, _ := userRepo.Create("filtshop", "", "", "", "", "hash")
-	shopRepo.Create(user.ID, "s1.ru", "k1", "e1", true, false)
-	shopRepo.Create(user.ID, "s2.ru", "k2", "e2", false, false)
-	shopRepo.Create(user.ID, "s3.ru", "k3", "e3", false, true)
+	shopRepo.Create(user.ID, "s1.ru", "s1.ru", "k1", "e1", true, false)
+	shopRepo.Create(user.ID, "s2.ru", "s2.ru", "k2", "e2", false, false)
+	shopRepo.Create(user.ID, "s3.ru", "s3.ru", "k3", "e3", false, true)
 
 	shops, total, err := shopRepo.ListByUserIDFiltered(user.ID, 1, 2)
 	if err != nil {
@@ -159,7 +159,7 @@ func TestShopRepo_IsReadOnly(t *testing.T) {
 	shopRepo := NewShopRepository(pool)
 
 	user, _ := userRepo.Create("roshop", "", "", "", "", "hash")
-	shop, _ := shopRepo.Create(user.ID, "ro.ru", "k", "e", false, true)
+	shop, _ := shopRepo.Create(user.ID, "ro.ru", "ro.ru", "k", "e", false, true)
 
 	found, _ := shopRepo.GetByID(shop.ID)
 	if !found.IsReadOnly {

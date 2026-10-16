@@ -331,7 +331,61 @@ const Admin = {
                     <button class="btn btn--secondary" onclick="Admin.issueCert()">📜 Выпустить сертификат</button>
                     <button class="btn btn--ghost" onclick="Admin.renewCert()">🔐 Продлить сертификат</button>
                 </div>
+            </div>
+
+            <div class="card" id="smtp-section">
+                <div class="card__title">Почта (SMTP)</div>
+                <div id="smtp-alert"></div>
+                <div id="smtp-content">Загрузка...</div>
             </div>`;
+    },
+
+    async loadSMTPStatus() {
+        const res = await API.get('/api/admin/smtp/status');
+        if (!res || !res.ok) return;
+        const s = res.data;
+        const el = document.getElementById('smtp-content');
+        if (!el) return;
+
+        if (s.disabled) {
+            el.innerHTML = `
+                <div class="alert alert--info">SMTP не настроен. Письма не отправляются.</div>
+                <table class="table">
+                    <tr><td><strong>Статус</strong></td><td style="color:#e67e22">Выключен</td></tr>
+                </table>`;
+        } else {
+            el.innerHTML = `
+                <div class="alert alert--success">SMTP настроен и работает</div>
+                <table class="table">
+                    <tr><td><strong>Статус</strong></td><td style="color:#27ae60">Активен</td></tr>
+                    <tr><td><strong>Сервер</strong></td><td>${s.host}:${s.port}</td></tr>
+                    <tr><td><strong>Отправитель</strong></td><td>${s.from}</td></tr>
+                </table>
+                <div style="margin-top:12px">
+                    <div class="form-group">
+                        <label>Email для теста</label>
+                        <input type="email" id="smtp-test-email" placeholder="test@example.com">
+                    </div>
+                    <button class="btn btn--secondary" onclick="Admin.testSMTP()">📧 Отправить тестовое письмо</button>
+                </div>`;
+        }
+    },
+
+    async testSMTP() {
+        const email = document.getElementById('smtp-test-email').value.trim();
+        if (!email) {
+            document.getElementById('smtp-alert').innerHTML =
+                '<div class="alert alert--error">Введите email</div>';
+            return;
+        }
+        const res = await API.post('/api/admin/smtp/test', { email });
+        if (res && res.ok) {
+            document.getElementById('smtp-alert').innerHTML =
+                '<div class="alert alert--success">Тестовое письмо отправлено на ' + email + '</div>';
+        } else {
+            document.getElementById('smtp-alert').innerHTML =
+                '<div class="alert alert--error">Ошибка: ' + (res ? res.data.error : 'Сервер недоступен') + '</div>';
+        }
     },
 
     async saveServer() {

@@ -322,6 +322,8 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	expiresAt := time.Now().Add(1 * time.Hour).Format(time.RFC3339)
 
+	h.userRepo.CleanExpiredResetTokens()
+
 	if err := h.userRepo.CreateResetToken(user.ID, token, expiresAt); err != nil {
 		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "failed to create reset token"})
 		return

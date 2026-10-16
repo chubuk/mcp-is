@@ -7,18 +7,20 @@ import (
 	"strconv"
 
 	"github.com/chubuk/mcp-is/internal/auth"
+	"github.com/chubuk/mcp-is/internal/email"
 	"github.com/chubuk/mcp-is/internal/storage"
 )
 
 type AdminHandler struct {
-	userRepo storage.UserRepositoryInterface
-	shopRepo storage.ShopRepositoryInterface
+	userRepo  storage.UserRepositoryInterface
+	shopRepo  storage.ShopRepositoryInterface
 	aiKeyRepo storage.AIKeyRepositoryInterface
-	jwtMgr   *auth.JWTManager
+	jwtMgr    *auth.JWTManager
+	emailSvc  *email.Service
 }
 
-func NewAdminHandler(userRepo storage.UserRepositoryInterface, shopRepo storage.ShopRepositoryInterface, aiKeyRepo storage.AIKeyRepositoryInterface, jwtMgr *auth.JWTManager) *AdminHandler {
-	return &AdminHandler{userRepo: userRepo, shopRepo: shopRepo, aiKeyRepo: aiKeyRepo, jwtMgr: jwtMgr}
+func NewAdminHandler(userRepo storage.UserRepositoryInterface, shopRepo storage.ShopRepositoryInterface, aiKeyRepo storage.AIKeyRepositoryInterface, jwtMgr *auth.JWTManager, emailSvc *email.Service) *AdminHandler {
+	return &AdminHandler{userRepo: userRepo, shopRepo: shopRepo, aiKeyRepo: aiKeyRepo, jwtMgr: jwtMgr, emailSvc: emailSvc}
 }
 
 type UserResponse struct {
@@ -305,4 +307,48 @@ func (h *AdminHandler) StopImpersonate(w http.ResponseWriter, r *http.Request) {
 		Nickname: admin.Nickname,
 		Role:     admin.Role,
 	})
+}
+
+type SMTPStatusResponse struct {
+	Disabled bool   `json:"disabled"`
+	Host     string `json:"host,omitempty"`
+	Port     string `json:"port,omitempty"`
+	From     string `json:"from,omitempty"`
+	Error    string `json:"error,omitempty"`
+}
+
+func (h *AdminHandler) SMTPStatus(w http.ResponseWriter, r *http.Request) {
+	cfg := h.emailSvc.Config()
+	writeJSON(w, http.StatusOK, SMTPStatusResponse{
+		Disabled: h.emailSvc.IsDisabled(),
+		Host:     cfg.Host,
+		Port:     cfg.Port,
+		From:     cfg.From,
+	})
+}
+
+type TestSMTPRequest struct {
+	Email string `json:"email"`
+}
+
+func (h *AdminHandler) TestSMTP(w http.ResponseWriter, r *http.Request) {
+	var req TestSMTPRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Email == "" {
+		writeJSON(w, http.StatusBadRequest, SMTPStatusResponse{Error: "email is required"})
+		return
+	}
+
+	if h.emailSvc.IsDisabled() {
+		writeJSON(w, http.StatusBadRequest, SMTPStatusResponse{Error: "SMTP not configured", Disabled: true})
+		return
+	}
+
+	if err := h.emailSvc.SendTest(req.Email); err != nil {
+		slog.Error("SMTP test failed", "to", req.Email, "error", err)
+		writeJSON(w, http.StatusInternalServerError, SMTPStatusResponse{Error: "failed to send: " + err.Error()})
+		return
+	}
+
+	slog.Info("SMTP test sent", "to", req.Email)
+	writeJSON(w, http.StatusOK, SMTPStatusResponse{})
 }

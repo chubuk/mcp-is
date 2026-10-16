@@ -358,3 +358,95 @@ func TestChangePassword_ClearsForceFlag(t *testing.T) {
 		t.Error("expected require_password_change to be cleared after password change")
 	}
 }
+
+func TestResetPassword_MissingToken(t *testing.T) {
+	h, _ := setupAuthHandler()
+
+	body, _ := json.Marshal(ResetPasswordRequest{NewPassword: "NewPass123"})
+	req := httptest.NewRequest(http.MethodPost, "/api/reset-password", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	h.ResetPassword(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestResetPassword_MissingPassword(t *testing.T) {
+	h, _ := setupAuthHandler()
+
+	body, _ := json.Marshal(ResetPasswordRequest{Token: "sometoken"})
+	req := httptest.NewRequest(http.MethodPost, "/api/reset-password", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	h.ResetPassword(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestResetPassword_ShortPassword(t *testing.T) {
+	h, _ := setupAuthHandler()
+
+	body, _ := json.Marshal(ResetPasswordRequest{Token: "sometoken", NewPassword: "short"})
+	req := httptest.NewRequest(http.MethodPost, "/api/reset-password", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	h.ResetPassword(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestResetPassword_WeakPassword(t *testing.T) {
+	h, _ := setupAuthHandler()
+
+	body, _ := json.Marshal(ResetPasswordRequest{Token: "sometoken", NewPassword: "alllowercase1"})
+	req := httptest.NewRequest(http.MethodPost, "/api/reset-password", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	h.ResetPassword(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestResetPassword_InvalidToken(t *testing.T) {
+	h, _ := setupAuthHandler()
+
+	body, _ := json.Marshal(ResetPasswordRequest{Token: "invalidtoken", NewPassword: "NewPass123"})
+	req := httptest.NewRequest(http.MethodPost, "/api/reset-password", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	h.ResetPassword(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestForgotPassword_EmptyEmail(t *testing.T) {
+	h, _ := setupAuthHandler()
+
+	body, _ := json.Marshal(ForgotPasswordRequest{Email: ""})
+	req := httptest.NewRequest(http.MethodPost, "/api/forgot-password", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	h.ForgotPassword(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestForgotPassword_UnknownEmail(t *testing.T) {
+	h, _ := setupAuthHandler()
+
+	body, _ := json.Marshal(ForgotPasswordRequest{Email: "unknown@test.com"})
+	req := httptest.NewRequest(http.MethodPost, "/api/forgot-password", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+	h.ForgotPassword(w, req)
+
+	// Should return 200 even for unknown email (prevents user enumeration)
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+}

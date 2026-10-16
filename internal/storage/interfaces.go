@@ -18,6 +18,7 @@ type UserRepositoryInterface interface {
 	CreateResetToken(userID, token string, expiresAt string) error
 	GetByResetToken(token string) (*User, error)
 	ClearResetTokens(userID string) error
+	CleanExpiredResetTokens() error
 }
 
 type ShopRepositoryInterface interface {

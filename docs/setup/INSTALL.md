@@ -123,12 +123,14 @@ NGINX_HTTPS_PORT=8443
 ```env
 SMTP_HOST=smtp.example.com
 SMTP_PORT=587
-SMTP_USERNAME=user@example.com
-SMTP_PASSWORD=your-password
-SMTP_FROM=noreply@example.com
+SMTP_USER=user@example.com
+SMTP_PASS=your-password
+SMTP_FROM=MCP IS <noreply@example.com>
 ```
 
-Если SMTP не настроен, письма будут только логироваться в консоль сервера.
+Если SMTP не настроен, письма будут только логироваться в консоль сервера. При запросе сброса пароля URL восстановления будет выведен в логи — администратор может передать его пользователю вручную.
+
+Статус SMTP можно проверить в админ-панели: **Настройки сервера → Почта (SMTP)**. Там же доступна кнопка отправки тестового письма (только для super_admin).
 
 ## Обновление
 

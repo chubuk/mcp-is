@@ -222,6 +222,12 @@ func (r *UserRepository) ClearResetTokens(userID string) error {
 	return err
 }
 
+func (r *UserRepository) CleanExpiredResetTokens() error {
+	_, err := r.db.Exec(context.Background(),
+		`DELETE FROM password_resets WHERE expires_at < NOW()`)
+	return err
+}
+
 func (r *UserRepository) CreateSuperAdmin(nickname, email, phone, firstName, lastName, passwordHash string) (*User, error) {
 	tx, err := r.db.Begin(context.Background())
 	if err != nil {

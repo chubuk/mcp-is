@@ -43,6 +43,11 @@ func (s *Service) SendResetPassword(to, name, token string) error {
 		ResetURL: resetURL,
 	}
 
+	if s.cfg.Disabled {
+		slog.Warn("SMTP disabled — reset URL (share manually)", "to", to, "url", resetURL)
+		return nil
+	}
+
 	body, err := s.renderTemplate("reset_password", data)
 	if err != nil {
 		return fmt.Errorf("render template: %w", err)
@@ -62,12 +67,41 @@ func (s *Service) SendVerifyEmail(to, name, token string) error {
 		VerifyURL: verifyURL,
 	}
 
+	if s.cfg.Disabled {
+		slog.Warn("SMTP disabled — verify URL (share manually)", "to", to, "url", verifyURL)
+		return nil
+	}
+
 	body, err := s.renderTemplate("verify_email", data)
 	if err != nil {
 		return fmt.Errorf("render template: %w", err)
 	}
 
 	return s.send(to, "Подтвердите email — MCP IS", body)
+}
+
+func (s *Service) SendTest(to string) error {
+	if s.cfg.Disabled {
+		return fmt.Errorf("SMTP not configured")
+	}
+
+	body, err := s.renderTemplate("reset_password", struct {
+		Name     string
+		ResetURL string
+	}{Name: "Test", ResetURL: "https://example.com/test"})
+	if err != nil {
+		return fmt.Errorf("render template: %w", err)
+	}
+
+	return s.send(to, "SMTP Test — MCP IS", body)
+}
+
+func (s *Service) IsDisabled() bool {
+	return s.cfg.Disabled
+}
+
+func (s *Service) Config() Config {
+	return s.cfg
 }
 
 func (s *Service) renderTemplate(name string, data any) (string, error) {

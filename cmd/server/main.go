@@ -70,7 +70,7 @@ func main() {
 	authHandler := handlers.NewAuthHandler(userRepo, jwtMgr, emailSvc)
 	shopHandler := handlers.NewShopHandler(shopRepo, aiKeyRepo, aesCipher, mcpServer)
 	aiKeyHandler := handlers.NewAIKeyHandler(aiKeyRepo)
-	adminHandler := handlers.NewAdminHandler(userRepo, shopRepo, aiKeyRepo, jwtMgr)
+	adminHandler := handlers.NewAdminHandler(userRepo, shopRepo, aiKeyRepo, jwtMgr, emailSvc)
 	serverHandler := handlers.NewServerHandler(settingsRepo)
 	pdnHandler := handlers.NewPDNHandler(pool)
 
@@ -118,6 +118,9 @@ func main() {
 	mux.Handle("PUT /api/admin/server", jwtMW(superAdminMW(http.HandlerFunc(serverHandler.UpdateSettings))))
 	mux.Handle("POST /api/admin/server/cert-issue", jwtMW(adminMW(http.HandlerFunc(serverHandler.IssueCert))))
 	mux.Handle("POST /api/admin/server/cert-renew", jwtMW(adminMW(http.HandlerFunc(serverHandler.RenewCert))))
+
+	mux.Handle("GET /api/admin/smtp/status", jwtMW(adminMW(http.HandlerFunc(adminHandler.SMTPStatus))))
+	mux.Handle("POST /api/admin/smtp/test", jwtMW(superAdminMW(http.HandlerFunc(adminHandler.TestSMTP))))
 
 	mux.Handle("GET /api/admin/pdn", jwtMW(adminMW(http.HandlerFunc(pdnHandler.GetSettings))))
 	mux.Handle("PUT /api/admin/pdn", jwtMW(superAdminMW(http.HandlerFunc(pdnHandler.UpdateSettings))))

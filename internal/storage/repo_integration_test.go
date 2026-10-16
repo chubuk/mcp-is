@@ -100,7 +100,10 @@ func TestMCPClientTypeRepo_ListActive(t *testing.T) {
 	pool := setupTestDB(t)
 	repo := NewMCPClientTypeRepository(pool)
 
-	// Should have default client types from migration
+	// Seeds are applied by Seed(), not migrations
+	if err := repo.Seed(); err != nil {
+		t.Fatalf("Seed failed: %v", err)
+	}
 	types, err := repo.ListActive()
 	if err != nil {
 		t.Fatalf("ListActive failed: %v", err)
@@ -172,40 +175,51 @@ func TestMCPClientTypeRepo_TemplatesContainKeyName(t *testing.T) {
 	}
 }
 
-func TestMCPClientTypeRepo_MigrationUpdatesTemplates(t *testing.T) {
+func TestMCPClientTypeRepo_SeedUpsertsStaleTemplates(t *testing.T) {
 	pool := setupTestDB(t)
 	repo := NewMCPClientTypeRepository(pool)
 
-	// Manually insert a template with old "mcp-is" format
-	_, err := pool.Exec(context.Background(),
-		`INSERT INTO mcp_client_types (name, config_key, config_format, config_template, sort_order)
-		 VALUES ('Test Old', 'mcpServers', 'json', '{"mcpServers":{"mcp-is":{"url":"{{URL}}"}}}', 99)
-		 ON CONFLICT (name) DO UPDATE SET config_template = '{"mcpServers":{"mcp-is":{"url":"{{URL}}"}}}'`)
-	if err != nil {
-		t.Fatalf("insert old template: %v", err)
+	// Seed once to create rows, then poison a real seed row with old "mcp-is" format
+	if err := repo.Seed(); err != nil {
+		t.Fatalf("Seed failed: %v", err)
 	}
-
-	// Run migration
-	RunMigrations(pool)
-
-	// Verify the template was updated
 	types, err := repo.ListActive()
 	if err != nil {
 		t.Fatalf("ListActive: %v", err)
 	}
-
-	for _, ct := range types {
-		if ct.Name == "Test Old" {
-			if !contains(ct.ConfigTemplate, "{{KEY_NAME}}") {
-				t.Errorf("migration did not update template: %s", ct.ConfigTemplate)
-			}
-			if contains(ct.ConfigTemplate, `"mcp-is"`) {
-				t.Errorf("template still has hardcoded mcp-is after migration")
-			}
-			return
-		}
+	if len(types) == 0 {
+		t.Fatal("no client types after Seed")
 	}
-	t.Error("Test Old template not found after migration")
+	seedName := types[0].Name
+
+	_, err = pool.Exec(context.Background(),
+		`UPDATE mcp_client_types SET config_template = '{"mcpServers":{"mcp-is":{"url":"{{URL}}"}}}' WHERE name = $1`, seedName)
+	if err != nil {
+		t.Fatalf("poison template: %v", err)
+	}
+
+	// Seed() must UPSERT: restore template from code even though the row exists
+	if err := repo.Seed(); err != nil {
+		t.Fatalf("second Seed failed: %v", err)
+	}
+
+	types, err = repo.ListActive()
+	if err != nil {
+		t.Fatalf("ListActive after re-seed: %v", err)
+	}
+	for _, ct := range types {
+		if ct.Name != seedName {
+			continue
+		}
+		if ct.ConfigFormat == "json" && !contains(ct.ConfigTemplate, "{{KEY_NAME}}") {
+			t.Errorf("Seed did not upsert template: %s", ct.ConfigTemplate)
+		}
+		if contains(ct.ConfigTemplate, `"mcp-is"`) {
+			t.Errorf("template still has hardcoded mcp-is after Seed")
+		}
+		return
+	}
+	t.Errorf("seed row %q not found after re-seed", seedName)
 }
 
 func contains(s, substr string) bool {

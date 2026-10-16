@@ -643,6 +643,48 @@
 
 ---
 
+#### GET /api/admin/smtp/status
+
+Получить статус SMTP-конфигурации.
+
+**Доступ:** admin, super_admin
+
+**Ответ (200):**
+```json
+{
+  "disabled": false,
+  "host": "smtp.mail.ru",
+  "port": "587",
+  "from": "MCP IS <noreply@mcp-is.ru>"
+}
+```
+
+---
+
+#### POST /api/admin/smtp/test
+
+Отправить тестовое письмо для проверки SMTP.
+
+**Доступ:** super_admin
+
+**Запрос:**
+```json
+{
+  "email": "test@example.com"
+}
+```
+
+**Ответ (200):**
+```json
+{}
+```
+
+**Ошибки:**
+- `400` — SMTP не настроен или email не указан
+- `500` — ошибка отправки
+
+---
+
 ## MCP (Model Context Protocol)
 
 ### Транспорт

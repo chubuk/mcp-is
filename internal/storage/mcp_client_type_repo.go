@@ -207,8 +207,14 @@ func (r *MCPClientTypeRepository) Seed() error {
 	for _, s := range seeds {
 		_, err := r.db.Exec(context.Background(),
 			`INSERT INTO mcp_client_types (name, config_key, config_format, config_template, file_name, file_description, sort_order)
-			 SELECT $1, $2, $3, $4, $5, $6, $7
-			 WHERE NOT EXISTS (SELECT 1 FROM mcp_client_types WHERE name = $1)`,
+			 VALUES ($1, $2, $3, $4, $5, $6, $7)
+			 ON CONFLICT (name) DO UPDATE SET
+				 config_key = EXCLUDED.config_key,
+				 config_format = EXCLUDED.config_format,
+				 config_template = EXCLUDED.config_template,
+				 file_name = EXCLUDED.file_name,
+				 file_description = EXCLUDED.file_description,
+				 sort_order = EXCLUDED.sort_order`,
 			s.name, s.configKey, s.configFormat, s.configTemplate, s.fileName, s.fileDescription, s.sortOrder,
 		)
 		if err != nil {

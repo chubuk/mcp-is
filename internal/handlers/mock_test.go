@@ -209,6 +209,10 @@ func (m *mockUserRepo) ClearResetTokens(userID string) error {
 	return nil
 }
 
+func (m *mockUserRepo) CleanExpiredResetTokens() error {
+	return nil
+}
+
 type mockShopRepo struct {
 	mu      sync.RWMutex
 	shops   map[string]*storage.Shop
