@@ -39,7 +39,7 @@ const Shops = {
             });
         }
 
-        const pagination = renderPagination(data.page, total, perPage, Shops.goPage);
+        const pagination = renderPagination(data.page, total, perPage, 'Shops.goPage');
 
         return `
             <div class="page-header">

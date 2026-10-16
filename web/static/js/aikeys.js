@@ -95,7 +95,7 @@ const AIKeys = {
             });
         }
 
-        const pagination = renderPagination(data.page, total, perPage, AIKeys.goPage);
+        const pagination = renderPagination(data.page, total, perPage, 'AIKeys.goPage');
 
         return `
             <div class="page-header">

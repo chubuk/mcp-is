@@ -39,7 +39,7 @@ const Admin = {
             });
         }
 
-        const pagination = renderPagination(data.page, total, perPage, Admin.goUsersPage);
+        const pagination = renderPagination(data.page, total, perPage, 'Admin.goUsersPage');
 
         return `
             <div class="page-header">
@@ -637,7 +637,7 @@ const Admin = {
                     </tr>`;
             });
         }
-        const logPagination = renderPagination(log.page || logPage, log.total || 0, log.per_page || perPage, Admin.goBackupLogPage);
+        const logPagination = renderPagination(log.page || logPage, log.total || 0, log.per_page || perPage, 'Admin.goBackupLogPage');
 
         // Incidents rows
         let incidentRows = '';
@@ -657,7 +657,7 @@ const Admin = {
                     </tr>`;
             });
         }
-        const incPagination = renderPagination(incidents.page || incPage, incidents.total || 0, incidents.per_page || perPage, Admin.goIncidentsPage);
+        const incPagination = renderPagination(incidents.page || incPage, incidents.total || 0, incidents.per_page || perPage, 'Admin.goIncidentsPage');
 
         return `
             <div class="page-header">
