@@ -6,7 +6,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build -tags netgo -ldflags="-s -w" -o mcp-is ./cmd/server
 
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates tzdata docker-cli && \
+RUN apk --no-cache add ca-certificates tzdata docker-cli bash && \
     adduser -D -g '' -u 1001 -s /sbin/nologin appuser
 USER appuser
 WORKDIR /home/appuser/

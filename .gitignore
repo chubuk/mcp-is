@@ -10,3 +10,4 @@ bin/
 ssh/
 id_*
 *_deploy*
+backups/

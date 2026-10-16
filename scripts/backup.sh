@@ -60,8 +60,7 @@ readonly PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 readonly BACKUP_DIR="${BACKUP_DIR:-/opt/mcp-is/backups}"
 readonly BACKUP_PID_FILE="/tmp/mcp-is-backup.pid"
 readonly BACKUP_LOCK_FILE="/tmp/mcp-is-backup.lock"
-readonly COMPOSE_FILE="${PROJECT_DIR}/docker-compose.yaml"
-readonly DB_CONTAINER="db"
+readonly DB_CONTAINER="mcp_is_db"
 readonly DB_NAME="mcp_is"
 readonly DB_USER="admin"
 
@@ -111,7 +110,7 @@ load_backup_config() {
     
     for key in "${!db_keys[@]}"; do
         # 1. Пробуем из БД
-        value=$(docker compose -f "$COMPOSE_FILE" exec -T "$DB_CONTAINER" \
+        value=$(docker exec -i "$DB_CONTAINER" \
             psql -U "$DB_USER" -d "$DB_NAME" -t -A \
             -c "SELECT value FROM server_settings WHERE key = '$key'" 2>/dev/null || true)
         
@@ -140,18 +139,19 @@ load_backup_config() {
 check_load() {
     local cores
     cores=$(nproc)
-    local threshold=$((cores * BACKUP_MAX_LOAD_PCT / 100))
     
     # Чтение load average
     local one five fifteen
     read -r one five fifteen _ _ < /proc/loadavg
-    local five_int
-    five_int=$(printf "%.0f" "$five")
-    
-    info "Текущая нагрузка: 1min=$one 5min=$five 15min=$fifteen (порог=$threshold)"
-    
-    if [ "$five_int" -ge "$threshold" ]; then
-        warn "Нагрузка слишком высокая: 5min=$five >= $threshold"
+    # % загрузки относительно числа ядер: на 1 ядре 50% = load 0.5
+    # (старая формула cores*pct/100 давала 0 на 1 ядре → условие всегда true)
+    local load_pct
+    load_pct=$(awk -v l="$five" -v c="$cores" 'BEGIN{printf "%.0f", l*100/c}')
+
+    info "Текущая нагрузка: 1min=$one 5min=$five (~${load_pct}% of ${cores} cores, порог=${BACKUP_MAX_LOAD_PCT}%)"
+
+    if [ "$load_pct" -ge "$BACKUP_MAX_LOAD_PCT" ]; then
+        warn "Нагрузка слишком высокая: 5min=${load_pct}% >= ${BACKUP_MAX_LOAD_PCT}%"
         return 1
     fi
     
@@ -292,22 +292,24 @@ do_backup_pg_basebackup() {
     
     info "Создание файлового снэпшота через pg_basebackup..."
     local start_time
-    start_time=$(date +%s%N)
+    start_time=$(date +%s)
     
     # pg_basebackup: tar format + gzip, без остановки сервера
     # -Ft = tar format, -z = gzip, -Xs = stream WAL, -D = output dir
-    if docker compose -f "$COMPOSE_FILE" exec -T "$DB_CONTAINER" \
+    # очистка на случай, если прошлая попытка оборвалась после создания /tmp/pgbackup
+    docker exec "$DB_CONTAINER" rm -rf /tmp/pgbackup
+    if docker exec -i "$DB_CONTAINER" \
         pg_basebackup -U "$DB_USER" -Ft -z -Xs -D /tmp/pgbackup 2>&1; then
         
         # Скопировать из контейнера
         docker cp "mcp_is_db:/tmp/pgbackup/" "/tmp/pgbackup/"
         tar -czf "$backup_file" -C /tmp/pgbackup .
         rm -rf /tmp/pgbackup/
-        docker compose -f "$COMPOSE_FILE" exec -T "$DB_CONTAINER" rm -rf /tmp/pgbackup
+        docker exec -i "$DB_CONTAINER" rm -rf /tmp/pgbackup
         
         local end_time
-        end_time=$(date +%s%N)
-        local duration_ms=$(( (end_time - start_time) / 1000000 ))
+        end_time=$(date +%s)
+        local duration_ms=$(( (end_time - start_time) * 1000 ))
         local size
         size=$(du -h "$backup_file" | cut -f1)
         
@@ -322,8 +324,8 @@ do_backup_pg_basebackup() {
         return 0
     else
         local end_time
-        end_time=$(date +%s%N)
-        local duration_ms=$(( (end_time - start_time) / 1000000 ))
+        end_time=$(date +%s)
+        local duration_ms=$(( (end_time - start_time) * 1000 ))
         
         fail "Ошибка pg_basebackup"
         log_backup_entry "error" "0" "pg_basebackup failed" "$duration_ms"
@@ -343,14 +345,14 @@ do_backup_pg_dump() {
     
     info "Создание SQL-дампа через pg_dump..."
     local start_time
-    start_time=$(date +%s%N)
+    start_time=$(date +%s)
     
-    if docker compose -f "$COMPOSE_FILE" exec -T "$DB_CONTAINER" \
+    if docker exec -i "$DB_CONTAINER" \
         pg_dump -U "$DB_USER" "$DB_NAME" 2>/dev/null | gzip > "$backup_file"; then
         
         local end_time
-        end_time=$(date +%s%N)
-        local duration_ms=$(( (end_time - start_time) / 1000000 ))
+        end_time=$(date +%s)
+        local duration_ms=$(( (end_time - start_time) * 1000 ))
         local size
         size=$(du -h "$backup_file" | cut -f1)
         
@@ -365,8 +367,8 @@ do_backup_pg_dump() {
         return 0
     else
         local end_time
-        end_time=$(date +%s%N)
-        local duration_ms=$(( (end_time - start_time) / 1000000 ))
+        end_time=$(date +%s)
+        local duration_ms=$(( (end_time - start_time) * 1000 ))
         
         fail "Ошибка pg_dump"
         log_backup_entry "error" "0" "pg_dump failed" "$duration_ms"
@@ -451,7 +453,7 @@ log_backup_entry() {
         size_bytes=$(stat -c %s "$file" 2>/dev/null || echo 0)
     fi
     
-    docker compose -f "$COMPOSE_FILE" exec -T "$DB_CONTAINER" \
+    docker exec -i "$DB_CONTAINER" \
         psql -U "$DB_USER" -d "$DB_NAME" -c \
         "INSERT INTO backup_log (ts, status, size_bytes, error_msg, load_1m, load_5m, load_15m, iowait_pct, duration_ms)
          VALUES (NOW(), '$status', $size_bytes, '', $one, $five, $fifteen, $iowait, $duration_ms)" 2>/dev/null || true
@@ -462,7 +464,7 @@ log_incident() {
     local message="$2"
     local severity="$3"
     
-    docker compose -f "$COMPOSE_FILE" exec -T "$DB_CONTAINER" \
+    docker exec -i "$DB_CONTAINER" \
         psql -U "$DB_USER" -d "$DB_NAME" -c \
         "INSERT INTO backup_incidents (ts, type, message, severity)
          VALUES (NOW(), '$type', '$message', '$severity')" 2>/dev/null || true
@@ -532,24 +534,25 @@ do_restore() {
     
     step "Восстановление из: $(basename "$backup_file")"
     
-    # Остановить контейнеры
+    # shortcut: restore останавливает собственный контейнер app, если скрипт
+    # запущен внутри него — восстанавливать с хоста: /opt/mcp-is/scripts/backup.sh --restore <file>
     info "Остановка контейнеров..."
-    docker compose -f "$COMPOSE_FILE" stop app nginx
+    docker stop mcp_is_app mcp_is_nginx
     
     # Распаковать бэкап
     if [[ "$backup_file" == *.tar.gz ]]; then
         info "Распаковка tar.gz бэкапа..."
-        docker compose -f "$COMPOSE_FILE" exec -T "$DB_CONTAINER" sh -c "rm -rf /var/lib/postgresql/data/*"
+        docker exec -i "$DB_CONTAINER" sh -c "rm -rf /var/lib/postgresql/data/*"
         tar -xzf "$backup_file" -C /tmp/
         docker cp /tmp/pg_basebackup/. "${DB_CONTAINER}:/var/lib/postgresql/data/"
         rm -rf /tmp/pg_basebackup/
         
         # Настроить восстановление
-        docker compose -f "$COMPOSE_FILE" exec -T "$DB_CONTAINER" \
+        docker exec -i "$DB_CONTAINER" \
             sh -c "touch /var/lib/postgresql/data/recovery.signal"
     elif [[ "$backup_file" == *.sql.gz ]]; then
         info "Восстановление из SQL-дампа..."
-        gunzip -c "$backup_file" | docker compose -f "$COMPOSE_FILE" exec -T "$DB_CONTAINER" \
+        gunzip -c "$backup_file" | docker exec -i "$DB_CONTAINER" \
             psql -U "$DB_USER" -d "$DB_NAME" -q
     else
         fail "Неизвестный формат бэкапа"
@@ -558,9 +561,9 @@ do_restore() {
     
     # Запустить контейнеры
     info "Запуск контейнеров..."
-    docker compose -f "$COMPOSE_FILE" start db
+    docker start "$DB_CONTAINER"
     sleep 10
-    docker compose -f "$COMPOSE_FILE" start app nginx
+    docker start mcp_is_app mcp_is_nginx
     
     # Проверка здоровья
     sleep 10
