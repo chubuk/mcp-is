@@ -195,7 +195,9 @@ func (h *BackupHandler) GetLog(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := h.db.Query(context.Background(),
-		`SELECT id, ts, status, size_bytes, error_msg, load_1m, load_5m, load_15m, iowait_pct, duration_ms
+		`SELECT id, ts::text, status, COALESCE(size_bytes, 0), COALESCE(error_msg, ''),
+		        COALESCE(load_1m, 0), COALESCE(load_5m, 0), COALESCE(load_15m, 0),
+		        COALESCE(iowait_pct, 0), COALESCE(duration_ms, 0)
 		 FROM backup_log ORDER BY ts DESC LIMIT 50`)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load log"})
@@ -224,7 +226,7 @@ func (h *BackupHandler) GetIncidents(w http.ResponseWriter, r *http.Request) {
 	}
 
 	rows, err := h.db.Query(context.Background(),
-		`SELECT id, ts, type, message, severity, resolved
+		`SELECT id, ts::text, type, message, severity, resolved
 		 FROM backup_incidents ORDER BY ts DESC LIMIT 50`)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to load incidents"})
@@ -282,7 +284,9 @@ func (h *BackupHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 	// Last backup
 	var lastBackup BackupLogEntry
 	err := h.db.QueryRow(context.Background(),
-		`SELECT id, ts, status, size_bytes, error_msg, load_1m, load_5m, load_15m, iowait_pct, duration_ms
+		`SELECT id, ts::text, status, COALESCE(size_bytes, 0), COALESCE(error_msg, ''),
+		        COALESCE(load_1m, 0), COALESCE(load_5m, 0), COALESCE(load_15m, 0),
+		        COALESCE(iowait_pct, 0), COALESCE(duration_ms, 0)
 		 FROM backup_log ORDER BY ts DESC LIMIT 1`).
 		Scan(&lastBackup.ID, &lastBackup.Timestamp, &lastBackup.Status, &lastBackup.SizeBytes,
 			&lastBackup.ErrorMsg, &lastBackup.Load1m, &lastBackup.Load5m, &lastBackup.Load15m,
