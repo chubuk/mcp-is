@@ -73,11 +73,21 @@ const EmailAdmin = {
                             <button type="button" class="btn btn--sm btn--secondary" onclick="EmailAdmin.setMode('visual')">Визуально</button>
                             <button type="button" class="btn btn--sm btn--secondary" onclick="EmailAdmin.setMode('html')">HTML</button>
                             <button type="button" class="btn btn--sm btn--secondary" onclick="EmailAdmin.setMode('text')">Plain text</button>
-                            <span style="margin-left:12px">Переменные:</span>
-                            <button type="button" class="btn btn--sm" onclick="EmailAdmin.insertVar('Name')">{{Name}}</button>
-                            <button type="button" class="btn btn--sm" onclick="EmailAdmin.insertVar('ResetURL')">{{ResetURL}}</button>
-                            <button type="button" class="btn btn--sm" onclick="EmailAdmin.insertVar('VerifyURL')">{{VerifyURL}}</button>
-                            <button type="button" class="btn btn--sm" onclick="EmailAdmin.insertVar('MCPURL')">{{MCPURL}}</button>
+                        </div>
+                        <div style="margin:8px 0;font-size:13px">
+                            <span style="color:#666;margin-right:6px">Вставить переменную:</span>
+                            <button type="button" class="btn btn--sm"
+                                onclick="EmailAdmin.insertVar('Name')"
+                                title="Имя получателя&#10;Пример: Иван Петров">{{Name}}</button>
+                            <button type="button" class="btn btn--sm"
+                                onclick="EmailAdmin.insertVar('ResetURL')"
+                                title="Ссылка сброса пароля (действует 1 час)&#10;Пример: https://mcp-is.ru/reset-password?token=abc123">{{ResetURL}}</button>
+                            <button type="button" class="btn btn--sm"
+                                onclick="EmailAdmin.insertVar('VerifyURL')"
+                                title="Ссылка подтверждения email (24 часа)&#10;Пример: https://mcp-is.ru/verify-email?token=abc123">{{VerifyURL}}</button>
+                            <button type="button" class="btn btn--sm"
+                                onclick="EmailAdmin.insertVar('MCPURL')"
+                                title="Ссылка на панель MCP IS&#10;Пример: https://mcp-is.ru/">{{MCPURL}}</button>
                         </div>
                         <div id="tpl-quill" style="background:#fff;min-height:220px"></div>
                         <textarea id="tpl-html" class="form-control" rows="12" style="display:none;font-family:monospace"></textarea>
@@ -102,9 +112,9 @@ const EmailAdmin = {
     },
 
     async bind() {
+        this.initQuill();
         await this.loadSMTPSettings();
         await this.loadList();
-        this.initQuill();
     },
 
     initQuill() {
@@ -124,30 +134,73 @@ const EmailAdmin = {
         });
     },
 
+    // Full HTML templates keep <head>/<style>; Quill edits only <body> and we restore chrome on save.
+    extractBody(html) {
+        if (!html) return '';
+        const m = String(html).match(/<body[^>]*>([\s\S]*)<\/body>/i);
+        return m ? m[1] : String(html);
+    },
+
+    wrapBody(html, body) {
+        if (!html || !/<body[\s>]/i.test(html)) return body;
+        return String(html).replace(/(<body[^>]*>)[\s\S]*(<\/body>)/i, (_all, open, close) => open + body + close);
+    },
+
     setMode(mode) {
+        const currentHTML = this.getHTML();
+        if (currentHTML) this._htmlBody = currentHTML;
         this.mode = mode;
         document.getElementById('tpl-quill').style.display = mode === 'visual' ? '' : 'none';
         document.getElementById('tpl-html').style.display = mode === 'html' ? '' : 'none';
         document.getElementById('tpl-text').style.display = mode === 'text' ? '' : 'none';
         if (mode === 'html') {
-            document.getElementById('tpl-html').value = this.getHTML();
+            document.getElementById('tpl-html').value = this._htmlBody || '';
+        }
+        if (mode === 'visual') {
+            this.loadIntoQuill(this.extractBody(this._htmlBody));
         }
         if (mode === 'text') {
-            // load from last known text
             document.getElementById('tpl-text').value = this._textBody || '';
         }
     },
 
+    // Quill ignores root.innerHTML for its Delta — must paste via clipboard.
+    loadIntoQuill(bodyHTML) {
+        if (!this.quill) return;
+        this.quill.enable(false);
+        this.quill.setContents([]);
+        const clean = (bodyHTML || '').trim();
+        if (clean && clean !== '<p><br></p>') {
+            try {
+                this.quill.clipboard.dangerouslyPasteHTML(clean);
+            } catch (e) {
+                this.quill.setText(clean.replace(/<[^>]+>/g, ' '));
+            }
+        }
+        this.quill.enable(true);
+    },
+
     getHTML() {
-        if (this.mode === 'html') return document.getElementById('tpl-html').value;
-        if (!this.quill) return '';
-        return this.quill.root.innerHTML;
+        if (this.mode === 'html') {
+            this._htmlBody = document.getElementById('tpl-html').value;
+            return this._htmlBody;
+        }
+        if (!this.quill) return this._htmlBody || '';
+        const body = this.quill.root.innerHTML;
+        const empty = !body || body === '<p><br></p>' || body === '<p></p>';
+        // safety: never wipe a non-empty template because the editor is blank
+        if (empty && this.extractBody(this._htmlBody).trim()) {
+            return this._htmlBody;
+        }
+        this._htmlBody = this.wrapBody(this._htmlBody, body);
+        return this._htmlBody;
     },
 
     setHTML(html) {
-        if (this.quill) this.quill.root.innerHTML = html || '<p><br></p>';
+        this._htmlBody = html || '';
+        this.loadIntoQuill(this.extractBody(this._htmlBody));
         const ta = document.getElementById('tpl-html');
-        if (ta) ta.value = html || '';
+        if (ta) ta.value = this._htmlBody;
     },
 
     insertVar(name) {
@@ -185,9 +238,14 @@ const EmailAdmin = {
         if (!res || !res.ok) return;
         document.getElementById('tpl-subject').value = res.data.subject || '';
         this._textBody = res.data.text_body || '';
-        this.setHTML(res.data.html_body || '');
-        document.getElementById('tpl-html').value = res.data.html_body || '';
-        this.setMode('visual');
+        this._htmlBody = res.data.html_body || '';
+        if (!this.quill) this.initQuill();
+        this.setHTML(this._htmlBody);
+        this.mode = 'visual';
+        document.getElementById('tpl-quill').style.display = '';
+        document.getElementById('tpl-html').style.display = 'none';
+        document.getElementById('tpl-text').style.display = 'none';
+        document.getElementById('tpl-text').value = this._textBody;
         this.hideAlert();
     },
 
@@ -276,38 +334,41 @@ const EmailAdmin = {
         }
         const s = res.data;
         body.innerHTML = `
-            <div class="form-row">
-                <div class="form-group">
-                    <label><input type="checkbox" id="smtp-enabled" ${s.enabled ? 'checked' : ''}> Включить отправку почты</label>
-                </div>
+            <div class="form-group" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;background:#f7f9fc;border:1px solid #d9e2ef;border-radius:6px;margin-bottom:14px">
+                <label for="smtp-enabled" style="margin:0;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px">
+                    <input type="checkbox" id="smtp-enabled" ${s.enabled ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer">
+                    Включить отправку почты
+                </label>
+                <span style="font-size:12px;color:#666">— письма сброса пароля и уведомления</span>
             </div>
             <div class="form-row" style="display:flex;gap:12px;flex-wrap:wrap">
                 <div class="form-group" style="flex:2">
-                    <label>Хост</label>
+                    <label for="smtp-host">Хост</label>
                     <input type="text" id="smtp-host" value="${s.host || ''}" placeholder="smtp.mail.ru">
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label>Порт</label>
-                    <input type="text" id="smtp-port" value="${s.port || ''}" placeholder="465">
+                    <label for="smtp-port">Порт</label>
+                    <input type="text" id="smtp-port" value="${s.port || ''}" placeholder="587">
+                    <small style="color:#888;font-size:11px">587 = STARTTLS, 465 = SSL</small>
                 </div>
             </div>
             <div class="form-row" style="display:flex;gap:12px;flex-wrap:wrap">
                 <div class="form-group" style="flex:1">
-                    <label>Пользователь</label>
-                    <input type="text" id="smtp-user" value="${s.user || ''}">
+                    <label for="smtp-user">Пользователь</label>
+                    <input type="text" id="smtp-user" value="${s.user || ''}" placeholder="user@mail.ru">
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label>Пароль ${s.has_password ? '(сохранён — оставьте пустым, чтобы не менять)' : ''}</label>
+                    <label for="smtp-pass">Пароль${s.has_password ? ' <small>(сохранён — пустое = не менять)</small>' : ''}</label>
                     <input type="password" id="smtp-pass" value="" placeholder="${s.has_password ? '••••••' : 'пароль SMTP'}">
                 </div>
             </div>
             <div class="form-row" style="display:flex;gap:12px;flex-wrap:wrap">
                 <div class="form-group" style="flex:2">
-                    <label>От кого</label>
-                    <input type="text" id="smtp-from" value="${s.from || ''}" placeholder="MCP IS <noreply@mcp-is.ru>">
+                    <label for="smtp-from">От кого</label>
+                    <input type="text" id="smtp-from" value="${s.from || ''}" placeholder="MCP IS <user@mail.ru>">
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label>TLS</label>
+                    <label for="smtp-tls">TLS</label>
                     <select id="smtp-tls">
                         <option value="starttls" ${s.tls_mode === 'starttls' || !s.tls_mode ? 'selected' : ''}>STARTTLS</option>
                         <option value="ssl" ${s.tls_mode === 'ssl' ? 'selected' : ''}>SSL</option>
