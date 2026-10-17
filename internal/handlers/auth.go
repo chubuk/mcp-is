@@ -18,13 +18,14 @@ import (
 )
 
 type AuthHandler struct {
-	userRepo storage.UserRepositoryInterface
-	jwtMgr   *auth.JWTManager
-	emailSvc *email.Service
+	userRepo            storage.UserRepositoryInterface
+	jwtMgr              *auth.JWTManager
+	emailSvc            *email.Service
+	registrationEnabled bool
 }
 
-func NewAuthHandler(userRepo storage.UserRepositoryInterface, jwtMgr *auth.JWTManager, emailSvc *email.Service) *AuthHandler {
-	return &AuthHandler{userRepo: userRepo, jwtMgr: jwtMgr, emailSvc: emailSvc}
+func NewAuthHandler(userRepo storage.UserRepositoryInterface, jwtMgr *auth.JWTManager, emailSvc *email.Service, registrationEnabled bool) *AuthHandler {
+	return &AuthHandler{userRepo: userRepo, jwtMgr: jwtMgr, emailSvc: emailSvc, registrationEnabled: registrationEnabled}
 }
 
 type RegisterRequest struct {
@@ -77,31 +78,26 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Nickname == "" || req.Password == "" {
-		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "nickname and password are required"})
-		return
-	}
-
-	if len(req.Password) < 8 {
-		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "password must be at least 8 characters"})
-		return
-	}
-
-	if !hasUpperCase(req.Password) || !hasDigit(req.Password) {
-		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "password must contain at least one uppercase letter and one digit"})
-		return
-	}
-
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		slog.Error("hash password", "error", err)
-		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
+	if msg := validateNewUser(req.Nickname, req.Password); msg != "" {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: msg})
 		return
 	}
 
 	count, err := h.userRepo.Count()
 	if err != nil {
 		slog.Error("count users", "error", err)
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
+		return
+	}
+
+	if count > 0 && !h.registrationEnabled {
+		writeJSON(w, http.StatusForbidden, AuthResponse{Error: "регистрация закрыта"})
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		slog.Error("hash password", "error", err)
 		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
 		return
 	}
@@ -425,6 +421,19 @@ func generateResetToken() (string, error) {
 		return "", fmt.Errorf("generate reset token: %w", err)
 	}
 	return hex.EncodeToString(b), nil
+}
+
+func validateNewUser(nickname, password string) string {
+	if nickname == "" || password == "" {
+		return "укажите никнейм и пароль"
+	}
+	if len(password) < 8 {
+		return "пароль должен быть не менее 8 символов"
+	}
+	if !hasUpperCase(password) || !hasDigit(password) {
+		return "пароль должен содержать заглавную букву и цифру"
+	}
+	return ""
 }
 
 func hasUpperCase(s string) bool {

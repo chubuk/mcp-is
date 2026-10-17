@@ -51,7 +51,7 @@ paths:
 
   /api/register:
     post:
-      summary: Регистрация пользователя
+      summary: Регистрация пользователя (если REGISTRATION_ENABLED=true или база пуста)
       tags: [Auth]
       requestBody:
         required: true
@@ -73,6 +73,8 @@ paths:
                     type: string
         '400':
           $ref: '#/components/responses/BadRequest'
+        '403':
+          description: Регистрация закрыта
         '409':
           description: Пользователь уже существует
 
@@ -355,6 +357,24 @@ paths:
           description: Ключ удалён
 
   /api/admin/users:
+    post:
+      summary: Создание пользователя (роль user, временный пароль)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Пользователь создан
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Пользователь уже существует
     get:
       summary: Список пользователей
       tags: [Admin]

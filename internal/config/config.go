@@ -31,6 +31,7 @@ type Config struct {
 	JWTExpiry        time.Duration
 	PDNAutoProtect   bool
 	ServerCountry    string
+	RegistrationEnabled bool
 }
 
 func Load() *Config {
@@ -57,6 +58,7 @@ func Load() *Config {
 				ServerCountry: getEnv("SERVER_COUNTRY", "RU"),
 		PDNAutoProtect:  getEnv("PDN_AUTO_PROTECT", "true") == "true",
 		JWTExpiry:      parseDuration(getEnv("JWT_EXPIRY_HOURS", "24"), time.Hour),
+		RegistrationEnabled: getEnv("REGISTRATION_ENABLED", "true") == "true",
 	}
 
 	// Security warnings

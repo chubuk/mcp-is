@@ -9,6 +9,7 @@ import (
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/email"
 	"github.com/chubuk/mcp-is/internal/storage"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type AdminHandler struct {
@@ -48,6 +49,47 @@ type StatsResponse struct {
 	TotalUsers    int `json:"total_users"`
 	TotalShops    int `json:"total_shops"`
 	TotalAIKeys   int `json:"total_ai_keys"`
+}
+
+func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {
+	var req RegisterRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, UserResponse{Error: "некорректный запрос"})
+		return
+	}
+
+	if msg := validateNewUser(req.Nickname, req.Password); msg != "" {
+		writeJSON(w, http.StatusBadRequest, UserResponse{Error: msg})
+		return
+	}
+
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		slog.Error("hash password", "error", err)
+		writeJSON(w, http.StatusInternalServerError, UserResponse{Error: "внутренняя ошибка"})
+		return
+	}
+
+	user, err := h.userRepo.Create(req.Nickname, req.Email, req.Phone, req.FirstName, req.LastName, string(hash))
+	if err != nil {
+		slog.Warn("admin create user failed", "error", err)
+		writeJSON(w, http.StatusConflict, UserResponse{Error: "пользователь с таким никнеймом, email или телефоном уже существует"})
+		return
+	}
+
+	if err := h.userRepo.UpdateRequirePasswordChange(user.ID, true); err != nil {
+		slog.Error("set require_password_change", "error", err, "user_id", user.ID)
+		writeJSON(w, http.StatusInternalServerError, UserResponse{Error: "внутренняя ошибка"})
+		return
+	}
+
+	callerID := r.Context().Value(auth.UserIDKey).(string)
+	slog.Info("user created by admin", "id", user.ID, "nickname", user.Nickname, "by", callerID)
+	writeJSON(w, http.StatusCreated, UserResponse{
+		ID: user.ID, Nickname: user.Nickname, Email: user.Email, Phone: user.Phone,
+		FirstName: user.FirstName, LastName: user.LastName, Role: user.Role,
+		IsActive: user.IsActive, CreatedAt: user.CreatedAt,
+	})
 }
 
 func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {

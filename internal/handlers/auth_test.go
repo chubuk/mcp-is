@@ -15,7 +15,49 @@ import (
 func setupAuthHandler() (*AuthHandler, *mockUserRepo) {
 	repo := newMockUserRepo()
 	jwtMgr := auth.NewJWTManager("test-secret-key-for-testing1234", 0)
-	return NewAuthHandler(repo, jwtMgr, nil), repo
+	return NewAuthHandler(repo, jwtMgr, nil, true), repo
+}
+
+func TestRegister_Disabled(t *testing.T) {
+	repo := newMockUserRepo()
+	if _, err := repo.Create("existing", "e@x.com", "", "", "", "hash"); err != nil {
+		t.Fatal(err)
+	}
+	jwtMgr := auth.NewJWTManager("test-secret-key-for-testing1234", 0)
+	h := NewAuthHandler(repo, jwtMgr, nil, false)
+
+	body, _ := json.Marshal(RegisterRequest{Nickname: "newuser", Password: "Password123"})
+	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	h.Register(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("expected 403, got %d: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestRegister_DisabledBootstrapAllowsFirstUser(t *testing.T) {
+	repo := newMockUserRepo()
+	jwtMgr := auth.NewJWTManager("test-secret-key-for-testing1234", 0)
+	h := NewAuthHandler(repo, jwtMgr, nil, false)
+
+	body, _ := json.Marshal(RegisterRequest{Nickname: "first", Password: "Password123"})
+	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
+	w := httptest.NewRecorder()
+
+	h.Register(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("expected 201 for bootstrap, got %d: %s", w.Code, w.Body.String())
+	}
+	u, err := repo.GetByLogin("first")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if u.Role != "super_admin" {
+		t.Errorf("expected super_admin role, got %q", u.Role)
+	}
 }
 
 func TestRegister_Success(t *testing.T) {

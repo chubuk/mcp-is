@@ -104,6 +104,8 @@ const Auth = {
             if (res && res.ok) {
                 Auth.showSuccess('Регистрация успешна! Теперь войдите.');
                 setTimeout(() => App.navigate('/login'), 1500);
+            } else if (res && res.status === 403) {
+                Auth.showError('Регистрация закрыта. Обратитесь к администратору.');
             } else {
                 Auth.showError(res ? res.data.error : 'Ошибка сервера');
             }

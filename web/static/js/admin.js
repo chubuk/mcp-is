@@ -47,6 +47,39 @@ const Admin = {
                     <h1>Пользователи</h1>
                     <p class="desc">Управление пользователями системы</p>
                 </div>
+                <button class="btn btn--primary" onclick="Admin.showCreateUser()">➕ Добавить пользователя</button>
+            </div>
+            <div id="create-user-form" style="display:none" class="card">
+                <div class="card__title">Новый пользователь</div>
+                <div class="form-group">
+                    <label>Никнейм *</label>
+                    <input type="text" id="cu-nickname" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="cu-email">
+                </div>
+                <div class="form-group">
+                    <label>Телефон</label>
+                    <input type="tel" id="cu-phone">
+                </div>
+                <div class="form-group">
+                    <label>Имя</label>
+                    <input type="text" id="cu-firstname">
+                </div>
+                <div class="form-group">
+                    <label>Фамилия</label>
+                    <input type="text" id="cu-lastname">
+                </div>
+                <div class="form-group">
+                    <label>Временный пароль * (мин. 8, заглавная буква и цифра)</label>
+                    <input type="password" id="cu-password" required minlength="8" autocomplete="new-password">
+                </div>
+                <div id="create-user-error"></div>
+                <div style="display:flex;gap:8px">
+                    <button class="btn btn--primary" onclick="Admin.createUser()">Создать</button>
+                    <button class="btn btn--ghost" onclick="Admin.hideCreateUser()">Отмена</button>
+                </div>
             </div>
             <div class="search-box">
                 <input type="text" id="user-search" placeholder="Поиск по никнейму, email, телефону, ФИО..." 
@@ -208,6 +241,34 @@ const Admin = {
             App.navigate('/admin/users');
         } else {
             alert('Ошибка: ' + (res ? res.data.error : 'Сервер недоступен'));
+        }
+    },
+
+    showCreateUser() {
+        const el = document.getElementById('create-user-form');
+        if (el) el.style.display = 'block';
+    },
+
+    hideCreateUser() {
+        const el = document.getElementById('create-user-form');
+        if (el) el.style.display = 'none';
+    },
+
+    async createUser() {
+        const body = {
+            nickname: document.getElementById('cu-nickname').value,
+            email: document.getElementById('cu-email').value,
+            phone: document.getElementById('cu-phone').value,
+            first_name: document.getElementById('cu-firstname').value,
+            last_name: document.getElementById('cu-lastname').value,
+            password: document.getElementById('cu-password').value,
+        };
+        const res = await API.post('/api/admin/users', body);
+        if (res && res.ok) {
+            App.navigate('/admin/users/' + res.data.id);
+        } else {
+            const errEl = document.getElementById('create-user-error');
+            if (errEl) errEl.innerHTML = '<div class="alert alert--error">' + (res ? res.data.error : 'Сервер недоступен') + '</div>';
         }
     },
 

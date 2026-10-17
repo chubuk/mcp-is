@@ -28,6 +28,70 @@ func adminContext(userID, role string) context.Context {
 	return ctx
 }
 
+func TestCreateUser_Success(t *testing.T) {
+	h, userRepo, _, _ := setupAdminHandler()
+
+	admin, _ := userRepo.Create("admin", "a@test.com", "", "", "", "hash")
+
+	body, _ := json.Marshal(RegisterRequest{
+		Nickname: "newuser",
+		Email:    "new@test.com",
+		Password: "Password123",
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/users", bytes.NewReader(body))
+	req = req.WithContext(adminContext(admin.ID, "admin"))
+	w := httptest.NewRecorder()
+
+	h.CreateUser(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", w.Code, w.Body.String())
+	}
+
+	created, err := userRepo.GetByLogin("newuser")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !created.RequirePasswordChange {
+		t.Error("expected require_password_change=true")
+	}
+}
+
+func TestCreateUser_WeakPassword(t *testing.T) {
+	h, userRepo, _, _ := setupAdminHandler()
+
+	admin, _ := userRepo.Create("admin", "a@test.com", "", "", "", "hash")
+
+	body, _ := json.Marshal(RegisterRequest{Nickname: "newuser", Password: "123"})
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/users", bytes.NewReader(body))
+	req = req.WithContext(adminContext(admin.ID, "admin"))
+	w := httptest.NewRecorder()
+
+	h.CreateUser(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected 400, got %d", w.Code)
+	}
+}
+
+func TestCreateUser_Duplicate(t *testing.T) {
+	h, userRepo, _, _ := setupAdminHandler()
+
+	admin, _ := userRepo.Create("admin", "a@test.com", "", "", "", "hash")
+	userRepo.Create("newuser", "n@test.com", "", "", "", "hash")
+
+	body, _ := json.Marshal(RegisterRequest{Nickname: "newuser", Password: "Password123"})
+	req := httptest.NewRequest(http.MethodPost, "/api/admin/users", bytes.NewReader(body))
+	req = req.WithContext(adminContext(admin.ID, "admin"))
+	w := httptest.NewRecorder()
+
+	h.CreateUser(w, req)
+
+	if w.Code != http.StatusConflict {
+		t.Errorf("expected 409, got %d", w.Code)
+	}
+}
+
 func TestListUsers_Success(t *testing.T) {
 	h, userRepo, _, _ := setupAdminHandler()
 

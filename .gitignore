@@ -11,3 +11,7 @@ ssh/
 id_*
 *_deploy*
 backups/
+
+# playwright local artifacts
+.playwright/
+.playwright-cli/

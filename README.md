@@ -80,6 +80,9 @@ INSALES_PASSWORD=your_password_here
 # Режим доступа (true = только чтение)
 MCP_READ_ONLY=true
 
+# Публичная регистрация (false = пользователей создаёт только админ)
+REGISTRATION_ENABLED=false
+
 # Auth: JWT secret (обязательно сменить в production!)
 JWT_SECRET=change-me-to-random-string
 
@@ -318,6 +321,12 @@ curl http://localhost:8080/health
 
 ### Регистрация
 
+Публичная регистрация управляется переменной `REGISTRATION_ENABLED` в `.env`:
+- `false` (рекомендуется) — `/api/register` возвращает 403, пользователей создаёт только админ из админки
+- `true` — регистрация открыта
+
+Исключение: если в базе нет ни одного пользователя, регистрация доступна даже при `false` — первый пользователь становится `super_admin` (bootstrap).
+
 ```bash
 curl -X POST http://localhost:8080/api/register \
   -H "Content-Type: application/json" \
@@ -489,7 +498,7 @@ SMTP_FROM=MCP IS <noreply@your-domain.com>
 
 | Метод | Путь | Описание | Авторизация |
 |-------|------|----------|-------------|
-| POST | `/api/register` | Регистрация | Нет |
+| POST | `/api/register` | Регистрация (если `REGISTRATION_ENABLED=true` или база пуста) | Нет |
 | POST | `/api/login` | Вход | Нет |
 | POST | `/api/forgot-password` | Запрос сброса пароля | Нет |
 | POST | `/api/reset-password` | Сброс по токену | Нет |
@@ -504,6 +513,7 @@ SMTP_FROM=MCP IS <noreply@your-domain.com>
 | POST | `/api/ai-keys` | Сгенерировать ключ | JWT |
 | GET | `/api/ai-keys` | Список ключей | JWT |
 | DELETE | `/api/ai-keys/:id` | Отозвать ключ | JWT |
+| POST | `/api/admin/users` | Создать пользователя | JWT + admin |
 | GET | `/api/admin/users` | Список пользователей | JWT + admin |
 | PUT | `/api/admin/users/:id/role` | Изменить роль | JWT + super_admin |
 | PUT | `/api/admin/users/:id/status` | Заблокировать | JWT + admin |

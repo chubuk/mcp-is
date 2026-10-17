@@ -67,7 +67,7 @@ func main() {
 		Domain: cfg.Domain,
 	})
 
-	authHandler := handlers.NewAuthHandler(userRepo, jwtMgr, emailSvc)
+	authHandler := handlers.NewAuthHandler(userRepo, jwtMgr, emailSvc, cfg.RegistrationEnabled)
 	shopHandler := handlers.NewShopHandler(shopRepo, aiKeyRepo, aesCipher, mcpServer)
 	aiKeyHandler := handlers.NewAIKeyHandler(aiKeyRepo)
 	adminHandler := handlers.NewAdminHandler(userRepo, shopRepo, aiKeyRepo, jwtMgr, emailSvc)
@@ -104,6 +104,7 @@ func main() {
 	mux.Handle("DELETE /api/ai-keys/{id}", jwtMW(http.HandlerFunc(aiKeyHandler.Delete)))
 
 	adminMW := auth.RequireRole("admin", "super_admin")
+	mux.Handle("POST /api/admin/users", jwtMW(adminMW(http.HandlerFunc(adminHandler.CreateUser))))
 	mux.Handle("GET /api/admin/users", jwtMW(adminMW(http.HandlerFunc(adminHandler.ListUsers))))
 	mux.Handle("GET /api/admin/users/{id}", jwtMW(adminMW(http.HandlerFunc(adminHandler.GetUser))))
 	mux.Handle("PUT /api/admin/users/{id}/role", jwtMW(auth.RequireRole("super_admin")(http.HandlerFunc(adminHandler.UpdateRole))))
