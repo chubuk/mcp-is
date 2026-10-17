@@ -74,7 +74,7 @@ func TestMCPClientTypeHandler_List_Fields(t *testing.T) {
 			{
 				ID: "1", Name: "VS Code (Copilot)", ConfigKey: "servers", ConfigFormat: "json",
 				ConfigTemplate: `{"servers":{"mcp-is":{"type":"http"}}}`,
-				FileName: "mcp.json", FileDescription: ".vscode/mcp.json", SortOrder: 3, IsActive: true,
+				FileName:       "mcp.json", FileDescription: ".vscode/mcp.json", SortOrder: 3, IsActive: true,
 			},
 		},
 	}

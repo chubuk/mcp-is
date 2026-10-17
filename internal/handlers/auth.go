@@ -43,14 +43,14 @@ type LoginRequest struct {
 }
 
 type AuthResponse struct {
-	Token                string `json:"token,omitempty"`
-	UserID               string `json:"user_id,omitempty"`
-	Nickname             string `json:"nickname,omitempty"`
-	Role                 string `json:"role,omitempty"`
-	RequireEmail         bool   `json:"require_email,omitempty"`
-	RequirePasswordChange bool  `json:"require_password_change,omitempty"`
-	Message              string `json:"message,omitempty"`
-	Error                string `json:"error,omitempty"`
+	Token                 string `json:"token,omitempty"`
+	UserID                string `json:"user_id,omitempty"`
+	Nickname              string `json:"nickname,omitempty"`
+	Role                  string `json:"role,omitempty"`
+	RequireEmail          bool   `json:"require_email,omitempty"`
+	RequirePasswordChange bool   `json:"require_password_change,omitempty"`
+	Message               string `json:"message,omitempty"`
+	Error                 string `json:"error,omitempty"`
 }
 
 type ChangePasswordRequest struct {
@@ -171,10 +171,10 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		writeJSON(w, http.StatusOK, AuthResponse{
-			Token:                token,
-			UserID:               user.ID,
-			Nickname:             user.Nickname,
-			Role:                 user.Role,
+			Token:                 token,
+			UserID:                user.ID,
+			Nickname:              user.Nickname,
+			Role:                  user.Role,
 			RequirePasswordChange: true,
 		})
 		return
@@ -470,5 +470,3 @@ func maskEmail(email string) string {
 	}
 	return "***@" + parts[1]
 }
-
-

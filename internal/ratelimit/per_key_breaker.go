@@ -62,7 +62,7 @@ func (cb *CircuitBreaker) RecordFailure() {
 }
 
 type PerKeyBreaker struct {
-	breakers map[string]*CircuitBreaker
+	breakers  map[string]*CircuitBreaker
 	threshold int
 	timeout   time.Duration
 	mu        sync.RWMutex

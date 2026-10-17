@@ -250,17 +250,17 @@ func TestMapProduct_IncludesFieldValues(t *testing.T) {
 
 func TestMapProduct_IncludesAllNestedData(t *testing.T) {
 	resp := &InSalesProductResponse{
-		ID:               1,
-		Title:            "Тест",
-		Description:      "Описание",
-		ShortDescription: "Краткое",
-		Permalink:        "test",
-		IsHidden:         false,
-		Variants:         []InSalesVariant{{ID: 1, Title: "Red", Price: "100"}},
-		Images:           []InSalesImage{{ID: 1, URL: "http://img.jpg", Filename: "img.jpg"}},
-		Properties:       []InSalesProductProperty{{ID: 1, Title: "Бренд"}},
-		Characteristics:  []InSalesCharacteristic{{ID: 1, PropertyID: 1, Title: "Nike"}},
-		OptionNames:      []InSalesOptionName{{ID: 1, Title: "Размер"}},
+		ID:                 1,
+		Title:              "Тест",
+		Description:        "Описание",
+		ShortDescription:   "Краткое",
+		Permalink:          "test",
+		IsHidden:           false,
+		Variants:           []InSalesVariant{{ID: 1, Title: "Red", Price: "100"}},
+		Images:             []InSalesImage{{ID: 1, URL: "http://img.jpg", Filename: "img.jpg"}},
+		Properties:         []InSalesProductProperty{{ID: 1, Title: "Бренд"}},
+		Characteristics:    []InSalesCharacteristic{{ID: 1, PropertyID: 1, Title: "Nike"}},
+		OptionNames:        []InSalesOptionName{{ID: 1, Title: "Размер"}},
 		ProductFieldValues: []InSalesFieldValue{{ID: 1, ProductFieldID: 1, Value: "test"}},
 	}
 
@@ -288,8 +288,8 @@ func TestMapProduct_IncludesAllNestedData(t *testing.T) {
 
 func TestMapOrder_IncludesShippingAddress(t *testing.T) {
 	resp := &InSalesOrderResponse{
-		ID:           1,
-		TotalPrice:   1500.0,
+		ID:         1,
+		TotalPrice: 1500.0,
 		ShippingAddress: &InSalesShippingAddress{
 			ID:                  9,
 			Name:                "Иван",
@@ -315,16 +315,16 @@ func TestMapOrder_IncludesShippingAddress(t *testing.T) {
 
 func TestMapClient_IncludesFields(t *testing.T) {
 	resp := &InSalesClientResponse{
-		ID:                 1,
-		Email:              "test@example.com",
-		Name:               "Иван",
-		Surname:            "Иванов",
-		FullName:           "Иванов Иван Иванович",
-		BonusPoints:        500,
+		ID:                  1,
+		Email:               "test@example.com",
+		Name:                "Иван",
+		Surname:             "Иванов",
+		FullName:            "Иванов Иван Иванович",
+		BonusPoints:         500,
 		ProgressiveDiscount: "10.0",
-		GroupDiscount:      "5.0",
-		ClientTags:         []string{"vip", "regular"},
-		FieldsValues:       []InSalesFieldValue{{ID: 1, ProductFieldID: 1, Value: "text"}},
+		GroupDiscount:       "5.0",
+		ClientTags:          []string{"vip", "regular"},
+		FieldsValues:        []InSalesFieldValue{{ID: 1, ProductFieldID: 1, Value: "text"}},
 	}
 
 	client := MapClient(resp)

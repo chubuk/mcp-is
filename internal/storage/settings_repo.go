@@ -65,17 +65,17 @@ func (r *SettingsRepository) GetAll() (map[string]string, error) {
 
 func (r *SettingsRepository) InitDefaults() error {
 	defaults := map[string]string{
-		"domain":              "localhost",
-		"https_enabled":       "false",
-		"auto_renew":          "true",
-		"renew_days_before":   "30",
-		"cert_expires_at":     "",
-		"cert_issuer":         "",
+		"domain":               "localhost",
+		"https_enabled":        "false",
+		"auto_renew":           "true",
+		"renew_days_before":    "30",
+		"cert_expires_at":      "",
+		"cert_issuer":          "",
 		"cert_needs_attention": "false",
-		"last_renew_error":    "",
-		"retry_count":         "0",
-		"last_retry_at":       "",
-		"letsencrypt_email":   "",
+		"last_renew_error":     "",
+		"retry_count":          "0",
+		"last_retry_at":        "",
+		"letsencrypt_email":    "",
 	}
 	for key, value := range defaults {
 		_ = r.Set(key, value)
@@ -85,17 +85,17 @@ func (r *SettingsRepository) InitDefaults() error {
 
 func (r *SettingsRepository) SetDefaultsIfMissing() error {
 	defaults := map[string]string{
-		"domain":              "localhost",
-		"https_enabled":       "false",
-		"auto_renew":          "true",
-		"renew_days_before":   "30",
-		"cert_expires_at":     "",
-		"cert_issuer":         "",
+		"domain":               "localhost",
+		"https_enabled":        "false",
+		"auto_renew":           "true",
+		"renew_days_before":    "30",
+		"cert_expires_at":      "",
+		"cert_issuer":          "",
 		"cert_needs_attention": "false",
-		"last_renew_error":    "",
-		"retry_count":         "0",
-		"last_retry_at":       "",
-		"letsencrypt_email":   "",
+		"last_renew_error":     "",
+		"retry_count":          "0",
+		"last_retry_at":        "",
+		"letsencrypt_email":    "",
 	}
 	for key, value := range defaults {
 		_, err := r.db.Exec(context.Background(),

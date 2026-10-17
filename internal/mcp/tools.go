@@ -3,9 +3,9 @@ package mcp
 import (
 	"context"
 
+	"github.com/chubuk/mcp-is/internal/service"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
-	"github.com/chubuk/mcp-is/internal/service"
 )
 
 type ToolInfo struct {
@@ -47,23 +47,23 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	// === ТОВАРЫ ===
 	registerTool("list_products", "Получить список товаров магазина с пагинацией и фильтрацией",
 		mcp.NewTool("list_products",
-		mcp.WithDescription("Получить список товаров магазина с пагинацией и фильтрацией"),
-		mcp.WithNumber("page", mcp.Description("Номер страницы"), mcp.DefaultNumber(1)),
-		mcp.WithNumber("per_page", mcp.Description("Товаров на странице (макс 250)"), mcp.DefaultNumber(25)),
-		mcp.WithString("category_id", mcp.Description("Фильтр по категории")),
-		mcp.WithString("collection_id", mcp.Description("Фильтр по коллекции")),
-		mcp.WithString("q", mcp.Description("Поиск по названию/артикулу")),
-		mcp.WithString("updated_since", mcp.Description("Дата обновления (ISO format)")),
-		mcp.WithNumber("from_id", mcp.Description("ID начиная с которого получать данные")),
-		mcp.WithBoolean("with_deleted", mcp.Description("Включить удалённые товары")),
-		mcp.WithBoolean("deleted", mcp.Description("Только удалённые товары")),
-	mcp.WithReadOnlyHintAnnotation(true),
-	), listProductsHandler(svc))
+			mcp.WithDescription("Получить список товаров магазина с пагинацией и фильтрацией"),
+			mcp.WithNumber("page", mcp.Description("Номер страницы"), mcp.DefaultNumber(1)),
+			mcp.WithNumber("per_page", mcp.Description("Товаров на странице (макс 250)"), mcp.DefaultNumber(25)),
+			mcp.WithString("category_id", mcp.Description("Фильтр по категории")),
+			mcp.WithString("collection_id", mcp.Description("Фильтр по коллекции")),
+			mcp.WithString("q", mcp.Description("Поиск по названию/артикулу")),
+			mcp.WithString("updated_since", mcp.Description("Дата обновления (ISO format)")),
+			mcp.WithNumber("from_id", mcp.Description("ID начиная с которого получать данные")),
+			mcp.WithBoolean("with_deleted", mcp.Description("Включить удалённые товары")),
+			mcp.WithBoolean("deleted", mcp.Description("Только удалённые товары")),
+			mcp.WithReadOnlyHintAnnotation(true),
+		), listProductsHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_product",
 		mcp.WithDescription("Получить детальную информацию о товаре по ID"),
 		mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), getProductHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_product",
@@ -105,13 +105,13 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("updated_since", mcp.Description("Дата обновления (ISO format)")),
 		mcp.WithNumber("from_id", mcp.Description("ID начиная с которого получать данные")),
 		mcp.WithBoolean("paid", mcp.Description("Оплачен ли")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listOrdersHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_order",
 		mcp.WithDescription("Получить детали заказа по ID"),
 		mcp.WithString("order_id", mcp.Required(), mcp.Description("ID заказа")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), getOrderHandler(svc))
 
 	s.AddTool(mcp.NewTool("update_order",
@@ -136,13 +136,13 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
 		mcp.WithString("q", mcp.Description("Поиск по имени/email/телефону")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listClientsHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_client",
 		mcp.WithDescription("Получить информацию о клиенте по ID"),
 		mcp.WithString("client_id", mcp.Required(), mcp.Description("ID клиента")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), getClientHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_client",
@@ -177,13 +177,13 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDescription("Получить список категорий товаров"),
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listCategoriesHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_category",
 		mcp.WithDescription("Получить информацию о категории по ID"),
 		mcp.WithString("category_id", mcp.Required(), mcp.Description("ID категории")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), getCategoryHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_category",
@@ -212,13 +212,13 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDescription("Получить список коллекций (умных подборок)"),
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listCollectionsHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_collection",
 		mcp.WithDescription("Получить информацию о коллекции по ID"),
 		mcp.WithString("collection_id", mcp.Required(), mcp.Description("ID коллекции")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), getCollectionHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_collection",
@@ -245,7 +245,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	s.AddTool(mcp.NewTool("list_images",
 		mcp.WithDescription("Получить список изображений товара"),
 		mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listImagesHandler(svc))
 
 	s.AddTool(mcp.NewTool("add_image",
@@ -270,7 +270,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDescription("Получить список метаполей"),
 		mcp.WithString("resource_type", mcp.Description("Тип ресурса: Product, Variant, Order, Client, Category, Page")),
 		mcp.WithString("resource_id", mcp.Description("ID ресурса")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listMetaFieldsHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_meta_field",
@@ -299,7 +299,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	// === ВЕБХУКИ ===
 	s.AddTool(mcp.NewTool("list_webhooks",
 		mcp.WithDescription("Получить список подписанных вебхуков"),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listWebhooksHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_webhook",
@@ -327,22 +327,22 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	// === СИСТЕМНЫЕ ===
 	s.AddTool(mcp.NewTool("get_shop_info",
 		mcp.WithDescription("Получить информацию о магазине (название, домен, валюта)"),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), getShopInfoHandler(svc))
 
 	s.AddTool(mcp.NewTool("list_currencies",
 		mcp.WithDescription("Получить список валют магазина"),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listCurrenciesHandler(svc))
 
 	s.AddTool(mcp.NewTool("list_delivery_variants",
 		mcp.WithDescription("Получить доступные способы доставки"),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listDeliveryVariantsHandler(svc))
 
 	s.AddTool(mcp.NewTool("list_payment_gateways",
 		mcp.WithDescription("Получить доступные способы оплаты"),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listPaymentGatewaysHandler(svc))
 
 	// === СТРАНИЦЫ ===
@@ -350,13 +350,13 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDescription("Получить список страниц магазина"),
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listPagesHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_page",
 		mcp.WithDescription("Получить страницу по ID"),
 		mcp.WithString("page_id", mcp.Required(), mcp.Description("ID страницы")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), getPageHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_page",
@@ -387,13 +387,13 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDescription("Получить список аксессуаров (характеристик товаров)"),
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listAccessoriesHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_accessory",
 		mcp.WithDescription("Получить аксессуар по ID"),
 		mcp.WithString("accessory_id", mcp.Required(), mcp.Description("ID аксессуара")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), getAccessoryHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_accessory",
@@ -424,14 +424,14 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	s.AddTool(mcp.NewTool("list_variants",
 		mcp.WithDescription("Получить список вариантов товара (размеры, цвета)"),
 		mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listVariantsHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_variant",
 		mcp.WithDescription("Получить информацию о варианте товара"),
 		mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
 		mcp.WithString("variant_id", mcp.Required(), mcp.Description("ID варианта")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), getVariantHandler(svc))
 
 	s.AddTool(mcp.NewTool("update_variant",
@@ -456,7 +456,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	s.AddTool(mcp.NewTool("list_property_values",
 		mcp.WithDescription("Получить список значений аксессуара"),
 		mcp.WithString("accessory_id", mcp.Required(), mcp.Description("ID аксессуара")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listPropertyValuesHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_property_value",
@@ -485,13 +485,13 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	// === МЕНЮ ===
 	s.AddTool(mcp.NewTool("list_menus",
 		mcp.WithDescription("Получить список навигационных меню"),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listMenusHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_menu",
 		mcp.WithDescription("Получить меню по ID со списком пунктов"),
 		mcp.WithString("menu_id", mcp.Required(), mcp.Description("ID меню")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), getMenuHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_menu",
@@ -518,7 +518,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	// === РЕДИРЕКТЫ ===
 	s.AddTool(mcp.NewTool("list_redirects",
 		mcp.WithDescription("Получить список URL-редиректов"),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listRedirectsHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_redirect",
@@ -538,13 +538,13 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	// === БЛОГИ ===
 	s.AddTool(mcp.NewTool("list_blogs",
 		mcp.WithDescription("Получить список блогов магазина"),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listBlogsHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_blog",
 		mcp.WithDescription("Получить информацию о блоге по ID"),
 		mcp.WithString("blog_id", mcp.Required(), mcp.Description("ID блога")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), getBlogHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_blog",
@@ -577,14 +577,14 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	s.AddTool(mcp.NewTool("list_blog_posts",
 		mcp.WithDescription("Получить список записей в блоге"),
 		mcp.WithString("blog_id", mcp.Required(), mcp.Description("ID блога")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), listBlogPostsHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_blog_post",
 		mcp.WithDescription("Получить запись блога по ID"),
 		mcp.WithString("blog_id", mcp.Required(), mcp.Description("ID блога")),
 		mcp.WithString("post_id", mcp.Required(), mcp.Description("ID записи")),
-	mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithReadOnlyHintAnnotation(true),
 	), getBlogPostHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_blog_post",

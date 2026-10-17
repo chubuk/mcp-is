@@ -285,7 +285,7 @@ type Client interface {
 	// UserTasks
 	ListUserTasks(ctx context.Context) ([]any, error)
 	GetUserTask(ctx context.Context, id string) (any, error)
- CreateUserTask(ctx context.Context, args map[string]any) (any, error)
+	CreateUserTask(ctx context.Context, args map[string]any) (any, error)
 	UpdateUserTask(ctx context.Context, id string, args map[string]any) (any, error)
 	DeleteUserTask(ctx context.Context, id string) error
 
@@ -337,26 +337,26 @@ type StoreInfo struct {
 }
 
 type Product struct {
-	ID               string            `json:"id"`
-	Title            string            `json:"title"`
-	Description      string            `json:"description,omitempty"`
-	ShortDescription string            `json:"short_description,omitempty"`
-	Permalink        string            `json:"permalink,omitempty"`
-	IsHidden         bool              `json:"is_hidden,omitempty"`
-	Available        bool              `json:"available,omitempty"`
-	SKU              string            `json:"sku"`
-	Price            string            `json:"price"`
-	Quantity         int               `json:"quantity"`
-	Vendor           string            `json:"vendor"`
-	CategoryID       *int              `json:"category_id"`
-	CreatedAt        string            `json:"created_at"`
-	UpdatedAt        string            `json:"updated_at"`
-	Variants         []Variant         `json:"variants"`
-	Images           []any             `json:"images,omitempty"`
-	FieldValues      []any             `json:"field_values,omitempty"`
-	Properties       []any             `json:"properties,omitempty"`
-	Characteristics  []any             `json:"characteristics,omitempty"`
-	OptionNames      []any             `json:"option_names,omitempty"`
+	ID               string    `json:"id"`
+	Title            string    `json:"title"`
+	Description      string    `json:"description,omitempty"`
+	ShortDescription string    `json:"short_description,omitempty"`
+	Permalink        string    `json:"permalink,omitempty"`
+	IsHidden         bool      `json:"is_hidden,omitempty"`
+	Available        bool      `json:"available,omitempty"`
+	SKU              string    `json:"sku"`
+	Price            string    `json:"price"`
+	Quantity         int       `json:"quantity"`
+	Vendor           string    `json:"vendor"`
+	CategoryID       *int      `json:"category_id"`
+	CreatedAt        string    `json:"created_at"`
+	UpdatedAt        string    `json:"updated_at"`
+	Variants         []Variant `json:"variants"`
+	Images           []any     `json:"images,omitempty"`
+	FieldValues      []any     `json:"field_values,omitempty"`
+	Properties       []any     `json:"properties,omitempty"`
+	Characteristics  []any     `json:"characteristics,omitempty"`
+	OptionNames      []any     `json:"option_names,omitempty"`
 }
 
 type Variant struct {
@@ -370,24 +370,24 @@ type Variant struct {
 }
 
 type Order struct {
-	ID                string              `json:"id"`
-	Number            string              `json:"number"`
-	FulfillmentStatus string              `json:"fulfillment_status"`
-	FinancialStatus   string              `json:"financial_status"`
-	TotalPrice        string              `json:"total_price"`
-	ItemsPrice        string              `json:"items_price"`
-	DeliveryPrice     string              `json:"delivery_price"`
-	DiscountAmount    string              `json:"discount_amount"`
-	ClientID          int                 `json:"client_id"`
-	ClientName        string              `json:"client_name"`
-	DeliveryTitle     string              `json:"delivery_title"`
-	PaymentTitle      string              `json:"payment_title"`
-	Comment           string              `json:"comment"`
-	CreatedAt         string              `json:"created_at"`
-	UpdatedAt         string              `json:"updated_at"`
-	Lines             []OrderLine         `json:"lines"`
-	FieldsValues      []any               `json:"fields_values,omitempty"`
-	ShippingAddress   map[string]any      `json:"shipping_address,omitempty"`
+	ID                string         `json:"id"`
+	Number            string         `json:"number"`
+	FulfillmentStatus string         `json:"fulfillment_status"`
+	FinancialStatus   string         `json:"financial_status"`
+	TotalPrice        string         `json:"total_price"`
+	ItemsPrice        string         `json:"items_price"`
+	DeliveryPrice     string         `json:"delivery_price"`
+	DiscountAmount    string         `json:"discount_amount"`
+	ClientID          int            `json:"client_id"`
+	ClientName        string         `json:"client_name"`
+	DeliveryTitle     string         `json:"delivery_title"`
+	PaymentTitle      string         `json:"payment_title"`
+	Comment           string         `json:"comment"`
+	CreatedAt         string         `json:"created_at"`
+	UpdatedAt         string         `json:"updated_at"`
+	Lines             []OrderLine    `json:"lines"`
+	FieldsValues      []any          `json:"fields_values,omitempty"`
+	ShippingAddress   map[string]any `json:"shipping_address,omitempty"`
 }
 
 type OrderLine struct {
@@ -439,7 +439,7 @@ type Menu struct {
 type MenuItem struct {
 	ID       int    `json:"id"`
 	Title    string `json:"title"`
-	URL     string `json:"url"`
+	URL      string `json:"url"`
 	Position int    `json:"position"`
 }
 

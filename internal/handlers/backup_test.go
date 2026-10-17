@@ -150,10 +150,10 @@ func TestBackupGetLog_Admin(t *testing.T) {
 	}
 
 	var resp struct {
-		Entries  []BackupLogEntry `json:"entries"`
-		Total    int              `json:"total"`
-		Page     int              `json:"page"`
-		PerPage  int              `json:"per_page"`
+		Entries []BackupLogEntry `json:"entries"`
+		Total   int              `json:"total"`
+		Page    int              `json:"page"`
+		PerPage int              `json:"per_page"`
 	}
 	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
 		t.Fatalf("decode: %v", err)

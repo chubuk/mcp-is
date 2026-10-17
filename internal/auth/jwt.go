@@ -16,8 +16,8 @@ type JWTClaims struct {
 }
 
 type JWTManager struct {
-	secret   []byte
-	expiry   time.Duration
+	secret []byte
+	expiry time.Duration
 }
 
 func NewJWTManager(secret string, expiry time.Duration) *JWTManager {

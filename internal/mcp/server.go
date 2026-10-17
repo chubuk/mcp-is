@@ -5,18 +5,18 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/mark3labs/mcp-go/mcp"
-	"github.com/mark3labs/mcp-go/server"
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/core"
 	"github.com/chubuk/mcp-is/internal/pdn"
 	"github.com/chubuk/mcp-is/internal/service"
+	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 )
 
 type MCPServer struct {
-	mcpServer  *server.MCPServer
-	httpServer *server.StreamableHTTPServer
-	readOnly   bool
+	mcpServer     *server.MCPServer
+	httpServer    *server.StreamableHTTPServer
+	readOnly      bool
 	autoPDN       bool
 	serverCountry string
 }
@@ -24,11 +24,11 @@ type MCPServer struct {
 type mcpContextKey string
 
 const (
-	mcpShopNameKey      mcpContextKey = "shop_name"
-	mcpKeyNameKey       mcpContextKey = "key_name"
-	mcpReadOnlyKey      mcpContextKey = "read_only"
-	mcpShopPDNKey       mcpContextKey = "shop_pdn_enabled"
-	mcpAIKeyPDNKey      mcpContextKey = "ai_key_pdn_enabled"
+	mcpShopNameKey mcpContextKey = "shop_name"
+	mcpKeyNameKey  mcpContextKey = "key_name"
+	mcpReadOnlyKey mcpContextKey = "read_only"
+	mcpShopPDNKey  mcpContextKey = "shop_pdn_enabled"
+	mcpAIKeyPDNKey mcpContextKey = "ai_key_pdn_enabled"
 )
 
 func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry string) *MCPServer {
@@ -46,9 +46,9 @@ func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry st
 	httpServer := server.NewStreamableHTTPServer(s)
 
 	return &MCPServer{
-		mcpServer:  s,
-		httpServer: httpServer,
-		readOnly:   readOnly,
+		mcpServer:     s,
+		httpServer:    httpServer,
+		readOnly:      readOnly,
 		autoPDN:       autoPDN,
 		serverCountry: serverCountry,
 	}
@@ -107,7 +107,7 @@ func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		serverInRU := s.serverCountry == "RU"
 		shopInRU := shopJurisdiction == "RU"
 		llmForeign := llmJurisdiction != "RU"
-		
+
 		if (!serverInRU && shopInRU) || (serverInRU && shopInRU && llmForeign) {
 			shopPDN = true
 		}

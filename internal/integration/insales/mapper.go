@@ -61,10 +61,10 @@ func mapImages(images []InSalesImage) []any {
 	result := make([]any, len(images))
 	for i, img := range images {
 		result[i] = map[string]any{
-			"id":        img.ID,
-			"url":       img.URL,
-			"filename":  img.Filename,
-			"position":  img.Position,
+			"id":         img.ID,
+			"url":        img.URL,
+			"filename":   img.Filename,
+			"position":   img.Position,
 			"product_id": img.ProductID,
 		}
 	}
@@ -188,28 +188,28 @@ func mapOrderLines(l []InSalesOrderLine) []OrderLine {
 
 func MapClient(resp *InSalesClientResponse) map[string]any {
 	return map[string]any{
-		"id":                    resp.ID,
-		"email":                 resp.Email,
-		"name":                  resp.Name,
-		"surname":               resp.Surname,
-		"middlename":            resp.Middlename,
-		"first_name":            resp.FirstName,
-		"last_name":             resp.LastName,
-		"phone":                 resp.Phone,
-		"full_name":             resp.FullName,
-		"comment":               resp.Comment,
-		"registered":            resp.Registered,
-		"subscribe":             resp.Subscribe,
-		"client_group_id":       resp.ClientGroupID,
-		"bonus_points":          resp.BonusPoints,
-		"type":                  resp.Type,
-		"progressive_discount":  resp.ProgressiveDiscount,
-		"group_discount":        resp.GroupDiscount,
+		"id":                       resp.ID,
+		"email":                    resp.Email,
+		"name":                     resp.Name,
+		"surname":                  resp.Surname,
+		"middlename":               resp.Middlename,
+		"first_name":               resp.FirstName,
+		"last_name":                resp.LastName,
+		"phone":                    resp.Phone,
+		"full_name":                resp.FullName,
+		"comment":                  resp.Comment,
+		"registered":               resp.Registered,
+		"subscribe":                resp.Subscribe,
+		"client_group_id":          resp.ClientGroupID,
+		"bonus_points":             resp.BonusPoints,
+		"type":                     resp.Type,
+		"progressive_discount":     resp.ProgressiveDiscount,
+		"group_discount":           resp.GroupDiscount,
 		"consent_to_personal_data": resp.ConsentToPersonalData,
-		"created_at":            resp.CreatedAt,
-		"updated_at":            resp.UpdatedAt,
-		"fields_values":         mapFieldValues(resp.FieldsValues),
-		"client_tags":           resp.ClientTags,
+		"created_at":               resp.CreatedAt,
+		"updated_at":               resp.UpdatedAt,
+		"fields_values":            mapFieldValues(resp.FieldsValues),
+		"client_tags":              resp.ClientTags,
 	}
 }
 
@@ -289,7 +289,7 @@ func MapMenu(resp *InSalesMenuResponse) *Menu {
 		items[i] = MenuItem{
 			ID:       item.ID,
 			Title:    item.Title,
-			URL:     item.URL,
+			URL:      item.URL,
 			Position: item.Position,
 		}
 	}
@@ -349,28 +349,28 @@ func MapBlogPost(resp *InSalesBlogPostResponse) *BlogPost {
 
 func MapDiscountCode(resp *InSalesDiscountCodeResponse) map[string]any {
 	return map[string]any{
-		"id":                resp.ID,
-		"code":              resp.Code,
-		"type_id":           resp.TypeID,
-		"discount":          resp.Discount,
-		"description":       resp.Description,
-		"disabled":          resp.Disabled,
-		"act_once":          resp.ActOnce,
+		"id":                  resp.ID,
+		"code":                resp.Code,
+		"type_id":             resp.TypeID,
+		"discount":            resp.Discount,
+		"description":         resp.Description,
+		"disabled":            resp.Disabled,
+		"act_once":            resp.ActOnce,
 		"act_once_for_client": resp.ActOnceForClient,
-		"min_price":         resp.MinPrice,
-		"expired_at":        resp.ExpiredAt,
-		"created_at":        resp.CreatedAt,
-		"updated_at":        resp.UpdatedAt,
+		"min_price":           resp.MinPrice,
+		"expired_at":          resp.ExpiredAt,
+		"created_at":          resp.CreatedAt,
+		"updated_at":          resp.UpdatedAt,
 	}
 }
 
 func MapCollect(resp *InSalesCollectResponse) map[string]any {
 	return map[string]any{
-		"id":             resp.ID,
-		"collection_id":  resp.CollectionID,
-		"product_id":     resp.ProductID,
-		"position":       resp.Position,
-		"created_at":     resp.CreatedAt,
+		"id":            resp.ID,
+		"collection_id": resp.CollectionID,
+		"product_id":    resp.ProductID,
+		"position":      resp.Position,
+		"created_at":    resp.CreatedAt,
 	}
 }
 
@@ -490,13 +490,13 @@ func MapCollectionField(resp *InSalesCollectionFieldResponse) map[string]any {
 
 func MapCollectionFilter(resp *InSalesCollectionFilterResponse) map[string]any {
 	return map[string]any{
-		"id":             resp.ID,
-		"title":          resp.Title,
-		"filter_type":    resp.FilterType,
-		"position":       resp.Position,
-		"collection_id":  resp.CollectionID,
-		"created_at":     resp.CreatedAt,
-		"updated_at":     resp.UpdatedAt,
+		"id":            resp.ID,
+		"title":         resp.Title,
+		"filter_type":   resp.FilterType,
+		"position":      resp.Position,
+		"collection_id": resp.CollectionID,
+		"created_at":    resp.CreatedAt,
+		"updated_at":    resp.UpdatedAt,
 	}
 }
 
@@ -579,11 +579,11 @@ func MapPriceKind(resp *InSalesPriceKindResponse) map[string]any {
 
 func MapOptionName(resp *InSalesOptionNameResponse) map[string]any {
 	return map[string]any{
-		"id":            resp.ID,
-		"title":         resp.Title,
-		"position":      resp.Position,
-		"navigational":  resp.Navigational,
-		"permalink":     resp.Permalink,
+		"id":           resp.ID,
+		"title":        resp.Title,
+		"position":     resp.Position,
+		"navigational": resp.Navigational,
+		"permalink":    resp.Permalink,
 	}
 }
 

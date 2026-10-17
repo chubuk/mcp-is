@@ -56,7 +56,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 	seeds := []seed{
 		{
 			name: "Claude Desktop", configKey: "mcpServers", configFormat: "json", sortOrder: 1,
-			fileName: "claude_desktop_config.json",
+			fileName:        "claude_desktop_config.json",
 			fileDescription: "~/Library/Application Support/Claude/ (macOS) или %APPDATA%\\Claude\\ (Windows)",
 			configTemplate: `{
   "mcpServers": {
@@ -71,7 +71,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 		},
 		{
 			name: "Cursor", configKey: "mcpServers", configFormat: "json", sortOrder: 2,
-			fileName: "mcp.json",
+			fileName:        "mcp.json",
 			fileDescription: "~/.cursor/mcp.json",
 			configTemplate: `{
   "mcpServers": {
@@ -86,7 +86,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 		},
 		{
 			name: "VS Code (Copilot)", configKey: "servers", configFormat: "json", sortOrder: 3,
-			fileName: "mcp.json",
+			fileName:        "mcp.json",
 			fileDescription: ".vscode/mcp.json (в проекте)",
 			configTemplate: `{
   "servers": {
@@ -102,7 +102,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 		},
 		{
 			name: "MiMoCode", configKey: "mcp", configFormat: "json", sortOrder: 4,
-			fileName: "mcp.json",
+			fileName:        "mcp.json",
 			fileDescription: ".mimocode/mcp.json (в проекте)",
 			configTemplate: `{
   "mcp": {
@@ -118,7 +118,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 		},
 		{
 			name: "OpenCode", configKey: "mcpServers", configFormat: "json", sortOrder: 5,
-			fileName: "config.json",
+			fileName:        "config.json",
 			fileDescription: ".opencode/config.json",
 			configTemplate: `{
   "mcpServers": {
@@ -133,7 +133,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 		},
 		{
 			name: "LibreChat", configKey: "mcpServers", configFormat: "yaml", sortOrder: 6,
-			fileName: "librechat.yaml",
+			fileName:        "librechat.yaml",
 			fileDescription: "корень проекта LibreChat",
 			configTemplate: `mcpServers:
   {{KEY_NAME}}:
@@ -144,7 +144,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 		},
 		{
 			name: "Open WebUI", configKey: "mcpServers", configFormat: "json", sortOrder: 7,
-			fileName: "",
+			fileName:        "",
 			fileDescription: "Через Admin Panel → Settings → MCP",
 			configTemplate: `{
   "mcpServers": {
@@ -159,7 +159,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 		},
 		{
 			name: "Cline", configKey: "mcpServers", configFormat: "json", sortOrder: 8,
-			fileName: "cline_mcp_settings.json",
+			fileName:        "cline_mcp_settings.json",
 			fileDescription: "%APPDATA%\\cline\\ (Windows) или ~/.config/cline/ (Linux/macOS)",
 			configTemplate: `{
   "mcpServers": {
@@ -174,7 +174,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 		},
 		{
 			name: "Cherry Studio", configKey: "mcpServers", configFormat: "json", sortOrder: 9,
-			fileName: "",
+			fileName:        "",
 			fileDescription: "Через Settings → MCP Servers",
 			configTemplate: `{
   "mcpServers": {
@@ -189,7 +189,7 @@ func (r *MCPClientTypeRepository) Seed() error {
 		},
 		{
 			name: "Continue", configKey: "mcpServers", configFormat: "json", sortOrder: 10,
-			fileName: "config.json",
+			fileName:        "config.json",
 			fileDescription: "~/.continue/config.json",
 			configTemplate: `{
   "mcpServers": {

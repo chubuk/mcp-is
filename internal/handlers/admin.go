@@ -46,9 +46,9 @@ type StatusRequest struct {
 }
 
 type StatsResponse struct {
-	TotalUsers    int `json:"total_users"`
-	TotalShops    int `json:"total_shops"`
-	TotalAIKeys   int `json:"total_ai_keys"`
+	TotalUsers  int `json:"total_users"`
+	TotalShops  int `json:"total_shops"`
+	TotalAIKeys int `json:"total_ai_keys"`
 }
 
 func (h *AdminHandler) CreateUser(w http.ResponseWriter, r *http.Request) {

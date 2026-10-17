@@ -154,11 +154,11 @@ func (c *InSalesClient) doRequestRaw(ctx context.Context, method, path string, b
 }
 
 type AccountInfo struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	Subdomain   string `json:"subdomain"`
-	Email       string `json:"email"`
-	Phone       string `json:"phone"`
+	ID           int    `json:"id"`
+	Title        string `json:"title"`
+	Subdomain    string `json:"subdomain"`
+	Email        string `json:"email"`
+	Phone        string `json:"phone"`
 	ContactPhone string `json:"contact_phone"`
 }
 
@@ -921,10 +921,10 @@ func (c *InSalesClient) GetAccessory(ctx context.Context, accessoryID string) (*
 func (c *InSalesClient) CreateAccessory(ctx context.Context, title string, args map[string]any) (*Accessory, error) {
 	payload := map[string]any{
 		"accessory": map[string]any{
-			"name":       title,
-			"max_count":  args["max_count"],
-			"min_count":  args["min_count"],
-			"permalink":  args["permalink"],
+			"name":      title,
+			"max_count": args["max_count"],
+			"min_count": args["min_count"],
+			"permalink": args["permalink"],
 		},
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/accessories.json", payload)
@@ -1910,121 +1910,267 @@ func (c *InSalesClient) crudDelete(ctx context.Context, path string) error {
 
 // === PRODUCT FIELDS ===
 
-func (c *InSalesClient) ListProductFields(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/product_fields.json") }
-func (c *InSalesClient) GetProductField(ctx context.Context, fieldID string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/product_fields/%s.json", fieldID)) }
-func (c *InSalesClient) CreateProductField(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/product_fields.json", "product_field", args) }
-func (c *InSalesClient) UpdateProductField(ctx context.Context, fieldID string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/product_fields/%s.json", fieldID), "product_field", args) }
-func (c *InSalesClient) DeleteProductField(ctx context.Context, fieldID string) error { return c.crudDelete(ctx, fmt.Sprintf("/product_fields/%s.json", fieldID)) }
+func (c *InSalesClient) ListProductFields(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/product_fields.json")
+}
+func (c *InSalesClient) GetProductField(ctx context.Context, fieldID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/product_fields/%s.json", fieldID))
+}
+func (c *InSalesClient) CreateProductField(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/product_fields.json", "product_field", args)
+}
+func (c *InSalesClient) UpdateProductField(ctx context.Context, fieldID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/product_fields/%s.json", fieldID), "product_field", args)
+}
+func (c *InSalesClient) DeleteProductField(ctx context.Context, fieldID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/product_fields/%s.json", fieldID))
+}
 
 // === VARIANT FIELDS ===
 
-func (c *InSalesClient) ListVariantFields(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/variant_fields.json") }
-func (c *InSalesClient) GetVariantField(ctx context.Context, fieldID string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/variant_fields/%s.json", fieldID)) }
-func (c *InSalesClient) CreateVariantField(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/variant_fields.json", "variant_field", args) }
-func (c *InSalesClient) UpdateVariantField(ctx context.Context, fieldID string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/variant_fields/%s.json", fieldID), "variant_field", args) }
-func (c *InSalesClient) DeleteVariantField(ctx context.Context, fieldID string) error { return c.crudDelete(ctx, fmt.Sprintf("/variant_fields/%s.json", fieldID)) }
+func (c *InSalesClient) ListVariantFields(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/variant_fields.json")
+}
+func (c *InSalesClient) GetVariantField(ctx context.Context, fieldID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/variant_fields/%s.json", fieldID))
+}
+func (c *InSalesClient) CreateVariantField(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/variant_fields.json", "variant_field", args)
+}
+func (c *InSalesClient) UpdateVariantField(ctx context.Context, fieldID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/variant_fields/%s.json", fieldID), "variant_field", args)
+}
+func (c *InSalesClient) DeleteVariantField(ctx context.Context, fieldID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/variant_fields/%s.json", fieldID))
+}
 
 // === COLLECTION FIELDS ===
 
-func (c *InSalesClient) ListCollectionFields(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/collection_fields.json") }
-func (c *InSalesClient) GetCollectionField(ctx context.Context, fieldID string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/collection_fields/%s.json", fieldID)) }
-func (c *InSalesClient) CreateCollectionField(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/collection_fields.json", "collection_field", args) }
-func (c *InSalesClient) UpdateCollectionField(ctx context.Context, fieldID string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/collection_fields/%s.json", fieldID), "collection_field", args) }
-func (c *InSalesClient) DeleteCollectionField(ctx context.Context, fieldID string) error { return c.crudDelete(ctx, fmt.Sprintf("/collection_fields/%s.json", fieldID)) }
+func (c *InSalesClient) ListCollectionFields(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/collection_fields.json")
+}
+func (c *InSalesClient) GetCollectionField(ctx context.Context, fieldID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/collection_fields/%s.json", fieldID))
+}
+func (c *InSalesClient) CreateCollectionField(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/collection_fields.json", "collection_field", args)
+}
+func (c *InSalesClient) UpdateCollectionField(ctx context.Context, fieldID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/collection_fields/%s.json", fieldID), "collection_field", args)
+}
+func (c *InSalesClient) DeleteCollectionField(ctx context.Context, fieldID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/collection_fields/%s.json", fieldID))
+}
 
 // === COLLECTION FILTERS ===
 
-func (c *InSalesClient) ListCollectionFilters(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/collection_filters.json") }
-func (c *InSalesClient) GetCollectionFilter(ctx context.Context, filterID string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/collection_filters/%s.json", filterID)) }
-func (c *InSalesClient) CreateCollectionFilter(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/collection_filters.json", "collection_filter", args) }
-func (c *InSalesClient) UpdateCollectionFilter(ctx context.Context, filterID string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/collection_filters/%s.json", filterID), "collection_filter", args) }
-func (c *InSalesClient) DeleteCollectionFilter(ctx context.Context, filterID string) error { return c.crudDelete(ctx, fmt.Sprintf("/collection_filters/%s.json", filterID)) }
+func (c *InSalesClient) ListCollectionFilters(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/collection_filters.json")
+}
+func (c *InSalesClient) GetCollectionFilter(ctx context.Context, filterID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/collection_filters/%s.json", filterID))
+}
+func (c *InSalesClient) CreateCollectionFilter(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/collection_filters.json", "collection_filter", args)
+}
+func (c *InSalesClient) UpdateCollectionFilter(ctx context.Context, filterID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/collection_filters/%s.json", filterID), "collection_filter", args)
+}
+func (c *InSalesClient) DeleteCollectionFilter(ctx context.Context, filterID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/collection_filters/%s.json", filterID))
+}
 
 // === JS TAGS ===
 
-func (c *InSalesClient) ListJsTags(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/js_tags.json") }
-func (c *InSalesClient) GetJsTag(ctx context.Context, tagID string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/js_tags/%s.json", tagID)) }
-func (c *InSalesClient) CreateJsTag(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/js_tags.json", "js_tag", args) }
-func (c *InSalesClient) UpdateJsTag(ctx context.Context, tagID string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/js_tags/%s.json", tagID), "js_tag", args) }
-func (c *InSalesClient) DeleteJsTag(ctx context.Context, tagID string) error { return c.crudDelete(ctx, fmt.Sprintf("/js_tags/%s.json", tagID)) }
+func (c *InSalesClient) ListJsTags(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/js_tags.json")
+}
+func (c *InSalesClient) GetJsTag(ctx context.Context, tagID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/js_tags/%s.json", tagID))
+}
+func (c *InSalesClient) CreateJsTag(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/js_tags.json", "js_tag", args)
+}
+func (c *InSalesClient) UpdateJsTag(ctx context.Context, tagID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/js_tags/%s.json", tagID), "js_tag", args)
+}
+func (c *InSalesClient) DeleteJsTag(ctx context.Context, tagID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/js_tags/%s.json", tagID))
+}
 
 // === EXTERNAL DISCOUNTS ===
 
-func (c *InSalesClient) ListExternalDiscounts(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/external_discounts.json") }
-func (c *InSalesClient) GetExternalDiscount(ctx context.Context, discountID string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/external_discounts/%s.json", discountID)) }
-func (c *InSalesClient) CreateExternalDiscount(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/external_discounts.json", "external_discount", args) }
-func (c *InSalesClient) UpdateExternalDiscount(ctx context.Context, discountID string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/external_discounts/%s.json", discountID), "external_discount", args) }
-func (c *InSalesClient) DeleteExternalDiscount(ctx context.Context, discountID string) error { return c.crudDelete(ctx, fmt.Sprintf("/external_discounts/%s.json", discountID)) }
+func (c *InSalesClient) ListExternalDiscounts(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/external_discounts.json")
+}
+func (c *InSalesClient) GetExternalDiscount(ctx context.Context, discountID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/external_discounts/%s.json", discountID))
+}
+func (c *InSalesClient) CreateExternalDiscount(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/external_discounts.json", "external_discount", args)
+}
+func (c *InSalesClient) UpdateExternalDiscount(ctx context.Context, discountID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/external_discounts/%s.json", discountID), "external_discount", args)
+}
+func (c *InSalesClient) DeleteExternalDiscount(ctx context.Context, discountID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/external_discounts/%s.json", discountID))
+}
 
 // === DISCOUNT COLLECTIONS GROUPS ===
 
-func (c *InSalesClient) ListDiscountCollectionsGroups(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/discount_collections_groups.json") }
-func (c *InSalesClient) GetDiscountCollectionsGroup(ctx context.Context, groupID string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/discount_collections_groups/%s.json", groupID)) }
-func (c *InSalesClient) CreateDiscountCollectionsGroup(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/discount_collections_groups.json", "discount_collections_group", args) }
-func (c *InSalesClient) UpdateDiscountCollectionsGroup(ctx context.Context, groupID string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/discount_collections_groups/%s.json", groupID), "discount_collections_group", args) }
-func (c *InSalesClient) DeleteDiscountCollectionsGroup(ctx context.Context, groupID string) error { return c.crudDelete(ctx, fmt.Sprintf("/discount_collections_groups/%s.json", groupID)) }
+func (c *InSalesClient) ListDiscountCollectionsGroups(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/discount_collections_groups.json")
+}
+func (c *InSalesClient) GetDiscountCollectionsGroup(ctx context.Context, groupID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/discount_collections_groups/%s.json", groupID))
+}
+func (c *InSalesClient) CreateDiscountCollectionsGroup(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/discount_collections_groups.json", "discount_collections_group", args)
+}
+func (c *InSalesClient) UpdateDiscountCollectionsGroup(ctx context.Context, groupID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/discount_collections_groups/%s.json", groupID), "discount_collections_group", args)
+}
+func (c *InSalesClient) DeleteDiscountCollectionsGroup(ctx context.Context, groupID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/discount_collections_groups/%s.json", groupID))
+}
 
 // === WAREHOUSES ===
 
-func (c *InSalesClient) ListWarehouses(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/warehouses.json") }
-func (c *InSalesClient) GetWarehouse(ctx context.Context, warehouseID string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/warehouses/%s.json", warehouseID)) }
-func (c *InSalesClient) CreateWarehouse(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/warehouses.json", "warehouse", args) }
-func (c *InSalesClient) UpdateWarehouse(ctx context.Context, warehouseID string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/warehouses/%s.json", warehouseID), "warehouse", args) }
-func (c *InSalesClient) DeleteWarehouse(ctx context.Context, warehouseID string) error { return c.crudDelete(ctx, fmt.Sprintf("/warehouses/%s.json", warehouseID)) }
+func (c *InSalesClient) ListWarehouses(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/warehouses.json")
+}
+func (c *InSalesClient) GetWarehouse(ctx context.Context, warehouseID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/warehouses/%s.json", warehouseID))
+}
+func (c *InSalesClient) CreateWarehouse(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/warehouses.json", "warehouse", args)
+}
+func (c *InSalesClient) UpdateWarehouse(ctx context.Context, warehouseID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/warehouses/%s.json", warehouseID), "warehouse", args)
+}
+func (c *InSalesClient) DeleteWarehouse(ctx context.Context, warehouseID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/warehouses/%s.json", warehouseID))
+}
 
 // === SALES CHANNELS ===
 
-func (c *InSalesClient) ListSalesChannels(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/sales_channels.json") }
-func (c *InSalesClient) GetSalesChannel(ctx context.Context, channelID string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/sales_channels/%s.json", channelID)) }
-func (c *InSalesClient) CreateSalesChannel(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/sales_channels.json", "sales_channel", args) }
-func (c *InSalesClient) UpdateSalesChannel(ctx context.Context, channelID string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/sales_channels/%s.json", channelID), "sales_channel", args) }
-func (c *InSalesClient) DeleteSalesChannel(ctx context.Context, channelID string) error { return c.crudDelete(ctx, fmt.Sprintf("/sales_channels/%s.json", channelID)) }
+func (c *InSalesClient) ListSalesChannels(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/sales_channels.json")
+}
+func (c *InSalesClient) GetSalesChannel(ctx context.Context, channelID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/sales_channels/%s.json", channelID))
+}
+func (c *InSalesClient) CreateSalesChannel(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/sales_channels.json", "sales_channel", args)
+}
+func (c *InSalesClient) UpdateSalesChannel(ctx context.Context, channelID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/sales_channels/%s.json", channelID), "sales_channel", args)
+}
+func (c *InSalesClient) DeleteSalesChannel(ctx context.Context, channelID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/sales_channels/%s.json", channelID))
+}
 
 // === STOCK CURRENCIES ===
 
-func (c *InSalesClient) ListStockCurrencies(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/stock_currencies.json") }
-func (c *InSalesClient) GetStockCurrency(ctx context.Context, currencyID string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/stock_currencies/%s.json", currencyID)) }
-func (c *InSalesClient) CreateStockCurrency(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/stock_currencies.json", "stock_currency", args) }
-func (c *InSalesClient) UpdateStockCurrency(ctx context.Context, currencyID string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/stock_currencies/%s.json", currencyID), "stock_currency", args) }
-func (c *InSalesClient) DeleteStockCurrency(ctx context.Context, currencyID string) error { return c.crudDelete(ctx, fmt.Sprintf("/stock_currencies/%s.json", currencyID)) }
+func (c *InSalesClient) ListStockCurrencies(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/stock_currencies.json")
+}
+func (c *InSalesClient) GetStockCurrency(ctx context.Context, currencyID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/stock_currencies/%s.json", currencyID))
+}
+func (c *InSalesClient) CreateStockCurrency(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/stock_currencies.json", "stock_currency", args)
+}
+func (c *InSalesClient) UpdateStockCurrency(ctx context.Context, currencyID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/stock_currencies/%s.json", currencyID), "stock_currency", args)
+}
+func (c *InSalesClient) DeleteStockCurrency(ctx context.Context, currencyID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/stock_currencies/%s.json", currencyID))
+}
 
 // === PRICE KINDS ===
 
-func (c *InSalesClient) ListPriceKinds(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/price_kinds.json") }
-func (c *InSalesClient) GetPriceKind(ctx context.Context, kindID string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/price_kinds/%s.json", kindID)) }
-func (c *InSalesClient) CreatePriceKind(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/price_kinds.json", "price_kind", args) }
-func (c *InSalesClient) UpdatePriceKind(ctx context.Context, kindID string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/price_kinds/%s.json", kindID), "price_kind", args) }
-func (c *InSalesClient) DeletePriceKind(ctx context.Context, kindID string) error { return c.crudDelete(ctx, fmt.Sprintf("/price_kinds/%s.json", kindID)) }
+func (c *InSalesClient) ListPriceKinds(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/price_kinds.json")
+}
+func (c *InSalesClient) GetPriceKind(ctx context.Context, kindID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/price_kinds/%s.json", kindID))
+}
+func (c *InSalesClient) CreatePriceKind(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/price_kinds.json", "price_kind", args)
+}
+func (c *InSalesClient) UpdatePriceKind(ctx context.Context, kindID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/price_kinds/%s.json", kindID), "price_kind", args)
+}
+func (c *InSalesClient) DeletePriceKind(ctx context.Context, kindID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/price_kinds/%s.json", kindID))
+}
 
 // === OPTION NAMES ===
 
-func (c *InSalesClient) ListOptionNames(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/option_names.json") }
-func (c *InSalesClient) GetOptionName(ctx context.Context, optionNameID string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/option_names/%s.json", optionNameID)) }
-func (c *InSalesClient) CreateOptionName(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/option_names.json", "option_name", args) }
-func (c *InSalesClient) UpdateOptionName(ctx context.Context, optionNameID string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/option_names/%s.json", optionNameID), "option_name", args) }
-func (c *InSalesClient) DeleteOptionName(ctx context.Context, optionNameID string) error { return c.crudDelete(ctx, fmt.Sprintf("/option_names/%s.json", optionNameID)) }
+func (c *InSalesClient) ListOptionNames(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/option_names.json")
+}
+func (c *InSalesClient) GetOptionName(ctx context.Context, optionNameID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/option_names/%s.json", optionNameID))
+}
+func (c *InSalesClient) CreateOptionName(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/option_names.json", "option_name", args)
+}
+func (c *InSalesClient) UpdateOptionName(ctx context.Context, optionNameID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/option_names/%s.json", optionNameID), "option_name", args)
+}
+func (c *InSalesClient) DeleteOptionName(ctx context.Context, optionNameID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/option_names/%s.json", optionNameID))
+}
 
 // === OPTION VALUES ===
 
-func (c *InSalesClient) ListOptionValues(ctx context.Context, optionNameID string) ([]any, error) { return c.crudList(ctx, fmt.Sprintf("/option_names/%s/option_values.json", optionNameID)) }
-func (c *InSalesClient) GetOptionValue(ctx context.Context, optionNameID, optionValueID string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/option_names/%s/option_values/%s.json", optionNameID, optionValueID)) }
-func (c *InSalesClient) CreateOptionValue(ctx context.Context, optionNameID string, args map[string]any) (any, error) { return c.crudCreate(ctx, fmt.Sprintf("/option_names/%s/option_values.json", optionNameID), "option_value", args) }
-func (c *InSalesClient) UpdateOptionValue(ctx context.Context, optionNameID, optionValueID string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/option_names/%s/option_values/%s.json", optionNameID, optionValueID), "option_value", args) }
-func (c *InSalesClient) DeleteOptionValue(ctx context.Context, optionNameID, optionValueID string) error { return c.crudDelete(ctx, fmt.Sprintf("/option_names/%s/option_values/%s.json", optionNameID, optionValueID)) }
+func (c *InSalesClient) ListOptionValues(ctx context.Context, optionNameID string) ([]any, error) {
+	return c.crudList(ctx, fmt.Sprintf("/option_names/%s/option_values.json", optionNameID))
+}
+func (c *InSalesClient) GetOptionValue(ctx context.Context, optionNameID, optionValueID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/option_names/%s/option_values/%s.json", optionNameID, optionValueID))
+}
+func (c *InSalesClient) CreateOptionValue(ctx context.Context, optionNameID string, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, fmt.Sprintf("/option_names/%s/option_values.json", optionNameID), "option_value", args)
+}
+func (c *InSalesClient) UpdateOptionValue(ctx context.Context, optionNameID, optionValueID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/option_names/%s/option_values/%s.json", optionNameID, optionValueID), "option_value", args)
+}
+func (c *InSalesClient) DeleteOptionValue(ctx context.Context, optionNameID, optionValueID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/option_names/%s/option_values/%s.json", optionNameID, optionValueID))
+}
 
 // === APPLICATION ACTIONS ===
 
-func (c *InSalesClient) ListApplicationActions(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/application_actions.json") }
-func (c *InSalesClient) GetApplicationAction(ctx context.Context, id string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/application_actions/%s.json", id)) }
-func (c *InSalesClient) CreateApplicationAction(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/application_actions.json", "application_action", args) }
-func (c *InSalesClient) UpdateApplicationAction(ctx context.Context, id string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/application_actions/%s.json", id), "application_action", args) }
-func (c *InSalesClient) DeleteApplicationAction(ctx context.Context, id string) error { return c.crudDelete(ctx, fmt.Sprintf("/application_actions/%s.json", id)) }
+func (c *InSalesClient) ListApplicationActions(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/application_actions.json")
+}
+func (c *InSalesClient) GetApplicationAction(ctx context.Context, id string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/application_actions/%s.json", id))
+}
+func (c *InSalesClient) CreateApplicationAction(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/application_actions.json", "application_action", args)
+}
+func (c *InSalesClient) UpdateApplicationAction(ctx context.Context, id string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/application_actions/%s.json", id), "application_action", args)
+}
+func (c *InSalesClient) DeleteApplicationAction(ctx context.Context, id string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/application_actions/%s.json", id))
+}
 
 // === APPLICATION CHARGES ===
 
-func (c *InSalesClient) ListApplicationCharges(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/application_charges.json") }
-func (c *InSalesClient) GetApplicationCharge(ctx context.Context, id string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/application_charges/%s.json", id)) }
-func (c *InSalesClient) CreateApplicationCharge(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/application_charges.json", "application_charge", args) }
+func (c *InSalesClient) ListApplicationCharges(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/application_charges.json")
+}
+func (c *InSalesClient) GetApplicationCharge(ctx context.Context, id string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/application_charges/%s.json", id))
+}
+func (c *InSalesClient) CreateApplicationCharge(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/application_charges.json", "application_charge", args)
+}
 func (c *InSalesClient) DeclineApplicationCharge(ctx context.Context, id string) error {
 	_, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/application_charges/%s/decline.json", id), nil)
 	return err
@@ -2032,23 +2178,45 @@ func (c *InSalesClient) DeclineApplicationCharge(ctx context.Context, id string)
 
 // === APPLICATION WIDGETS ===
 
-func (c *InSalesClient) ListApplicationWidgets(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/application_widgets.json") }
-func (c *InSalesClient) GetApplicationWidget(ctx context.Context, id string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/application_widgets/%s.json", id)) }
-func (c *InSalesClient) CreateApplicationWidget(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/application_widgets.json", "application_widget", args) }
-func (c *InSalesClient) UpdateApplicationWidget(ctx context.Context, id string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/application_widgets/%s.json", id), "application_widget", args) }
-func (c *InSalesClient) DeleteApplicationWidget(ctx context.Context, id string) error { return c.crudDelete(ctx, fmt.Sprintf("/application_widgets/%s.json", id)) }
+func (c *InSalesClient) ListApplicationWidgets(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/application_widgets.json")
+}
+func (c *InSalesClient) GetApplicationWidget(ctx context.Context, id string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/application_widgets/%s.json", id))
+}
+func (c *InSalesClient) CreateApplicationWidget(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/application_widgets.json", "application_widget", args)
+}
+func (c *InSalesClient) UpdateApplicationWidget(ctx context.Context, id string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/application_widgets/%s.json", id), "application_widget", args)
+}
+func (c *InSalesClient) DeleteApplicationWidget(ctx context.Context, id string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/application_widgets/%s.json", id))
+}
 
 // === RECURRING APPLICATION CHARGES ===
 
-func (c *InSalesClient) ListRecurringApplicationCharges(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/recurring_application_charges.json") }
-func (c *InSalesClient) GetRecurringApplicationCharge(ctx context.Context, id string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/recurring_application_charges/%s.json", id)) }
-func (c *InSalesClient) CreateRecurringApplicationCharge(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/recurring_application_charges.json", "recurring_application_charge", args) }
-func (c *InSalesClient) DeleteRecurringApplicationCharge(ctx context.Context, id string) error { return c.crudDelete(ctx, fmt.Sprintf("/recurring_application_charges/%s.json", id)) }
+func (c *InSalesClient) ListRecurringApplicationCharges(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/recurring_application_charges.json")
+}
+func (c *InSalesClient) GetRecurringApplicationCharge(ctx context.Context, id string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/recurring_application_charges/%s.json", id))
+}
+func (c *InSalesClient) CreateRecurringApplicationCharge(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/recurring_application_charges.json", "recurring_application_charge", args)
+}
+func (c *InSalesClient) DeleteRecurringApplicationCharge(ctx context.Context, id string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/recurring_application_charges/%s.json", id))
+}
 
 // === BONUS SYSTEM TRANSACTIONS ===
 
-func (c *InSalesClient) ListBonusSystemTransactions(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/bonus_system_transactions.json") }
-func (c *InSalesClient) GetBonusSystemTransaction(ctx context.Context, id string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/bonus_system_transactions/%s.json", id)) }
+func (c *InSalesClient) ListBonusSystemTransactions(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/bonus_system_transactions.json")
+}
+func (c *InSalesClient) GetBonusSystemTransaction(ctx context.Context, id string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/bonus_system_transactions/%s.json", id))
+}
 func (c *InSalesClient) CreateBonusSystemTransaction(ctx context.Context, clientID int, args map[string]any) (any, error) {
 	payload := map[string]any{"bonus_system_transaction": args}
 	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/clients/%d/bonus_system_transactions.json", clientID), payload)
@@ -2061,56 +2229,114 @@ func (c *InSalesClient) CreateBonusSystemTransaction(ctx context.Context, client
 	}
 	return result, nil
 }
-func (c *InSalesClient) ListClientBonusSystemTransactions(ctx context.Context, clientID string) ([]any, error) { return c.crudList(ctx, fmt.Sprintf("/clients/%s/bonus_system_transactions.json", clientID)) }
+func (c *InSalesClient) ListClientBonusSystemTransactions(ctx context.Context, clientID string) ([]any, error) {
+	return c.crudList(ctx, fmt.Sprintf("/clients/%s/bonus_system_transactions.json", clientID))
+}
 
 // === OAUTH APPS ===
 
-func (c *InSalesClient) ListOAuthApps(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/o_auth_apps.json") }
-func (c *InSalesClient) GetOAuthApp(ctx context.Context, id string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/o_auth_apps/%s.json", id)) }
-func (c *InSalesClient) CreateOAuthApp(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/o_auth_apps.json", "o_auth_app", args) }
-func (c *InSalesClient) UpdateOAuthApp(ctx context.Context, id string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/o_auth_apps/%s.json", id), "o_auth_app", args) }
-func (c *InSalesClient) DeleteOAuthApp(ctx context.Context, id string) error { return c.crudDelete(ctx, fmt.Sprintf("/o_auth_apps/%s.json", id)) }
+func (c *InSalesClient) ListOAuthApps(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/o_auth_apps.json")
+}
+func (c *InSalesClient) GetOAuthApp(ctx context.Context, id string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/o_auth_apps/%s.json", id))
+}
+func (c *InSalesClient) CreateOAuthApp(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/o_auth_apps.json", "o_auth_app", args)
+}
+func (c *InSalesClient) UpdateOAuthApp(ctx context.Context, id string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/o_auth_apps/%s.json", id), "o_auth_app", args)
+}
+func (c *InSalesClient) DeleteOAuthApp(ctx context.Context, id string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/o_auth_apps/%s.json", id))
+}
 
 // === USER TASKS ===
 
-func (c *InSalesClient) ListUserTasks(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/user_tasks.json") }
-func (c *InSalesClient) GetUserTask(ctx context.Context, id string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/user_tasks/%s.json", id)) }
-func (c *InSalesClient) CreateUserTask(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/user_tasks.json", "user_task", args) }
-func (c *InSalesClient) UpdateUserTask(ctx context.Context, id string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/user_tasks/%s.json", id), "user_task", args) }
-func (c *InSalesClient) DeleteUserTask(ctx context.Context, id string) error { return c.crudDelete(ctx, fmt.Sprintf("/user_tasks/%s.json", id)) }
+func (c *InSalesClient) ListUserTasks(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/user_tasks.json")
+}
+func (c *InSalesClient) GetUserTask(ctx context.Context, id string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/user_tasks/%s.json", id))
+}
+func (c *InSalesClient) CreateUserTask(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/user_tasks.json", "user_task", args)
+}
+func (c *InSalesClient) UpdateUserTask(ctx context.Context, id string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/user_tasks/%s.json", id), "user_task", args)
+}
+func (c *InSalesClient) DeleteUserTask(ctx context.Context, id string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/user_tasks/%s.json", id))
+}
 
 // === SUPPLEMENTARY ===
 
-func (c *InSalesClient) ListSupplementaries(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/supplementaries.json") }
-func (c *InSalesClient) GetSupplementary(ctx context.Context, id string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/supplementaries/%s.json", id)) }
-func (c *InSalesClient) CreateSupplementary(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/supplementaries.json", "supplementary", args) }
-func (c *InSalesClient) DeleteSupplementary(ctx context.Context, id string) error { return c.crudDelete(ctx, fmt.Sprintf("/supplementaries/%s.json", id)) }
+func (c *InSalesClient) ListSupplementaries(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/supplementaries.json")
+}
+func (c *InSalesClient) GetSupplementary(ctx context.Context, id string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/supplementaries/%s.json", id))
+}
+func (c *InSalesClient) CreateSupplementary(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/supplementaries.json", "supplementary", args)
+}
+func (c *InSalesClient) DeleteSupplementary(ctx context.Context, id string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/supplementaries/%s.json", id))
+}
 
 // === SIMILARS ===
 
-func (c *InSalesClient) ListSimilars(ctx context.Context, productID string) ([]any, error) { return c.crudList(ctx, fmt.Sprintf("/products/%s/similars.json", productID)) }
-func (c *InSalesClient) CreateSimilar(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/similars.json", "similar", args) }
-func (c *InSalesClient) DeleteSimilar(ctx context.Context, id string) error { return c.crudDelete(ctx, fmt.Sprintf("/similars/%s.json", id)) }
+func (c *InSalesClient) ListSimilars(ctx context.Context, productID string) ([]any, error) {
+	return c.crudList(ctx, fmt.Sprintf("/products/%s/similars.json", productID))
+}
+func (c *InSalesClient) CreateSimilar(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/similars.json", "similar", args)
+}
+func (c *InSalesClient) DeleteSimilar(ctx context.Context, id string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/similars/%s.json", id))
+}
 
 // === UNITS ===
 
-func (c *InSalesClient) ListUnits(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/units.json") }
+func (c *InSalesClient) ListUnits(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/units.json")
+}
 
 // === OUTLETS ===
 
-func (c *InSalesClient) ListOutlets(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/outlets.json") }
-func (c *InSalesClient) GetOutlet(ctx context.Context, id string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/outlets/%s.json", id)) }
-func (c *InSalesClient) CreateOutlet(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/outlets.json", "outlet", args) }
-func (c *InSalesClient) UpdateOutlet(ctx context.Context, id string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/outlets/%s.json", id), "outlet", args) }
-func (c *InSalesClient) DeleteOutlet(ctx context.Context, id string) error { return c.crudDelete(ctx, fmt.Sprintf("/outlets/%s.json", id)) }
+func (c *InSalesClient) ListOutlets(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/outlets.json")
+}
+func (c *InSalesClient) GetOutlet(ctx context.Context, id string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/outlets/%s.json", id))
+}
+func (c *InSalesClient) CreateOutlet(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/outlets.json", "outlet", args)
+}
+func (c *InSalesClient) UpdateOutlet(ctx context.Context, id string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/outlets/%s.json", id), "outlet", args)
+}
+func (c *InSalesClient) DeleteOutlet(ctx context.Context, id string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/outlets/%s.json", id))
+}
 
 // === MARKETPLACES ===
 
-func (c *InSalesClient) ListMarketplaces(ctx context.Context) ([]any, error) { return c.crudList(ctx, "/marketplaces.json") }
-func (c *InSalesClient) GetMarketplace(ctx context.Context, id string) (any, error) { return c.crudGet(ctx, fmt.Sprintf("/marketplaces/%s.json", id)) }
-func (c *InSalesClient) CreateMarketplace(ctx context.Context, args map[string]any) (any, error) { return c.crudCreate(ctx, "/marketplaces.json", "marketplace", args) }
-func (c *InSalesClient) UpdateMarketplace(ctx context.Context, id string, args map[string]any) (any, error) { return c.crudUpdate(ctx, fmt.Sprintf("/marketplaces/%s.json", id), "marketplace", args) }
-func (c *InSalesClient) DeleteMarketplace(ctx context.Context, id string) error { return c.crudDelete(ctx, fmt.Sprintf("/marketplaces/%s.json", id)) }
+func (c *InSalesClient) ListMarketplaces(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/marketplaces.json")
+}
+func (c *InSalesClient) GetMarketplace(ctx context.Context, id string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/marketplaces/%s.json", id))
+}
+func (c *InSalesClient) CreateMarketplace(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/marketplaces.json", "marketplace", args)
+}
+func (c *InSalesClient) UpdateMarketplace(ctx context.Context, id string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/marketplaces/%s.json", id), "marketplace", args)
+}
+func (c *InSalesClient) DeleteMarketplace(ctx context.Context, id string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/marketplaces/%s.json", id))
+}
 
 // === PROVIDER TOKEN ===
 

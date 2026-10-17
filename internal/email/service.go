@@ -19,7 +19,7 @@ type Config struct {
 }
 
 type Service struct {
-	cfg    Config
+	cfg       Config
 	templates *template.Template
 }
 
@@ -60,7 +60,7 @@ func (s *Service) SendVerifyEmail(to, name, token string) error {
 	verifyURL := fmt.Sprintf("https://%s/verify-email?token=%s", s.cfg.Domain, token)
 
 	data := struct {
-		Name     string
+		Name      string
 		VerifyURL string
 	}{
 		Name:      name,

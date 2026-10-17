@@ -6,14 +6,14 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/pdn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PDNHandler struct {
-	db             *pgxpool.Pool
-	settingsCache  *pdn.PDNSettingsCache
+	db            *pgxpool.Pool
+	settingsCache *pdn.PDNSettingsCache
 }
 
 func NewPDNHandler(db *pgxpool.Pool) *PDNHandler {
@@ -39,13 +39,13 @@ type PDNSettingsRequest struct {
 }
 
 type PDNLogEntry struct {
-	ID            string `json:"id"`
-	Timestamp     string `json:"timestamp"`
-	Tool          string `json:"tool"`
-	DataTypes     []string `json:"data_types"`
-	Jurisdiction  string `json:"jurisdiction"`
-	LLMProvider   string `json:"llm_provider"`
-	Masked        bool   `json:"masked"`
+	ID           string   `json:"id"`
+	Timestamp    string   `json:"timestamp"`
+	Tool         string   `json:"tool"`
+	DataTypes    []string `json:"data_types"`
+	Jurisdiction string   `json:"jurisdiction"`
+	LLMProvider  string   `json:"llm_provider"`
+	Masked       bool     `json:"masked"`
 }
 
 func (h *PDNHandler) GetSettings(w http.ResponseWriter, r *http.Request) {

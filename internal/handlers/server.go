@@ -19,26 +19,26 @@ func NewServerHandler(settingsRepo *storage.SettingsRepository) *ServerHandler {
 }
 
 type ServerSettingsResponse struct {
-	Domain            string `json:"domain"`
-	HTTPSEnabled      bool   `json:"https_enabled"`
-	AutoRenew         bool   `json:"auto_renew"`
-	RenewDaysBefore   int    `json:"renew_days_before"`
-	CertExpiresAt     string `json:"cert_expires_at"`
-	CertIssuer        string `json:"cert_issuer"`
-	CertNeedsAttention bool  `json:"cert_needs_attention"`
-	LastRenewError    string `json:"last_renew_error"`
-	RetryCount        int    `json:"retry_count"`
-	LastRetryAt       string `json:"last_retry_at"`
-	LetsencryptEmail  string `json:"letsencrypt_email"`
-	Error             string `json:"error,omitempty"`
+	Domain             string `json:"domain"`
+	HTTPSEnabled       bool   `json:"https_enabled"`
+	AutoRenew          bool   `json:"auto_renew"`
+	RenewDaysBefore    int    `json:"renew_days_before"`
+	CertExpiresAt      string `json:"cert_expires_at"`
+	CertIssuer         string `json:"cert_issuer"`
+	CertNeedsAttention bool   `json:"cert_needs_attention"`
+	LastRenewError     string `json:"last_renew_error"`
+	RetryCount         int    `json:"retry_count"`
+	LastRetryAt        string `json:"last_retry_at"`
+	LetsencryptEmail   string `json:"letsencrypt_email"`
+	Error              string `json:"error,omitempty"`
 }
 
 type ServerSettingsRequest struct {
-	Domain            *string `json:"domain,omitempty"`
-	HTTPSEnabled      *bool   `json:"https_enabled,omitempty"`
-	AutoRenew         *bool   `json:"auto_renew,omitempty"`
-	RenewDaysBefore   *int    `json:"renew_days_before,omitempty"`
-	LetsencryptEmail  *string `json:"letsencrypt_email,omitempty"`
+	Domain           *string `json:"domain,omitempty"`
+	HTTPSEnabled     *bool   `json:"https_enabled,omitempty"`
+	AutoRenew        *bool   `json:"auto_renew,omitempty"`
+	RenewDaysBefore  *int    `json:"renew_days_before,omitempty"`
+	LetsencryptEmail *string `json:"letsencrypt_email,omitempty"`
 }
 
 func (h *ServerHandler) GetSettings(w http.ResponseWriter, r *http.Request) {

@@ -49,10 +49,10 @@ type InSalesProductProperty struct {
 }
 
 type InSalesCharacteristic struct {
-	ID          int    `json:"id"`
-	PropertyID  int    `json:"property_id"`
-	Title       string `json:"title"`
-	Position    int    `json:"position"`
+	ID         int    `json:"id"`
+	PropertyID int    `json:"property_id"`
+	Title      string `json:"title"`
+	Position   int    `json:"position"`
 }
 
 type InSalesOptionName struct {
@@ -80,23 +80,23 @@ type InSalesImage struct {
 }
 
 type InSalesOrderResponse struct {
-	ID                int                    `json:"id"`
-	Number            int                    `json:"number"`
-	FulfillmentStatus string                 `json:"fulfillment_status"`
-	FinancialStatus   string                 `json:"financial_status"`
-	TotalPrice        float64                `json:"total_price"`
-	ItemsPrice        float64                `json:"items_price"`
-	DeliveryPrice     float64                `json:"delivery_price"`
-	Discount          map[string]any `json:"discount"`
-	Discounts         []any          `json:"discounts"`
-	Client            *InSalesClientRef      `json:"client"`
-	DeliveryTitle     string                 `json:"delivery_title"`
-	PaymentTitle      string                 `json:"payment_title"`
-	Comment           string                 `json:"comment"`
-	CreatedAt         string                 `json:"created_at"`
-	UpdatedAt         string                 `json:"updated_at"`
-	OrderLines        []InSalesOrderLine     `json:"order_lines"`
-	FieldsValues      []InSalesFieldValue    `json:"fields_values"`
+	ID                int                     `json:"id"`
+	Number            int                     `json:"number"`
+	FulfillmentStatus string                  `json:"fulfillment_status"`
+	FinancialStatus   string                  `json:"financial_status"`
+	TotalPrice        float64                 `json:"total_price"`
+	ItemsPrice        float64                 `json:"items_price"`
+	DeliveryPrice     float64                 `json:"delivery_price"`
+	Discount          map[string]any          `json:"discount"`
+	Discounts         []any                   `json:"discounts"`
+	Client            *InSalesClientRef       `json:"client"`
+	DeliveryTitle     string                  `json:"delivery_title"`
+	PaymentTitle      string                  `json:"payment_title"`
+	Comment           string                  `json:"comment"`
+	CreatedAt         string                  `json:"created_at"`
+	UpdatedAt         string                  `json:"updated_at"`
+	OrderLines        []InSalesOrderLine      `json:"order_lines"`
+	FieldsValues      []InSalesFieldValue     `json:"fields_values"`
 	ShippingAddress   *InSalesShippingAddress `json:"shipping_address"`
 }
 
@@ -119,41 +119,41 @@ type InSalesClientRef struct {
 }
 
 type InSalesOrderLine struct {
-	ID           int     `json:"id"`
-	ProductID    int     `json:"product_id"`
-	VariantID    int     `json:"variant_id"`
-	Title        string  `json:"title"`
-	Quantity     int     `json:"quantity"`
-	SalePrice    float64 `json:"sale_price"`
-	TotalPrice   float64 `json:"total_price"`
+	ID              int     `json:"id"`
+	ProductID       int     `json:"product_id"`
+	VariantID       int     `json:"variant_id"`
+	Title           string  `json:"title"`
+	Quantity        int     `json:"quantity"`
+	SalePrice       float64 `json:"sale_price"`
+	TotalPrice      float64 `json:"total_price"`
 	DiscountsAmount float64 `json:"discounts_amount"`
-	SKU          string  `json:"sku"`
+	SKU             string  `json:"sku"`
 }
 
 type InSalesClientResponse struct {
-	ID                   int                    `json:"id"`
-	Email                string                 `json:"email"`
-	Name                 string                 `json:"name"`
-	Surname              string                 `json:"surname"`
-	Middlename           string                 `json:"middlename"`
-	FirstName            string                 `json:"first_name"`
-	LastName             string                 `json:"last_name"`
-	Phone                string                 `json:"phone"`
-	FullName             string                 `json:"full_name"`
-	Comment              string                 `json:"comment"`
-	Registered           bool                   `json:"registered"`
-	Subscribe            bool                   `json:"subscribe"`
-	ClientGroupID        *int                   `json:"client_group_id"`
-	BonusPoints          int                    `json:"bonus_points"`
-	Type                 string                 `json:"type"`
-	ProgressiveDiscount  string                 `json:"progressive_discount"`
-	GroupDiscount        string                 `json:"group_discount"`
+	ID                    int                   `json:"id"`
+	Email                 string                `json:"email"`
+	Name                  string                `json:"name"`
+	Surname               string                `json:"surname"`
+	Middlename            string                `json:"middlename"`
+	FirstName             string                `json:"first_name"`
+	LastName              string                `json:"last_name"`
+	Phone                 string                `json:"phone"`
+	FullName              string                `json:"full_name"`
+	Comment               string                `json:"comment"`
+	Registered            bool                  `json:"registered"`
+	Subscribe             bool                  `json:"subscribe"`
+	ClientGroupID         *int                  `json:"client_group_id"`
+	BonusPoints           int                   `json:"bonus_points"`
+	Type                  string                `json:"type"`
+	ProgressiveDiscount   string                `json:"progressive_discount"`
+	GroupDiscount         string                `json:"group_discount"`
 	ConsentToPersonalData bool                  `json:"consent_to_personal_data"`
-	CreatedAt            string                 `json:"created_at"`
-	UpdatedAt            string                 `json:"updated_at"`
-	FieldsValues         []InSalesFieldValue    `json:"fields_values"`
-	ClientTags           []string               `json:"client_tags"`
-	DefaultAddress       *InSalesClientAddress  `json:"default_address"`
+	CreatedAt             string                `json:"created_at"`
+	UpdatedAt             string                `json:"updated_at"`
+	FieldsValues          []InSalesFieldValue   `json:"fields_values"`
+	ClientTags            []string              `json:"client_tags"`
+	DefaultAddress        *InSalesClientAddress `json:"default_address"`
 }
 
 type InSalesClientAddress struct {
@@ -212,21 +212,21 @@ type InSalesAccessoryResponse struct {
 }
 
 type InSalesPropertyValueResponse struct {
-	ID           int    `json:"id"`
-	AccessoryID  int    `json:"accessory_id"`
-	Title        string `json:"title"`
-	Position     int    `json:"position"`
-	CreatedAt    string `json:"created_at"`
-	UpdatedAt    string `json:"updated_at"`
+	ID          int    `json:"id"`
+	AccessoryID int    `json:"accessory_id"`
+	Title       string `json:"title"`
+	Position    int    `json:"position"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
 }
 
 type InSalesMenuResponse struct {
-	ID        int                `json:"id"`
-	Title     string             `json:"title"`
-	Handle    string             `json:"handle"`
-	Items     []InSalesMenuItem  `json:"items"`
-	CreatedAt string             `json:"created_at"`
-	UpdatedAt string             `json:"updated_at"`
+	ID        int               `json:"id"`
+	Title     string            `json:"title"`
+	Handle    string            `json:"handle"`
+	Items     []InSalesMenuItem `json:"items"`
+	CreatedAt string            `json:"created_at"`
+	UpdatedAt string            `json:"updated_at"`
 }
 
 type InSalesMenuItem struct {
@@ -237,11 +237,11 @@ type InSalesMenuItem struct {
 }
 
 type InSalesRedirectResponse struct {
-	ID          int    `json:"id"`
-	Url         string `json:"url"`
-	Target      string `json:"target"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	ID        int    `json:"id"`
+	Url       string `json:"url"`
+	Target    string `json:"target"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type InSalesBlogResponse struct {
@@ -304,27 +304,27 @@ type InSalesPropertyResponse struct {
 
 // Characteristic
 type InSalesCharacteristicResponse struct {
-	ID          int    `json:"id"`
-	PropertyID  int    `json:"property_id"`
-	Title       string `json:"title"`
-	Position    int    `json:"position"`
-	Permalink   string `json:"permalink"`
+	ID         int    `json:"id"`
+	PropertyID int    `json:"property_id"`
+	Title      string `json:"title"`
+	Position   int    `json:"position"`
+	Permalink  string `json:"permalink"`
 }
 
 // Review
 type InSalesReviewResponse struct {
-	ID          int    `json:"id"`
-	ProductID   int    `json:"product_id"`
-	Author      string `json:"author"`
-	Content     string `json:"content"`
-	Email       string `json:"email"`
-	Rating      int    `json:"rating"`
-	Published   bool   `json:"published"`
-	ManagerName string `json:"manager_name"`
+	ID           int    `json:"id"`
+	ProductID    int    `json:"product_id"`
+	Author       string `json:"author"`
+	Content      string `json:"content"`
+	Email        string `json:"email"`
+	Rating       int    `json:"rating"`
+	Published    bool   `json:"published"`
+	ManagerName  string `json:"manager_name"`
 	ManagerReply string `json:"manager_reply"`
-	Spam        bool   `json:"spam"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	Spam         bool   `json:"spam"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
 }
 
 // File
@@ -345,65 +345,65 @@ type InSalesDomainResponse struct {
 
 // ClientGroup
 type InSalesClientGroupResponse struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	Discount    string `json:"discount"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	Discount  string `json:"discount"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 // CustomStatus
 type InSalesCustomStatusResponse struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	StatusType  string `json:"status_type"`
-	Position    int    `json:"position"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	ID         int    `json:"id"`
+	Title      string `json:"title"`
+	StatusType string `json:"status_type"`
+	Position   int    `json:"position"`
+	CreatedAt  string `json:"created_at"`
+	UpdatedAt  string `json:"updated_at"`
 }
 
 // ProductField
 type InSalesProductFieldResponse struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	Handle      string `json:"handle"`
-	FieldType   string `json:"field_type"`
-	Position    int    `json:"position"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	Handle    string `json:"handle"`
+	FieldType string `json:"field_type"`
+	Position  int    `json:"position"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 // VariantField
 type InSalesVariantFieldResponse struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	Handle      string `json:"handle"`
-	FieldType   string `json:"field_type"`
-	Position    int    `json:"position"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	Handle    string `json:"handle"`
+	FieldType string `json:"field_type"`
+	Position  int    `json:"position"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 // CollectionField
 type InSalesCollectionFieldResponse struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	Handle      string `json:"handle"`
-	FieldType   string `json:"field_type"`
-	Position    int    `json:"position"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	Handle    string `json:"handle"`
+	FieldType string `json:"field_type"`
+	Position  int    `json:"position"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 // CollectionFilter
 type InSalesCollectionFilterResponse struct {
-	ID             int    `json:"id"`
-	Title          string `json:"title"`
-	FilterType     string `json:"filter_type"`
-	Position       int    `json:"position"`
-	CollectionID   int    `json:"collection_id"`
-	CreatedAt      string `json:"created_at"`
-	UpdatedAt      string `json:"updated_at"`
+	ID           int    `json:"id"`
+	Title        string `json:"title"`
+	FilterType   string `json:"filter_type"`
+	Position     int    `json:"position"`
+	CollectionID int    `json:"collection_id"`
+	CreatedAt    string `json:"created_at"`
+	UpdatedAt    string `json:"updated_at"`
 }
 
 // JsTag
@@ -419,12 +419,12 @@ type InSalesJsTagResponse struct {
 
 // ExternalDiscount
 type InSalesExternalDiscountResponse struct {
-	ID          int    `json:"id"`
-	Title       string `json:"title"`
-	Percent     string `json:"percent"`
-	Amount      string `json:"amount"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	ID        int    `json:"id"`
+	Title     string `json:"title"`
+	Percent   string `json:"percent"`
+	Amount    string `json:"amount"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 // DiscountCollectionsGroup
@@ -449,11 +449,11 @@ type InSalesWarehouseResponse struct {
 
 // SalesChannel
 type InSalesSalesChannelResponse struct {
-	ID        int    `json:"id"`
-	Title     string `json:"title"`
+	ID         int    `json:"id"`
+	Title      string `json:"title"`
 	SystemName string `json:"system_name"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	CreatedAt  string `json:"created_at"`
+	UpdatedAt  string `json:"updated_at"`
 }
 
 // StockCurrency
@@ -498,22 +498,22 @@ type InSalesOptionValueResponse struct {
 // Round 4 types
 
 type InSalesApplicationActionResponse struct {
-	ID       int    `json:"id"`
-	Title    string `json:"title"`
-	Handle   string `json:"handle"`
-	Entity   string `json:"entity"`
-	URL      string `json:"url"`
+	ID     int    `json:"id"`
+	Title  string `json:"title"`
+	Handle string `json:"handle"`
+	Entity string `json:"entity"`
+	URL    string `json:"url"`
 }
 
 type InSalesApplicationChargeResponse struct {
-	ID               int    `json:"id"`
-	Name             string `json:"name"`
-	Price            string `json:"price"`
-	Status           string `json:"status"`
-	ConfirmationURL  string `json:"confirmation_url"`
-	Test             bool   `json:"test"`
-	CreatedAt        string `json:"created_at"`
-	UpdatedAt        string `json:"updated_at"`
+	ID              int    `json:"id"`
+	Name            string `json:"name"`
+	Price           string `json:"price"`
+	Status          string `json:"status"`
+	ConfirmationURL string `json:"confirmation_url"`
+	Test            bool   `json:"test"`
+	CreatedAt       string `json:"created_at"`
+	UpdatedAt       string `json:"updated_at"`
 }
 
 type InSalesApplicationWidgetResponse struct {
@@ -525,21 +525,21 @@ type InSalesApplicationWidgetResponse struct {
 }
 
 type InSalesRecurringApplicationChargeResponse struct {
-	ID              int    `json:"id"`
-	Name            string `json:"name"`
-	Price           string `json:"price"`
-	Status          string `json:"status"`
-	CreatedAt       string `json:"created_at"`
-	UpdatedAt       string `json:"updated_at"`
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	Price     string `json:"price"`
+	Status    string `json:"status"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type InSalesBonusSystemTransactionResponse struct {
-	ID         int    `json:"id"`
-	ClientID   int    `json:"client_id"`
-	Amount     string `json:"amount"`
-	Comment    string `json:"comment"`
-	CreatedAt  string `json:"created_at"`
-	UpdatedAt  string `json:"updated_at"`
+	ID        int    `json:"id"`
+	ClientID  int    `json:"client_id"`
+	Amount    string `json:"amount"`
+	Comment   string `json:"comment"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
 }
 
 type InSalesOAuthAppResponse struct {

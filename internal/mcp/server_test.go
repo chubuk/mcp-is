@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/chubuk/mcp-is/internal/core"
+	"github.com/mark3labs/mcp-go/mcp"
 )
 
 func TestToolFilterReadOnly(t *testing.T) {

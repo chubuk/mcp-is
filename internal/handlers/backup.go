@@ -22,23 +22,23 @@ func NewBackupHandler(db *pgxpool.Pool) *BackupHandler {
 }
 
 type BackupSettingsResponse struct {
-	Enabled           bool   `json:"enabled"`
-	Method            string `json:"method"`
-	IntervalHours     int    `json:"interval_hours"`
-	HourStart         int    `json:"hour_start"`
-	HourEnd           int    `json:"hour_end"`
-	MaxLoadPct        int    `json:"max_load_pct"`
-	MaxIowaitPct      int    `json:"max_iowait_pct"`
-	RetentionDays     int    `json:"retention_days"`
-	Dir               string `json:"dir"`
-	RemoteEnabled     bool   `json:"remote_enabled"`
-	RemoteType        string `json:"remote_type"`
-	RemoteHost        string `json:"remote_host"`
-	RemotePort        int    `json:"remote_port"`
-	RemoteUser        string `json:"remote_user"`
-	RemotePath        string `json:"remote_path"`
-	RemoteKey         string `json:"remote_key"`
-	Error             string `json:"error,omitempty"`
+	Enabled       bool   `json:"enabled"`
+	Method        string `json:"method"`
+	IntervalHours int    `json:"interval_hours"`
+	HourStart     int    `json:"hour_start"`
+	HourEnd       int    `json:"hour_end"`
+	MaxLoadPct    int    `json:"max_load_pct"`
+	MaxIowaitPct  int    `json:"max_iowait_pct"`
+	RetentionDays int    `json:"retention_days"`
+	Dir           string `json:"dir"`
+	RemoteEnabled bool   `json:"remote_enabled"`
+	RemoteType    string `json:"remote_type"`
+	RemoteHost    string `json:"remote_host"`
+	RemotePort    int    `json:"remote_port"`
+	RemoteUser    string `json:"remote_user"`
+	RemotePath    string `json:"remote_path"`
+	RemoteKey     string `json:"remote_key"`
+	Error         string `json:"error,omitempty"`
 }
 
 type BackupSettingsRequest struct {
@@ -61,16 +61,16 @@ type BackupSettingsRequest struct {
 }
 
 type BackupLogEntry struct {
-	ID        string  `json:"id"`
-	Timestamp string  `json:"timestamp"`
-	Status    string  `json:"status"`
-	SizeBytes int64   `json:"size_bytes"`
-	ErrorMsg  string  `json:"error_msg"`
-	Load1m    float64 `json:"load_1m"`
-	Load5m    float64 `json:"load_5m"`
-	Load15m   float64 `json:"load_15m"`
-	IowaitPct float64 `json:"iowait_pct"`
-	DurationMs int    `json:"duration_ms"`
+	ID         string  `json:"id"`
+	Timestamp  string  `json:"timestamp"`
+	Status     string  `json:"status"`
+	SizeBytes  int64   `json:"size_bytes"`
+	ErrorMsg   string  `json:"error_msg"`
+	Load1m     float64 `json:"load_1m"`
+	Load5m     float64 `json:"load_5m"`
+	Load15m    float64 `json:"load_15m"`
+	IowaitPct  float64 `json:"iowait_pct"`
+	DurationMs int     `json:"duration_ms"`
 }
 
 type BackupIncident struct {
@@ -83,14 +83,14 @@ type BackupIncident struct {
 }
 
 type BackupStatusResponse struct {
-	LastBackup    *BackupLogEntry `json:"last_backup"`
-	TotalBackups  int             `json:"total_backups"`
-	TotalSize     int64           `json:"total_size"`
-	Load1m        float64         `json:"load_1m"`
-	Load5m        float64         `json:"load_5m"`
-	Load15m       float64         `json:"load_15m"`
-	DiskFreeMB    int             `json:"disk_free_mb"`
-	Error         string          `json:"error,omitempty"`
+	LastBackup   *BackupLogEntry `json:"last_backup"`
+	TotalBackups int             `json:"total_backups"`
+	TotalSize    int64           `json:"total_size"`
+	Load1m       float64         `json:"load_1m"`
+	Load5m       float64         `json:"load_5m"`
+	Load15m      float64         `json:"load_15m"`
+	DiskFreeMB   int             `json:"disk_free_mb"`
+	Error        string          `json:"error,omitempty"`
 }
 
 func (h *BackupHandler) GetSettings(w http.ResponseWriter, r *http.Request) {

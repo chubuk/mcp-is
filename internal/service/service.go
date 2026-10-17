@@ -1094,176 +1094,1103 @@ func (s *Service) readOnlyCheck(ctx context.Context) error {
 }
 
 // === DOMAINS ===
-func (s *Service) ListDomains(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListDomains(ctx) }
-func (s *Service) GetDomain(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetDomain(ctx, id) }
-func (s *Service) CreateDomain(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateDomain(ctx, args) }
-func (s *Service) UpdateDomain(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateDomain(ctx, id, args) }
-func (s *Service) DeleteDomain(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteDomain(ctx, id) }
+func (s *Service) ListDomains(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListDomains(ctx)
+}
+func (s *Service) GetDomain(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetDomain(ctx, id)
+}
+func (s *Service) CreateDomain(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateDomain(ctx, args)
+}
+func (s *Service) UpdateDomain(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateDomain(ctx, id, args)
+}
+func (s *Service) DeleteDomain(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteDomain(ctx, id)
+}
 
 // === CLIENT GROUPS ===
-func (s *Service) ListClientGroups(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListClientGroups(ctx) }
-func (s *Service) GetClientGroup(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetClientGroup(ctx, id) }
-func (s *Service) CreateClientGroup(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateClientGroup(ctx, args) }
-func (s *Service) UpdateClientGroup(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateClientGroup(ctx, id, args) }
-func (s *Service) DeleteClientGroup(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteClientGroup(ctx, id) }
+func (s *Service) ListClientGroups(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListClientGroups(ctx)
+}
+func (s *Service) GetClientGroup(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetClientGroup(ctx, id)
+}
+func (s *Service) CreateClientGroup(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateClientGroup(ctx, args)
+}
+func (s *Service) UpdateClientGroup(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateClientGroup(ctx, id, args)
+}
+func (s *Service) DeleteClientGroup(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteClientGroup(ctx, id)
+}
 
 // === CUSTOM STATUSES ===
-func (s *Service) ListCustomStatuses(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListCustomStatuses(ctx) }
-func (s *Service) GetCustomStatus(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetCustomStatus(ctx, id) }
-func (s *Service) CreateCustomStatus(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateCustomStatus(ctx, args) }
-func (s *Service) UpdateCustomStatus(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateCustomStatus(ctx, id, args) }
-func (s *Service) DeleteCustomStatus(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteCustomStatus(ctx, id) }
+func (s *Service) ListCustomStatuses(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListCustomStatuses(ctx)
+}
+func (s *Service) GetCustomStatus(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetCustomStatus(ctx, id)
+}
+func (s *Service) CreateCustomStatus(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateCustomStatus(ctx, args)
+}
+func (s *Service) UpdateCustomStatus(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateCustomStatus(ctx, id, args)
+}
+func (s *Service) DeleteCustomStatus(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteCustomStatus(ctx, id)
+}
 
 // === PRODUCT FIELDS ===
-func (s *Service) ListProductFields(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListProductFields(ctx) }
-func (s *Service) GetProductField(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetProductField(ctx, id) }
-func (s *Service) CreateProductField(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateProductField(ctx, args) }
-func (s *Service) UpdateProductField(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateProductField(ctx, id, args) }
-func (s *Service) DeleteProductField(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteProductField(ctx, id) }
+func (s *Service) ListProductFields(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListProductFields(ctx)
+}
+func (s *Service) GetProductField(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetProductField(ctx, id)
+}
+func (s *Service) CreateProductField(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateProductField(ctx, args)
+}
+func (s *Service) UpdateProductField(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateProductField(ctx, id, args)
+}
+func (s *Service) DeleteProductField(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteProductField(ctx, id)
+}
 
 // === VARIANT FIELDS ===
-func (s *Service) ListVariantFields(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListVariantFields(ctx) }
-func (s *Service) GetVariantField(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetVariantField(ctx, id) }
-func (s *Service) CreateVariantField(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateVariantField(ctx, args) }
-func (s *Service) UpdateVariantField(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateVariantField(ctx, id, args) }
-func (s *Service) DeleteVariantField(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteVariantField(ctx, id) }
+func (s *Service) ListVariantFields(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListVariantFields(ctx)
+}
+func (s *Service) GetVariantField(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetVariantField(ctx, id)
+}
+func (s *Service) CreateVariantField(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateVariantField(ctx, args)
+}
+func (s *Service) UpdateVariantField(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateVariantField(ctx, id, args)
+}
+func (s *Service) DeleteVariantField(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteVariantField(ctx, id)
+}
 
 // === COLLECTION FIELDS ===
-func (s *Service) ListCollectionFields(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListCollectionFields(ctx) }
-func (s *Service) GetCollectionField(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetCollectionField(ctx, id) }
-func (s *Service) CreateCollectionField(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateCollectionField(ctx, args) }
-func (s *Service) UpdateCollectionField(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateCollectionField(ctx, id, args) }
-func (s *Service) DeleteCollectionField(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteCollectionField(ctx, id) }
+func (s *Service) ListCollectionFields(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListCollectionFields(ctx)
+}
+func (s *Service) GetCollectionField(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetCollectionField(ctx, id)
+}
+func (s *Service) CreateCollectionField(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateCollectionField(ctx, args)
+}
+func (s *Service) UpdateCollectionField(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateCollectionField(ctx, id, args)
+}
+func (s *Service) DeleteCollectionField(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteCollectionField(ctx, id)
+}
 
 // === COLLECTION FILTERS ===
-func (s *Service) ListCollectionFilters(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListCollectionFilters(ctx) }
-func (s *Service) GetCollectionFilter(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetCollectionFilter(ctx, id) }
-func (s *Service) CreateCollectionFilter(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateCollectionFilter(ctx, args) }
-func (s *Service) UpdateCollectionFilter(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateCollectionFilter(ctx, id, args) }
-func (s *Service) DeleteCollectionFilter(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteCollectionFilter(ctx, id) }
+func (s *Service) ListCollectionFilters(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListCollectionFilters(ctx)
+}
+func (s *Service) GetCollectionFilter(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetCollectionFilter(ctx, id)
+}
+func (s *Service) CreateCollectionFilter(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateCollectionFilter(ctx, args)
+}
+func (s *Service) UpdateCollectionFilter(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateCollectionFilter(ctx, id, args)
+}
+func (s *Service) DeleteCollectionFilter(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteCollectionFilter(ctx, id)
+}
 
 // === JS TAGS ===
-func (s *Service) ListJsTags(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListJsTags(ctx) }
-func (s *Service) GetJsTag(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetJsTag(ctx, id) }
-func (s *Service) CreateJsTag(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateJsTag(ctx, args) }
-func (s *Service) UpdateJsTag(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateJsTag(ctx, id, args) }
-func (s *Service) DeleteJsTag(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteJsTag(ctx, id) }
+func (s *Service) ListJsTags(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListJsTags(ctx)
+}
+func (s *Service) GetJsTag(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetJsTag(ctx, id)
+}
+func (s *Service) CreateJsTag(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateJsTag(ctx, args)
+}
+func (s *Service) UpdateJsTag(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateJsTag(ctx, id, args)
+}
+func (s *Service) DeleteJsTag(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteJsTag(ctx, id)
+}
 
 // === EXTERNAL DISCOUNTS ===
-func (s *Service) ListExternalDiscounts(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListExternalDiscounts(ctx) }
-func (s *Service) GetExternalDiscount(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetExternalDiscount(ctx, id) }
-func (s *Service) CreateExternalDiscount(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateExternalDiscount(ctx, args) }
-func (s *Service) UpdateExternalDiscount(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateExternalDiscount(ctx, id, args) }
-func (s *Service) DeleteExternalDiscount(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteExternalDiscount(ctx, id) }
+func (s *Service) ListExternalDiscounts(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListExternalDiscounts(ctx)
+}
+func (s *Service) GetExternalDiscount(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetExternalDiscount(ctx, id)
+}
+func (s *Service) CreateExternalDiscount(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateExternalDiscount(ctx, args)
+}
+func (s *Service) UpdateExternalDiscount(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateExternalDiscount(ctx, id, args)
+}
+func (s *Service) DeleteExternalDiscount(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteExternalDiscount(ctx, id)
+}
 
 // === DISCOUNT COLLECTIONS GROUPS ===
-func (s *Service) ListDiscountCollectionsGroups(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListDiscountCollectionsGroups(ctx) }
-func (s *Service) GetDiscountCollectionsGroup(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetDiscountCollectionsGroup(ctx, id) }
-func (s *Service) CreateDiscountCollectionsGroup(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateDiscountCollectionsGroup(ctx, args) }
-func (s *Service) UpdateDiscountCollectionsGroup(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateDiscountCollectionsGroup(ctx, id, args) }
-func (s *Service) DeleteDiscountCollectionsGroup(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteDiscountCollectionsGroup(ctx, id) }
+func (s *Service) ListDiscountCollectionsGroups(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListDiscountCollectionsGroups(ctx)
+}
+func (s *Service) GetDiscountCollectionsGroup(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetDiscountCollectionsGroup(ctx, id)
+}
+func (s *Service) CreateDiscountCollectionsGroup(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateDiscountCollectionsGroup(ctx, args)
+}
+func (s *Service) UpdateDiscountCollectionsGroup(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateDiscountCollectionsGroup(ctx, id, args)
+}
+func (s *Service) DeleteDiscountCollectionsGroup(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteDiscountCollectionsGroup(ctx, id)
+}
 
 // === WAREHOUSES ===
-func (s *Service) ListWarehouses(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListWarehouses(ctx) }
-func (s *Service) GetWarehouse(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetWarehouse(ctx, id) }
-func (s *Service) CreateWarehouse(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateWarehouse(ctx, args) }
-func (s *Service) UpdateWarehouse(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateWarehouse(ctx, id, args) }
-func (s *Service) DeleteWarehouse(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteWarehouse(ctx, id) }
+func (s *Service) ListWarehouses(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListWarehouses(ctx)
+}
+func (s *Service) GetWarehouse(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetWarehouse(ctx, id)
+}
+func (s *Service) CreateWarehouse(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateWarehouse(ctx, args)
+}
+func (s *Service) UpdateWarehouse(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateWarehouse(ctx, id, args)
+}
+func (s *Service) DeleteWarehouse(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteWarehouse(ctx, id)
+}
 
 // === SALES CHANNELS ===
-func (s *Service) ListSalesChannels(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListSalesChannels(ctx) }
-func (s *Service) GetSalesChannel(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetSalesChannel(ctx, id) }
-func (s *Service) CreateSalesChannel(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateSalesChannel(ctx, args) }
-func (s *Service) UpdateSalesChannel(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateSalesChannel(ctx, id, args) }
-func (s *Service) DeleteSalesChannel(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteSalesChannel(ctx, id) }
+func (s *Service) ListSalesChannels(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListSalesChannels(ctx)
+}
+func (s *Service) GetSalesChannel(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetSalesChannel(ctx, id)
+}
+func (s *Service) CreateSalesChannel(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateSalesChannel(ctx, args)
+}
+func (s *Service) UpdateSalesChannel(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateSalesChannel(ctx, id, args)
+}
+func (s *Service) DeleteSalesChannel(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteSalesChannel(ctx, id)
+}
 
 // === STOCK CURRENCIES ===
-func (s *Service) ListStockCurrencies(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListStockCurrencies(ctx) }
-func (s *Service) GetStockCurrency(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetStockCurrency(ctx, id) }
-func (s *Service) CreateStockCurrency(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateStockCurrency(ctx, args) }
-func (s *Service) UpdateStockCurrency(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateStockCurrency(ctx, id, args) }
-func (s *Service) DeleteStockCurrency(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteStockCurrency(ctx, id) }
+func (s *Service) ListStockCurrencies(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListStockCurrencies(ctx)
+}
+func (s *Service) GetStockCurrency(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetStockCurrency(ctx, id)
+}
+func (s *Service) CreateStockCurrency(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateStockCurrency(ctx, args)
+}
+func (s *Service) UpdateStockCurrency(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateStockCurrency(ctx, id, args)
+}
+func (s *Service) DeleteStockCurrency(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteStockCurrency(ctx, id)
+}
 
 // === PRICE KINDS ===
-func (s *Service) ListPriceKinds(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListPriceKinds(ctx) }
-func (s *Service) GetPriceKind(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetPriceKind(ctx, id) }
-func (s *Service) CreatePriceKind(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreatePriceKind(ctx, args) }
-func (s *Service) UpdatePriceKind(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdatePriceKind(ctx, id, args) }
-func (s *Service) DeletePriceKind(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeletePriceKind(ctx, id) }
+func (s *Service) ListPriceKinds(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListPriceKinds(ctx)
+}
+func (s *Service) GetPriceKind(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetPriceKind(ctx, id)
+}
+func (s *Service) CreatePriceKind(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreatePriceKind(ctx, args)
+}
+func (s *Service) UpdatePriceKind(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdatePriceKind(ctx, id, args)
+}
+func (s *Service) DeletePriceKind(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeletePriceKind(ctx, id)
+}
 
 // === OPTION NAMES ===
-func (s *Service) ListOptionNames(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListOptionNames(ctx) }
-func (s *Service) GetOptionName(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetOptionName(ctx, id) }
-func (s *Service) CreateOptionName(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateOptionName(ctx, args) }
-func (s *Service) UpdateOptionName(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateOptionName(ctx, id, args) }
-func (s *Service) DeleteOptionName(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteOptionName(ctx, id) }
+func (s *Service) ListOptionNames(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListOptionNames(ctx)
+}
+func (s *Service) GetOptionName(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetOptionName(ctx, id)
+}
+func (s *Service) CreateOptionName(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateOptionName(ctx, args)
+}
+func (s *Service) UpdateOptionName(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateOptionName(ctx, id, args)
+}
+func (s *Service) DeleteOptionName(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteOptionName(ctx, id)
+}
 
 // === OPTION VALUES ===
-func (s *Service) ListOptionValues(ctx context.Context, optionNameID string) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListOptionValues(ctx, optionNameID) }
-func (s *Service) GetOptionValue(ctx context.Context, optionNameID, optionValueID string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetOptionValue(ctx, optionNameID, optionValueID) }
-func (s *Service) CreateOptionValue(ctx context.Context, optionNameID string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateOptionValue(ctx, optionNameID, args) }
-func (s *Service) UpdateOptionValue(ctx context.Context, optionNameID, optionValueID string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateOptionValue(ctx, optionNameID, optionValueID, args) }
-func (s *Service) DeleteOptionValue(ctx context.Context, optionNameID, optionValueID string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteOptionValue(ctx, optionNameID, optionValueID) }
+func (s *Service) ListOptionValues(ctx context.Context, optionNameID string) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListOptionValues(ctx, optionNameID)
+}
+func (s *Service) GetOptionValue(ctx context.Context, optionNameID, optionValueID string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetOptionValue(ctx, optionNameID, optionValueID)
+}
+func (s *Service) CreateOptionValue(ctx context.Context, optionNameID string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateOptionValue(ctx, optionNameID, args)
+}
+func (s *Service) UpdateOptionValue(ctx context.Context, optionNameID, optionValueID string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateOptionValue(ctx, optionNameID, optionValueID, args)
+}
+func (s *Service) DeleteOptionValue(ctx context.Context, optionNameID, optionValueID string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteOptionValue(ctx, optionNameID, optionValueID)
+}
 
 // === APPLICATION ACTIONS ===
-func (s *Service) ListApplicationActions(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListApplicationActions(ctx) }
-func (s *Service) GetApplicationAction(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetApplicationAction(ctx, id) }
-func (s *Service) CreateApplicationAction(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateApplicationAction(ctx, args) }
-func (s *Service) UpdateApplicationAction(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateApplicationAction(ctx, id, args) }
-func (s *Service) DeleteApplicationAction(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteApplicationAction(ctx, id) }
+func (s *Service) ListApplicationActions(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListApplicationActions(ctx)
+}
+func (s *Service) GetApplicationAction(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetApplicationAction(ctx, id)
+}
+func (s *Service) CreateApplicationAction(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateApplicationAction(ctx, args)
+}
+func (s *Service) UpdateApplicationAction(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateApplicationAction(ctx, id, args)
+}
+func (s *Service) DeleteApplicationAction(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteApplicationAction(ctx, id)
+}
 
 // === APPLICATION CHARGES ===
-func (s *Service) ListApplicationCharges(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListApplicationCharges(ctx) }
-func (s *Service) GetApplicationCharge(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetApplicationCharge(ctx, id) }
-func (s *Service) CreateApplicationCharge(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateApplicationCharge(ctx, args) }
-func (s *Service) DeclineApplicationCharge(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeclineApplicationCharge(ctx, id) }
+func (s *Service) ListApplicationCharges(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListApplicationCharges(ctx)
+}
+func (s *Service) GetApplicationCharge(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetApplicationCharge(ctx, id)
+}
+func (s *Service) CreateApplicationCharge(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateApplicationCharge(ctx, args)
+}
+func (s *Service) DeclineApplicationCharge(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeclineApplicationCharge(ctx, id)
+}
 
 // === APPLICATION WIDGETS ===
-func (s *Service) ListApplicationWidgets(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListApplicationWidgets(ctx) }
-func (s *Service) GetApplicationWidget(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetApplicationWidget(ctx, id) }
-func (s *Service) CreateApplicationWidget(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateApplicationWidget(ctx, args) }
-func (s *Service) UpdateApplicationWidget(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateApplicationWidget(ctx, id, args) }
-func (s *Service) DeleteApplicationWidget(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteApplicationWidget(ctx, id) }
+func (s *Service) ListApplicationWidgets(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListApplicationWidgets(ctx)
+}
+func (s *Service) GetApplicationWidget(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetApplicationWidget(ctx, id)
+}
+func (s *Service) CreateApplicationWidget(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateApplicationWidget(ctx, args)
+}
+func (s *Service) UpdateApplicationWidget(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateApplicationWidget(ctx, id, args)
+}
+func (s *Service) DeleteApplicationWidget(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteApplicationWidget(ctx, id)
+}
 
 // === RECURRING APPLICATION CHARGES ===
-func (s *Service) ListRecurringApplicationCharges(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListRecurringApplicationCharges(ctx) }
-func (s *Service) GetRecurringApplicationCharge(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetRecurringApplicationCharge(ctx, id) }
-func (s *Service) CreateRecurringApplicationCharge(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateRecurringApplicationCharge(ctx, args) }
-func (s *Service) DeleteRecurringApplicationCharge(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteRecurringApplicationCharge(ctx, id) }
+func (s *Service) ListRecurringApplicationCharges(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListRecurringApplicationCharges(ctx)
+}
+func (s *Service) GetRecurringApplicationCharge(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetRecurringApplicationCharge(ctx, id)
+}
+func (s *Service) CreateRecurringApplicationCharge(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateRecurringApplicationCharge(ctx, args)
+}
+func (s *Service) DeleteRecurringApplicationCharge(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteRecurringApplicationCharge(ctx, id)
+}
 
 // === BONUS SYSTEM TRANSACTIONS ===
-func (s *Service) ListBonusSystemTransactions(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListBonusSystemTransactions(ctx) }
-func (s *Service) GetBonusSystemTransaction(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetBonusSystemTransaction(ctx, id) }
-func (s *Service) CreateBonusSystemTransaction(ctx context.Context, clientID int, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateBonusSystemTransaction(ctx, clientID, args) }
-func (s *Service) ListClientBonusSystemTransactions(ctx context.Context, clientID string) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListClientBonusSystemTransactions(ctx, clientID) }
+func (s *Service) ListBonusSystemTransactions(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListBonusSystemTransactions(ctx)
+}
+func (s *Service) GetBonusSystemTransaction(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetBonusSystemTransaction(ctx, id)
+}
+func (s *Service) CreateBonusSystemTransaction(ctx context.Context, clientID int, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateBonusSystemTransaction(ctx, clientID, args)
+}
+func (s *Service) ListClientBonusSystemTransactions(ctx context.Context, clientID string) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListClientBonusSystemTransactions(ctx, clientID)
+}
 
 // === OAUTH APPS ===
-func (s *Service) ListOAuthApps(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListOAuthApps(ctx) }
-func (s *Service) GetOAuthApp(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetOAuthApp(ctx, id) }
-func (s *Service) CreateOAuthApp(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateOAuthApp(ctx, args) }
-func (s *Service) UpdateOAuthApp(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateOAuthApp(ctx, id, args) }
-func (s *Service) DeleteOAuthApp(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteOAuthApp(ctx, id) }
+func (s *Service) ListOAuthApps(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListOAuthApps(ctx)
+}
+func (s *Service) GetOAuthApp(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetOAuthApp(ctx, id)
+}
+func (s *Service) CreateOAuthApp(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateOAuthApp(ctx, args)
+}
+func (s *Service) UpdateOAuthApp(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateOAuthApp(ctx, id, args)
+}
+func (s *Service) DeleteOAuthApp(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteOAuthApp(ctx, id)
+}
 
 // === USER TASKS ===
-func (s *Service) ListUserTasks(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListUserTasks(ctx) }
-func (s *Service) GetUserTask(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetUserTask(ctx, id) }
-func (s *Service) CreateUserTask(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateUserTask(ctx, args) }
-func (s *Service) UpdateUserTask(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateUserTask(ctx, id, args) }
-func (s *Service) DeleteUserTask(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteUserTask(ctx, id) }
+func (s *Service) ListUserTasks(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListUserTasks(ctx)
+}
+func (s *Service) GetUserTask(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetUserTask(ctx, id)
+}
+func (s *Service) CreateUserTask(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateUserTask(ctx, args)
+}
+func (s *Service) UpdateUserTask(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateUserTask(ctx, id, args)
+}
+func (s *Service) DeleteUserTask(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteUserTask(ctx, id)
+}
 
 // === SUPPLEMENTARY ===
-func (s *Service) ListSupplementaries(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListSupplementaries(ctx) }
-func (s *Service) GetSupplementary(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetSupplementary(ctx, id) }
-func (s *Service) CreateSupplementary(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateSupplementary(ctx, args) }
-func (s *Service) DeleteSupplementary(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteSupplementary(ctx, id) }
+func (s *Service) ListSupplementaries(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListSupplementaries(ctx)
+}
+func (s *Service) GetSupplementary(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetSupplementary(ctx, id)
+}
+func (s *Service) CreateSupplementary(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateSupplementary(ctx, args)
+}
+func (s *Service) DeleteSupplementary(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteSupplementary(ctx, id)
+}
 
 // === SIMILARS ===
-func (s *Service) ListSimilars(ctx context.Context, productID string) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListSimilars(ctx, productID) }
-func (s *Service) CreateSimilar(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateSimilar(ctx, args) }
-func (s *Service) DeleteSimilar(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteSimilar(ctx, id) }
+func (s *Service) ListSimilars(ctx context.Context, productID string) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListSimilars(ctx, productID)
+}
+func (s *Service) CreateSimilar(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateSimilar(ctx, args)
+}
+func (s *Service) DeleteSimilar(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteSimilar(ctx, id)
+}
 
 // === UNITS ===
-func (s *Service) ListUnits(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListUnits(ctx) }
+func (s *Service) ListUnits(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListUnits(ctx)
+}
 
 // === PIPELINE TOOLS ===
 
@@ -1326,8 +2253,8 @@ func (s *Service) OrderFullDetails(ctx context.Context, orderID string) (map[str
 	})
 
 	result := map[string]any{
-		"order":      order,
-		"client":     clientData,
+		"order":       order,
+		"client":      clientData,
 		"meta_fields": metaFields,
 	}
 	return result, nil
@@ -1357,9 +2284,9 @@ func (s *Service) ClientFullProfile(ctx context.Context, clientID string) (map[s
 	bonusTxns, _ := client.ListClientBonusSystemTransactions(ctx, clientID)
 
 	result := map[string]any{
-		"client":            clientData,
-		"recent_orders":     orders,
-		"meta_fields":       metaFields,
+		"client":             clientData,
+		"recent_orders":      orders,
+		"meta_fields":        metaFields,
 		"bonus_transactions": bonusTxns,
 	}
 	return result, nil
@@ -1381,7 +2308,7 @@ func (s *Service) ProductCatalogSearch(ctx context.Context, query string, filter
 	}
 
 	searchFilters := map[string]any{
-		"page":    page,
+		"page":     page,
 		"per_page": perPage,
 	}
 	if query != "" {
@@ -1408,28 +2335,136 @@ func (s *Service) ProductCatalogSearch(ctx context.Context, query string, filter
 }
 
 // === OUTLETS ===
-func (s *Service) ListOutlets(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListOutlets(ctx) }
-func (s *Service) GetOutlet(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetOutlet(ctx, id) }
-func (s *Service) CreateOutlet(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateOutlet(ctx, args) }
-func (s *Service) UpdateOutlet(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateOutlet(ctx, id, args) }
-func (s *Service) DeleteOutlet(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteOutlet(ctx, id) }
+func (s *Service) ListOutlets(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListOutlets(ctx)
+}
+func (s *Service) GetOutlet(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetOutlet(ctx, id)
+}
+func (s *Service) CreateOutlet(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateOutlet(ctx, args)
+}
+func (s *Service) UpdateOutlet(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateOutlet(ctx, id, args)
+}
+func (s *Service) DeleteOutlet(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteOutlet(ctx, id)
+}
 
 // === MARKETPLACES ===
-func (s *Service) ListMarketplaces(ctx context.Context) ([]any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.ListMarketplaces(ctx) }
-func (s *Service) GetMarketplace(ctx context.Context, id string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; return c.GetMarketplace(ctx, id) }
-func (s *Service) CreateMarketplace(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateMarketplace(ctx, args) }
-func (s *Service) UpdateMarketplace(ctx context.Context, id string, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateMarketplace(ctx, id, args) }
-func (s *Service) DeleteMarketplace(ctx context.Context, id string) error { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return err }; if err := s.checkReadOnly(ctx); err != nil { return err }; return c.DeleteMarketplace(ctx, id) }
+func (s *Service) ListMarketplaces(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListMarketplaces(ctx)
+}
+func (s *Service) GetMarketplace(ctx context.Context, id string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetMarketplace(ctx, id)
+}
+func (s *Service) CreateMarketplace(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateMarketplace(ctx, args)
+}
+func (s *Service) UpdateMarketplace(ctx context.Context, id string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateMarketplace(ctx, id, args)
+}
+func (s *Service) DeleteMarketplace(ctx context.Context, id string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteMarketplace(ctx, id)
+}
 
 // === PROVIDER TOKEN ===
-func (s *Service) CreateProviderToken(ctx context.Context, messengerType string) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.CreateProviderToken(ctx, messengerType) }
+func (s *Service) CreateProviderToken(ctx context.Context, messengerType string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateProviderToken(ctx, messengerType)
+}
 
 // === ACCOUNT ===
-func (s *Service) UpdateAccount(ctx context.Context, args map[string]any) (any, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return nil, err }; if err := s.checkReadOnly(ctx); err != nil { return nil, err }; return c.UpdateAccount(ctx, args) }
+func (s *Service) UpdateAccount(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateAccount(ctx, args)
+}
 
 // === COUNTS ===
-func (s *Service) GetOrdersCount(ctx context.Context, filters map[string]any) (int, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return 0, err }; return c.GetOrdersCount(ctx, filters) }
-func (s *Service) GetProductsCount(ctx context.Context) (int, error) { c, ctx, err := s.manager.GetClient(ctx); if err != nil { return 0, err }; return c.GetProductsCount(ctx) }
+func (s *Service) GetOrdersCount(ctx context.Context, filters map[string]any) (int, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return c.GetOrdersCount(ctx, filters)
+}
+func (s *Service) GetProductsCount(ctx context.Context) (int, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return c.GetProductsCount(ctx)
+}
 
 // === PIPELINE: CollectionProducts ===
 func (s *Service) CollectionProducts(ctx context.Context, collectionID string) (map[string]any, error) {
