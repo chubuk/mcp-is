@@ -191,11 +191,11 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 
 			keyHash := HashAPIKey(apiKey)
 
-			var userID, keyID, keyName string
+			var userID, keyID, keyName, shopID string
 			var aiKeyPDN bool
 			err := db.QueryRow(r.Context(),
-				`SELECT id, user_id, COALESCE(name,''), pdn_enabled FROM ai_keys WHERE key_hash = $1`, keyHash,
-			).Scan(&keyID, &userID, &keyName, &aiKeyPDN)
+				`SELECT id, user_id, COALESCE(name,''), pdn_enabled, COALESCE(shop_id::text,'') FROM ai_keys WHERE key_hash = $1`, keyHash,
+			).Scan(&keyID, &userID, &keyName, &aiKeyPDN, &shopID)
 
 			if err != nil {
 				slog.Warn("invalid api key", "hash", keyHash[:8]+"...")
@@ -211,6 +211,10 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 			ctx = context.WithValue(ctx, KeyNameKey, keyName)
 			ctx = context.WithValue(ctx, KeyIDKey, keyID)
 			ctx = context.WithValue(ctx, KeyPDNKey, aiKeyPDN)
+			// App-installed keys are bound to a shop; personal keys fall back to the default shop.
+			if shopID != "" {
+				ctx = context.WithValue(ctx, ShopIDKey, shopID)
+			}
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}

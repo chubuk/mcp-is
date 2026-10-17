@@ -342,6 +342,10 @@ func newMockAIKeyRepo() *mockAIKeyRepo {
 }
 
 func (m *mockAIKeyRepo) Create(userID, keyHash, name string) (*storage.AIKey, error) {
+	return m.CreateForShop(userID, "", keyHash, name)
+}
+
+func (m *mockAIKeyRepo) CreateForShop(userID, shopID, keyHash, name string) (*storage.AIKey, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -349,6 +353,7 @@ func (m *mockAIKeyRepo) Create(userID, keyHash, name string) (*storage.AIKey, er
 	k := &storage.AIKey{
 		ID:        fmt.Sprintf("key-%d", m.counter),
 		UserID:    userID,
+		ShopID:    shopID,
 		KeyHash:   keyHash,
 		Name:      name,
 		CreatedAt: "2026-01-01T00:00:00Z",
@@ -468,6 +473,85 @@ func (m *mockAIKeyRepo) UpdateName(id, name string) error {
 
 	if k, ok := m.keys[id]; ok {
 		k.Name = name
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
+
+type mockAppInstallRepo struct {
+	mu       sync.RWMutex
+	installs map[string]*storage.AppInstall
+}
+
+func newMockAppInstallRepo() *mockAppInstallRepo {
+	return &mockAppInstallRepo{installs: make(map[string]*storage.AppInstall)}
+}
+
+func (m *mockAppInstallRepo) UpsertInstall(insalesID, shopHost, apiPasswordEncrypted string) (*storage.AppInstall, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	a, ok := m.installs[insalesID]
+	if !ok {
+		a = &storage.AppInstall{ID: "inst-" + insalesID, InsalesID: insalesID}
+		m.installs[insalesID] = a
+	}
+	a.ShopHost = shopHost
+	a.APIPasswordEncrypted = apiPasswordEncrypted
+	a.Status = "installed"
+	a.UninstalledAt = ""
+	return a, nil
+}
+
+func (m *mockAppInstallRepo) GetByInsalesID(insalesID string) (*storage.AppInstall, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	if a, ok := m.installs[insalesID]; ok {
+		cp := *a
+		return &cp, nil
+	}
+	return nil, fmt.Errorf("not found")
+}
+
+func (m *mockAppInstallRepo) MarkUninstalled(insalesID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if a, ok := m.installs[insalesID]; ok {
+		a.Status = "uninstalled"
+		a.ShopID = ""
+		a.UninstalledAt = "2026-01-01T00:00:00Z"
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
+
+func (m *mockAppInstallRepo) SetPendingLink(insalesID, userID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if a, ok := m.installs[insalesID]; ok {
+		a.Status = "pending_link"
+		a.UserID = userID
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
+
+func (m *mockAppInstallRepo) LinkShop(insalesID, userID, shopID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if a, ok := m.installs[insalesID]; ok {
+		a.Status = "installed"
+		a.UserID = userID
+		a.ShopID = shopID
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
+
+func (m *mockAppInstallRepo) SetUser(insalesID, userID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if a, ok := m.installs[insalesID]; ok {
+		a.UserID = userID
 		return nil
 	}
 	return fmt.Errorf("not found")

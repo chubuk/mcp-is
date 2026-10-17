@@ -88,6 +88,26 @@ CREATE INDEX IF NOT EXISTS idx_pdn_user_id ON pdn_access_log(user_id);
 CREATE INDEX IF NOT EXISTS idx_pdn_shop_id ON pdn_access_log(shop_id);
 CREATE INDEX IF NOT EXISTS idx_pdn_ts ON pdn_access_log(ts);
 
+-- AI keys bound to a specific shop (app installs). NULL = user's default shop (personal mode).
+ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS shop_id UUID REFERENCES shops(id) ON DELETE SET NULL;
+
+-- InSales external-app installs (protocol: password = MD5(token + secret_key))
+CREATE TABLE IF NOT EXISTS app_installs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    insales_id TEXT UNIQUE NOT NULL,
+    shop_host TEXT NOT NULL,
+    api_password_encrypted TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'installed', -- installed | uninstalled | pending_link
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    shop_id UUID REFERENCES shops(id) ON DELETE SET NULL,
+    installed_at TIMESTAMPTZ DEFAULT NOW(),
+    uninstalled_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_app_installs_user ON app_installs(user_id);
+CREATE INDEX IF NOT EXISTS idx_app_installs_status ON app_installs(status);
+
 -- Backup log
 CREATE TABLE IF NOT EXISTS backup_log (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

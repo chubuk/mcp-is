@@ -7,7 +7,7 @@ MCP IS — это сервер, который подключает AI-аген�
 ## Предварительные требования
 
 - Docker и Docker Compose v2
-- Ключ доступа InSales (Расширения → Разработчикам → Ключи доступа)
+- Ключ доступа InSales (Расширения → Разработчикам → Ключи доступа) — добавляется в веб-интерфейсе
 - AI-клиент: Claude Desktop, Cursor, VS Code/Copilot, Continue, LibreChat или Open WebUI
 
 ## Шаг 1: Установка
@@ -19,7 +19,7 @@ cd mcp-is
 
 # Настроить переменные окружения
 cp .env.example .env
-nano .env  # Заполните INSALES_SHOP, INSALES_API_KEY, INSALES_PASSWORD
+nano .env  # JWT_SECRET, ENCRYPTION_KEY, DOMAIN; при режиме приложения — INSALES_APP_KEY / INSALES_SECRET_KEY
 ```
 
 ## Шаг 2: Запуск

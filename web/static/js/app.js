@@ -2,6 +2,7 @@ const App = {
     routes: [
         { path: '/login', render: () => Auth.renderLogin(), auth: false, onMount: () => Auth.bindLogin() },
         { path: '/register', render: () => Auth.renderRegister(), auth: false, onMount: () => Auth.bindRegister() },
+        { path: '/onboarding', render: () => Auth.renderOnboarding(), auth: false, onMount: () => Auth.bindOnboarding() },
         { path: '/dashboard', render: () => Dashboard.render(), auth: true },
         { path: '/shops', render: () => Shops.render(), auth: true, onMount: () => Shops.bind() },
         { path: '/ai-keys', render: () => AIKeys.render(), auth: true, onMount: () => AIKeys.bind() },

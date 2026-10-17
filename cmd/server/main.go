@@ -74,6 +74,18 @@ func main() {
 	serverHandler := handlers.NewServerHandler(settingsRepo)
 	pdnHandler := handlers.NewPDNHandler(pool)
 
+	appInstallRepo := storage.NewAppInstallRepository(pool)
+	appHandler := handlers.NewAppHandler(
+		appInstallRepo, userRepo, shopRepo, aiKeyRepo,
+		aesCipher, jwtMgr, manager,
+		cfg.InSalesAppKey, cfg.InSalesSecretKey, cfg.Domain, cfg.JWTSecret,
+	)
+	if cfg.AppModeEnabled() {
+		slog.Info("InSales app mode enabled", "app_key", cfg.InSalesAppKey)
+	} else {
+		slog.Info("InSales app mode disabled (set INSALES_APP_KEY and INSALES_SECRET_KEY)")
+	}
+
 	certbotSvc := certbot.NewCertbotService(settingsRepo)
 	scheduler := certbot.NewScheduler(certbotSvc, settingsRepo)
 
@@ -86,10 +98,18 @@ func main() {
 	mux.Handle("POST /api/forgot-password", authRateLimiter.Middleware(authHandler.ForgotPassword))
 	mux.Handle("POST /api/reset-password", authRateLimiter.Middleware(authHandler.ResetPassword))
 
+	// InSales external-app callbacks (public)
+	mux.Handle("GET /install", authRateLimiter.Middleware(appHandler.Install))
+	mux.Handle("GET /uninstall", authRateLimiter.Middleware(appHandler.Uninstall))
+	mux.Handle("GET /app", authRateLimiter.Middleware(appHandler.AppLanding))
+	mux.Handle("GET /autologin", authRateLimiter.Middleware(appHandler.Autologin))
+	mux.Handle("POST /api/exchange-code", authRateLimiter.Middleware(appHandler.ExchangeCode))
+
 	jwtMW := auth.JWTMiddleware(jwtMgr)
 	mux.Handle("POST /api/change-password", jwtMW(http.HandlerFunc(authHandler.ChangePassword)))
 	mux.Handle("POST /api/force-change-password", jwtMW(http.HandlerFunc(authHandler.ForceChangePassword)))
 	mux.Handle("POST /api/set-email", jwtMW(http.HandlerFunc(authHandler.SetEmail)))
+	mux.Handle("POST /api/shops/link-pending", jwtMW(http.HandlerFunc(appHandler.LinkPending)))
 
 	mux.Handle("POST /api/shops", jwtMW(http.HandlerFunc(shopHandler.Create)))
 	mux.Handle("GET /api/shops", jwtMW(http.HandlerFunc(shopHandler.List)))

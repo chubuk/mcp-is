@@ -115,6 +115,35 @@
 
 **Ответ (200):** `{}`
 
+### Приложение InSales (публичные callback-и)
+
+Работают, если заданы `INSALES_APP_KEY` и `INSALES_SECRET_KEY`. Подробности: `docs/setup/INSALES-APP.md`.
+
+#### GET /install
+
+Установка приложения. Query: `shop`, `token`, `insales_id`.  
+Пароль магазина: `password = MD5(token + secret_key)`. Ответ `200 OK` = установлено.
+
+#### GET /uninstall
+
+Удаление. Query: `shop`, `token` (пароль приложения), `insales_id`. Ответ `200 OK`.
+
+#### GET /app → GET /autologin
+
+Страница входа и автологин. `token3 = MD5(nonce + user_email + user_name + user_id + email_сonfirmed + password)`.
+
+#### POST /api/exchange-code
+
+Обмен one-time code (после autologin) на JWT и MCP-ключ.
+
+**Тело:** `{ "code": "..." }` → `{ "token", "user_id", "nickname", "role", "api_key" }`
+
+#### POST /api/shops/link-pending
+
+Привязка магазина из InSales к существующему аккаунту (требуется JWT).
+
+**Тело:** `{ "insales_id": "..." }` → `{ "status": "linked", "api_key": "..." }`
+
 ### Управление магазинами (требуется JWT)
 
 #### POST /api/shops/test-connection

@@ -10,6 +10,7 @@ import (
 type AIKey struct {
 	ID                string
 	UserID            string
+	ShopID            string
 	KeyHash           string
 	Name              string
 	AvailableCommands string
@@ -27,26 +28,32 @@ func NewAIKeyRepository(db *pgxpool.Pool) *AIKeyRepository {
 }
 
 func (r *AIKeyRepository) Create(userID, keyHash, name string) (*AIKey, error) {
+	return r.CreateForShop(userID, "", keyHash, name)
+}
+
+// CreateForShop creates a key; empty shopID means the user's default shop (personal mode).
+func (r *AIKeyRepository) CreateForShop(userID, shopID, keyHash, name string) (*AIKey, error) {
 	var k AIKey
 	err := r.db.QueryRow(context.Background(),
-		`INSERT INTO ai_keys (user_id, key_hash, name)
-		 VALUES ($1, $2, $3)
+		`INSERT INTO ai_keys (user_id, shop_id, key_hash, name)
+		 VALUES ($1, NULLIF($2,'')::uuid, $3, $4)
 		 RETURNING id, user_id, key_hash, COALESCE(name,''), created_at::text`,
-		userID, keyHash, nullStr(name),
+		userID, shopID, keyHash, nullStr(name),
 	).Scan(&k.ID, &k.UserID, &k.KeyHash, &k.Name, &k.CreatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("create ai key: %w", err)
 	}
+	k.ShopID = shopID
 	return &k, nil
 }
 
 func (r *AIKeyRepository) GetByHash(keyHash string) (*AIKey, error) {
 	var k AIKey
 	err := r.db.QueryRow(context.Background(),
-		`SELECT id, user_id, key_hash, COALESCE(name,''), COALESCE(last_used_at::text,''), created_at::text
+		`SELECT id, user_id, COALESCE(shop_id::text,''), key_hash, COALESCE(name,''), COALESCE(last_used_at::text,''), created_at::text
 		 FROM ai_keys WHERE key_hash = $1`, keyHash,
-	).Scan(&k.ID, &k.UserID, &k.KeyHash, &k.Name, &k.LastUsedAt, &k.CreatedAt)
+	).Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.LastUsedAt, &k.CreatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("ai key not found: %w", err)

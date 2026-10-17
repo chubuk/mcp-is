@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.5.0] - 2026-10-17
+
+### Добавлено
+- **Стороннее приложение InSales** — установка из бэк-офиса магазина: `GET /install` (пароль = `MD5(token + secret_key)`), `GET /uninstall`, `GET /app` → автологин `GET /autologin` (проверка `token3`). Переменные `INSALES_APP_KEY` / `INSALES_SECRET_KEY`
+- **Гибридная выдача доступа** — новый email: автосоздание аккаунта + MCP-ключ на экране `/onboarding`; существующий email: привязка магазина только после входа паролем (защита от захвата аккаунта)
+- **Ключи, привязанные к магазину** — `ai_keys.shop_id`; запросы MCP-ключа идут в свой магазин (а не только в default)
+- Таблица `app_installs` (журнал установок), one-time code `POST /api/exchange-code`, `POST /api/shops/link-pending`
+- Документация: `docs/setup/INSALES-APP.md`, `docs/insales-app-form.md`, `docs/api/api_and_apps.md`
+
+### Изменено
+- Удалены неиспользуемые `INSALES_SHOP` / `INSALES_API_KEY` / `INSALES_PASSWORD` (ключ магазина добавляется в веб-интерфейсе)
+
 ## [0.4.7] - 2026-10-17
 
 ### Добавлено

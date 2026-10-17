@@ -15,6 +15,21 @@ func RunMigrations(pool *pgxpool.Pool) {
 		`ALTER TABLE shops ADD COLUMN IF NOT EXISTS pdn_enabled BOOLEAN DEFAULT FALSE`,
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS require_password_change BOOLEAN DEFAULT FALSE`,
 		`ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS pdn_enabled BOOLEAN DEFAULT FALSE`,
+		`ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS shop_id UUID REFERENCES shops(id) ON DELETE SET NULL`,
+		`CREATE TABLE IF NOT EXISTS app_installs (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			insales_id TEXT UNIQUE NOT NULL,
+			shop_host TEXT NOT NULL,
+			api_password_encrypted TEXT NOT NULL,
+			status TEXT NOT NULL DEFAULT 'installed',
+			user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+			shop_id UUID REFERENCES shops(id) ON DELETE SET NULL,
+			installed_at TIMESTAMPTZ DEFAULT NOW(),
+			uninstalled_at TIMESTAMPTZ,
+			updated_at TIMESTAMPTZ DEFAULT NOW()
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_app_installs_user ON app_installs(user_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_app_installs_status ON app_installs(status)`,
 		`CREATE TABLE IF NOT EXISTS mcp_client_types (
 			id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
 			name TEXT NOT NULL UNIQUE,

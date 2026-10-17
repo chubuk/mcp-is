@@ -72,10 +72,9 @@ DB_PASSWORD=password
 SERVER_PORT=8080
 LOG_LEVEL=info
 
-# InSales (legacy, можно не заполнять если используете API через UI)
-INSALES_SHOP=your-shop.myinsales.ru
-INSALES_API_KEY=your_api_key_here
-INSALES_PASSWORD=your_password_here
+# InSales — стороннее приложение (install/uninstall/autologin). Подробнее: docs/setup/INSALES-APP.md
+INSALES_APP_KEY=
+INSALES_SECRET_KEY=
 
 # Режим доступа (true = только чтение)
 MCP_READ_ONLY=true
@@ -502,9 +501,15 @@ SMTP_FROM=MCP IS <noreply@your-domain.com>
 | POST | `/api/login` | Вход | Нет |
 | POST | `/api/forgot-password` | Запрос сброса пароля | Нет |
 | POST | `/api/reset-password` | Сброс по токену | Нет |
+| GET | `/install` | Установка приложения InSales | Нет |
+| GET | `/uninstall` | Удаление приложения InSales | Нет |
+| GET | `/app` | Страница приложения InSales | Нет |
+| GET | `/autologin` | Автологин из InSales | Нет |
+| POST | `/api/exchange-code` | Обмен one-time code на JWT | Нет |
 | POST | `/api/change-password` | Смена пароля | JWT |
 | POST | `/api/set-email` | Установка email | JWT |
 | POST | `/api/shops` | Добавить магазин | JWT |
+| POST | `/api/shops/link-pending` | Привязать магазин из InSales | JWT |
 | POST | `/api/shops/test-connection` | Проверить ключ InSales | JWT |
 | POST | `/api/shops/:id/check-commands` | Проверить доступные команды | JWT |
 | GET | `/api/shops` | Список магазинов | JWT |

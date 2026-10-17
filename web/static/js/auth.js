@@ -63,6 +63,13 @@ const Auth = {
     },
 
     bindLogin() {
+        const pending = new URLSearchParams(location.search).get('pending_install');
+        if (pending) {
+            const alert = document.getElementById('alert');
+            if (alert) {
+                alert.innerHTML = '<div class="alert alert--info">Магазин InSales ожидает привязки. Войдите в существующий аккаунт, чтобы подключить его.</div>';
+            }
+        }
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const login = document.getElementById('login').value;
@@ -75,6 +82,11 @@ const Auth = {
                 localStorage.setItem('role', res.data.role);
                 localStorage.setItem('user_id', res.data.user_id);
 
+                const pending = new URLSearchParams(location.search).get('pending_install');
+                if (pending) {
+                    Auth.linkPendingInstall(pending);
+                    return;
+                }
                 if (res.data.require_password_change) {
                     App.navigate('/force-change-password');
                 } else if (res.data.require_email) {
@@ -84,6 +96,79 @@ const Auth = {
                 }
             } else {
                 Auth.showError(res ? res.data.error : 'Ошибка сервера');
+            }
+        });
+    },
+
+    async linkPendingInstall(insalesId) {
+        const res = await API.post('/api/shops/link-pending', { insales_id: insalesId });
+        if (res && res.ok) {
+            if (res.data.api_key) {
+                localStorage.setItem('fresh_api_key', res.data.api_key);
+            }
+            App.navigate('/onboarding');
+        } else {
+            Auth.showError(res ? res.data.error : 'Не удалось привязать магазин');
+            App.navigate('/dashboard');
+        }
+    },
+
+    renderOnboarding() {
+        return `
+            <div class="auth-page">
+                <div class="auth-card">
+                    <h1>Подключение MCP</h1>
+                    <p class="subtitle">Магазин установлен из InSales</p>
+                    <div id="alert"></div>
+                    <div id="onboarding-body">
+                        <p>Обмениваем код доступа…</p>
+                    </div>
+                    <p class="link"><a href="/dashboard">Перейти в панель</a></p>
+                </div>
+            </div>`;
+    },
+
+    bindOnboarding() {
+        const params = new URLSearchParams(location.search);
+        const code = params.get('code');
+        const body = document.getElementById('onboarding-body');
+
+        const showKey = (apiKey, mcpUrl) => {
+            const url = mcpUrl || (location.origin + '/mcp');
+            body.innerHTML = `
+                <p><strong>MCP-ключ</strong> (сохраните — показывается один раз):</p>
+                <div class="form-group">
+                    <input type="text" id="shown-key" readonly value="${apiKey}">
+                </div>
+                <p><strong>URL сервера:</strong> <code>${url}</code></p>
+                <p class="subtitle">Добавьте ключ в свой MCP-клиент (Claude Desktop, Cursor, MiMoCode и др.).</p>
+                <button class="btn btn--primary" id="copy-key">📋 Скопировать ключ</button>`;
+            const btn = document.getElementById('copy-key');
+            if (btn) btn.addEventListener('click', () => {
+                navigator.clipboard.writeText(apiKey);
+                Auth.showSuccess('Ключ скопирован');
+            });
+        };
+
+        const stored = localStorage.getItem('fresh_api_key');
+        if (!code && stored) {
+            showKey(stored, location.origin + '/mcp');
+            localStorage.removeItem('fresh_api_key');
+            return;
+        }
+        if (!code) {
+            body.innerHTML = '<p>Нет кода подключения. Откройте приложение из бэк-офиса InSales.</p>';
+            return;
+        }
+        API.post('/api/exchange-code', { code }).then((res) => {
+            if (res && res.ok) {
+                API.setToken(res.data.token);
+                localStorage.setItem('nickname', res.data.nickname);
+                localStorage.setItem('role', res.data.role);
+                localStorage.setItem('user_id', res.data.user_id);
+                showKey(res.data.api_key || '(ключ недоступен — создайте новый в разделе «Ключи»)');
+            } else {
+                body.innerHTML = '<p>Код недействителен или истёк. Откройте приложение из InSales ещё раз.</p>';
             }
         });
     },

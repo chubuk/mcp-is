@@ -11,26 +11,26 @@ import (
 )
 
 type Config struct {
-	DatabaseURL      string
-	ServerPort       string
-	LogLevel         string
-	InSalesShop      string
-	InSalesAPIKey    string
-	InSalesPassword  string
-	ReadOnly         bool
-	JWTSecret        string
-	EncryptionKey    string
-	SMTPHost         string
-	SMTPPort         string
-	SMTPUser         string
-	SMTPPass         string
-	SMTPFrom         string
-	Domain           string
-	AllowedOrigins   []string
-	MaxBodySize      int64
-	JWTExpiry        time.Duration
-	PDNAutoProtect   bool
-	ServerCountry    string
+	DatabaseURL string
+	ServerPort  string
+	LogLevel    string
+	// App mode (InSales external application). Both must be set to enable install/uninstall/autologin.
+	InSalesAppKey       string
+	InSalesSecretKey    string
+	ReadOnly            bool
+	JWTSecret           string
+	EncryptionKey       string
+	SMTPHost            string
+	SMTPPort            string
+	SMTPUser            string
+	SMTPPass            string
+	SMTPFrom            string
+	Domain              string
+	AllowedOrigins      []string
+	MaxBodySize         int64
+	JWTExpiry           time.Duration
+	PDNAutoProtect      bool
+	ServerCountry       string
 	RegistrationEnabled bool
 }
 
@@ -38,26 +38,25 @@ func Load() *Config {
 	_ = godotenv.Load()
 
 	cfg := &Config{
-		DatabaseURL:    getEnv("DB_URL", "postgres://admin:password@localhost:5432/mcp_is?sslmode=disable"),
-		ServerPort:     getEnv("SERVER_PORT", "8080"),
-		LogLevel:       getEnv("LOG_LEVEL", "info"),
-		InSalesShop:    getEnv("INSALES_SHOP", ""),
-		InSalesAPIKey:  getEnv("INSALES_API_KEY", ""),
-		InSalesPassword: getEnv("INSALES_PASSWORD", ""),
-		ReadOnly:       getEnv("MCP_READ_ONLY", "true") == "true",
-		JWTSecret:      getEnv("JWT_SECRET", "change-me-in-production"),
-		EncryptionKey:  getEnv("ENCRYPTION_KEY", "change-me-32-bytes-key!!!"),
-		SMTPHost:       getEnv("SMTP_HOST", ""),
-		SMTPPort:       getEnv("SMTP_PORT", "587"),
-		SMTPUser:       getEnv("SMTP_USER", ""),
-		SMTPPass:       getEnv("SMTP_PASS", ""),
-		SMTPFrom:       getEnv("SMTP_FROM", "MCP IS <noreply@localhost>"),
-		Domain:         getEnv("DOMAIN", "localhost"),
-		AllowedOrigins: parseOrigins(getEnv("ALLOWED_ORIGINS", "*")),
-		MaxBodySize:    1 << 20, // 1MB default
-				ServerCountry: getEnv("SERVER_COUNTRY", "RU"),
-		PDNAutoProtect:  getEnv("PDN_AUTO_PROTECT", "true") == "true",
-		JWTExpiry:      parseDuration(getEnv("JWT_EXPIRY_HOURS", "24"), time.Hour),
+		DatabaseURL:         getEnv("DB_URL", "postgres://admin:password@localhost:5432/mcp_is?sslmode=disable"),
+		ServerPort:          getEnv("SERVER_PORT", "8080"),
+		LogLevel:            getEnv("LOG_LEVEL", "info"),
+		InSalesAppKey:       getEnv("INSALES_APP_KEY", ""),
+		InSalesSecretKey:    getEnv("INSALES_SECRET_KEY", ""),
+		ReadOnly:            getEnv("MCP_READ_ONLY", "true") == "true",
+		JWTSecret:           getEnv("JWT_SECRET", "change-me-in-production"),
+		EncryptionKey:       getEnv("ENCRYPTION_KEY", "change-me-32-bytes-key!!!"),
+		SMTPHost:            getEnv("SMTP_HOST", ""),
+		SMTPPort:            getEnv("SMTP_PORT", "587"),
+		SMTPUser:            getEnv("SMTP_USER", ""),
+		SMTPPass:            getEnv("SMTP_PASS", ""),
+		SMTPFrom:            getEnv("SMTP_FROM", "MCP IS <noreply@localhost>"),
+		Domain:              getEnv("DOMAIN", "localhost"),
+		AllowedOrigins:      parseOrigins(getEnv("ALLOWED_ORIGINS", "*")),
+		MaxBodySize:         1 << 20, // 1MB default
+		ServerCountry:       getEnv("SERVER_COUNTRY", "RU"),
+		PDNAutoProtect:      getEnv("PDN_AUTO_PROTECT", "true") == "true",
+		JWTExpiry:           parseDuration(getEnv("JWT_EXPIRY_HOURS", "24"), time.Hour),
 		RegistrationEnabled: getEnv("REGISTRATION_ENABLED", "true") == "true",
 	}
 
@@ -73,6 +72,11 @@ func Load() *Config {
 	}
 
 	return cfg
+}
+
+// AppModeEnabled reports whether the InSales external-application mode is configured.
+func (c *Config) AppModeEnabled() bool {
+	return c.InSalesAppKey != "" && c.InSalesSecretKey != ""
 }
 
 func parseOrigins(origins string) []string {

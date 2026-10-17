@@ -33,6 +33,7 @@ type ShopRepositoryInterface interface {
 
 type AIKeyRepositoryInterface interface {
 	Create(userID, keyHash, name string) (*AIKey, error)
+	CreateForShop(userID, shopID, keyHash, name string) (*AIKey, error)
 	GetByHash(keyHash string) (*AIKey, error)
 	GetByID(id string) (*AIKey, error)
 	ListByUserID(userID string) ([]AIKey, error)
@@ -43,4 +44,13 @@ type AIKeyRepositoryInterface interface {
 	UpdatePDNEnabled(id string, enabled bool) error
 	UpdateName(id, name string) error
 	Delete(id string) error
+}
+
+type AppInstallRepositoryInterface interface {
+	UpsertInstall(insalesID, shopHost, apiPasswordEncrypted string) (*AppInstall, error)
+	GetByInsalesID(insalesID string) (*AppInstall, error)
+	MarkUninstalled(insalesID string) error
+	SetPendingLink(insalesID, userID string) error
+	LinkShop(insalesID, userID, shopID string) error
+	SetUser(insalesID, userID string) error
 }

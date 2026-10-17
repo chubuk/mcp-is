@@ -19,9 +19,9 @@ const (
 )
 
 type AccountManager struct {
-	shopRepo     *storage.ShopRepository
-	aes          *auth.AESCipher
-	clients      map[string]*insales.InSalesClient
+	shopRepo       *storage.ShopRepository
+	aes            *auth.AESCipher
+	clients        map[string]*insales.InSalesClient
 	globalReadOnly bool
 }
 
@@ -47,6 +47,9 @@ func (m *AccountManager) GetClient(ctx context.Context) (*insales.InSalesClient,
 
 	if shopID != "" {
 		shop, err = m.shopRepo.GetByID(shopID)
+		if err == nil && shop.UserID != userID {
+			return nil, ctx, fmt.Errorf("shop %s does not belong to user", shopID)
+		}
 	} else {
 		shop, err = m.shopRepo.GetDefault(userID)
 	}
@@ -77,4 +80,12 @@ func (m *AccountManager) GetClient(ctx context.Context) (*insales.InSalesClient,
 
 	m.clients[cacheKey] = client
 	return client, ctx, nil
+}
+
+// InvalidateShop drops the cached API client for a shop (install/uninstall/password rotate).
+func (m *AccountManager) InvalidateShop(shopID string) {
+	if m == nil {
+		return
+	}
+	delete(m.clients, shopID)
 }

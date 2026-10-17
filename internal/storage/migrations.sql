@@ -64,3 +64,22 @@ CREATE TABLE IF NOT EXISTS mcp_client_types (
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Миграция v0.8.0 - InSales app installs (external application mode)
+ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS shop_id UUID REFERENCES shops(id) ON DELETE SET NULL;
+
+CREATE TABLE IF NOT EXISTS app_installs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    insales_id TEXT UNIQUE NOT NULL,
+    shop_host TEXT NOT NULL,
+    api_password_encrypted TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'installed',
+    user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+    shop_id UUID REFERENCES shops(id) ON DELETE SET NULL,
+    installed_at TIMESTAMPTZ DEFAULT NOW(),
+    uninstalled_at TIMESTAMPTZ,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_app_installs_user ON app_installs(user_id);
+CREATE INDEX IF NOT EXISTS idx_app_installs_status ON app_installs(status);
