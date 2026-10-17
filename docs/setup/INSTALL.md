@@ -57,6 +57,10 @@ LOG_LEVEL=info
 INSALES_APP_KEY=
 INSALES_SECRET_KEY=
 
+# Регистрация: false = только админ создаёт пользователей.
+# Для отдельного сервиса, где пользователи сами регистрируются на сайте, поставьте true.
+REGISTRATION_ENABLED=false
+
 # Режим доступа
 MCP_READ_ONLY=true
 
