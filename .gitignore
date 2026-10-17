@@ -1,6 +1,6 @@
 .env
 *.deb
-packaging/mcp-is_0.1.0_amd64/
+packaging/mcp-is_*/
 bin/
 /server
 .insales-ip-key
