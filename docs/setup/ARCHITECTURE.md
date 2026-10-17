@@ -98,6 +98,8 @@ AI → HTTP POST /mcp → API Key Auth → MCP Server → Service → AccountMan
 Web UI → HTTP POST /api/register → Auth Handler → PostgreSQL
 ```
 
+Публичная регистрация закрыта, если `REGISTRATION_ENABLED=false` (в `.env`) и в базе уже есть пользователи. Создание: `POST /api/admin/users` (admin/super_admin) — временный пароль, `require_password_change=true`.
+
 ### Добавление магазина
 
 ```

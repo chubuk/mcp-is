@@ -4,6 +4,10 @@
 
 ### 1. Регистрация
 
+По умолчанию публичная регистрация отключена (`REGISTRATION_ENABLED=false`). Пользователей создаёт админ в админке (`/admin/users` → «Добавить пользователя») или через `POST /api/admin/users`.
+
+Исключение — первичная настройка: если в базе нет пользователей, `/api/register` работает и первый становится `super_admin`.
+
 ```bash
 curl -X POST http://localhost:8080/api/register \
   -H "Content-Type: application/json" \
@@ -509,6 +513,7 @@ curl -X POST http://localhost:8080/api/reset-password \
 1. Войдите как super_admin на `https://localhost:8443`
 2. Перейдите в раздел «Админ»
 3. Доступные действия:
+   - Создание пользователя («Добавить пользователя»)
    - Просмотр списка пользователей
    - Просмотр деталей пользователя
    - Смена роли (только super_admin)
@@ -519,8 +524,18 @@ curl -X POST http://localhost:8080/api/reset-password \
 ### Через API
 
 ```bash
+# Создание пользователя (временный пароль, смена при первом входе)
+curl -X POST http://localhost:8080/api/admin/users \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"nickname": "newuser", "email": "user@example.com", "password": "TempPass1"}'
+
 # Список пользователей
 curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/admin/users
+
+# Удаление пользователя
+curl -X DELETE http://localhost:8080/api/admin/users/USER_ID \
+  -H "Authorization: Bearer $TOKEN"
 
 # Статистика
 curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/api/admin/stats
