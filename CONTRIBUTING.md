@@ -131,4 +131,4 @@ go test -cover ./...
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the same license as the project (BSL 1.1).
+By contributing, you agree that your contributions will be licensed under the same license as the project (BSL 1.1). Commercial use of the project requires a separate agreement with the Licensor (see `LICENSE` and `README.md`).

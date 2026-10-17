@@ -57,7 +57,8 @@ func Load() *Config {
 		ServerCountry:       getEnv("SERVER_COUNTRY", "RU"),
 		PDNAutoProtect:      getEnv("PDN_AUTO_PROTECT", "true") == "true",
 		JWTExpiry:           parseDuration(getEnv("JWT_EXPIRY_HOURS", "24"), time.Hour),
-		RegistrationEnabled: getEnv("REGISTRATION_ENABLED", "true") == "true",
+		// Default false: registration is admin-only unless explicitly enabled (see .env.example).
+		RegistrationEnabled: getEnv("REGISTRATION_ENABLED", "false") == "true",
 	}
 
 	// Security warnings
