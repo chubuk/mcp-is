@@ -58,14 +58,46 @@ func main() {
 	svc := service.NewService(manager)
 	mcpServer := mcp.NewMCPServer(svc, cfg.ReadOnly, cfg.PDNAutoProtect, cfg.ServerCountry)
 
-	emailSvc := email.NewService(email.Config{
+	emailCfg := handlers.LoadSMTPConfigFromSettings(settingsRepo, email.Config{
 		Host:   cfg.SMTPHost,
 		Port:   cfg.SMTPPort,
 		User:   cfg.SMTPUser,
 		Pass:   cfg.SMTPPass,
 		From:   cfg.SMTPFrom,
 		Domain: cfg.Domain,
+	}, aesCipher)
+	emailSvc := email.NewService(emailCfg)
+
+	tplRepo := storage.NewEmailTemplateRepository(pool)
+	handlers.SeedEmailTemplates(tplRepo)
+	emailSvc.SetTemplateStore(email.FuncStore{
+		GetFunc: func(key string) (email.Template, error) {
+			t, err := tplRepo.GetByKey(key)
+			if err != nil {
+				return email.Default(key)
+			}
+			return email.Template{
+				Key: t.Key, Name: t.Name, Subject: t.Subject, HTMLBody: t.HTMLBody,
+				TextBody: t.TextBody, Description: t.Description, RequiredVars: t.RequiredVars,
+				IsModified: t.IsModified,
+			}, nil
+		},
+		ListFunc: func() ([]email.Template, error) {
+			items, err := tplRepo.List()
+			if err != nil {
+				return nil, err
+			}
+			out := make([]email.Template, 0, len(items))
+			for _, t := range items {
+				out = append(out, email.Template{
+					Key: t.Key, Name: t.Name, Subject: t.Subject, HTMLBody: t.HTMLBody,
+					TextBody: t.TextBody, Description: t.Description, RequiredVars: t.RequiredVars,
+				})
+			}
+			return out, nil
+		},
 	})
+	emailAdmin := handlers.NewEmailAdminHandler(tplRepo, settingsRepo, emailSvc, aesCipher)
 
 	authHandler := handlers.NewAuthHandler(userRepo, jwtMgr, emailSvc, cfg.RegistrationEnabled)
 	shopHandler := handlers.NewShopHandler(shopRepo, aiKeyRepo, aesCipher, mcpServer)
@@ -141,7 +173,16 @@ func main() {
 	mux.Handle("POST /api/admin/server/cert-renew", jwtMW(adminMW(http.HandlerFunc(serverHandler.RenewCert))))
 
 	mux.Handle("GET /api/admin/smtp/status", jwtMW(adminMW(http.HandlerFunc(adminHandler.SMTPStatus))))
-	mux.Handle("POST /api/admin/smtp/test", jwtMW(superAdminMW(http.HandlerFunc(adminHandler.TestSMTP))))
+	mux.Handle("POST /api/admin/smtp/test", jwtMW(adminMW(http.HandlerFunc(adminHandler.TestSMTP))))
+	mux.Handle("GET /api/admin/smtp/settings", jwtMW(adminMW(http.HandlerFunc(emailAdmin.GetSMTPSettings))))
+	mux.Handle("PUT /api/admin/smtp/settings", jwtMW(adminMW(http.HandlerFunc(emailAdmin.UpdateSMTPSettings))))
+
+	mux.Handle("GET /api/admin/email/templates", jwtMW(adminMW(http.HandlerFunc(emailAdmin.ListTemplates))))
+	mux.Handle("GET /api/admin/email/templates/{key}", jwtMW(adminMW(http.HandlerFunc(emailAdmin.GetTemplate))))
+	mux.Handle("PUT /api/admin/email/templates/{key}", jwtMW(adminMW(http.HandlerFunc(emailAdmin.SaveTemplate))))
+	mux.Handle("POST /api/admin/email/templates/{key}/reset", jwtMW(adminMW(http.HandlerFunc(emailAdmin.ResetTemplate))))
+	mux.Handle("POST /api/admin/email/templates/{key}/preview", jwtMW(adminMW(http.HandlerFunc(emailAdmin.PreviewTemplate))))
+	mux.Handle("POST /api/admin/email/templates/{key}/test", jwtMW(adminMW(http.HandlerFunc(emailAdmin.TestTemplate))))
 
 	mux.Handle("GET /api/admin/pdn", jwtMW(adminMW(http.HandlerFunc(pdnHandler.GetSettings))))
 	mux.Handle("PUT /api/admin/pdn", jwtMW(superAdminMW(http.HandlerFunc(pdnHandler.UpdateSettings))))

@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.5.1] - 2026-10-17
+
+### Добавлено
+- **Почта: шаблоны писем в админке** (`/admin/email`) — редактирование темы и тела, Quill-редактор, HTML/plain-режимы, переменные, preview (sandboxed iframe), тест-письмо, сброс к умолчанию. Роли: admin и super_admin
+- **SMTP-настройки без рестарта** — `GET/PUT /api/admin/smtp/settings` (host/port/user/pass/from/tls_mode), hot-reload, пароль AES-GCM, env как фоллбэк
+- **go-mail** вместо замороженного `net/smtp`: RFC 2047 (кириллица в теме), multipart plain+html, TLS-режимы (ssl/starttls/none)
+- **Ретраи отправки** — 3 попытки (1s/5s/30s) на транзиентные ошибки SMTP
+- Таблица `email_templates` (сид 4 шаблона: reset, verify, welcome, test)
+
+### Изменено
+- `SendVerifyEmail` удалён из API сервиса (шаблон `verify_email` остался в реестре)
+- Валидация шаблонов на PUT: `template.Parse` + sample-exec → 400 без panic
+
 ## [0.5.0] - 2026-10-17
 
 ### Добавлено

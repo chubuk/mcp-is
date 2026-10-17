@@ -2,61 +2,21 @@ package email
 
 import (
 	"context"
-	"log/slog"
+	"strings"
 	"testing"
 )
 
-func TestNewService_DisabledWhenNoHost(t *testing.T) {
-	svc := NewService(Config{Host: "", Domain: "example.com"})
+func TestNewService_DisabledWithoutHost(t *testing.T) {
+	svc := NewService(Config{Domain: "example.com"})
 	if !svc.IsDisabled() {
-		t.Error("expected service to be disabled when host is empty")
-	}
-}
-
-func TestNewService_EnabledWhenHostSet(t *testing.T) {
-	svc := NewService(Config{Host: "smtp.example.com", Port: "587", Domain: "example.com"})
-	if svc.IsDisabled() {
-		t.Error("expected service to be enabled when host is set")
-	}
-}
-
-func TestIsDisabled(t *testing.T) {
-	svc := NewService(Config{Host: "", Domain: "example.com"})
-	if !svc.IsDisabled() {
-		t.Error("expected true")
-	}
-
-	svc2 := NewService(Config{Host: "smtp.example.com", Domain: "example.com"})
-	if svc2.IsDisabled() {
-		t.Error("expected false")
-	}
-}
-
-func TestConfig(t *testing.T) {
-	cfg := Config{Host: "smtp.example.com", Port: "587", User: "user", Pass: "pass", From: "from@example.com", Domain: "example.com"}
-	svc := NewService(cfg)
-	got := svc.Config()
-	if got.Host != cfg.Host {
-		t.Errorf("Host = %q, want %q", got.Host, cfg.Host)
-	}
-	if got.Port != cfg.Port {
-		t.Errorf("Port = %q, want %q", got.Port, cfg.Port)
+		t.Error("expected disabled when Host empty")
 	}
 }
 
 func TestSendResetPassword_Disabled(t *testing.T) {
-	svc := NewService(Config{Host: "", Domain: "example.com"})
-	err := svc.SendResetPassword("user@example.com", "TestUser", "abc123")
-	if err != nil {
-		t.Errorf("expected no error when disabled, got: %v", err)
-	}
-}
-
-func TestSendVerifyEmail_Disabled(t *testing.T) {
-	svc := NewService(Config{Host: "", Domain: "example.com"})
-	err := svc.SendVerifyEmail("user@example.com", "TestUser", "abc123")
-	if err != nil {
-		t.Errorf("expected no error when disabled, got: %v", err)
+	svc := NewService(Config{Domain: "example.com"})
+	if err := svc.SendResetPassword("user@example.com", "User", "tok"); err != nil {
+		t.Errorf("disabled mode should not error, got %v", err)
 	}
 }
 
@@ -68,114 +28,138 @@ func TestSendTest_Disabled(t *testing.T) {
 	}
 }
 
-func TestSendTest_Enabled(t *testing.T) {
-	svc := NewService(Config{Host: "127.0.0.1", Port: "1", User: "u", Pass: "p", From: "f@e.com", Domain: "example.com"})
-	err := svc.SendTest("user@example.com")
-	if err == nil {
-		return
-	}
-	t.Logf("expected SMTP error (no server): %v", err)
-}
-
-func TestRenderTemplate(t *testing.T) {
-	svc := NewService(Config{Host: "", Domain: "example.com"})
-	body, err := svc.renderTemplate("reset_password", struct {
-		Name     string
-		ResetURL string
-	}{Name: "Test", ResetURL: "https://example.com/reset?token=abc"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if body == "" {
-		t.Error("expected non-empty body")
-	}
-	if !containsStr(body, "https://example.com/reset?token=abc") {
-		t.Error("expected body to contain reset URL")
-	}
-	if !containsStr(body, "Test") {
-		t.Error("expected body to contain name")
-	}
-}
-
-func TestRenderTemplate_VerifyEmail(t *testing.T) {
-	svc := NewService(Config{Host: "", Domain: "example.com"})
-	body, err := svc.renderTemplate("verify_email", struct {
-		Name      string
-		VerifyURL string
-	}{Name: "User", VerifyURL: "https://example.com/verify?token=xyz"})
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !containsStr(body, "https://example.com/verify?token=xyz") {
-		t.Error("expected body to contain verify URL")
-	}
-}
-
-func TestRenderTemplate_Nonexistent(t *testing.T) {
-	svc := NewService(Config{Host: "", Domain: "example.com"})
-	// Empty template string from map lookup doesn't panic, just produces empty output
-	body, err := svc.renderTemplate("nonexistent", nil)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if body != "" {
-		t.Errorf("expected empty body for nonexistent template, got: %q", body)
-	}
-}
-
-func TestSendResetPassword_Logging(t *testing.T) {
-	handler := &captureHandler{}
-	slog.SetDefault(slog.New(handler))
-
-	svc := NewService(Config{Host: "", Domain: "mcp-is.ru"})
-	err := svc.SendResetPassword("user@example.com", "TestUser", "token123")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+func TestSendTemplate_RendersSubjectAndBody(t *testing.T) {
+	svc := NewService(Config{Host: "smtp.example.com", Port: "587", From: "a@b.c", Domain: "example.com"})
+	var gotTo, gotSubject, gotHTML, gotText string
+	svc.sender = func(ctx context.Context, cfg Config, to, subject, htmlBody, textBody string) error {
+		gotTo, gotSubject, gotHTML, gotText = to, subject, htmlBody, textBody
+		return nil
 	}
 
-	if !containsStr(handler.output, "mcp-is.ru/reset-password?token=token123") {
-		t.Errorf("expected log to contain reset URL, got: %s", handler.output)
-	}
-}
-
-func TestSendVerifyEmail_Logging(t *testing.T) {
-	handler := &captureHandler{}
-	slog.SetDefault(slog.New(handler))
-
-	svc := NewService(Config{Host: "", Domain: "mcp-is.ru"})
-	err := svc.SendVerifyEmail("user@example.com", "TestUser", "verify456")
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-
-	if !containsStr(handler.output, "mcp-is.ru/verify-email?token=verify456") {
-		t.Errorf("expected log to contain verify URL, got: %s", handler.output)
-	}
-}
-
-// helpers
-
-func containsStr(s, substr string) bool {
-	for i := 0; i <= len(s)-len(substr); i++ {
-		if s[i:i+len(substr)] == substr {
-			return true
-		}
-	}
-	return false
-}
-
-type captureHandler struct {
-	output string
-}
-
-func (h *captureHandler) Enabled(_ context.Context, _ slog.Level) bool { return true }
-func (h *captureHandler) Handle(_ context.Context, r slog.Record) error {
-	h.output += r.Message + " "
-	r.Attrs(func(a slog.Attr) bool {
-		h.output += a.Key + "=" + a.Value.String() + " "
-		return true
+	err := svc.SendTemplate(context.Background(), "reset_password", "user@example.com", map[string]any{
+		"Name": "Иван", "ResetURL": "https://example.com/reset?token=x",
 	})
-	return nil
+	if err != nil {
+		t.Fatalf("SendTemplate: %v", err)
+	}
+	if gotTo != "user@example.com" {
+		t.Errorf("to = %q", gotTo)
+	}
+	if !strings.Contains(gotSubject, "Сброс пароля") {
+		t.Errorf("subject = %q", gotSubject)
+	}
+	if !strings.Contains(gotHTML, "Иван") || !strings.Contains(gotHTML, "example.com/reset") {
+		t.Errorf("html missing data: %s", gotHTML[:min(120, len(gotHTML))])
+	}
+	if !strings.Contains(gotText, "Иван") {
+		t.Errorf("text missing data: %q", gotText)
+	}
 }
-func (h *captureHandler) WithAttrs(_ []slog.Attr) slog.Handler { return h }
-func (h *captureHandler) WithGroup(_ string) slog.Handler      { return h }
+
+func TestSendWithRetry_PermanentNoRetry(t *testing.T) {
+	svc := NewService(Config{Host: "smtp.example.com", From: "a@b.c", Domain: "example.com"})
+	attempts := 0
+	svc.sender = func(ctx context.Context, cfg Config, to, subject, htmlBody, textBody string) error {
+		attempts++
+		return errPermanent
+	}
+	err := svc.sendWithRetry(context.Background(), "u@e.c", "s", "h", "t")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if attempts != 1 {
+		t.Errorf("permanent error should not retry, attempts=%d", attempts)
+	}
+}
+
+func TestSendWithRetry_SucceedsAfterTransient(t *testing.T) {
+	svc := NewService(Config{Host: "smtp.example.com", From: "a@b.c", Domain: "example.com"})
+	attempts := 0
+	svc.sender = func(ctx context.Context, cfg Config, to, subject, htmlBody, textBody string) error {
+		attempts++
+		if attempts == 1 {
+			return errTransient
+		}
+		return nil
+	}
+	// backoff 1s on first retry — acceptable in unit test
+	if err := svc.sendWithRetry(context.Background(), "u@e.c", "s", "h", "t"); err != nil {
+		t.Fatalf("expected success, got %v", err)
+	}
+	if attempts != 2 {
+		t.Errorf("attempts=%d, want 2", attempts)
+	}
+}
+
+type permErr struct{}
+
+func (permErr) Error() string { return "SMTP 550 permanent" }
+
+type transErr struct{}
+
+func (transErr) Error() string { return "connection timeout" }
+
+var errPermanent = permErr{}
+var errTransient = transErr{}
+
+func TestValidateTemplate_OK(t *testing.T) {
+	tpl, err := Default("reset_password")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = ValidateTemplate(tpl.Subject, tpl.HTMLBody, tpl.TextBody, tpl.RequiredVars,
+		map[string]any{"Name": "T", "ResetURL": "https://x"})
+	if err != nil {
+		t.Errorf("ValidateTemplate: %v", err)
+	}
+}
+
+func TestValidateTemplate_MissingVar(t *testing.T) {
+	err := ValidateTemplate("Subj", "<p>no vars</p>", "", []string{"ResetURL"}, map[string]any{})
+	if err == nil {
+		t.Error("expected error for missing required var")
+	}
+}
+
+func TestValidateTemplate_BadHTML(t *testing.T) {
+	err := ValidateTemplate("S", "{{.Name}", "", nil, map[string]any{"Name": "x"})
+	if err == nil {
+		t.Error("expected parse error")
+	}
+}
+
+func TestReload(t *testing.T) {
+	svc := NewService(Config{Domain: "example.com"})
+	if !svc.IsDisabled() {
+		t.Fatal("expected disabled")
+	}
+	svc.Reload(Config{Host: "smtp.x", Port: "465", TLSMode: TLSModeSSL, From: "a@b.c"})
+	if svc.IsDisabled() {
+		t.Error("expected enabled after reload")
+	}
+	if svc.Config().TLSMode != TLSModeSSL {
+		t.Errorf("tls = %q", svc.Config().TLSMode)
+	}
+}
+
+func TestMemoryStore(t *testing.T) {
+	s := NewMemoryStore()
+	tpl, err := s.Get("welcome")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(tpl.HTMLBody, "MCPURL") && !strings.Contains(tpl.HTMLBody, "{{.MCPURL}}") {
+		t.Error("welcome template missing MCPURL")
+	}
+	list, _ := s.List()
+	if len(list) < 4 {
+		t.Errorf("expected >=4 templates, got %d", len(list))
+	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}

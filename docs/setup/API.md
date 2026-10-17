@@ -144,6 +144,22 @@
 
 **Тело:** `{ "insales_id": "..." }` → `{ "status": "linked", "api_key": "..." }`
 
+### Настройки SMTP и шаблоны писем (admin / super_admin)
+
+#### GET/PUT `/api/admin/smtp/settings`
+
+Настройки SMTP-сервера: `host`, `port`, `user`, `pass` (пустое = не менять), `from`, `tls_mode` (`ssl|starttls|none`), `enabled`.  
+Пароль в GET не возвращается (флаг `has_password`). Изменения применяются без рестарта.
+
+#### GET/PUT `/api/admin/email/templates/{key}`
+
+Шаблоны: `reset_password`, `verify_email`, `welcome`, `test`.  
+Поля: `subject`, `html_body`, `text_body`, `required_vars`. PUT валидирует шаблон (400 при ошибке парсинга).
+
+#### POST `/api/admin/email/templates/{key}/reset` — сброс к умолчанию  
+#### POST `/api/admin/email/templates/{key}/preview` — HTML для sandboxed-iframe  
+#### POST `/api/admin/email/templates/{key}/test` — тест-письмо `{ "email": "..." }`
+
 ### Управление магазинами (требуется JWT)
 
 #### POST /api/shops/test-connection

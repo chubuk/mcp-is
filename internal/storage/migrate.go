@@ -30,6 +30,18 @@ func RunMigrations(pool *pgxpool.Pool) {
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_app_installs_user ON app_installs(user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_app_installs_status ON app_installs(status)`,
+		`CREATE TABLE IF NOT EXISTS email_templates (
+			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+			key TEXT UNIQUE NOT NULL,
+			name TEXT NOT NULL,
+			subject TEXT NOT NULL,
+			html_body TEXT NOT NULL,
+			text_body TEXT DEFAULT '',
+			description TEXT DEFAULT '',
+			required_vars TEXT[] DEFAULT '{}',
+			is_modified BOOLEAN DEFAULT FALSE,
+			updated_at TIMESTAMPTZ DEFAULT NOW()
+		)`,
 		`CREATE TABLE IF NOT EXISTS mcp_client_types (
 			id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
 			name TEXT NOT NULL UNIQUE,

@@ -83,3 +83,17 @@ CREATE TABLE IF NOT EXISTS app_installs (
 
 CREATE INDEX IF NOT EXISTS idx_app_installs_user ON app_installs(user_id);
 CREATE INDEX IF NOT EXISTS idx_app_installs_status ON app_installs(status);
+
+-- Миграция v0.9.0 - Email templates (runtime edit)
+CREATE TABLE IF NOT EXISTS email_templates (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    key TEXT UNIQUE NOT NULL,
+    name TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    html_body TEXT NOT NULL,
+    text_body TEXT DEFAULT '',
+    description TEXT DEFAULT '',
+    required_vars TEXT[] DEFAULT '{}',
+    is_modified BOOLEAN DEFAULT FALSE,
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);

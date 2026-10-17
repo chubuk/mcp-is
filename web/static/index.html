@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MCP IS</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/vendor/quill/quill.snow.css">
 </head>
 <body>
     <div id="impersonate-banner" style="display:none;background:#f39c12;color:#fff;padding:6px 16px;text-align:center;font-size:13px">
@@ -23,6 +24,7 @@
             <a href="/admin/server" class="nav-link admin-link" data-page="server" style="display:none">Сервер</a>
             <a href="/admin/pdn" class="nav-link admin-link" data-page="pdn" style="display:none">ПДн</a>
             <a href="/admin/backup" class="nav-link admin-link" data-page="backup" style="display:none">Бэкапы</a>
+            <a href="/admin/email" class="nav-link admin-link" data-page="email" style="display:none">Почта</a>
         </nav>
         <div class="header__user">
             <span id="user-nickname"></span>
@@ -38,6 +40,7 @@
         <p>MCP IS v0.1.0</p>
     </footer>
 
+    <script src="/vendor/quill/quill.min.js"></script>
     <script src="/js/api.js"></script>
     <script src="/js/pagination.js"></script>
     <script src="/js/auth.js"></script>
@@ -45,6 +48,7 @@
     <script src="/js/shops.js"></script>
     <script src="/js/aikeys.js"></script>
     <script src="/js/admin.js"></script>
+    <script src="/js/emailadmin.js"></script>
     <script src="/js/app.js"></script>
 </body>
 </html>

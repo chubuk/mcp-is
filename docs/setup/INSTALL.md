@@ -119,19 +119,32 @@ NGINX_HTTPS_PORT=8443
 
 ## SMTP (опционально)
 
-Для отправки писем восстановления пароля настройте SMTP в `.env`:
+Для отправки писем (сброс пароля, уведомления) настройте SMTP в `.env` или в админке **Почта** (`/admin/email`) — изменения вступают в силу без рестарта:
 
 ```env
-SMTP_HOST=smtp.example.com
-SMTP_PORT=587
-SMTP_USER=user@example.com
-SMTP_PASS=your-password
-SMTP_FROM=MCP IS <noreply@example.com>
+SMTP_HOST=smtp.mail.ru
+SMTP_PORT=587          # 587 = STARTTLS, 465 = SSL
+SMTP_USER=user@mail.ru
+SMTP_PASS=пароль-приложения
+SMTP_FROM=MCP IS <user@mail.ru>
 ```
 
 Если SMTP не настроен, письма будут только логироваться в консоль сервера. При запросе сброса пароля URL восстановления будет выведен в логи — администратор может передать его пользователю вручную.
 
-Статус SMTP можно проверить в админ-панели: **Настройки сервера → Почта (SMTP)**. Там же доступна кнопка отправки тестового письма (только для super_admin).
+### DNS-записи для доставки (SPF / DKIM / DMARC)
+
+Чтобы письма не попадали в спам, в DNS домена должны быть:
+
+| Тип | Имя | Значение |
+|-----|-----|----------|
+| TXT | `@` | `v=spf1 include:_spf.mail.ru ~all` |
+| TXT | `_dmarc` | `v=DMARC1; p=none; rua=mailto:dmarc@ваш-домен` |
+| TXT | `<selector>._domainkey` | `v=DKIM1; k=rsa; p=…` (из панели почты) |
+
+**Вариант без DNS:** `SMTP_FROM` с адресом провайдера (`…@mail.ru`) — письма дойдут, но «от кого» не ваш домен.
+
+Подробнее: `docs/setup/EMAIL-DNS.md`. Проверка: `./scripts/check-email-dns.sh mcp-is.ru`.  
+Настройки SMTP и шаблоны писем: **Почта** (`/admin/email`, admin/super_admin).
 
 ## Обновление
 

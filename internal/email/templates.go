@@ -1,52 +1,149 @@
 package email
 
-var templates = map[string]string{
-	"reset_password": `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: -apple-system, sans-serif; background: #f5f5f5; padding: 20px; }
-        .container { max-width: 500px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        h1 { font-size: 20px; margin-bottom: 16px; color: #333; }
-        p { color: #666; line-height: 1.6; margin-bottom: 16px; }
-        .btn { display: inline-block; padding: 12px 24px; background: #4a6cf7; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 500; }
-        .footer { margin-top: 24px; font-size: 12px; color: #999; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Сброс пароля</h1>
-        <p>Здравствуйте, {{.Name}}!</p>
-        <p>Вы запросили сброс пароля. Нажмите кнопку ниже, чтобы задать новый пароль:</p>
-        <p><a href="{{.ResetURL}}" class="btn">Сбросить пароль</a></p>
-        <p>Если вы не запрашивали сброс — проигнорируйте это письмо.</p>
-        <div class="footer">Ссылка действительна в течение 1 часа.</div>
-    </div>
-</body>
-</html>`,
+import (
+	"embed"
+	"fmt"
+	"sort"
+)
 
-	"verify_email": `<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <style>
-        body { font-family: -apple-system, sans-serif; background: #f5f5f5; padding: 20px; }
-        .container { max-width: 500px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-        h1 { font-size: 20px; margin-bottom: 16px; color: #333; }
-        p { color: #666; line-height: 1.6; margin-bottom: 16px; }
-        .btn { display: inline-block; padding: 12px 24px; background: #27ae60; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 500; }
-        .footer { margin-top: 24px; font-size: 12px; color: #999; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Подтверждение email</h1>
-        <p>Здравствуйте, {{.Name}}!</p>
-        <p>Для завершения регистрации подтвердите ваш email:</p>
-        <p><a href="{{.VerifyURL}}" class="btn">Подтвердить email</a></p>
-        <div class="footer">Ссылка действительна в течение 24 часов.</div>
-    </div>
-</body>
-</html>`,
+// Template is a mail template stored in memory or DB.
+type Template struct {
+	Key          string
+	Name         string
+	Subject      string
+	HTMLBody     string
+	TextBody     string
+	Description  string
+	RequiredVars []string
+	IsModified   bool
+}
+
+// TemplateStore provides templates by key.
+type TemplateStore interface {
+	Get(key string) (Template, error)
+	List() ([]Template, error)
+}
+
+// FuncStore adapts function lookups (e.g. DB repository) to TemplateStore.
+type FuncStore struct {
+	GetFunc  func(key string) (Template, error)
+	ListFunc func() ([]Template, error)
+}
+
+func (f FuncStore) Get(key string) (Template, error) {
+	if f.GetFunc == nil {
+		return Template{}, fmt.Errorf("template %q not found", key)
+	}
+	return f.GetFunc(key)
+}
+
+func (f FuncStore) List() ([]Template, error) {
+	if f.ListFunc == nil {
+		return nil, nil
+	}
+	return f.ListFunc()
+}
+
+//go:embed templates/default/*.html templates/default/*.txt
+var defaultTemplates embed.FS
+
+// MemoryStore serves built-in defaults (fallback when DB store is not set).
+type MemoryStore struct {
+	items map[string]Template
+}
+
+func NewMemoryStore() *MemoryStore {
+	s := &MemoryStore{items: make(map[string]Template)}
+	for _, t := range builtinTemplates() {
+		s.items[t.Key] = t
+	}
+	return s
+}
+
+func (s *MemoryStore) Get(key string) (Template, error) {
+	t, ok := s.items[key]
+	if !ok {
+		return Template{}, fmt.Errorf("template %q not found", key)
+	}
+	return t, nil
+}
+
+func (s *MemoryStore) List() ([]Template, error) {
+	out := make([]Template, 0, len(s.items))
+	for _, t := range s.items {
+		out = append(out, t)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Key < out[j].Key })
+	return out, nil
+}
+
+// Default returns the embedded seed for a key (used by "reset to default").
+func Default(key string) (Template, error) {
+	for _, t := range builtinTemplates() {
+		if t.Key == key {
+			return t, nil
+		}
+	}
+	return Template{}, fmt.Errorf("default template %q not found", key)
+}
+
+// DefaultList returns all embedded seeds.
+func DefaultList() []Template {
+	return builtinTemplates()
+}
+
+func builtinTemplates() []Template {
+	html := func(name string) string {
+		b, err := defaultTemplates.ReadFile("templates/default/" + name)
+		if err != nil {
+			return ""
+		}
+		return string(b)
+	}
+	txt := func(name string) string {
+		b, err := defaultTemplates.ReadFile("templates/default/" + name)
+		if err != nil {
+			return ""
+		}
+		return string(b)
+	}
+
+	return []Template{
+		{
+			Key:          "reset_password",
+			Name:         "Сброс пароля",
+			Subject:      "Сброс пароля — MCP IS",
+			HTMLBody:     html("reset_password.html"),
+			TextBody:     txt("reset_password.txt"),
+			Description:  "Ссылка для смены пароля (1 час)",
+			RequiredVars: []string{"Name", "ResetURL"},
+		},
+		{
+			Key:          "verify_email",
+			Name:         "Подтверждение email",
+			Subject:      "Подтвердите email — MCP IS",
+			HTMLBody:     html("verify_email.html"),
+			TextBody:     txt("verify_email.txt"),
+			Description:  "Подтверждение адреса почты",
+			RequiredVars: []string{"Name", "VerifyURL"},
+		},
+		{
+			Key:          "welcome",
+			Name:         "Приветствие",
+			Subject:      "Добро пожаловать в MCP IS",
+			HTMLBody:     html("welcome.html"),
+			TextBody:     txt("welcome.txt"),
+			Description:  "После установки приложения / регистрации",
+			RequiredVars: []string{"Name", "MCPURL"},
+		},
+		{
+			Key:          "test",
+			Name:         "Тестовое письмо",
+			Subject:      "SMTP Test — MCP IS",
+			HTMLBody:     html("test.html"),
+			TextBody:     txt("test.txt"),
+			Description:  "Проверка SMTP из админки",
+			RequiredVars: []string{"Name"},
+		},
+	}
 }

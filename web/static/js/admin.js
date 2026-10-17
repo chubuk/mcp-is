@@ -398,6 +398,7 @@ const Admin = {
                 <div class="card__title">Почта (SMTP)</div>
                 <div id="smtp-alert"></div>
                 <div id="smtp-content">Загрузка...</div>
+                <p class="link"><a href="/admin/email">⚙ Настройки SMTP и шаблоны писем</a></p>
             </div>`;
     },
 

@@ -486,17 +486,19 @@ curl -X POST http://localhost:8080/mcp \
 
 ## SMTP (отправка писем)
 
-Для отправки писем настройте SMTP в `.env`:
+Настройка в `.env` или в админке **Почта** (`/admin/email`, admin/super_admin) — без рестарта:
 
 ```env
-SMTP_HOST=smtp.gmail.com
+SMTP_HOST=smtp.mail.ru
 SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-SMTP_FROM=MCP IS <noreply@your-domain.com>
+SMTP_USER=user@mail.ru
+SMTP_PASS=пароль-приложения
+SMTP_FROM=MCP IS <user@mail.ru>
 ```
 
-Если SMTP не настроен — токены сброса логируются в консоль.
+- **DNS (SPF/DKIM/DMARC)** — чтобы письма не попадали в спам: таблица в `docs/setup/EMAIL-DNS.md`, проверка `./scripts/check-email-dns.sh`.
+- **Шаблоны писем** — тема + тело (Quill/HTML/plain), переменные, preview, тест-письмо, сброс — там же в `/admin/email`.
+- Без SMTP токены сброса логируются в консоль.
 
 ## REST API Эндпоинты
 
