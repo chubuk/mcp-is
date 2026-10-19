@@ -17,3 +17,5 @@ backups/
 .playwright-cli/
 
 config.yaml
+
+docs/api/Insales-api-docs.txt

@@ -1,21 +1,107 @@
-InSales API documentation
-Accessories
-Create accessory
-Endpoint
+# InSales API documentation
+
+Документация InSales API с примерами запросов и ответов.
+
+| | |
+|--|--|
+| Ресурсов | 57 |
+| Операций | 327 |
+| Авторизация | HTTP Basic (примеры из песочницы InSales — не боевые ключи) |
+| Краткий справочник | [insales-api-reference.md](insales-api-reference.md) |
+| OpenAPI MCP IS | [openapi-mcp-is.yaml](openapi-mcp-is.yaml) |
+
+## Содержание
+
+- [Accessories](#accessories) — 5 операций
+- [AccessoryValues](#accessoryvalues) — 8 операций
+- [Account](#account) — 2 операции
+- [ApplicationAction](#applicationaction) — 5 операций
+- [ApplicationCharge](#applicationcharge) — 4 операции
+- [ApplicationWidget](#applicationwidget) — 5 операций
+- [Article](#article) — 5 операций
+- [Blog](#blog) — 5 операций
+- [BonusSystemTransaction](#bonussystemtransaction) — 4 операции
+- [Category](#category) — 5 операций
+- [Characteristic](#characteristic) — 5 операций
+- [Client](#client) — 6 операций
+- [ClientGroup](#clientgroup) — 5 операций
+- [Collect](#collect) — 7 операций
+- [Collection](#collection) — 5 операций
+- [CollectionField](#collectionfield) — 8 операций
+- [CollectionFieldValue](#collectionfieldvalue) — 5 операций
+- [CollectionFilter](#collectionfilter) — 5 операций
+- [CustomStatus](#customstatus) — 5 операций
+- [DeliveryVariant](#deliveryvariant) — 9 операций
+- [DiscountCode](#discountcode) — 5 операций
+- [DiscountCollectionsGroup](#discountcollectionsgroup) — 3 операции
+- [Domain](#domain) — 5 операций
+- [ExternalDiscount](#externaldiscount) — 5 операций
+- [Field](#field) — 7 операций
+- [File](#file) — 5 операций
+- [Image](#image) — 6 операций
+- [JsTag](#jstag) — 6 операций
+- [Marketplace](#marketplace) — 9 операций
+- [Menu](#menu) — 5 операций
+- [MenuItem](#menuitem) — 8 операций
+- [OAuthApp](#oauthapp) — 5 операций
+- [OptionName](#optionname) — 5 операций
+- [OptionValue](#optionvalue) — 8 операций
+- [Order](#order) — 16 операций
+- [Outlet](#outlet) — 5 операций
+- [Page](#page) — 5 операций
+- [PaymentGateway](#paymentgateway) — 6 операций
+- [PriceKind](#pricekind) — 5 операций
+- [Product](#product) — 8 операций
+- [ProductField](#productfield) — 8 операций
+- [ProductFieldValue](#productfieldvalue) — 9 операций
+- [Property](#property) — 5 операций
+- [ProviderToken](#providertoken) — 1 операция
+- [RecurringApplicationCharge](#recurringapplicationcharge) — 5 операций
+- [Redirect](#redirect) — 5 операций
+- [Review](#review) — 5 операций
+- [SalesChannel](#saleschannel) — 4 операции
+- [Similar](#similar) — 7 операций
+- [Supplementary](#supplementary) — 3 операции
+- [Unit](#unit) — 1 операция
+- [UserTask](#usertask) — 5 операций
+- [Variant](#variant) — 7 операций
+- [VariantField](#variantfield) — 8 операций
+- [VariantFieldValue](#variantfieldvalue) — 9 операций
+- [Warehouse](#warehouse) — 5 операций
+- [Webhook](#webhook) — 5 операций
+
+---
+
+## Accessories
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create accessory](#create-accessory) | `POST /admin/accessories.json` |
+| [Destroy accessory](#destroy-accessory) | `DELETE /admin/accessories/:accessory_id.json` |
+| [Get accessories](#get-accessories) | `GET /admin/accessories.json` |
+| [Get accessory](#get-accessory) | `GET /admin/accessories/:accessory_id.json` |
+| [Update accessory](#update-accessory) | `PUT /admin/accessories/:accessory_id.json` |
+
+### Create accessory
+
+`POST /admin/accessories.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `accessory[name]` | да | Наименование |
+| `accessory[max_count]` | да | Максимальное количество опций в заказе |
+| `accessory[min_count]` | да | Минимальное количество опций в заказе |
+| `accessory[permalink]` | да | Идентификатор |
+
+**Запрос**
+
+```http
 POST /admin/accessories.json
-Parameters
-Name	Description
-accessory[name] required	Наименование
-accessory[max_count] required	Максимальное количество опций в заказе
-accessory[min_count] required	Минимальное количество опций в заказе
-accessory[permalink] required	Идентификатор
-Request
-Route
-POST /admin/accessories.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "accessory": {
     "name": "Опция 1",
@@ -24,14 +110,18 @@ Body
     "permalink": "opcia-1"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 40,
   "account_id": 1,
@@ -46,23 +136,30 @@ Body
   "permalink": "opcia-1",
   "name": "Опция 1"
 }
-Destroy accessory
-Endpoint
-DELETE /admin/accessories/:accessory_id.json
-Request
-Route
+```
+
+### Destroy accessory
+
+`DELETE /admin/accessories/:accessory_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/accessories/68.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 68,
   "account_id": 1,
@@ -77,22 +174,29 @@ Body
   "permalink": "quibusdam_expedita",
   "name": "Тяжёлый Бумажный Свитер"
 }
-Get accessories
-Endpoint
+```
+
+### Get accessories
+
+`GET /admin/accessories.json`
+
+**Запрос**
+
+```http
 GET /admin/accessories.json
-Request
-Route
-GET /admin/accessories.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 7,
@@ -179,22 +283,29 @@ Body
     "name": "Опция 2"
   }
 ]
-Get accessory
-Endpoint
-GET /admin/accessories/:accessory_id.json
-Request
-Route
+```
+
+### Get accessory
+
+`GET /admin/accessories/:accessory_id.json`
+
+**Запрос**
+
+```http
 GET /admin/accessories/26.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 26,
   "account_id": 1,
@@ -209,22 +320,28 @@ Body
   "permalink": "deleniti_corrupti",
   "name": "Синергетический Мраморный Свитер"
 }
-Update accessory
-Endpoint
-PUT /admin/accessories/:accessory_id.json
-Parameters
-Name	Description
-accessory[name]	Наименование
-accessory[max_count]	Максимальное количество опций в заказе
-accessory[min_count]	Минимальное количество опций в заказе
-accessory[permalink]	Идентификатор
-Request
-Route
+```
+
+### Update accessory
+
+`PUT /admin/accessories/:accessory_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `accessory[name]` |  | Наименование |
+| `accessory[max_count]` |  | Максимальное количество опций в заказе |
+| `accessory[min_count]` |  | Минимальное количество опций в заказе |
+| `accessory[permalink]` |  | Идентификатор |
+
+**Запрос**
+
+```http
 PUT /admin/accessories/54.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "accessory": {
     "name": "Опция 1",
@@ -233,14 +350,18 @@ Body
     "permalink": "opcia-1"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "account_id": 1,
   "name": "Опция 1",
@@ -255,22 +376,42 @@ Body
   "created_at": "2026-07-25T00:59:29.183+03:00",
   "updated_at": "2026-07-25T00:59:29.255+03:00"
 }
-AccessoryValues
-Create accessory value
-Endpoint
-POST /admin/accessories/:accessory_id/values.json
-Parameters
-Name	Description
-accessory_value[name] required	Название
-accessory_value[price] required	Цена
-accessory_value[accounting_variant_id]	Идентификатор списываемого товара
-Request
-Route
+```
+
+---
+
+## AccessoryValues
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create accessory value](#create-accessory-value) | `POST /admin/accessories/:accessory_id/values.json` |
+| [Create product accessory link](#create-product-accessory-link) | `POST /admin/products/:product_id/product_accessory_links.json` |
+| [Destroy accessory value](#destroy-accessory-value) | `DELETE /admin/accessories/:accessory_id/values/:accessory_value_id.json` |
+| [Destroy product accessory link](#destroy-product-accessory-link) | `DELETE /admin/products/:product_id/product_accessory_links/:product_accessory_link_id.json` |
+| [Get accessory value](#get-accessory-value) | `GET /admin/accessories/:accessory_id/values/:accessory_value_id.json` |
+| [Get accessory values](#get-accessory-values) | `GET /admin/accessories/:accessory_id/values.json` |
+| [Get product accessory links](#get-product-accessory-links) | `GET /admin/products/:product_id/product_accessory_links.json` |
+| [Update accessory value](#update-accessory-value) | `PUT /admin/accessories/:accessory_id/values/:accessory_value_id.json` |
+
+### Create accessory value
+
+`POST /admin/accessories/:accessory_id/values.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `accessory_value[name]` | да | Название |
+| `accessory_value[price]` | да | Цена |
+| `accessory_value[accounting_variant_id]` |  | Идентификатор списываемого товара |
+
+**Запрос**
+
+```http
 POST /admin/accessories/74/values.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "accessory_value": {
     "name": "Значение опции",
@@ -278,14 +419,18 @@ Body
     "accounting_variant_id": null
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 44,
   "account_id": 1,
@@ -299,32 +444,42 @@ Body
   "accounting_variant_id": null,
   "name": "Значение опции"
 }
-Create product accessory link
-Endpoint
-POST /admin/products/:product_id/product_accessory_links.json
-Parameters
-Name	Description
-product_accessory_link[accessory_id] required	Идентификатор опции
-Request
-Route
+```
+
+### Create product accessory link
+
+`POST /admin/products/:product_id/product_accessory_links.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `product_accessory_link[accessory_id]` | да | Идентификатор опции |
+
+**Запрос**
+
+```http
 POST /admin/products/293977313/product_accessory_links.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "product_accessory_link": {
     "accessory_id": 82
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "account_id": 1,
@@ -400,23 +555,30 @@ Body
     "title": "product 4"
   }
 }
-Destroy accessory value
-Endpoint
-DELETE /admin/accessories/:accessory_id/values/:accessory_value_id.json
-Request
-Route
+```
+
+### Destroy accessory value
+
+`DELETE /admin/accessories/:accessory_id/values/:accessory_value_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/accessories/78/values/66.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 66,
   "account_id": 1,
@@ -430,23 +592,30 @@ Body
   "accounting_variant_id": null,
   "name": "Значение опции"
 }
-Destroy product accessory link
-Endpoint
-DELETE /admin/products/:product_id/product_accessory_links/:product_accessory_link_id.json
-Request
-Route
+```
+
+### Destroy product accessory link
+
+`DELETE /admin/products/:product_id/product_accessory_links/:product_accessory_link_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/products/293977329/product_accessory_links/4.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 4,
   "account_id": 1,
@@ -522,22 +691,29 @@ Body
     "title": "product 6"
   }
 }
-Get accessory value
-Endpoint
-GET /admin/accessories/:accessory_id/values/:accessory_value_id.json
-Request
-Route
+```
+
+### Get accessory value
+
+`GET /admin/accessories/:accessory_id/values/:accessory_value_id.json`
+
+**Запрос**
+
+```http
 GET /admin/accessories/72/values/22.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 22,
   "account_id": 1,
@@ -551,22 +727,29 @@ Body
   "accounting_variant_id": null,
   "name": "Значение опции"
 }
-Get accessory values
-Endpoint
-GET /admin/accessories/:accessory_id/values.json
-Request
-Route
+```
+
+### Get accessory values
+
+`GET /admin/accessories/:accessory_id/values.json`
+
+**Запрос**
+
+```http
 GET /admin/accessories/70/values.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 8,
@@ -660,38 +843,51 @@ Body
     "name": "Значение опции 2"
   }
 ]
-Get product accessory links
-Endpoint
-GET /admin/products/:product_id/product_accessory_links.json
-Request
-Route
+```
+
+### Get product accessory links
+
+`GET /admin/products/:product_id/product_accessory_links.json`
+
+**Запрос**
+
+```http
 GET /admin/products/293977297/product_accessory_links.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 []
-Update accessory value
-Endpoint
-PUT /admin/accessories/:accessory_id/values/:accessory_value_id.json
-Parameters
-Name	Description
-accessory_value[name]	Название
-accessory_value[price]	Цена
-accessory_value[accounting_variant_id]	Идентификатор списываемого товара
-Request
-Route
+```
+
+### Update accessory value
+
+`PUT /admin/accessories/:accessory_id/values/:accessory_value_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `accessory_value[name]` |  | Название |
+| `accessory_value[price]` |  | Цена |
+| `accessory_value[accounting_variant_id]` |  | Идентификатор списываемого товара |
+
+**Запрос**
+
+```http
 PUT /admin/accessories/76/values/52.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "accessory_value": {
     "name": "Обновлённое значение опции",
@@ -699,14 +895,18 @@ Body
     "accounting_variant_id": null
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "accessory_id": 76,
   "name": "Обновлённое значение опции",
@@ -720,23 +920,38 @@ Body
   "created_at": "2026-07-25T00:59:30.888+03:00",
   "updated_at": "2026-07-25T00:59:31.012+03:00"
 }
-Account
-Get account
-Endpoint
+```
+
+---
+
+## Account
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Get account](#get-account) | `GET admin/account.json` |
+| [Update account](#update-account) | `PUT /admin/account.json` |
+
+### Get account
+
+`GET admin/account.json`
+
+**Запрос**
+
+```http
 GET admin/account.json
-Request
-Route
-GET admin/account.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "blocked": false,
@@ -776,52 +991,79 @@ Body
     "created_at": "2026-07-20T00:58:27.000+03:00"
   }
 }
-Update account
-Endpoint
+```
+
+### Update account
+
+`PUT /admin/account.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `account[client_cookies_whitelist]` |  | cookies whitelist |
+
+**Запрос**
+
+```http
 PUT /admin/account.json
-Parameters
-Name	Description
-account[client_cookies_whitelist]	cookies whitelist
-Request
-Route
-PUT /admin/account.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "account": {
     "client_cookies_whitelist": "my_cookie"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-ApplicationAction
-Create application_action
-Endpoint
+```
+
+---
+
+## ApplicationAction
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create application_action](#create-application-action) | `POST /admin/application_actions.json` |
+| [Destroy application_action](#destroy-application-action) | `DELETE /admin/application_actions/:application_action_id.json` |
+| [API-Usage-Limit: 1/500](#api-usage-limit-1-500) | `GET /admin/application_actions.json` |
+| [Get application_action](#get-application-action) | `GET /admin/application_actions/:application_action_id.json` |
+| [Update application_action](#update-application-action) | `PUT /admin/application_actions/:application_action_id.json` |
+
+### Create application_action
+
+`POST /admin/application_actions.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `application_action[title]` | да | title to show in backoffice |
+| `application_action[handle]` | да | unique string identifier |
+| `application_action[entity]` | да | string, defines entity that action belongs to: order, product, client, discount_code, file, page, article, collection_filter |
+| `application_action[url]` | да | URL to which POST request with serialized entities will be made |
+
+**Запрос**
+
+```http
 POST /admin/application_actions.json
-Parameters
-Name	Description
-application_action[title] required	title to show in backoffice
-application_action[handle] required	unique string identifier
-application_action[entity] required	string, defines entity that action belongs to: order, product, client, discount_code, file, page, article, collection_filter
-application_action[url] required	URL to which POST request with serialized entities will be made
-Request
-Route
-POST /admin/application_actions.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "application_action": {
     "title": "backoffice title",
@@ -830,14 +1072,18 @@ Body
     "url": "http://www.yandex.ru"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 17,
   "title": "backoffice title",
@@ -845,38 +1091,47 @@ Body
   "handle": "unique_handle",
   "entity": "product"
 }
-Destroy application_action
-Endpoint
-DELETE /admin/application_actions/:application_action_id.json
-Request
-Route
+```
+
+### Destroy application_action
+
+`DELETE /admin/application_actions/:application_action_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/application_actions/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
-API-Usage-Limit: 1/500
-Content-Type: application/json
-Get application actions
-Endpoint
+```
+
+**Ответ**
+
+Status: `200`
+
+### API-Usage-Limit: 1/500
+
+`GET /admin/application_actions.json`
+
+Content-Type: application/json Get application actions
+
+**Запрос**
+
+```http
 GET /admin/application_actions.json
-Request
-Route
-GET /admin/application_actions.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -886,22 +1141,29 @@ Body
     "entity": "order"
   }
 ]
-Get application_action
-Endpoint
-GET /admin/application_actions/:application_action_id.json
-Request
-Route
+```
+
+### Get application_action
+
+`GET /admin/application_actions/:application_action_id.json`
+
+**Запрос**
+
+```http
 GET /admin/application_actions/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "title": "test",
@@ -909,22 +1171,28 @@ Body
   "handle": "test",
   "entity": "order"
 }
-Update application_action
-Endpoint
-PUT /admin/application_actions/:application_action_id.json
-Parameters
-Name	Description
-application_action[title]	title to show in backoffice
-application_action[handle]	unique string identifier
-application_action[entity]	string, defines entity that action belongs to: order, product, client, discount_code, file, page, article, collection_filter
-application_action[url]	URL to which POST request with serialized entities will be made
-Request
-Route
+```
+
+### Update application_action
+
+`PUT /admin/application_actions/:application_action_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `application_action[title]` |  | title to show in backoffice |
+| `application_action[handle]` |  | unique string identifier |
+| `application_action[entity]` |  | string, defines entity that action belongs to: order, product, client, discount_code, file, page, article, collection_filter |
+| `application_action[url]` |  | URL to which POST request with serialized entities will be made |
+
+**Запрос**
+
+```http
 PUT /admin/application_actions/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "application_action": {
     "title": "new  title",
@@ -933,14 +1201,18 @@ Body
     "url": "http://www.yandex.ru"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "title": "new  title",
@@ -948,23 +1220,39 @@ Body
   "handle": "new_unique_handle",
   "entity": "client"
 }
-ApplicationCharge
-Create application_charge
-Endpoint
+```
+
+---
+
+## ApplicationCharge
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create application_charge](#create-application-charge) | `POST /admin/application_charges.json` |
+| [Decline application_charge](#decline-application-charge) | `POST /admin/application_charges/:application_charge_id/decline.json` |
+| [Get application_charge](#get-application-charge) | `GET /admin/application_charges/:application_charge_id.json` |
+| [Get application_charges](#get-application-charges) | `GET /admin/application_charges.json` |
+
+### Create application_charge
+
+`POST /admin/application_charges.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `application_charge[name]` | да | purpose of payment |
+| `application_charge[price]` | да | bill amount |
+| `application_charge[return_url]` |  | url for notification about payment |
+| `application_charge[test]` |  | flag for debugging purpose; if true, bill can be confirmed without payment; false by default |
+
+**Запрос**
+
+```http
 POST /admin/application_charges.json
-Parameters
-Name	Description
-application_charge[name] required	purpose of payment
-application_charge[price] required	bill amount
-application_charge[return_url]	url for notification about payment
-application_charge[test]	flag for debugging purpose; if true, bill can be confirmed without payment; false by default
-Request
-Route
-POST /admin/application_charges.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "application_charge": {
     "name": "Payment for premium",
@@ -973,14 +1261,18 @@ Body
     "test": true
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 8,
   "name": "Payment for premium",
@@ -992,25 +1284,32 @@ Body
   "confirmation_url": "https://quentin.insales.io:3002/admin/application_charges/8",
   "status": "pending"
 }
-Decline application_charge
+```
+
+### Decline application_charge
+
+`POST /admin/application_charges/:application_charge_id/decline.json`
+
 Only bill with status ‘pending’ can be declined.
 
-Endpoint
-POST /admin/application_charges/:application_charge_id/decline.json
-Request
-Route
+**Запрос**
+
+```http
 POST /admin/application_charges/10/decline.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 10,
   "name": "Pay",
@@ -1022,22 +1321,29 @@ Body
   "confirmation_url": "https://quentin.insales.io:3002/admin2/invoices/8",
   "status": "declined"
 }
-Get application_charge
-Endpoint
-GET /admin/application_charges/:application_charge_id.json
-Request
-Route
+```
+
+### Get application_charge
+
+`GET /admin/application_charges/:application_charge_id.json`
+
+**Запрос**
+
+```http
 GET /admin/application_charges/4.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 4,
   "name": "Pay",
@@ -1049,22 +1355,29 @@ Body
   "confirmation_url": "https://quentin.insales.io:3002/admin2/invoices/4",
   "status": "pending"
 }
-Get application_charges
-Endpoint
+```
+
+### Get application_charges
+
+`GET /admin/application_charges.json`
+
+**Запрос**
+
+```http
 GET /admin/application_charges.json
-Request
-Route
-GET /admin/application_charges.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 2,
@@ -1078,22 +1391,39 @@ Body
     "status": "pending"
   }
 ]
-ApplicationWidget
-Create application_widget
-Endpoint
+```
+
+---
+
+## ApplicationWidget
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create application_widget](#create-application-widget) | `POST /admin/application_widgets.json` |
+| [Destroy application_widget](#destroy-application-widget) | `DELETE /admin/application_widgets/:application_widget_id.json` |
+| [Get application_widget](#get-application-widget) | `GET /admin/application_widgets/:application_widget_id.json` |
+| [Get application_widgets](#get-application-widgets) | `GET /admin/application_widgets.json` |
+| [Update application_widget](#update-application-widget) | `PUT /admin/application_widgets/:application_widget_id.json` |
+
+### Create application_widget
+
+`POST /admin/application_widgets.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `application_widget[code]` | да | html or javascript code of widget |
+| `application_widget[height]` | да | height of iframe block |
+| `application_widget[page_type]` |  | product or order |
+
+**Запрос**
+
+```http
 POST /admin/application_widgets.json
-Parameters
-Name	Description
-application_widget[code] required	html or javascript code of widget
-application_widget[height] required	height of iframe block
-application_widget[page_type]	product or order
-Request
-Route
-POST /admin/application_widgets.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "application_widget": {
     "code": "some html or javascript code",
@@ -1101,14 +1431,18 @@ Body
     "page_type": "order"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "code": "some html or javascript code",
   "created_at": "2026-07-25T00:58:39.705+03:00",
@@ -1116,42 +1450,56 @@ Body
   "height": 70,
   "page_type": "order"
 }
-Destroy application_widget
-Endpoint
-DELETE /admin/application_widgets/:application_widget_id.json
-Request
-Route
+```
+
+### Destroy application_widget
+
+`DELETE /admin/application_widgets/:application_widget_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/application_widgets/89.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get application_widget
-Endpoint
-GET /admin/application_widgets/:application_widget_id.json
-Request
-Route
+```
+
+### Get application_widget
+
+`GET /admin/application_widgets/:application_widget_id.json`
+
+**Запрос**
+
+```http
 GET /admin/application_widgets/25.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "code": "html/js code",
   "created_at": "2026-07-25T00:58:39.265+03:00",
@@ -1159,22 +1507,29 @@ Body
   "height": 50,
   "page_type": "product"
 }
-Get application_widgets
-Endpoint
+```
+
+### Get application_widgets
+
+`GET /admin/application_widgets.json`
+
+**Запрос**
+
+```http
 GET /admin/application_widgets.json
-Request
-Route
-GET /admin/application_widgets.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "code": "html/js code",
@@ -1184,21 +1539,27 @@ Body
     "page_type": "product"
   }
 ]
-Update application_widget
-Endpoint
-PUT /admin/application_widgets/:application_widget_id.json
-Parameters
-Name	Description
-application_widget[code]	html or javascript code of widget
-application_widget[height]	height of iframe block
-application_widget[page_type]	product or order
-Request
-Route
+```
+
+### Update application_widget
+
+`PUT /admin/application_widgets/:application_widget_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `application_widget[code]` |  | html or javascript code of widget |
+| `application_widget[height]` |  | height of iframe block |
+| `application_widget[page_type]` |  | product or order |
+
+**Запрос**
+
+```http
 PUT /admin/application_widgets/73.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "application_widget": {
     "code": "code changed",
@@ -1206,14 +1567,18 @@ Body
     "page_type": "order"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "code": "code changed",
   "created_at": "2026-07-25T00:58:39.906+03:00",
@@ -1221,32 +1586,49 @@ Body
   "height": 80,
   "page_type": "order"
 }
-Article
-Create article
-Endpoint
-POST /admin/blogs/:blog_id/articles.json
-Parameters
-Name	Description
-article[title] required	article title
-article[content] required	article content
-article[notice]	notice for article
-article[published_at] required	publication date, the article is invisible to users while publication date > current time
-article[author] required	article author name
-article[permalink]	permalink on blog/*
-article[html_title]	html title tag content
-article[meta_keywords]	html meta words on page
-article[meta_description]	html meta description
-article[image_attributes]	image for article
-article[related_products_attributes]	goods to attach or detach. An array of hashes with the keys: product_id, _destroy.
-article[all_tags]	array of all tags for article, max 10 tags
-article[pinned]	set to true to pin article: it will be always on the top of the blog; only one article can be pinned, so when you pin article, previously pinned article will be unpinned
-Request
-Route
+```
+
+---
+
+## Article
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create article](#create-article) | `POST /admin/blogs/:blog_id/articles.json` |
+| [Delete article](#delete-article) | `DELETE /admin/blogs/:blog_id/articles/:article_id.json` |
+| [Get article](#get-article) | `GET /admin/blogs/:blog_id/articles/:article_id.json` |
+| [Get articles list](#get-articles-list) | `GET /admin/blogs/:blog_id/articles.json` |
+| [Update article](#update-article) | `PUT /admin/blogs/:blog_id/articles/:article_id.json` |
+
+### Create article
+
+`POST /admin/blogs/:blog_id/articles.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `article[title]` | да | article title |
+| `article[content]` | да | article content |
+| `article[notice]` |  | notice for article |
+| `article[published_at]` | да | publication date, the article is invisible to users while publication date > current time |
+| `article[author]` | да | article author name |
+| `article[permalink]` |  | permalink on blog/* |
+| `article[html_title]` |  | html title tag content |
+| `article[meta_keywords]` |  | html meta words on page |
+| `article[meta_description]` |  | html meta description |
+| `article[image_attributes]` |  | image for article |
+| `article[related_products_attributes]` |  | goods to attach or detach. An array of hashes with the keys: product_id, _destroy. |
+| `article[all_tags]` |  | array of all tags for article, max 10 tags |
+| `article[pinned]` |  | set to true to pin article: it will be always on the top of the blog; only one article can be pinned, so when you pin article, previously pinned article will be unpinned |
+
+**Запрос**
+
+```http
 POST /admin/blogs/1/articles.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "article": {
     "title": "new article",
@@ -1273,14 +1655,18 @@ Body
     "pinned": true
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 20,
   "created_at": "2026-07-25T01:00:22.000+03:00",
@@ -1374,42 +1760,56 @@ Body
   "notice": "some notice",
   "content": "<p>content of my article<p>"
 }
-Delete article
-Endpoint
-DELETE /admin/blogs/:blog_id/articles/:article_id.json
-Request
-Route
+```
+
+### Delete article
+
+`DELETE /admin/blogs/:blog_id/articles/:article_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/blogs/1/articles/2.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
 Content-Type: application/x-www-form-urlencoded
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get article
-Endpoint
-GET /admin/blogs/:blog_id/articles/:article_id.json
-Request
-Route
+```
+
+### Get article
+
+`GET /admin/blogs/:blog_id/articles/:article_id.json`
+
+**Запрос**
+
+```http
 GET /admin/blogs/1/articles/2.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "created_at": "2026-07-25T00:58:09.000+03:00",
@@ -1503,22 +1903,29 @@ Body
   "notice": "Второй анонс",
   "content": "Привет"
 }
-Get articles list
-Endpoint
-GET /admin/blogs/:blog_id/articles.json
-Request
-Route
+```
+
+### Get articles list
+
+`GET /admin/blogs/:blog_id/articles.json`
+
+**Запрос**
+
+```http
 GET /admin/blogs/1/articles.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 2,
@@ -1632,30 +2039,36 @@ Body
     "content": "Первая статья"
   }
 ]
-Update article
-Endpoint
-PUT /admin/blogs/:blog_id/articles/:article_id.json
-Parameters
-Name	Description
-article[title]	article title
-article[content]	article content
-article[notice]	notice for article
-article[author]	article author name
-article[permalink]	permalink on blog/*
-article[html_title]	html title tag content
-article[meta_keywords]	html meta words on page
-article[meta_description]	html meta description
-article[published_at]	publication date, the article is invisible to users while publication date > current time
-article[image_attributes]	image for article
-article[all_tags]	array of tags for article, max 10 tags: to remove tags from list - pass the array without this tag, to add tag - pass a full list with a new tag added
-article[pinned]	set to true to pin article: it will be always on the top of the blog; only one article can be pinned, so when you pin article, previously pinned article will be unpinned
-Request
-Route
+```
+
+### Update article
+
+`PUT /admin/blogs/:blog_id/articles/:article_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `article[title]` |  | article title |
+| `article[content]` |  | article content |
+| `article[notice]` |  | notice for article |
+| `article[author]` |  | article author name |
+| `article[permalink]` |  | permalink on blog/* |
+| `article[html_title]` |  | html title tag content |
+| `article[meta_keywords]` |  | html meta words on page |
+| `article[meta_description]` |  | html meta description |
+| `article[published_at]` |  | publication date, the article is invisible to users while publication date > current time |
+| `article[image_attributes]` |  | image for article |
+| `article[all_tags]` |  | array of tags for article, max 10 tags: to remove tags from list - pass the array without this tag, to add tag - pass a full list with a new tag added |
+| `article[pinned]` |  | set to true to pin article: it will be always on the top of the blog; only one article can be pinned, so when you pin article, previously pinned article will be unpinned |
+
+**Запрос**
+
+```http
 PUT /admin/blogs/1/articles/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "article": {
     "title": "new title",
@@ -1669,14 +2082,18 @@ Body
     "pinned": true
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "created_at": "2026-07-25T00:58:09.000+03:00",
@@ -1770,27 +2187,44 @@ Body
   "notice": "Второй анонс",
   "content": "Привет"
 }
-Blog
-Create blog
-Endpoint
+```
+
+---
+
+## Blog
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create blog](#create-blog) | `POST /admin/blogs.json` |
+| [Destroy blog](#destroy-blog) | `DELETE /admin/blogs/:blog_id.json` |
+| [Get blog](#get-blog) | `GET /admin/blogs/:blog_id.json` |
+| [Get blogs](#get-blogs) | `GET /admin/blogs.json` |
+| [Update blog](#update-blog) | `PUT /admin/blogs/:blog_id.json` |
+
+### Create blog
+
+`POST /admin/blogs.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `blog[title]` | да | title |
+| `blog[html_title]` |  | html title tag content |
+| `blog[meta_keywords]` |  | html meta words on page |
+| `blog[meta_description]` |  | html meta description |
+| `blog[notify_about_comment]` |  | true by default |
+| `blog[captcha_enabled]` |  | false by default |
+| `blog[disallow_links_in_comments]` |  | false by default |
+| `blog[commentable]` |  | default: 'no', available: no, yes, moderable |
+
+**Запрос**
+
+```http
 POST /admin/blogs.json
-Parameters
-Name	Description
-blog[title] required	title
-blog[html_title]	html title tag content
-blog[meta_keywords]	html meta words on page
-blog[meta_description]	html meta description
-blog[notify_about_comment]	true by default
-blog[captcha_enabled]	false by default
-blog[disallow_links_in_comments]	false by default
-blog[commentable]	default: 'no', available: no, yes, moderable
-Request
-Route
-POST /admin/blogs.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "blog": {
     "title": "SuperBlog",
@@ -1799,14 +2233,18 @@ Body
     "meta_description": "It's a blog about our new products"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 19,
   "commentable": "no",
@@ -1821,42 +2259,56 @@ Body
   "meta_description": "It's a blog about our new products",
   "tags": []
 }
-Destroy blog
-Endpoint
-DELETE /admin/blogs/:blog_id.json
-Request
-Route
+```
+
+### Destroy blog
+
+`DELETE /admin/blogs/:blog_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/blogs/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get blog
-Endpoint
-GET /admin/blogs/:blog_id.json
-Request
-Route
+```
+
+### Get blog
+
+`GET /admin/blogs/:blog_id.json`
+
+**Запрос**
+
+```http
 GET /admin/blogs/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "commentable": "no",
@@ -1878,22 +2330,29 @@ Body
     }
   ]
 }
-Get blogs
-Endpoint
+```
+
+### Get blogs
+
+`GET /admin/blogs.json`
+
+**Запрос**
+
+```http
 GET /admin/blogs.json
-Request
-Route
-GET /admin/blogs.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -1931,26 +2390,32 @@ Body
     "tags": []
   }
 ]
-Update blog
-Endpoint
-PUT /admin/blogs/:blog_id.json
-Parameters
-Name	Description
-blog[title]	title
-blog[html_title]	html title tag content
-blog[meta_keywords]	html meta words on page
-blog[meta_description]	html meta description
-blog[notify_about_comment]	true by default
-blog[captcha_enabled]	false by default
-blog[disallow_links_in_comments]	false by default
-blog[commentable]	default: 'no', available: no, yes, moderable
-Request
-Route
+```
+
+### Update blog
+
+`PUT /admin/blogs/:blog_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `blog[title]` |  | title |
+| `blog[html_title]` |  | html title tag content |
+| `blog[meta_keywords]` |  | html meta words on page |
+| `blog[meta_description]` |  | html meta description |
+| `blog[notify_about_comment]` |  | true by default |
+| `blog[captcha_enabled]` |  | false by default |
+| `blog[disallow_links_in_comments]` |  | false by default |
+| `blog[commentable]` |  | default: 'no', available: no, yes, moderable |
+
+**Запрос**
+
+```http
 PUT /admin/blogs/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "blog": {
     "title": "WowBlog",
@@ -1960,14 +2425,18 @@ Body
     "commentable": "yes"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "commentable": "yes",
@@ -1989,35 +2458,55 @@ Body
     }
   ]
 }
-BonusSystemTransaction
-Create transaction for client
-Endpoint
-POST /admin/clients/:client_id/bonus_system_transactions.json
-Parameters
-Name	Description
-bonus_system_transaction[bonus_points] required	bonus points; pass negative quantity if you need to revert their addition or just remove them in some cases
-bonus_system_transaction[description]	description
-Request
-Route
+```
+
+---
+
+## BonusSystemTransaction
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create transaction for client](#create-transaction-for-client) | `POST /admin/clients/:client_id/bonus_system_transactions.json` |
+| [Get bonus_system_transactions](#get-bonus-system-transactions) | `GET /admin/bonus_system_transactions.json` |
+| [Get transaction for client](#get-transaction-for-client) | `GET /admin/bonus_system_transactions/:bst_id.json` |
+| [Get transactions for client](#get-transactions-for-client) | `GET /admin/clients/:client_id/bonus_system_transactions.json` |
+
+### Create transaction for client
+
+`POST /admin/clients/:client_id/bonus_system_transactions.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `bonus_system_transaction[bonus_points]` | да | bonus points; pass negative quantity if you need to revert their addition or just remove them in some cases |
+| `bonus_system_transaction[description]` |  | description |
+
+**Запрос**
+
+```http
 POST /admin/clients/2/bonus_system_transactions.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "bonus_system_transaction": {
     "bonus_points": 100,
     "description": "compliment"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 145,
   "bonus_points": 100,
@@ -2030,29 +2519,41 @@ Body
   "created_at": "2026-07-25T00:59:01.104+03:00",
   "updated_at": "2026-07-25T00:59:01.110+03:00"
 }
-Get bonus_system_transactions
-Endpoint
-GET /admin/bonus_system_transactions.json
-Parameters
-Name	Description
-updated_since	Set datetime to get only data updated after it.
-from_id	Set id to get only data starting from it.
-per_page	Quantity of objects per page.
-Request
-Route
+```
+
+### Get bonus_system_transactions
+
+`GET /admin/bonus_system_transactions.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `updated_since` |  | Set datetime to get only data updated after it. |
+| `from_id` |  | Set id to get only data starting from it. |
+| `per_page` |  | Quantity of objects per page. |
+
+**Запрос**
+
+```http
 GET /admin/bonus_system_transactions.json?updated_since=2009-01-04+14%3A44%3A43+%2B0300
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Query Parameters
+```
+
+Query:
+
+```text
 updated_since=2009-01-04 14:44:43 +0300
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -2091,22 +2592,29 @@ Body
     "updated_at": "2026-07-25T00:59:00.227+03:00"
   }
 ]
-Get transaction for client
-Endpoint
-GET /admin/bonus_system_transactions/:bst_id.json
-Request
-Route
+```
+
+### Get transaction for client
+
+`GET /admin/bonus_system_transactions/:bst_id.json`
+
+**Запрос**
+
+```http
 GET /admin/bonus_system_transactions/89.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 89,
   "bonus_points": 100,
@@ -2119,22 +2627,29 @@ Body
   "created_at": "2026-07-25T00:59:00.725+03:00",
   "updated_at": "2026-07-25T00:59:00.725+03:00"
 }
-Get transactions for client
-Endpoint
-GET /admin/clients/:client_id/bonus_system_transactions.json
-Request
-Route
+```
+
+### Get transactions for client
+
+`GET /admin/clients/:client_id/bonus_system_transactions.json`
+
+**Запрос**
+
+```http
 GET /admin/clients/2/bonus_system_transactions.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 57,
@@ -2161,35 +2676,56 @@ Body
     "updated_at": "2026-07-25T00:59:00.469+03:00"
   }
 ]
-Category
-Create category
-Endpoint
+```
+
+---
+
+## Category
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create category](#create-category) | `POST /admin/categories.json` |
+| [Destroy category](#destroy-category) | `DELETE /admin/categories/:category_id.json` |
+| [Get categories](#get-categories) | `GET /admin/categories.json` |
+| [Get category](#get-category) | `GET /admin/categories/:category_id.json` |
+| [Update category](#update-category) | `PUT /admin/categories/:category_id.json` |
+
+### Create category
+
+`POST /admin/categories.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `category[title]` | да | title |
+| `category[parent_id]` |  | parent category id |
+| `category[position]` |  | position in categories list |
+
+**Запрос**
+
+```http
 POST /admin/categories.json
-Parameters
-Name	Description
-category[title] required	title
-category[parent_id]	parent category id
-category[position]	position in categories list
-Request
-Route
-POST /admin/categories.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "category": {
     "title": "Reebok"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 20497914,
   "parent_id": 1,
@@ -2198,42 +2734,56 @@ Body
   "created_at": "2026-07-25T00:59:35.000+03:00",
   "updated_at": "2026-07-25T00:59:35.000+03:00"
 }
-Destroy category
-Endpoint
-DELETE /admin/categories/:category_id.json
-Request
-Route
+```
+
+### Destroy category
+
+`DELETE /admin/categories/:category_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/categories/6.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get categories
-Endpoint
+```
+
+### Get categories
+
+`GET /admin/categories.json`
+
+**Запрос**
+
+```http
 GET /admin/categories.json
-Request
-Route
-GET /admin/categories.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 6,
@@ -2292,22 +2842,29 @@ Body
     "updated_at": "2026-07-25T00:58:09.000+03:00"
   }
 ]
-Get category
-Endpoint
-GET /admin/categories/:category_id.json
-Request
-Route
+```
+
+### Get category
+
+`GET /admin/categories/:category_id.json`
+
+**Запрос**
+
+```http
 GET /admin/categories/6.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 6,
   "parent_id": 1,
@@ -2316,32 +2873,42 @@ Body
   "created_at": "2026-07-25T00:58:09.000+03:00",
   "updated_at": "2026-07-25T00:58:09.000+03:00"
 }
-Update category
-Endpoint
-PUT /admin/categories/:category_id.json
-Parameters
-Name	Description
-category[title]	title
-Request
-Route
+```
+
+### Update category
+
+`PUT /admin/categories/:category_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `category[title]` |  | title |
+
+**Запрос**
+
+```http
 PUT /admin/categories/6.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "category": {
     "title": "Adidas"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 6,
   "parent_id": 1,
@@ -2350,35 +2917,56 @@ Body
   "created_at": "2026-07-25T00:58:09.000+03:00",
   "updated_at": "2026-07-25T00:59:35.000+03:00"
 }
-Characteristic
-Create characteristic
-Endpoint
-POST /admin/properties/:property_id/characteristics.json
-Parameters
-Name	Description
-characteristic[title] required	title
-characteristic[permalink]	permalink
-characteristic[position]	position in characteristics list
-Request
-Route
+```
+
+---
+
+## Characteristic
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create characteristic](#create-characteristic) | `POST /admin/properties/:property_id/characteristics.json` |
+| [Destroy characteristic](#destroy-characteristic) | `DELETE /admin/properties/:property_id/characteristics/:characteristic_id.json` |
+| [Get characteristic](#get-characteristic) | `GET /admin/properties/:property_id/characteristics/:characteristic_id.json` |
+| [Get characteristics](#get-characteristics) | `GET /admin/properties/:property_id/characteristics.json` |
+| [Update characteristic](#update-characteristic) | `PUT /admin/properties/:property_id/characteristics/:characteristic_id.json` |
+
+### Create characteristic
+
+`POST /admin/properties/:property_id/characteristics.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `characteristic[title]` | да | title |
+| `characteristic[permalink]` |  | permalink |
+| `characteristic[position]` |  | position in characteristics list |
+
+**Запрос**
+
+```http
 POST /admin/properties/3/characteristics.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "characteristic": {
     "title": "Reebok"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 898582855,
   "property_id": 3,
@@ -2386,42 +2974,56 @@ Body
   "title": "Reebok",
   "permalink": "reebok"
 }
-Destroy characteristic
-Endpoint
-DELETE /admin/properties/:property_id/characteristics/:characteristic_id.json
-Request
-Route
+```
+
+### Destroy characteristic
+
+`DELETE /admin/properties/:property_id/characteristics/:characteristic_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/properties/3/characteristics/7.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get characteristic
-Endpoint
-GET /admin/properties/:property_id/characteristics/:characteristic_id.json
-Request
-Route
+```
+
+### Get characteristic
+
+`GET /admin/properties/:property_id/characteristics/:characteristic_id.json`
+
+**Запрос**
+
+```http
 GET /admin/properties/3/characteristics/7.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 7,
   "property_id": 3,
@@ -2429,22 +3031,29 @@ Body
   "title": "Nike",
   "permalink": "nike"
 }
-Get characteristics
-Endpoint
-GET /admin/properties/:property_id/characteristics.json
-Request
-Route
+```
+
+### Get characteristics
+
+`GET /admin/properties/:property_id/characteristics.json`
+
+**Запрос**
+
+```http
 GET /admin/properties/3/characteristics.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 7,
@@ -2461,32 +3070,42 @@ Body
     "permalink": "puma"
   }
 ]
-Update characteristic
-Endpoint
-PUT /admin/properties/:property_id/characteristics/:characteristic_id.json
-Parameters
-Name	Description
-characteristic[title]	title
-Request
-Route
+```
+
+### Update characteristic
+
+`PUT /admin/properties/:property_id/characteristics/:characteristic_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `characteristic[title]` |  | title |
+
+**Запрос**
+
+```http
 PUT /admin/properties/3/characteristics/7.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "characteristic": {
     "title": "Adidas"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 7,
   "property_id": 3,
@@ -2494,38 +3113,56 @@ Body
   "title": "Adidas",
   "permalink": "nike"
 }
-Client
-Create individual client
+```
+
+---
+
+## Client
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create individual client](#create-individual-client) | `POST /admin/clients.json` |
+| [Create juridical client](#create-juridical-client) | `POST /admin/clients.json` |
+| [Destroy client](#destroy-client) | `DELETE /admin/clients/:client_id.json` |
+| [Get client](#get-client) | `GET /admin/clients/:client_id.json` |
+| [Get clients](#get-clients) | `GET /admin/clients.json` |
+| [Update client](#update-client) | `PUT /admin/clients/:client_id.json` |
+
+### Create individual client
+
+`POST /admin/clients.json`
+
 To assign values to fields, you should create them in advance. For more information, please go to section about Field. Individual client is a natural person, as opposed to legal entity or a sole trader.
 
-Endpoint
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `client[name]` | да | name |
+| `client[surname]` | да | surname |
+| `client[middlename]` | да | middlename |
+| `client[registered]` |  | if true, email and password are required |
+| `client[email]` |  | email |
+| `client[password]` |  | password at least 6 characters |
+| `client[phone]` |  | phone number |
+| `client[subscribe]` |  | set true to subscribe client for emails |
+| `client[client_group_id]` |  | client group id |
+| `client[type]` |  | Client::Individual, by default |
+| `client[ip_addr]` |  | IP address |
+| `client[correspondent_account]` |  | Correspondent account |
+| `client[settlement_account]` |  | Settlement account |
+| `client[fields_values_attributes]` |  | fields values array |
+| `client[fields_values_attributes][value]` |  | value of field |
+| `client[fields_values_attributes][field_id]` |  | field id |
+| `client[skip_send_mail]` |  | set it true to skip sending email confirmation |
+
+**Запрос**
+
+```http
 POST /admin/clients.json
-Parameters
-Name	Description
-client[name] required	name
-client[surname] required	surname
-client[middlename] required	middlename
-client[registered]	if true, email and password are required
-client[email]	email
-client[password]	password at least 6 characters
-client[phone]	phone number
-client[subscribe]	set true to subscribe client for emails
-client[client_group_id]	client group id
-client[type]	Client::Individual, by default
-client[ip_addr]	IP address
-client[correspondent_account]	Correspondent account
-client[settlement_account]	Settlement account
-client[fields_values_attributes]	fields values array
-client[fields_values_attributes][value]	value of field
-client[fields_values_attributes][field_id]	field id
-client[skip_send_mail]	set it true to skip sending email confirmation
-Request
-Route
-POST /admin/clients.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "client": {
     "name": "Ivan",
@@ -2544,14 +3181,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 33,
   "email": "test@example.com",
@@ -2594,42 +3235,48 @@ Body
   "client_tags": [],
   "full_name": "Ivanov Ivan Ivanovich"
 }
-Create juridical client
+```
+
+### Create juridical client
+
+`POST /admin/clients.json`
+
 To assign values to fields, you should create them in advance. For more information, please go to section about Field. Juridical client is a sole trader (individual entrepreneur) or legal entity.
 
-Endpoint
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `client[name]` | да | name of company or a sole trader |
+| `client[registered]` |  | if true, email and password are required |
+| `client[email]` |  | email |
+| `client[password]` |  | password at least 6 characters |
+| `client[phone]` |  | phone number |
+| `client[subscribe]` |  | set true to subscribe client for emails |
+| `client[client_group_id]` |  | client group id |
+| `client[type]` | да | Client::Juridical |
+| `client[ip_addr]` |  | IP address |
+| `client[juridical_address]` |  | address of company or a sole trader |
+| `client[inn]` | да | INN |
+| `client[kpp]` |  | KPP |
+| `client[ogrn]` |  | OGRN |
+| `client[okpo]` |  | OKPO |
+| `client[bik]` |  | BIK |
+| `client[bank_name]` |  | bank name |
+| `client[correspondent_account]` |  | Correspondent account |
+| `client[settlement_account]` |  | Settlement account |
+| `client[fields_values_attributes]` |  | fields values array |
+| `client[fields_values_attributes][field_id]` |  | field id |
+| `client[fields_values_attributes][value]` |  | value of field |
+| `client[skip_send_mail]` |  | set it true to skip sending email confirmation |
+
+**Запрос**
+
+```http
 POST /admin/clients.json
-Parameters
-Name	Description
-client[name] required	name of company or a sole trader
-client[registered]	if true, email and password are required
-client[email]	email
-client[password]	password at least 6 characters
-client[phone]	phone number
-client[subscribe]	set true to subscribe client for emails
-client[client_group_id]	client group id
-client[type] required	Client::Juridical
-client[ip_addr]	IP address
-client[juridical_address]	address of company or a sole trader
-client[inn] required	INN
-client[kpp]	KPP
-client[ogrn]	OGRN
-client[okpo]	OKPO
-client[bik]	BIK
-client[bank_name]	bank name
-client[correspondent_account]	Correspondent account
-client[settlement_account]	Settlement account
-client[fields_values_attributes]	fields values array
-client[fields_values_attributes][field_id]	field id
-client[fields_values_attributes][value]	value of field
-client[skip_send_mail]	set it true to skip sending email confirmation
-Request
-Route
-POST /admin/clients.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "client": {
     "name": "OOO 'Company'",
@@ -2646,14 +3293,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 49,
   "email": null,
@@ -2701,40 +3352,54 @@ Body
   "client_tags": [],
   "full_name": "OOO 'Company'"
 }
-Destroy client
-Endpoint
-DELETE /admin/clients/:client_id.json
-Request
-Route
+```
+
+### Destroy client
+
+`DELETE /admin/clients/:client_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/clients/5.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 "ok"
-Get client
-Endpoint
-GET /admin/clients/:client_id.json
-Request
-Route
+```
+
+### Get client
+
+`GET /admin/clients/:client_id.json`
+
+**Запрос**
+
+```http
 GET /admin/clients/5.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 5,
   "email": "john@smith.com",
@@ -2777,35 +3442,47 @@ Body
   "client_tags": [],
   "full_name": "John Smith"
 }
-Get clients
-Endpoint
-GET /admin/clients.json
-Parameters
-Name	Description
-updated_since	Set datetime to get only data updated after it.
-from_id	Set id to get only data starting from it.
-per_page	Quantity of objects per page.
-q	Search queue. Matches name, surname, middlename, phone, or email.
-phone	Exact match search by phone number.
-email	Exact match search by email address.
-registered	Filter by registration status. Accepted values: 'yes' or 'no'.
-subscribe	Filter by subscription permission. Accepted values: 'yes' or 'no'.
-rfm_group	RFM group value or array. Allowed values: 'small_bills', 'not_frequent', 'not_recent', 'best', 'worst'.
-Request
-Route
+```
+
+### Get clients
+
+`GET /admin/clients.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `updated_since` |  | Set datetime to get only data updated after it. |
+| `from_id` |  | Set id to get only data starting from it. |
+| `per_page` |  | Quantity of objects per page. |
+| `q` |  | Search queue. Matches name, surname, middlename, phone, or email. |
+| `phone` |  | Exact match search by phone number. |
+| `email` |  | Exact match search by email address. |
+| `registered` |  | Filter by registration status. Accepted values: 'yes' or 'no'. |
+| `subscribe` |  | Filter by subscription permission. Accepted values: 'yes' or 'no'. |
+| `rfm_group` |  | RFM group value or array. Allowed values: 'small_bills', 'not_frequent', 'not_recent', 'best', 'worst'. |
+
+**Запрос**
+
+```http
 GET /admin/clients.json?updated_since=2009-01-04+14%3A44%3A43+%2B0300
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Query Parameters
+```
+
+Query:
+
+```text
 updated_since=2009-01-04 14:44:43 +0300
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 2,
@@ -2912,33 +3589,39 @@ Body
     "full_name": "John Smith"
   }
 ]
-Update client
-Endpoint
-PUT /admin/clients/:client_id.json
-Parameters
-Name	Description
-client[name]	name
-client[phone]	phone number
-client[subscribe]	set true to subscribe client for emails
-client[client_group_id]	client group id
-client[ip_addr]	IP address
-client[juridical_address]	address of company or a sole trader
-client[inn]	INN
-client[kpp]	KPP
-client[ogrn]	OGRN
-client[okpo]	OKPO
-client[bik]	BIK
-client[bank_name]	bank name
-client[correspondent_account]	Correspondent account
-client[settlement_account]	Settlement account
-client[fields_values_attributes]	fields values array
-Request
-Route
+```
+
+### Update client
+
+`PUT /admin/clients/:client_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `client[name]` |  | name |
+| `client[phone]` |  | phone number |
+| `client[subscribe]` |  | set true to subscribe client for emails |
+| `client[client_group_id]` |  | client group id |
+| `client[ip_addr]` |  | IP address |
+| `client[juridical_address]` |  | address of company or a sole trader |
+| `client[inn]` |  | INN |
+| `client[kpp]` |  | KPP |
+| `client[ogrn]` |  | OGRN |
+| `client[okpo]` |  | OKPO |
+| `client[bik]` |  | BIK |
+| `client[bank_name]` |  | bank name |
+| `client[correspondent_account]` |  | Correspondent account |
+| `client[settlement_account]` |  | Settlement account |
+| `client[fields_values_attributes]` |  | fields values array |
+
+**Запрос**
+
+```http
 PUT /admin/clients/5.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "client": {
     "phone": "+7(911)111-11-11",
@@ -2952,14 +3635,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 5,
   "email": "john@smith.com",
@@ -3002,23 +3689,40 @@ Body
   "client_tags": [],
   "full_name": "John Smith"
 }
-ClientGroup
-Create client group
-Endpoint
+```
+
+---
+
+## ClientGroup
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create client group](#create-client-group) | `POST /admin/client_groups.json` |
+| [Destroy client group](#destroy-client-group) | `DELETE /admin/client_groups/:client_group_id.json` |
+| [API-Usage-Limit: 1/500](#api-usage-limit-1-500) | `GET /admin/client_groups/:client_group_id.json` |
+| [Get client groups](#get-client-groups) | `GET /admin/client_groups.json` |
+| [Update client group](#update-client-group) | `PUT /admin/client_groups/:client_group_id.json` |
+
+### Create client group
+
+`POST /admin/client_groups.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `client_group[title]` |  | client group title |
+| `client_group[discount]` |  | discount |
+| `client_group[discount_description]` |  | discount description |
+| `client_group[is_default]` |  | set as default group |
+
+**Запрос**
+
+```http
 POST /admin/client_groups.json
-Parameters
-Name	Description
-client_group[title]	client group title
-client_group[discount]	discount
-client_group[discount_description]	discount description
-client_group[is_default]	set as default group
-Request
-Route
-POST /admin/client_groups.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "client_group": {
     "title": "test group",
@@ -3027,14 +3731,18 @@ Body
     "is_default": false
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 33,
   "title": "test group",
@@ -3045,38 +3753,47 @@ Body
   "created_at": "2026-07-25T00:59:01.765+03:00",
   "updated_at": "2026-07-25T00:59:01.769+03:00"
 }
-Destroy client group
-Endpoint
-DELETE /admin/client_groups/:client_group_id.json
-Request
-Route
+```
+
+### Destroy client group
+
+`DELETE /admin/client_groups/:client_group_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/client_groups/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
-API-Usage-Limit: 1/500
-Content-Type: application/json
-Get client group
-Endpoint
-GET /admin/client_groups/:client_group_id.json
-Request
-Route
+```
+
+**Ответ**
+
+Status: `200`
+
+### API-Usage-Limit: 1/500
+
+`GET /admin/client_groups/:client_group_id.json`
+
+Content-Type: application/json Get client group
+
+**Запрос**
+
+```http
 GET /admin/client_groups/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "title": "vip",
@@ -3087,22 +3804,29 @@ Body
   "created_at": "2026-04-16T00:58:08.000+03:00",
   "updated_at": "2026-07-25T00:58:09.121+03:00"
 }
-Get client groups
-Endpoint
+```
+
+### Get client groups
+
+`GET /admin/client_groups.json`
+
+**Запрос**
+
+```http
 GET /admin/client_groups.json
-Request
-Route
-GET /admin/client_groups.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -3115,22 +3839,28 @@ Body
     "updated_at": "2026-07-25T00:58:09.121+03:00"
   }
 ]
-Update client group
-Endpoint
-PUT /admin/client_groups/:client_group_id.json
-Parameters
-Name	Description
-client_group[title]	client group title
-client_group[discount]	discount
-client_group[discount_description]	discount description
-client_group[is_default]	set as default group
-Request
-Route
+```
+
+### Update client group
+
+`PUT /admin/client_groups/:client_group_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `client_group[title]` |  | client group title |
+| `client_group[discount]` |  | discount |
+| `client_group[discount_description]` |  | discount description |
+| `client_group[is_default]` |  | set as default group |
+
+**Запрос**
+
+```http
 PUT /admin/client_groups/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "client_group": {
     "title": "test group",
@@ -3139,46 +3869,73 @@ Body
     "is_default": false
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Collect
-Add product to collection
-Endpoint
+```
+
+---
+
+## Collect
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Add product to collection](#add-product-to-collection) | `POST /admin/collects.json` |
+| [Get collections by product](#get-collections-by-product) | `GET /admin/collects.json?product_id=:product_id` |
+| [Get collects](#get-collects) | `GET /admin/collects.json` |
+| [Get products by collection](#get-products-by-collection) | `GET /admin/collects.json?collection_id=:collection_id` |
+| [Move product to another collection](#move-product-to-another-collection) | `PUT /admin/collects/:collect_id.json` |
+| [Remove product from collection](#remove-product-from-collection) | `DELETE /admin/collects/:collect_id.json` |
+| [Update position](#update-position) | `PUT /admin/collects/:collect_id.json` |
+
+### Add product to collection
+
+`POST /admin/collects.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collect[collection_id]` | да | collection id |
+| `collect[product_id]` | да | product id |
+
+**Запрос**
+
+```http
 POST /admin/collects.json
-Parameters
-Name	Description
-collect[collection_id] required	collection id
-collect[product_id] required	product id
-Request
-Route
-POST /admin/collects.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "collect": {
     "collection_id": 2,
     "product_id": 1
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 9854,
   "collection_id": 2,
@@ -3186,24 +3943,35 @@ Body
   "position": 1,
   "created_at": "2026-07-25T00:59:40.000+03:00"
 }
-Get collections by product
-Endpoint
-GET /admin/collects.json?product_id=:product_id
-Request
-Route
+```
+
+### Get collections by product
+
+`GET /admin/collects.json?product_id=:product_id`
+
+**Запрос**
+
+```http
 GET /admin/collects.json?product_id=1
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Query Parameters
+```
+
+Query:
+
+```text
 product_id=1
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -3227,22 +3995,29 @@ Body
     "created_at": "2009-03-18T07:53:15.000+03:00"
   }
 ]
-Get collects
-Endpoint
+```
+
+### Get collects
+
+`GET /admin/collects.json`
+
+**Запрос**
+
+```http
 GET /admin/collects.json
-Request
-Route
-GET /admin/collects.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -3287,24 +4062,35 @@ Body
     "created_at": "2009-03-18T07:53:15.000+03:00"
   }
 ]
-Get products by collection
-Endpoint
-GET /admin/collects.json?collection_id=:collection_id
-Request
-Route
+```
+
+### Get products by collection
+
+`GET /admin/collects.json?collection_id=:collection_id`
+
+**Запрос**
+
+```http
 GET /admin/collects.json?collection_id=1
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Query Parameters
+```
+
+Query:
+
+```text
 collection_id=1
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -3321,32 +4107,42 @@ Body
     "created_at": "2009-03-18T07:53:15.000+03:00"
   }
 ]
-Move product to another collection
-Endpoint
-PUT /admin/collects/:collect_id.json
-Parameters
-Name	Description
-collect[collection_id]	collection id
-Request
-Route
+```
+
+### Move product to another collection
+
+`PUT /admin/collects/:collect_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collect[collection_id]` |  | collection id |
+
+**Запрос**
+
+```http
 PUT /admin/collects/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "collect": {
     "collection_id": 3
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "collection_id": 3,
@@ -3354,52 +4150,69 @@ Body
   "position": 2,
   "created_at": "2009-03-18T07:53:15.000+03:00"
 }
-Remove product from collection
-Endpoint
-DELETE /admin/collects/:collect_id.json
-Request
-Route
+```
+
+### Remove product from collection
+
+`DELETE /admin/collects/:collect_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/collects/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Update position
-Endpoint
-PUT /admin/collects/:collect_id.json
-Parameters
-Name	Description
-collect[position]	position
-Request
-Route
+```
+
+### Update position
+
+`PUT /admin/collects/:collect_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collect[position]` |  | position |
+
+**Запрос**
+
+```http
 PUT /admin/collects/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "collect": {
     "position": 3
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "collection_id": 1,
@@ -3407,34 +4220,51 @@ Body
   "position": 3,
   "created_at": "2009-03-18T07:53:15.000+03:00"
 }
-Collection
-Create collection
-Endpoint
+```
+
+---
+
+## Collection
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create collection](#create-collection) | `POST /admin/collections.json` |
+| [Destroy collection](#destroy-collection) | `DELETE /admin/collections/:collection_id.json` |
+| [Get collection](#get-collection) | `GET /admin/collections/:collection_id.json` |
+| [Get collections](#get-collections) | `GET /admin/collections.json` |
+| [Update collection](#update-collection) | `PUT /admin/collections/:collection_id.json` |
+
+### Create collection
+
+`POST /admin/collections.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collection[title]` | да | title |
+| `collection[parent_id]` | да | parent collection id |
+| `collection[position]` |  | position in collections list |
+| `collection[sort_type]` |  | Alphabetically: A - Z => 1, Alphabetically: Z - A => 2, By date: New - Old => 3, By date: Old - New => 4, By price: Expensive - Cheap => 5, By price: Cheap - Expensive => 6, Manual => 7, By discount: Large - Little => 8, By discount: Little - Large => 9, By sort rank: Low - High => 10, By sort rank: High - Low => 11, Sort by ascending popularity => 12, Sort by descending popularity => 13 |
+| `collection[description]` |  | description |
+| `collection[html_title]` |  | html title |
+| `collection[seo_description]` |  | seo description |
+| `collection[meta_description]` |  | meta description |
+| `collection[meta_keywords]` |  | meta keywords |
+| `collection[is_hidden]` |  | set true to hide collection |
+| `collection[permalink]` |  | generated |
+| `collection[recursive]` |  | recursive |
+| `collection[image_attributes]` |  | image for collection |
+| `collection[image_attributes][src]` |  | image url |
+| `collection[field_values_attributes]` |  | collection field values attributes |
+
+**Запрос**
+
+```http
 POST /admin/collections.json
-Parameters
-Name	Description
-collection[title] required	title
-collection[parent_id] required	parent collection id
-collection[position]	position in collections list
-collection[sort_type]	Alphabetically: A - Z => 1, Alphabetically: Z - A => 2, By date: New - Old => 3, By date: Old - New => 4, By price: Expensive - Cheap => 5, By price: Cheap - Expensive => 6, Manual => 7, By discount: Large - Little => 8, By discount: Little - Large => 9, By sort rank: Low - High => 10, By sort rank: High - Low => 11, Sort by ascending popularity => 12, Sort by descending popularity => 13
-collection[description]	description
-collection[html_title]	html title
-collection[seo_description]	seo description
-collection[meta_description]	meta description
-collection[meta_keywords]	meta keywords
-collection[is_hidden]	set true to hide collection
-collection[permalink]	generated
-collection[recursive]	recursive
-collection[image_attributes]	image for collection
-collection[image_attributes][src]	image url
-collection[field_values_attributes]	collection field values attributes
-Request
-Route
-POST /admin/collections.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "collection": {
     "title": "T-shirts",
@@ -3453,14 +4283,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 20924767,
   "parent_id": 1,
@@ -3493,42 +4327,56 @@ Body
   "description": "text",
   "seo_description": null
 }
-Destroy collection
-Endpoint
-DELETE /admin/collections/:collection_id.json
-Request
-Route
+```
+
+### Destroy collection
+
+`DELETE /admin/collections/:collection_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/collections/6.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get collection
-Endpoint
-GET /admin/collections/:collection_id.json
-Request
-Route
+```
+
+### Get collection
+
+`GET /admin/collections/:collection_id.json`
+
+**Запрос**
+
+```http
 GET /admin/collections/6.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 6,
   "parent_id": 1,
@@ -3550,29 +4398,41 @@ Body
   "description": null,
   "seo_description": null
 }
-Get collections
-Endpoint
-GET /admin/collections.json
-Parameters
-Name	Description
-updated_since	Set datetime to get only data updated after it.
-from_id	Set id to get only data starting from it.
-per_page	Quantity of objects per page.
-Request
-Route
+```
+
+### Get collections
+
+`GET /admin/collections.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `updated_since` |  | Set datetime to get only data updated after it. |
+| `from_id` |  | Set id to get only data starting from it. |
+| `per_page` |  | Quantity of objects per page. |
+
+**Запрос**
+
+```http
 GET /admin/collections.json?updated_since=2016-07-04+14%3A44%3A43+%2B0300
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Query Parameters
+```
+
+Query:
+
+```text
 updated_since=2016-07-04 14:44:43 +0300
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -3733,30 +4593,36 @@ Body
     "seo_description": null
   }
 ]
-Update collection
-Endpoint
-PUT /admin/collections/:collection_id.json
-Parameters
-Name	Description
-collection[title]	title
-collection[position]	position in collections list
-collection[sort_type]	Alphabetically: A - Z => 1, Alphabetically: Z - A => 2, By date: New - Old => 3, By date: Old - New => 4, By price: Expensive - Cheap => 5, By price: Cheap - Expensive => 6, Manual => 7, By discount: Large - Little => 8, By discount: Little - Large => 9, By sort rank: Low - High => 10, By sort rank: High - Low => 11, Sort by ascending popularity => 12, Sort by descending popularity => 13
-collection[description]	description
-collection[html_title]	html title
-collection[seo_description]	seo description
-collection[meta_description]	meta description
-collection[meta_keywords]	meta keywords
-collection[is_hidden]	set true to hide collection
-collection[permalink]	generated
-collection[recursive]	recursive
-collection[field_values_attributes]	collection field values attributes
-Request
-Route
+```
+
+### Update collection
+
+`PUT /admin/collections/:collection_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collection[title]` |  | title |
+| `collection[position]` |  | position in collections list |
+| `collection[sort_type]` |  | Alphabetically: A - Z => 1, Alphabetically: Z - A => 2, By date: New - Old => 3, By date: Old - New => 4, By price: Expensive - Cheap => 5, By price: Cheap - Expensive => 6, Manual => 7, By discount: Large - Little => 8, By discount: Little - Large => 9, By sort rank: Low - High => 10, By sort rank: High - Low => 11, Sort by ascending popularity => 12, Sort by descending popularity => 13 |
+| `collection[description]` |  | description |
+| `collection[html_title]` |  | html title |
+| `collection[seo_description]` |  | seo description |
+| `collection[meta_description]` |  | meta description |
+| `collection[meta_keywords]` |  | meta keywords |
+| `collection[is_hidden]` |  | set true to hide collection |
+| `collection[permalink]` |  | generated |
+| `collection[recursive]` |  | recursive |
+| `collection[field_values_attributes]` |  | collection field values attributes |
+
+**Запрос**
+
+```http
 PUT /admin/collections/6.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "collection": {
     "title": "Books",
@@ -3772,14 +4638,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 6,
   "parent_id": 1,
@@ -3807,24 +4677,44 @@ Body
   "description": "Description",
   "seo_description": null
 }
-CollectionField
-Create collection_field
-Endpoint
+```
+
+---
+
+## CollectionField
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create collection_field](#create-collection-field) | `POST /admin/collection_fields.json` |
+| [Destroy collection_field by handle](#destroy-collection-field-by-handle) | `DELETE /admin/collection_fields/:collection_field_handle.json` |
+| [Destroy collection_field](#destroy-collection-field) | `DELETE /admin/collection_fields/:collection_field_id.json` |
+| [Get collection_field by handle](#get-collection-field-by-handle) | `GET /admin/collection_fields/:collection_field_handle.json` |
+| [Get collection_field](#get-collection-field) | `GET /admin/collection_fields/:collection_field_id.json` |
+| [Get collection_fields](#get-collection-fields) | `GET /admin/collection_fields.json` |
+| [Update collection_field by handle](#update-collection-field-by-handle) | `PUT /admin/collection_fields/:collection_field_handle.json` |
+| [Update collection_field](#update-collection-field) | `PUT /admin/collection_fields/:collection_field_id.json` |
+
+### Create collection_field
+
+`POST /admin/collection_fields.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collection_field[title]` | да | title |
+| `collection_field[handle]` | да | handle used in liquid |
+| `collection_field[type]` | да | CollectionField::TextArea - textarea, CollectionField::TextField - textfield |
+| `collection_field[position]` |  | position in collection_fields list |
+| `collection_field[is_hidden]` |  | boolean |
+
+**Запрос**
+
+```http
 POST /admin/collection_fields.json
-Parameters
-Name	Description
-collection_field[title] required	title
-collection_field[handle] required	handle used in liquid
-collection_field[type] required	CollectionField::TextArea - textarea, CollectionField::TextField - textfield
-collection_field[position]	position in collection_fields list
-collection_field[is_hidden]	boolean
-Request
-Route
-POST /admin/collection_fields.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "collection_field": {
     "title": "Size",
@@ -3832,14 +4722,18 @@ Body
     "type": "CollectionField::TextArea"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 19,
   "handle": "size",
@@ -3850,62 +4744,83 @@ Body
   "title": "Size",
   "application_title": "Цифровые товары"
 }
-Destroy collection_field by handle
-Endpoint
-DELETE /admin/collection_fields/:collection_field_handle.json
-Request
-Route
+```
+
+### Destroy collection_field by handle
+
+`DELETE /admin/collection_fields/:collection_field_handle.json`
+
+**Запрос**
+
+```http
 DELETE /admin/collection_fields/handle2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Destroy collection_field
-Endpoint
-DELETE /admin/collection_fields/:collection_field_id.json
-Request
-Route
+```
+
+### Destroy collection_field
+
+`DELETE /admin/collection_fields/:collection_field_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/collection_fields/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get collection_field by handle
-Endpoint
-GET /admin/collection_fields/:collection_field_handle.json
-Request
-Route
+```
+
+### Get collection_field by handle
+
+`GET /admin/collection_fields/:collection_field_handle.json`
+
+**Запрос**
+
+```http
 GET /admin/collection_fields/handle2.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "handle": "handle2",
@@ -3916,22 +4831,29 @@ Body
   "title": "title2",
   "application_title": "Цифровые товары"
 }
-Get collection_field
-Endpoint
-GET /admin/collection_fields/:collection_field_id.json
-Request
-Route
+```
+
+### Get collection_field
+
+`GET /admin/collection_fields/:collection_field_id.json`
+
+**Запрос**
+
+```http
 GET /admin/collection_fields/2.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "handle": "handle2",
@@ -3942,22 +4864,29 @@ Body
   "title": "title2",
   "application_title": "Цифровые товары"
 }
-Get collection_fields
-Endpoint
+```
+
+### Get collection_fields
+
+`GET /admin/collection_fields.json`
+
+**Запрос**
+
+```http
 GET /admin/collection_fields.json
-Request
-Route
-GET /admin/collection_fields.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -3980,55 +4909,71 @@ Body
     "application_title": "Цифровые товары"
   }
 ]
-Update collection_field by handle
-Endpoint
-PUT /admin/collection_fields/:collection_field_handle.json
-Parameters
-Name	Description	Method
-collection_field[title]	title	
-collection_field[handle]	handle used in liquid	new_handle
-collection_field[position]	position in collection_fields list	
-collection_field[is_hidden]	boolean	
-Request
-Route
+```
+
+### Update collection_field by handle
+
+`PUT /admin/collection_fields/:collection_field_handle.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collection_field[title]` |  | title |
+| `collection_field[handle]` |  | handle used in liquid  new_handle |
+| `collection_field[position]` |  | position in collection_fields list |
+| `collection_field[is_hidden]` |  | boolean |
+
+**Запрос**
+
+```http
 PUT /admin/collection_fields/handle2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "collection_field": {
     "title": "Volume",
     "position": 2
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Update collection_field
-Endpoint
-PUT /admin/collection_fields/:collection_field_id.json
-Parameters
-Name	Description
-collection_field[title]	title
-collection_field[handle]	handle used in liquid
-collection_field[position]	position in collection_fields list
-collection_field[is_hidden]	boolean
-Request
-Route
+```
+
+### Update collection_field
+
+`PUT /admin/collection_fields/:collection_field_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collection_field[title]` |  | title |
+| `collection_field[handle]` |  | handle used in liquid |
+| `collection_field[position]` |  | position in collection_fields list |
+| `collection_field[is_hidden]` |  | boolean |
+
+**Запрос**
+
+```http
 PUT /admin/collection_fields/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "collection_field": {
     "title": "Volume",
@@ -4036,87 +4981,126 @@ Body
     "position": 2
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-CollectionFieldValue
-Get collection field value by handle
-Endpoint
-GET /admin/collections/:collection_id/collection_field_values/:field_handle.json
-Parameters
-Name	Description
-collection_id	collection id
-field_handle	field handle
-Request
-Route
+```
+
+---
+
+## CollectionFieldValue
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Get collection field value by handle](#get-collection-field-value-by-handle) | `GET /admin/collections/:collection_id/collection_field_values/:field_handle.json` |
+| [Get collection field value](#get-collection-field-value) | `GET /admin/collections/:collection_id/collection_field_values/:field_id.json` |
+| [Get collection fields values](#get-collection-fields-values) | `GET /admin/collections/:collection_id/collection_field_values.json` |
+| [Update collection field value by handle](#update-collection-field-value-by-handle) | `PUT /admin/collections/:collection_id/collection_field_values/:field_handle.json` |
+| [Update collection field value](#update-collection-field-value) | `PUT /admin/collections/:collection_id/collection_field_values/:field_id.json` |
+
+### Get collection field value by handle
+
+`GET /admin/collections/:collection_id/collection_field_values/:field_handle.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collection_id` |  | collection id |
+| `field_handle` |  | field handle |
+
+**Запрос**
+
+```http
 GET /admin/collections/1/collection_field_values/handle2.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "collection_field_id": 2,
   "value": "some collection field value"
 }
-Get collection field value
-Endpoint
-GET /admin/collections/:collection_id/collection_field_values/:field_id.json
-Parameters
-Name	Description
-collection_id	collection id
-field_id	field_id
-Request
-Route
+```
+
+### Get collection field value
+
+`GET /admin/collections/:collection_id/collection_field_values/:field_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collection_id` |  | collection id |
+| `field_id` |  | field_id |
+
+**Запрос**
+
+```http
 GET /admin/collections/1/collection_field_values/2.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "collection_field_id": 2,
   "value": "some collection field value"
 }
-Get collection fields values
-Endpoint
-GET /admin/collections/:collection_id/collection_field_values.json
-Parameters
-Name	Description
-collection_id	collection id
-Request
-Route
+```
+
+### Get collection fields values
+
+`GET /admin/collections/:collection_id/collection_field_values.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collection_id` |  | collection id |
+
+**Запрос**
+
+```http
 GET /admin/collections/1/collection_field_values.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -4129,91 +5113,128 @@ Body
     "value": "some collection field value"
   }
 ]
-Update collection field value by handle
-Endpoint
-PUT /admin/collections/:collection_id/collection_field_values/:field_handle.json
-Parameters
-Name	Description
-collection_id	collection id
-field_handle	field handle
-collection_field_value[value]	field value
-Request
-Route
+```
+
+### Update collection field value by handle
+
+`PUT /admin/collections/:collection_id/collection_field_values/:field_handle.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collection_id` |  | collection id |
+| `field_handle` |  | field handle |
+| `collection_field_value[value]` |  | field value |
+
+**Запрос**
+
+```http
 PUT /admin/collections/1/collection_field_values/handle2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "collection_field_value": {
     "value": "new test value of field"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Update collection field value
-Endpoint
-PUT /admin/collections/:collection_id/collection_field_values/:field_id.json
-Parameters
-Name	Description
-collection_id	collection id
-field_id	field_id
-collection_field_value[value]	field value
-Request
-Route
+```
+
+### Update collection field value
+
+`PUT /admin/collections/:collection_id/collection_field_values/:field_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collection_id` |  | collection id |
+| `field_id` |  | field_id |
+| `collection_field_value[value]` |  | field value |
+
+**Запрос**
+
+```http
 PUT /admin/collections/1/collection_field_values/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "collection_field_value": {
     "value": "new test value of field"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-CollectionFilter
-Create collection filter
-Endpoint
+```
+
+---
+
+## CollectionFilter
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create collection filter](#create-collection-filter) | `POST /admin/collection_filters.json` |
+| [Delete collection filter](#delete-collection-filter) | `DELETE /admin/collection_filters/:filter_id.json` |
+| [API-Usage-Limit: 1/500](#api-usage-limit-1-500) | `GET /admin/collection_filters/:filter_id.json` |
+| [Get collection filters](#get-collection-filters) | `GET /admin/collection_filters.json?collection_id=:collection_id` |
+| [Update collection filter](#update-collection-filter) | `PUT /admin/collection_filters/:filter_id.json` |
+
+### Create collection filter
+
+`POST /admin/collection_filters.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `filter[title]` | да | filter title |
+| `filter[collection_id]` | да | collection id |
+| `filter[description]` |  | description |
+| `filter[permalink]` |  | filter permalink |
+| `filter[html_title]` |  | tag title |
+| `filter[meta_keywords]` |  | tag keyword |
+| `filter[meta_description]` |  | tag description |
+| `filter[properties_attributes]` |  | properties |
+| `filter[options_attributes]` |  | options |
+| `filter[field_values_attributes]` |  | collection filter field values attributes |
+
+**Запрос**
+
+```http
 POST /admin/collection_filters.json
-Parameters
-Name	Description
-filter[title] required	filter title
-filter[collection_id] required	collection id
-filter[description]	description
-filter[permalink]	filter permalink
-filter[html_title]	tag title
-filter[meta_keywords]	tag keyword
-filter[meta_description]	tag description
-filter[properties_attributes]	properties
-filter[options_attributes]	options
-filter[field_values_attributes]	collection filter field values attributes
-Request
-Route
-POST /admin/collection_filters.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "filter": {
     "title": "new filter",
@@ -4246,14 +5267,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 18,
   "collection_id": 1,
@@ -4299,44 +5324,55 @@ Body
     }
   ]
 }
-Delete collection filter
-Endpoint
-DELETE /admin/collection_filters/:filter_id.json
-Parameters
-Name	Description
-filter[id] required	filter id
-Request
-Route
+```
+
+### Delete collection filter
+
+`DELETE /admin/collection_filters/:filter_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `filter[id]` | да | filter id |
+
+**Запрос**
+
+```http
 DELETE /admin/collection_filters/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
 Content-Type: application/x-www-form-urlencoded
-Response
-Simulated Response
-Status
-200
-Headers
-API-Usage-Limit: 1/500
-Content-Type: application/json
-Get collection filter
-Endpoint
-GET /admin/collection_filters/:filter_id.json
-Parameters
-Name	Description
-filter_id	filter id
-Request
-Route
+```
+
+**Ответ**
+
+Status: `200`
+
+### API-Usage-Limit: 1/500
+
+`GET /admin/collection_filters/:filter_id.json`
+
+Content-Type: application/json Get collection filter
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `filter_id` |  | filter id |
+
+**Запрос**
+
+```http
 GET /admin/collection_filters/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "collection_id": 1,
@@ -4365,27 +5401,39 @@ Body
   ],
   "option_values": []
 }
-Get collection filters
-Endpoint
-GET /admin/collection_filters.json?collection_id=:collection_id
-Parameters
-Name	Description
-collection_id	collection id
-Request
-Route
+```
+
+### Get collection filters
+
+`GET /admin/collection_filters.json?collection_id=:collection_id`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `collection_id` |  | collection id |
+
+**Запрос**
+
+```http
 GET /admin/collection_filters.json?collection_id=1
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Query Parameters
+```
+
+Query:
+
+```text
 collection_id=1
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -4446,29 +5494,35 @@ Body
     ]
   }
 ]
-Update collection filter
-Endpoint
-PUT /admin/collection_filters/:filter_id.json
-Parameters
-Name	Description
-filter[id] required	filter id
-filter[title]	filter title
-filter[collection_id]	collection id
-filter[description]	description
-filter[permalink]	filter permalink
-filter[html_title]	tag title
-filter[meta_keywords]	tag keyword
-filter[meta_description]	tag description
-filter[properties_attributes]	properties
-filter[options_attributes]	options
-filter[field_values_attributes]	collection filter field values attributes
-Request
-Route
+```
+
+### Update collection filter
+
+`PUT /admin/collection_filters/:filter_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `filter[id]` | да | filter id |
+| `filter[title]` |  | filter title |
+| `filter[collection_id]` |  | collection id |
+| `filter[description]` |  | description |
+| `filter[permalink]` |  | filter permalink |
+| `filter[html_title]` |  | tag title |
+| `filter[meta_keywords]` |  | tag keyword |
+| `filter[meta_description]` |  | tag description |
+| `filter[properties_attributes]` |  | properties |
+| `filter[options_attributes]` |  | options |
+| `filter[field_values_attributes]` |  | collection filter field values attributes |
+
+**Запрос**
+
+```http
 PUT /admin/collection_filters/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "filter": {
     "title": "new-seo-filter",
@@ -4501,14 +5555,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "collection_id": 1,
@@ -4554,37 +5612,58 @@ Body
     }
   ]
 }
-CustomStatus
-Create custom status
+```
+
+---
+
+## CustomStatus
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create custom status](#create-custom-status) | `POST /admin/custom_statuses.json` |
+| [Destroy custom status](#destroy-custom-status) | `DELETE /admin/custom_statuses/:custom_status_permalink.json` |
+| [Get custom status](#get-custom-status) | `GET /admin/custom_statuses/:custom_status_permalink.json` |
+| [Get custom statuses](#get-custom-statuses) | `GET /admin/custom_statuses.json` |
+| [Update custom status](#update-custom-status) | `PUT /admin/custom_statuses/:custom_status_permalink.json` |
+
+### Create custom status
+
+`POST /admin/custom_statuses.json`
+
 For more information about custom statuses More info
 
-Endpoint
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `custom_status[system_status]` | да | system status |
+| `custom_status[title]` | да | description |
+
+**Запрос**
+
+```http
 POST /admin/custom_statuses.json
-Parameters
-Name	Description
-custom_status[system_status] required	system status
-custom_status[title] required	description
-Request
-Route
-POST /admin/custom_statuses.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "custom_status": {
     "system_status": "new",
     "title": "New (ordered by phone)"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 41,
   "system_status": "new",
@@ -4596,46 +5675,60 @@ Body
   "title": "New (ordered by phone)",
   "color": "#DC5F59"
 }
-Destroy custom status
+```
+
+### Destroy custom status
+
+`DELETE /admin/custom_statuses/:custom_status_permalink.json`
+
 For more information about custom statuses More info
 
-Endpoint
-DELETE /admin/custom_statuses/:custom_status_permalink.json
-Request
-Route
+**Запрос**
+
+```http
 DELETE /admin/custom_statuses/novyy.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get custom status
+```
+
+### Get custom status
+
+`GET /admin/custom_statuses/:custom_status_permalink.json`
+
 For more information about custom statuses More info
 
-Endpoint
-GET /admin/custom_statuses/:custom_status_permalink.json
-Request
-Route
+**Запрос**
+
+```http
 GET /admin/custom_statuses/novyy.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 9,
   "system_status": "new",
@@ -4647,24 +5740,31 @@ Body
   "title": "Новый",
   "color": "#DC5F59"
 }
-Get custom statuses
+```
+
+### Get custom statuses
+
+`GET /admin/custom_statuses.json`
+
 For more information about custom statuses More info
 
-Endpoint
+**Запрос**
+
+```http
 GET /admin/custom_statuses.json
-Request
-Route
-GET /admin/custom_statuses.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": null,
@@ -4755,68 +5855,99 @@ Body
     "color": "#A69196"
   }
 ]
-Update custom status
+```
+
+### Update custom status
+
+`PUT /admin/custom_statuses/:custom_status_permalink.json`
+
 For more information about custom statuses More info
 
-Endpoint
-PUT /admin/custom_statuses/:custom_status_permalink.json
-Parameters
-Name	Description
-custom_status[title]	discount
-Request
-Route
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `custom_status[title]` |  | discount |
+
+**Запрос**
+
+```http
 PUT /admin/custom_statuses/novyy.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "custom_status": {
     "title": "New (ordered by website)"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-DeliveryVariant
-Create delivery_variant External
+```
+
+---
+
+## DeliveryVariant
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create delivery_variant External](#create-delivery-variant-external) | `POST /admin/delivery_variants.json` |
+| [Create delivery_variant Fixed](#create-delivery-variant-fixed) | `POST /admin/delivery_variants.json` |
+| [Create delivery_variant LocationDepend](#create-delivery-variant-locationdepend) | `POST /admin/delivery_variants.json` |
+| [Create delivery_variant PickUp](#create-delivery-variant-pickup) | `POST /admin/delivery_variants.json` |
+| [Create delivery_variant PriceDepend](#create-delivery-variant-pricedepend) | `POST /admin/delivery_variants.json` |
+| [Destroy delivery_variant](#destroy-delivery-variant) | `DELETE /admin/delivery_variants/:delivery_variant_id.json` |
+| [Get delivery_variant](#get-delivery-variant) | `GET /admin/delivery_variants/:delivery_variant_id.json` |
+| [Get delivery_variants](#get-delivery-variants) | `GET /admin/delivery_variants.json` |
+| [Update delivery variant](#update-delivery-variant) | `PUT /admin/delivery_variants/:delivery_variant_id.json` |
+
+### Create delivery_variant External
+
+`POST /admin/delivery_variants.json`
+
 DeliveryVariant::External is an external delivery variant.
 
-Endpoint
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `delivery_variant[title]` | да | title |
+| `delivery_variant[type]` | да | DeliveryVariant::External, DeliveryVariant::Fixed, DeliveryVariant::LocationDepend, DeliveryVariant::MapZoneDelivery, DeliveryVariant::NoDelivery, DeliveryVariant::None, DeliveryVariant::OfficialEmsShipping, DeliveryVariant::OfficialFirstClass, DeliveryVariant::OfficialRussianpost, DeliveryVariant::PickUp, DeliveryVariant::PriceDepend |
+| `delivery_variant[description]` |  | description |
+| `delivery_variant[position]` |  | position |
+| `delivery_variant[add_payment_gateways]` |  | set true to add all payment variants |
+| `delivery_variant[delivery_locations_attributes]` |  | array of delivery locations |
+| `delivery_variant[delivery_locations_attributes][country]` |  | Optional. Default: RU. It should be enabled in checkout options to be binded to shipping method. |
+| `delivery_variant[delivery_locations_attributes][region]` |  | Required. Field Region should be enabled in checkout options to be binded to shipping method. Examples: "Ивановская", "Омская" |
+| `delivery_variant[delivery_locations_attributes][area]` |  | Optional. Ignored if city present. Field Region should be filled. Examples: "Знаменский" |
+| `delivery_variant[delivery_locations_attributes][city]` |  | Optional. Field Region should be filled. Examples: "Омск" |
+| `delivery_variant[inverted]` |  | false by default, if true this delivery variant will be available for all regions except passed in parameters 'country', 'region' and 'city' |
+| `delivery_variant[charge_up_to]` |  | free on orders from given sum |
+| `delivery_variant[javascript]` |  | if needed, paste javascript to be displayed on page of delivery variant selection |
+| `delivery_variant[url]` |  | url for sending request on delivery price estimation |
+| `delivery_variant[api_version]` |  | 'v1' or 'v2' (recomended) |
+| `delivery_variant[customer_pickup]` |  | false by default, set it true if this delivery variant is customer pickup |
+
+**Запрос**
+
+```http
 POST /admin/delivery_variants.json
-Parameters
-Name	Description
-delivery_variant[title] required	title
-delivery_variant[type] required	DeliveryVariant::External, DeliveryVariant::Fixed, DeliveryVariant::LocationDepend, DeliveryVariant::MapZoneDelivery, DeliveryVariant::NoDelivery, DeliveryVariant::None, DeliveryVariant::OfficialEmsShipping, DeliveryVariant::OfficialFirstClass, DeliveryVariant::OfficialRussianpost, DeliveryVariant::PickUp, DeliveryVariant::PriceDepend
-delivery_variant[description]	description
-delivery_variant[position]	position
-delivery_variant[add_payment_gateways]	set true to add all payment variants
-delivery_variant[delivery_locations_attributes]	array of delivery locations
-delivery_variant[delivery_locations_attributes][country]	Optional. Default: RU. It should be enabled in checkout options to be binded to shipping method.
-delivery_variant[delivery_locations_attributes][region]	Required. Field Region should be enabled in checkout options to be binded to shipping method. Examples: "Ивановская", "Омская"
-delivery_variant[delivery_locations_attributes][area]	Optional. Ignored if city present. Field Region should be filled. Examples: "Знаменский"
-delivery_variant[delivery_locations_attributes][city]	Optional. Field Region should be filled. Examples: "Омск"
-delivery_variant[inverted]	false by default, if true this delivery variant will be available for all regions except passed in parameters 'country', 'region' and 'city'
-delivery_variant[charge_up_to]	free on orders from given sum
-delivery_variant[javascript]	if needed, paste javascript to be displayed on page of delivery variant selection
-delivery_variant[url]	url for sending request on delivery price estimation
-delivery_variant[api_version]	'v1' or 'v2' (recomended)
-delivery_variant[customer_pickup]	false by default, set it true if this delivery variant is customer pickup
-Request
-Route
-POST /admin/delivery_variants.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "delivery_variant": {
     "title": "express delivery",
@@ -4836,14 +5967,18 @@ Body
     "url": "http://google.ru"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 49,
   "position": 1,
@@ -4895,42 +6030,48 @@ Body
   ],
   "delivery_time_intervals": []
 }
-Create delivery_variant Fixed
+```
+
+### Create delivery_variant Fixed
+
+`POST /admin/delivery_variants.json`
+
 DeliveryVariant::Fixed is a delivery variant with a fixed delivery price.
 
-Endpoint
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `delivery_variant[title]` | да | title |
+| `delivery_variant[type]` | да | DeliveryVariant::External, DeliveryVariant::Fixed, DeliveryVariant::LocationDepend, DeliveryVariant::MapZoneDelivery, DeliveryVariant::NoDelivery, DeliveryVariant::None, DeliveryVariant::OfficialEmsShipping, DeliveryVariant::OfficialFirstClass, DeliveryVariant::OfficialRussianpost, DeliveryVariant::PickUp, DeliveryVariant::PriceDepend |
+| `delivery_variant[description]` |  | description |
+| `delivery_variant[position]` |  | position |
+| `delivery_variant[add_payment_gateways]` |  | set true to add all payment variants |
+| `delivery_variant[delivery_locations_attributes]` |  | array of delivery locations |
+| `delivery_variant[delivery_locations_attributes][country]` |  | if shop has many countries, fill this field;it should be enabled in checkout options to be binded to shipping method |
+| `delivery_variant[delivery_locations_attributes][region]` |  | field Region should be enabled in checkout options to be binded to shipping method |
+| `delivery_variant[delivery_locations_attributes][city]` |  | field Region should be filled |
+| `delivery_variant[inverted]` |  | false by default, if true this delivery variant will be available for all regions except passed in parameters 'country', 'region' and 'city' |
+| `delivery_variant[charge_up_to]` |  | free on orders from given sum |
+| `delivery_variant[price]` | да | delivery price |
+| `delivery_variant[javascript]` |  | if needed, paste javascript to be displayed on page of delivery variant selection |
+| `delivery_variant[show_calendar_in_checkout]` |  | show delivery date selection in checkout |
+| `delivery_variant[delivery_date_]` | да | delivery date selection is required in chekout |
+| `delivery_variant[forbid_weekends]` |  | weekend days are forbidden for delivery |
+| `delivery_variant[estimated_delivery_period]` |  | estimated delivery period |
+| `delivery_variant[order_time_is_later]` |  | increase estimated delivery time for one day if order time is later |
+| `delivery_variant[forbidden_days]` |  | forbidden days for delivery (23.02,08.03,..) |
+| `delivery_variant[show_time_intervals_in_checkout]` |  | show delivery time intervals in checkout |
+| `delivery_variant[time_intervals_]` | да | delivery time interval selection is required in checkout |
+| `delivery_variant[time_intervals]` |  | time intervals (10-12, 12-16, ...) |
+
+**Запрос**
+
+```http
 POST /admin/delivery_variants.json
-Parameters
-Name	Description
-delivery_variant[title] required	title
-delivery_variant[type] required	DeliveryVariant::External, DeliveryVariant::Fixed, DeliveryVariant::LocationDepend, DeliveryVariant::MapZoneDelivery, DeliveryVariant::NoDelivery, DeliveryVariant::None, DeliveryVariant::OfficialEmsShipping, DeliveryVariant::OfficialFirstClass, DeliveryVariant::OfficialRussianpost, DeliveryVariant::PickUp, DeliveryVariant::PriceDepend
-delivery_variant[description]	description
-delivery_variant[position]	position
-delivery_variant[add_payment_gateways]	set true to add all payment variants
-delivery_variant[delivery_locations_attributes]	array of delivery locations
-delivery_variant[delivery_locations_attributes][country]	if shop has many countries, fill this field;it should be enabled in checkout options to be binded to shipping method
-delivery_variant[delivery_locations_attributes][region]	field Region should be enabled in checkout options to be binded to shipping method
-delivery_variant[delivery_locations_attributes][city]	field Region should be filled
-delivery_variant[inverted]	false by default, if true this delivery variant will be available for all regions except passed in parameters 'country', 'region' and 'city'
-delivery_variant[charge_up_to]	free on orders from given sum
-delivery_variant[price] required	delivery price
-delivery_variant[javascript]	if needed, paste javascript to be displayed on page of delivery variant selection
-delivery_variant[show_calendar_in_checkout]	show delivery date selection in checkout
-delivery_variant[delivery_date_required]	delivery date selection is required in chekout
-delivery_variant[forbid_weekends]	weekend days are forbidden for delivery
-delivery_variant[estimated_delivery_period]	estimated delivery period
-delivery_variant[order_time_is_later]	increase estimated delivery time for one day if order time is later
-delivery_variant[forbidden_days]	forbidden days for delivery (23.02,08.03,..)
-delivery_variant[show_time_intervals_in_checkout]	show delivery time intervals in checkout
-delivery_variant[time_intervals_required]	delivery time interval selection is required in checkout
-delivery_variant[time_intervals]	time intervals (10-12, 12-16, ...)
-Request
-Route
-POST /admin/delivery_variants.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "delivery_variant": {
     "title": "express delivery",
@@ -4958,14 +6099,18 @@ Body
     "time_intervals": "10-12,12-16,16-20"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 33,
   "position": 1,
@@ -5050,42 +6195,48 @@ Body
     }
   ]
 }
-Create delivery_variant LocationDepend
+```
+
+### Create delivery_variant LocationDepend
+
+`POST /admin/delivery_variants.json`
+
 DeliveryVariant::LocationDepend is a delivery variant where delivery price depends on location (through delivery zones) and weight of delivered object.
 
-Endpoint
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `delivery_variant[title]` | да | title |
+| `delivery_variant[type]` | да | DeliveryVariant::External, DeliveryVariant::Fixed, DeliveryVariant::LocationDepend, DeliveryVariant::MapZoneDelivery, DeliveryVariant::NoDelivery, DeliveryVariant::None, DeliveryVariant::OfficialEmsShipping, DeliveryVariant::OfficialFirstClass, DeliveryVariant::OfficialRussianpost, DeliveryVariant::PickUp, DeliveryVariant::PriceDepend |
+| `delivery_variant[description]` |  | description |
+| `delivery_variant[position]` |  | position |
+| `delivery_variant[add_payment_gateways]` |  | set true to add all payment variants |
+| `delivery_variant[delivery_locations_attributes]` |  | array of delivery locations |
+| `delivery_variant[delivery_locations_attributes][country]` |  | if shop has many countries, fill this field;it should be enabled in checkout options to be binded to shipping method |
+| `delivery_variant[delivery_locations_attributes][region]` |  | field Region should be enabled in checkout options to be binded to shipping method |
+| `delivery_variant[delivery_locations_attributes][city]` |  | field Region should be filled |
+| `delivery_variant[inverted]` |  | false by default, if true this delivery variant will be available for all regions except passed in parameters 'country', 'region' and 'city' |
+| `delivery_variant[charge_up_to]` |  | free on orders from given sum |
+| `delivery_variant[delivery_zones_attributes]` | да | array of delivery zones |
+| `delivery_variant[delivery_zones_attributes][title]` |  | title of delivery zone |
+| `delivery_variant[delivery_zones_attributes][tariffs_attributes]` | да | array of tariffs attributes for delivery zone |
+| `delivery_variant[delivery_zones_attributes][tariffs_attributes][price]` | да | delivery tariff price |
+| `delivery_variant[delivery_zones_attributes][tariffs_attributes][step]` | да | increment which increases delivery price; measured in kg |
+| `delivery_variant[delivery_zones_attributes][tariffs_attributes][step_price]` | да | price of increment |
+| `delivery_variant[delivery_zones_attributes][tariffs_attributes][max_weight]` | да | max weight for tariff |
+| `delivery_variant[delivery_zones_attributes][locations_attributes]` |  | array of locations in delivery zone |
+| `delivery_variant[delivery_zones_attributes][locations_attributes][country]` | да | field country should be enabled in checkout options to be binded to shipping method |
+| `delivery_variant[delivery_zones_attributes][locations_attributes][region]` |  | field Region should be enabled in checkout options to be binded to shipping method |
+| `delivery_variant[delivery_locations_attributes][locations_attributes][city]` |  | field Region should be filled |
+
+**Запрос**
+
+```http
 POST /admin/delivery_variants.json
-Parameters
-Name	Description
-delivery_variant[title] required	title
-delivery_variant[type] required	DeliveryVariant::External, DeliveryVariant::Fixed, DeliveryVariant::LocationDepend, DeliveryVariant::MapZoneDelivery, DeliveryVariant::NoDelivery, DeliveryVariant::None, DeliveryVariant::OfficialEmsShipping, DeliveryVariant::OfficialFirstClass, DeliveryVariant::OfficialRussianpost, DeliveryVariant::PickUp, DeliveryVariant::PriceDepend
-delivery_variant[description]	description
-delivery_variant[position]	position
-delivery_variant[add_payment_gateways]	set true to add all payment variants
-delivery_variant[delivery_locations_attributes]	array of delivery locations
-delivery_variant[delivery_locations_attributes][country]	if shop has many countries, fill this field;it should be enabled in checkout options to be binded to shipping method
-delivery_variant[delivery_locations_attributes][region]	field Region should be enabled in checkout options to be binded to shipping method
-delivery_variant[delivery_locations_attributes][city]	field Region should be filled
-delivery_variant[inverted]	false by default, if true this delivery variant will be available for all regions except passed in parameters 'country', 'region' and 'city'
-delivery_variant[charge_up_to]	free on orders from given sum
-delivery_variant[delivery_zones_attributes] required	array of delivery zones
-delivery_variant[delivery_zones_attributes][title]	title of delivery zone
-delivery_variant[delivery_zones_attributes][tariffs_attributes] required	array of tariffs attributes for delivery zone
-delivery_variant[delivery_zones_attributes][tariffs_attributes][price] required	delivery tariff price
-delivery_variant[delivery_zones_attributes][tariffs_attributes][step] required	increment which increases delivery price; measured in kg
-delivery_variant[delivery_zones_attributes][tariffs_attributes][step_price] required	price of increment
-delivery_variant[delivery_zones_attributes][tariffs_attributes][max_weight] required	max weight for tariff
-delivery_variant[delivery_zones_attributes][locations_attributes]	array of locations in delivery zone
-delivery_variant[delivery_zones_attributes][locations_attributes][country] required	field country should be enabled in checkout options to be binded to shipping method
-delivery_variant[delivery_zones_attributes][locations_attributes][region]	field Region should be enabled in checkout options to be binded to shipping method
-delivery_variant[delivery_locations_attributes][locations_attributes][city]	field Region should be filled
-Request
-Route
-POST /admin/delivery_variants.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "delivery_variant": {
     "title": "express delivery",
@@ -5126,14 +6277,18 @@ Body
     "title": "express delivery"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 65,
   "position": 1,
@@ -5205,46 +6360,52 @@ Body
     }
   ]
 }
-Create delivery_variant PickUp
+```
+
+### Create delivery_variant PickUp
+
+`POST /admin/delivery_variants.json`
+
 DeliveryVariant::PickUp is a delivery variant with a fixed delivery price.
 
-Endpoint
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `delivery_variant[title]` | да | title |
+| `delivery_variant[type]` | да | DeliveryVariant::External, DeliveryVariant::Fixed, DeliveryVariant::LocationDepend, DeliveryVariant::MapZoneDelivery, DeliveryVariant::NoDelivery, DeliveryVariant::None, DeliveryVariant::OfficialEmsShipping, DeliveryVariant::OfficialFirstClass, DeliveryVariant::OfficialRussianpost, DeliveryVariant::PickUp, DeliveryVariant::PriceDepend |
+| `delivery_variant[description]` |  | description |
+| `delivery_variant[position]` |  | position |
+| `delivery_variant[add_payment_gateways]` |  | set true to add all payment variants |
+| `delivery_variant[delivery_locations_attributes]` |  | array of delivery locations |
+| `delivery_variant[delivery_locations_attributes][country]` |  | if shop has many countries, fill this field;it should be enabled in checkout options to be binded to shipping method |
+| `delivery_variant[delivery_locations_attributes][region]` |  | field Region should be enabled in checkout options to be binded to shipping method |
+| `delivery_variant[delivery_locations_attributes][city]` |  | field Region should be filled |
+| `delivery_variant[inverted]` |  | false by default, if true this delivery variant will be available for all regions except passed in parameters 'country', 'region' and 'city' |
+| `delivery_variant[charge_up_to]` |  | free on orders from given sum |
+| `delivery_variant[javascript]` |  | if needed, paste javascript to be displayed on page of delivery variant selection |
+| `delivery_variant[show_calendar_in_checkout]` |  | show delivery date selection in checkout |
+| `delivery_variant[delivery_date_]` | да | delivery date selection is required in chekout |
+| `delivery_variant[forbid_weekends]` |  | weekend days are forbidden for delivery |
+| `delivery_variant[estimated_delivery_period]` |  | estimated delivery period |
+| `delivery_variant[order_time_is_later]` |  | increase estimated delivery time for one day if order time is later |
+| `delivery_variant[forbidden_days]` |  | forbidden days for delivery (23.02,08.03,..) |
+| `delivery_variant[show_time_intervals_in_checkout]` |  | show delivery time intervals in checkout |
+| `delivery_variant[time_intervals_]` | да | delivery time interval selection is required in checkout |
+| `delivery_variant[time_intervals]` |  | time intervals (10-12, 12-16, ...) |
+| `delivery_variant[pick_up_sources_attributes]` |  | array of pick up sources |
+| `delivery_variant[pick_up_sources_attributes][title]` | да | title |
+| `delivery_variant[pick_up_sources_attributes][http_method]` | да | http method (GET, POST) used for request |
+| `delivery_variant[pick_up_sources_attributes][url]` | да | url for receiving list of delivery points |
+| `delivery_variant[pick_up_sources_attributes][point_info_url]` | да | url for receiving delivery info to the selected point |
+
+**Запрос**
+
+```http
 POST /admin/delivery_variants.json
-Parameters
-Name	Description
-delivery_variant[title] required	title
-delivery_variant[type] required	DeliveryVariant::External, DeliveryVariant::Fixed, DeliveryVariant::LocationDepend, DeliveryVariant::MapZoneDelivery, DeliveryVariant::NoDelivery, DeliveryVariant::None, DeliveryVariant::OfficialEmsShipping, DeliveryVariant::OfficialFirstClass, DeliveryVariant::OfficialRussianpost, DeliveryVariant::PickUp, DeliveryVariant::PriceDepend
-delivery_variant[description]	description
-delivery_variant[position]	position
-delivery_variant[add_payment_gateways]	set true to add all payment variants
-delivery_variant[delivery_locations_attributes]	array of delivery locations
-delivery_variant[delivery_locations_attributes][country]	if shop has many countries, fill this field;it should be enabled in checkout options to be binded to shipping method
-delivery_variant[delivery_locations_attributes][region]	field Region should be enabled in checkout options to be binded to shipping method
-delivery_variant[delivery_locations_attributes][city]	field Region should be filled
-delivery_variant[inverted]	false by default, if true this delivery variant will be available for all regions except passed in parameters 'country', 'region' and 'city'
-delivery_variant[charge_up_to]	free on orders from given sum
-delivery_variant[javascript]	if needed, paste javascript to be displayed on page of delivery variant selection
-delivery_variant[show_calendar_in_checkout]	show delivery date selection in checkout
-delivery_variant[delivery_date_required]	delivery date selection is required in chekout
-delivery_variant[forbid_weekends]	weekend days are forbidden for delivery
-delivery_variant[estimated_delivery_period]	estimated delivery period
-delivery_variant[order_time_is_later]	increase estimated delivery time for one day if order time is later
-delivery_variant[forbidden_days]	forbidden days for delivery (23.02,08.03,..)
-delivery_variant[show_time_intervals_in_checkout]	show delivery time intervals in checkout
-delivery_variant[time_intervals_required]	delivery time interval selection is required in checkout
-delivery_variant[time_intervals]	time intervals (10-12, 12-16, ...)
-delivery_variant[pick_up_sources_attributes]	array of pick up sources
-delivery_variant[pick_up_sources_attributes][title] required	title
-delivery_variant[pick_up_sources_attributes][http_method] required	http method (GET, POST) used for request
-delivery_variant[pick_up_sources_attributes][url] required	url for receiving list of delivery points
-delivery_variant[pick_up_sources_attributes][point_info_url] required	url for receiving delivery info to the selected point
-Request
-Route
-POST /admin/delivery_variants.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "delivery_variant": {
     "title": "express delivery",
@@ -5283,14 +6444,18 @@ Body
     "http_method": "post"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 97,
   "position": 1,
@@ -5394,36 +6559,42 @@ Body
     }
   ]
 }
-Create delivery_variant PriceDepend
+```
+
+### Create delivery_variant PriceDepend
+
+`POST /admin/delivery_variants.json`
+
 DeliveryVariant::PriceDepend is a delivery variant with rules which define delivery price depending on order sum and weight.
 
-Endpoint
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `delivery_variant[title]` | да | title |
+| `delivery_variant[type]` | да | DeliveryVariant::External, DeliveryVariant::Fixed, DeliveryVariant::LocationDepend, DeliveryVariant::MapZoneDelivery, DeliveryVariant::NoDelivery, DeliveryVariant::None, DeliveryVariant::OfficialEmsShipping, DeliveryVariant::OfficialFirstClass, DeliveryVariant::OfficialRussianpost, DeliveryVariant::PickUp, DeliveryVariant::PriceDepend |
+| `delivery_variant[description]` |  | description |
+| `delivery_variant[position]` |  | position |
+| `delivery_variant[add_payment_gateways]` |  | set true to add all payment variants |
+| `delivery_variant[delivery_locations_attributes]` |  | array of delivery locations |
+| `delivery_variant[delivery_locations_attributes][country]` |  | if shop has many countries, fill this field;it should be enabled in checkout options to be binded to shipping method |
+| `delivery_variant[delivery_locations_attributes][region]` |  | field Region should be enabled in checkout options to be binded to shipping method |
+| `delivery_variant[delivery_locations_attributes][city]` |  | field Region should be filled |
+| `delivery_variant[inverted]` |  | false by default, if true this delivery variant will be available for all regions except passed in parameters 'country', 'region' and 'city' |
+| `delivery_variant[charge_up_to]` |  | free on orders from given sum |
+| `delivery_variant[min_price]` |  | minimal delivery price |
+| `delivery_variant[rules_attributes]` |  | array of rules define delivery price depending on order sum and weight |
+| `delivery_variant[rules_attributes][price]` |  | delivery price by a rule |
+| `delivery_variant[rules_attributes][order_price]` |  | order sum by a rule |
+| `delivery_variant[rules_attributes][order_weight]` |  | order weight by a rule |
+
+**Запрос**
+
+```http
 POST /admin/delivery_variants.json
-Parameters
-Name	Description
-delivery_variant[title] required	title
-delivery_variant[type] required	DeliveryVariant::External, DeliveryVariant::Fixed, DeliveryVariant::LocationDepend, DeliveryVariant::MapZoneDelivery, DeliveryVariant::NoDelivery, DeliveryVariant::None, DeliveryVariant::OfficialEmsShipping, DeliveryVariant::OfficialFirstClass, DeliveryVariant::OfficialRussianpost, DeliveryVariant::PickUp, DeliveryVariant::PriceDepend
-delivery_variant[description]	description
-delivery_variant[position]	position
-delivery_variant[add_payment_gateways]	set true to add all payment variants
-delivery_variant[delivery_locations_attributes]	array of delivery locations
-delivery_variant[delivery_locations_attributes][country]	if shop has many countries, fill this field;it should be enabled in checkout options to be binded to shipping method
-delivery_variant[delivery_locations_attributes][region]	field Region should be enabled in checkout options to be binded to shipping method
-delivery_variant[delivery_locations_attributes][city]	field Region should be filled
-delivery_variant[inverted]	false by default, if true this delivery variant will be available for all regions except passed in parameters 'country', 'region' and 'city'
-delivery_variant[charge_up_to]	free on orders from given sum
-delivery_variant[min_price]	minimal delivery price
-delivery_variant[rules_attributes]	array of rules define delivery price depending on order sum and weight
-delivery_variant[rules_attributes][price]	delivery price by a rule
-delivery_variant[rules_attributes][order_price]	order sum by a rule
-delivery_variant[rules_attributes][order_weight]	order weight by a rule
-Request
-Route
-POST /admin/delivery_variants.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "delivery_variant": {
     "title": "express delivery",
@@ -5449,14 +6620,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 81,
   "position": 1,
@@ -5514,42 +6689,56 @@ Body
     }
   ]
 }
-Destroy delivery_variant
-Endpoint
-DELETE /admin/delivery_variants/:delivery_variant_id.json
-Request
-Route
+```
+
+### Destroy delivery_variant
+
+`DELETE /admin/delivery_variants/:delivery_variant_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/delivery_variants/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get delivery_variant
-Endpoint
-GET /admin/delivery_variants/:delivery_variant_id.json
-Request
-Route
+```
+
+### Get delivery_variant
+
+`GET /admin/delivery_variants/:delivery_variant_id.json`
+
+**Запрос**
+
+```http
 GET /admin/delivery_variants/2.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "position": 2,
@@ -5632,22 +6821,29 @@ Body
     }
   ]
 }
-Get delivery_variants
-Endpoint
+```
+
+### Get delivery_variants
+
+`GET /admin/delivery_variants.json`
+
+**Запрос**
+
+```http
 GET /admin/delivery_variants.json
-Request
-Route
-GET /admin/delivery_variants.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -5818,28 +7014,34 @@ Body
     "delivery_time_intervals": []
   }
 ]
-Update delivery variant
-Endpoint
-PUT /admin/delivery_variants/:delivery_variant_id.json
-Parameters
-Name	Description
-delivery_variant[title]	title
-delivery_variant[description]	description
-delivery_variant[position]	position
-delivery_variant[add_payment_gateways]	set true to add all payment variants
-delivery_variant[charge_up_to]	free on orders from given sum
-delivery_variant[payment_delivery_variants_attributes]	array of available payment gateways for this delivery variant
-delivery_variant[pick_up_sources_attributes]	array of pick up sources
-delivery_variant[payment_delivery_variants_attributes][_destroy]	set it 1 to delete this payment variant
-delivery_variant[payment_delivery_variants_attributes][id]	only for removal: id of delivery variant and payment gateway binding you want to delete
-delivery_variant[payment_delivery_variants_attributes][payment_gateway_id]	for creation: id of payment gateway you want to bind with this delivery variant
-Request
-Route
+```
+
+### Update delivery variant
+
+`PUT /admin/delivery_variants/:delivery_variant_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `delivery_variant[title]` |  | title |
+| `delivery_variant[description]` |  | description |
+| `delivery_variant[position]` |  | position |
+| `delivery_variant[add_payment_gateways]` |  | set true to add all payment variants |
+| `delivery_variant[charge_up_to]` |  | free on orders from given sum |
+| `delivery_variant[payment_delivery_variants_attributes]` |  | array of available payment gateways for this delivery variant |
+| `delivery_variant[pick_up_sources_attributes]` |  | array of pick up sources |
+| `delivery_variant[payment_delivery_variants_attributes][_destroy]` |  | set it 1 to delete this payment variant |
+| `delivery_variant[payment_delivery_variants_attributes][id]` |  | only for removal: id of delivery variant and payment gateway binding you want to delete |
+| `delivery_variant[payment_delivery_variants_attributes][payment_gateway_id]` |  | for creation: id of payment gateway you want to bind with this delivery variant |
+
+**Запрос**
+
+```http
 PUT /admin/delivery_variants/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "delivery_variant": {
     "title": "new title",
@@ -5865,14 +7067,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "position": 1,
@@ -5955,28 +7161,45 @@ Body
     }
   ]
 }
-DiscountCode
-Create discount code
-Endpoint
+```
+
+---
+
+## DiscountCode
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create discount code](#create-discount-code) | `POST /admin/discount_codes.json` |
+| [Destroy discount code](#destroy-discount-code) | `DELETE /admin/discount_codes/:discount_code_id.json` |
+| [Get discount code](#get-discount-code) | `GET /admin/discount_codes/:discount_code_id.json` |
+| [Get discount codes](#get-discount-codes) | `GET /admin/discount_codes.json` |
+| [Update discount code](#update-discount-code) | `PUT /admin/discount_codes/:discount_code_id.json` |
+
+### Create discount code
+
+`POST /admin/discount_codes.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `discount_code[code]` | да | code |
+| `discount_code[description]` |  | description |
+| `discount_code[disabled]` |  | disabled |
+| `discount_code[act_once]` |  | act once |
+| `discount_code[act_once_for_client]` |  | act once for client |
+| `discount_code[expired_at]` |  | expired at |
+| `discount_code[type_id]` | да | type_id (1 - percent, 2 - money) |
+| `discount_code[discount]` | да | discount |
+| `discount_code[min_price]` |  | min price |
+
+**Запрос**
+
+```http
 POST /admin/discount_codes.json
-Parameters
-Name	Description
-discount_code[code] required	code
-discount_code[description]	description
-discount_code[disabled]	disabled
-discount_code[act_once]	act once
-discount_code[act_once_for_client]	act once for client
-discount_code[expired_at]	expired at
-discount_code[type_id] required	type_id (1 - percent, 2 - money)
-discount_code[discount] required	discount
-discount_code[min_price]	min price
-Request
-Route
-POST /admin/discount_codes.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "discount_code": {
     "code": "BIRTHDAY",
@@ -5988,14 +7211,18 @@ Body
     "min_price": 500
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 188,
   "code": "birthday",
@@ -6014,42 +7241,56 @@ Body
   "worked": false,
   "discount_collections": []
 }
-Destroy discount code
-Endpoint
-DELETE /admin/discount_codes/:discount_code_id.json
-Request
-Route
+```
+
+### Destroy discount code
+
+`DELETE /admin/discount_codes/:discount_code_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/discount_codes/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get discount code
-Endpoint
-GET /admin/discount_codes/:discount_code_id.json
-Request
-Route
+```
+
+### Get discount code
+
+`GET /admin/discount_codes/:discount_code_id.json`
+
+**Запрос**
+
+```http
 GET /admin/discount_codes/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "code": "dc1",
@@ -6068,29 +7309,37 @@ Body
   "worked": false,
   "discount_collections": []
 }
-Get discount codes
-Endpoint
+```
+
+### Get discount codes
+
+`GET /admin/discount_codes.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `updated_since` |  | Set datetime to get only data updated after it. |
+| `from_id` |  | Set id to get only data starting from it. |
+| `q` |  | Strict search by code or regexp for description. |
+| `per_page` |  | Quantity of objects per page. |
+| `page` |  | Page number. |
+
+**Запрос**
+
+```http
 GET /admin/discount_codes.json
-Parameters
-Name	Description
-updated_since	Set datetime to get only data updated after it.
-from_id	Set id to get only data starting from it.
-q	Strict search by code or regexp for description.
-per_page	Quantity of objects per page.
-page	Page number.
-Request
-Route
-GET /admin/discount_codes.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 2,
@@ -6129,52 +7378,78 @@ Body
     "discount_collections": []
   }
 ]
-Update discount code
-Endpoint
-PUT /admin/discount_codes/:discount_code_id.json
-Parameters
-Name	Description
-discount_code[discount]	discount
-Request
-Route
+```
+
+### Update discount code
+
+`PUT /admin/discount_codes/:discount_code_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `discount_code[discount]` |  | discount |
+
+**Запрос**
+
+```http
 PUT /admin/discount_codes/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "discount_code": {
     "discount": 15
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-DiscountCollectionsGroup
-Get discount codes for discount collections group
-Endpoint
-GET /admin/discount_collections_groups/:discount_collections_group_id/discount_codes.json
-Request
-Route
+```
+
+---
+
+## DiscountCollectionsGroup
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Get discount codes for discount collections group](#get-discount-codes-for-discount-collections-group) | `GET /admin/discount_collections_groups/:discount_collections_group_id/discount_codes.json` |
+| [Get discount collections group](#get-discount-collections-group) | `GET /admin/discount_collections_groups/:discount_collections_group_id.json` |
+| [Get discount collections groups](#get-discount-collections-groups) | `GET /admin/discount_collections_groups.json` |
+
+### Get discount codes for discount collections group
+
+`GET /admin/discount_collections_groups/:discount_collections_group_id/discount_codes.json`
+
+**Запрос**
+
+```http
 GET /admin/discount_collections_groups/220/discount_codes.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 204,
@@ -6195,22 +7470,29 @@ Body
     "discount_collections": []
   }
 ]
-Get discount collections group
-Endpoint
-GET /admin/discount_collections_groups/:discount_collections_group_id.json
-Request
-Route
+```
+
+### Get discount collections group
+
+`GET /admin/discount_collections_groups/:discount_collections_group_id.json`
+
+**Запрос**
+
+```http
 GET /admin/discount_collections_groups/204.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 204,
   "title": "Group d74c3aa2",
@@ -6229,22 +7511,29 @@ Body
     }
   ]
 }
-Get discount collections groups
-Endpoint
+```
+
+### Get discount collections groups
+
+`GET /admin/discount_collections_groups.json`
+
+**Запрос**
+
+```http
 GET /admin/discount_collections_groups.json
-Request
-Route
-GET /admin/discount_collections_groups.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 172,
@@ -6297,35 +7586,56 @@ Body
     ]
   }
 ]
-Domain
-Create domain
-Endpoint
+```
+
+---
+
+## Domain
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create domain](#create-domain) | `POST /admin/domains.json` |
+| [Destroy domain](#destroy-domain) | `DELETE /admin/domains/:domain_id.json` |
+| [API-Usage-Limit: 1/500](#api-usage-limit-1-500) | `GET /admin/domains/:domain_id.json` |
+| [Get domains](#get-domains) | `GET /admin/domains.json` |
+| [Update domain](#update-domain) | `PUT /admin/domains/:domain_id.json` |
+
+### Create domain
+
+`POST /admin/domains.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `domain[domain]` | да | domain |
+| `domain[main]` |  | boolean, could be false only if there are more than one domain |
+
+**Запрос**
+
+```http
 POST /admin/domains.json
-Parameters
-Name	Description
-domain[domain] required	domain
-domain[main]	boolean, could be false only if there are more than one domain
-Request
-Route
-POST /admin/domains.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "domain": {
     "domain": "another-domain.ru",
     "main": true
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 18,
   "domain": "another-domain.ru",
@@ -6333,38 +7643,47 @@ Body
   "updated_at": "2026-07-25T00:58:53.000+03:00",
   "main": true
 }
-Destroy domain
-Endpoint
-DELETE /admin/domains/:domain_id.json
-Request
-Route
+```
+
+### Destroy domain
+
+`DELETE /admin/domains/:domain_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/domains/22.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
-API-Usage-Limit: 1/500
-Content-Type: application/json
-Get domain
-Endpoint
-GET /admin/domains/:domain_id.json
-Request
-Route
+```
+
+**Ответ**
+
+Status: `200`
+
+### API-Usage-Limit: 1/500
+
+`GET /admin/domains/:domain_id.json`
+
+Content-Type: application/json Get domain
+
+**Запрос**
+
+```http
 GET /admin/domains/14.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 14,
   "domain": "some-domain.ru",
@@ -6372,22 +7691,29 @@ Body
   "updated_at": "2026-07-25T00:58:52.000+03:00",
   "main": true
 }
-Get domains
-Endpoint
+```
+
+### Get domains
+
+`GET /admin/domains.json`
+
+**Запрос**
+
+```http
 GET /admin/domains.json
-Request
-Route
-GET /admin/domains.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 12,
@@ -6397,33 +7723,43 @@ Body
     "main": true
   }
 ]
-Update domain
-Endpoint
-PUT /admin/domains/:domain_id.json
-Parameters
-Name	Description
-domain[domain]	domain
-domain[main]	boolean, could be false only if there are more than one domain
-Request
-Route
+```
+
+### Update domain
+
+`PUT /admin/domains/:domain_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `domain[domain]` |  | domain |
+| `domain[main]` |  | boolean, could be false only if there are more than one domain |
+
+**Запрос**
+
+```http
 PUT /admin/domains/20.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "domain": {
     "domain": "other-domain.ru"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 20,
   "domain": "other-domain.ru",
@@ -6431,24 +7767,41 @@ Body
   "updated_at": "2026-07-25T00:58:53.000+03:00",
   "main": true
 }
-ExternalDiscount
-Create external discount
-Endpoint
+```
+
+---
+
+## ExternalDiscount
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create external discount](#create-external-discount) | `POST /admin/external_discounts.json` |
+| [Destroy external discount](#destroy-external-discount) | `DELETE /admin/external_discounts/:external_discount_id.json` |
+| [Get external discount](#get-external-discount) | `GET /admin/external_discounts/:external_discount_id.json` |
+| [Get external discounts](#get-external-discounts) | `GET /admin/external_discounts.json` |
+| [Update external discount](#update-external-discount) | `PUT /admin/external_discounts/:external_discount_id.json` |
+
+### Create external discount
+
+`POST /admin/external_discounts.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `external_discount[description]` |  | description |
+| `external_discount[url]` |  | external service url |
+| `external_discount[order_lines_depend]` |  | discount calculation depends on order lines |
+| `external_discount[active]` |  | active |
+| `external_discount[observed_fields]` |  | discount calculation depends on this order fields (array of field ids) |
+
+**Запрос**
+
+```http
 POST /admin/external_discounts.json
-Parameters
-Name	Description
-external_discount[description]	description
-external_discount[url]	external service url
-external_discount[order_lines_depend]	discount calculation depends on order lines
-external_discount[active]	active
-external_discount[observed_fields]	discount calculation depends on this order fields (array of field ids)
-Request
-Route
-POST /admin/external_discounts.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "external_discount": {
     "description": "Birthday discount",
@@ -6461,14 +7814,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 57,
   "url": "https://myservice.com/birthday_external_discount",
@@ -6482,42 +7839,56 @@ Body
     2
   ]
 }
-Destroy external discount
-Endpoint
-DELETE /admin/external_discounts/:external_discount_id.json
-Request
-Route
+```
+
+### Destroy external discount
+
+`DELETE /admin/external_discounts/:external_discount_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/external_discounts/89.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get external discount
-Endpoint
-GET /admin/external_discounts/:external_discount_id.json
-Request
-Route
+```
+
+### Get external discount
+
+`GET /admin/external_discounts/:external_discount_id.json`
+
+**Запрос**
+
+```http
 GET /admin/external_discounts/25.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 25,
   "url": "https://myservice.com/external_discount",
@@ -6528,22 +7899,29 @@ Body
   "description": "My External Discount",
   "observed_fields": []
 }
-Get external discounts
-Endpoint
+```
+
+### Get external discounts
+
+`GET /admin/external_discounts.json`
+
+**Запрос**
+
+```http
 GET /admin/external_discounts.json
-Request
-Route
-GET /admin/external_discounts.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 9,
@@ -6556,35 +7934,45 @@ Body
     "observed_fields": []
   }
 ]
-Update external discount
-Endpoint
-PUT /admin/external_discounts/:external_discount_id.json
-Parameters
-Name	Description
-external_discount[description]	description
-external_discount[url]	external service url
-external_discount[order_lines_depend]	discount calculation depends on order lines
-external_discount[active]	active
-Request
-Route
+```
+
+### Update external discount
+
+`PUT /admin/external_discounts/:external_discount_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `external_discount[description]` |  | description |
+| `external_discount[url]` |  | external service url |
+| `external_discount[order_lines_depend]` |  | discount calculation depends on order lines |
+| `external_discount[active]` |  | active |
+
+**Запрос**
+
+```http
 PUT /admin/external_discounts/73.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "external_discount": {
     "url": "https://myservice.com/birthday_external_discount_v2"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 73,
   "url": "https://myservice.com/birthday_external_discount_v2",
@@ -6595,32 +7983,51 @@ Body
   "description": "My External Discount",
   "observed_fields": []
 }
-Field
-Create field
-Endpoint
+```
+
+---
+
+## Field
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create field](#create-field) | `POST /admin/fields.json` |
+| [Create select field](#create-select-field) | `POST /admin/fields.json` |
+| [Destroy field](#destroy-field) | `DELETE /admin/fields/:field_id.json` |
+| [Get field](#get-field) | `GET /admin/fields/:field_id.json` |
+| [Get fields](#get-fields) | `GET /admin/fields.json` |
+| [Update field](#update-field) | `PUT /admin/fields/:non_select_field_id.json` |
+| [Update select field](#update-select-field) | `PUT /admin/fields/:field_id.json` |
+
+### Create field
+
+`POST /admin/fields.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `field[type]` | да | Field::TextField, Field::TextArea, Field::Checkbox, Field::FileField (only for Order), Field::Delivery |
+| `field[office_title]` | да | title for backoffice |
+| `field[destiny]` | да | integer, defines subject that field belongs to: 1 - ShippingAddress, 2 - Client::Individual, 5 - Client::Juridical, 3 - Order, 4 - OrderLine, 6 - Client |
+| `field[handle]` |  | You can create or update value by handle |
+| `field[title]` |  | title |
+| `field[active]` |  | true by default, defines ability of filling field by a customer |
+| `field[for_buyer]` |  | true by defaut, defines visibility for a customer |
+| `field[obligatory]` |  | false by default |
+| `field[show_in_result]` |  | true by default, field will be shown in result |
+| `field[show_in_checkout]` |  | true by default, field will be shown in checkout |
+| `field[position]` |  | position in fields list |
+| `field[is_indexed]` |  | boolean, true if searchable |
+| `field[hide_in_backoffice]` |  | boolean, true to hide in backoffice |
+
+**Запрос**
+
+```http
 POST /admin/fields.json
-Parameters
-Name	Description
-field[type] required	Field::TextField, Field::TextArea, Field::Checkbox, Field::FileField (only for Order), Field::Delivery
-field[office_title] required	title for backoffice
-field[destiny] required	integer, defines subject that field belongs to: 1 - ShippingAddress, 2 - Client::Individual, 5 - Client::Juridical, 3 - Order, 4 - OrderLine, 6 - Client
-field[handle]	You can create or update value by handle
-field[title]	title
-field[active]	true by default, defines ability of filling field by a customer
-field[for_buyer]	true by defaut, defines visibility for a customer
-field[obligatory]	false by default
-field[show_in_result]	true by default, field will be shown in result
-field[show_in_checkout]	true by default, field will be shown in checkout
-field[position]	position in fields list
-field[is_indexed]	boolean, true if searchable
-field[hide_in_backoffice]	boolean, true to hide in backoffice
-Request
-Route
-POST /admin/fields.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "field": {
     "type": "Field::TextField",
@@ -6636,14 +8043,18 @@ Body
     "hide_in_backoffice": true
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 192,
   "destiny": 1,
@@ -6665,32 +8076,38 @@ Body
   "example": null,
   "type": "Field::TextField"
 }
-Create select field
-Endpoint
+```
+
+### Create select field
+
+`POST /admin/fields.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `field[type]` | да | Field::Select |
+| `field[office_title]` | да | title for backoffice |
+| `field[destiny]` | да | integer, defines subject that field belongs to: 1 - ShippingAddress, 2 - Client::Individual, 5 - Client::Juridical, 3 - Order, 4 - OrderLine, 6 - Client |
+| `field[handle]` |  | You can create or update value by handle |
+| `field[title]` |  | title |
+| `field[active]` |  | true by default, defines ability of filling field by a customer |
+| `field[for_buyer]` |  | true by defaut, defines visibility for a customer |
+| `field[obligatory]` |  | false by default |
+| `field[show_in_result]` |  | true by default, field will be shown in result |
+| `field[show_in_checkout]` |  | true by default, field will be shown in checkout |
+| `field[position]` |  | position in fields list |
+| `field[is_indexed]` |  | boolean, true if searchable |
+| `field[hide_in_backoffice]` |  | boolean, true to hide in backoffice |
+| `field[field_options_attributes]` |  | array of field options objects |
+
+**Запрос**
+
+```http
 POST /admin/fields.json
-Parameters
-Name	Description
-field[type] required	Field::Select
-field[office_title] required	title for backoffice
-field[destiny] required	integer, defines subject that field belongs to: 1 - ShippingAddress, 2 - Client::Individual, 5 - Client::Juridical, 3 - Order, 4 - OrderLine, 6 - Client
-field[handle]	You can create or update value by handle
-field[title]	title
-field[active]	true by default, defines ability of filling field by a customer
-field[for_buyer]	true by defaut, defines visibility for a customer
-field[obligatory]	false by default
-field[show_in_result]	true by default, field will be shown in result
-field[show_in_checkout]	true by default, field will be shown in checkout
-field[position]	position in fields list
-field[is_indexed]	boolean, true if searchable
-field[hide_in_backoffice]	boolean, true to hide in backoffice
-field[field_options_attributes]	array of field options objects
-Request
-Route
-POST /admin/fields.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "field": {
     "type": "Field::Select",
@@ -6714,14 +8131,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 208,
   "destiny": 1,
@@ -6755,44 +8176,58 @@ Body
     }
   ]
 }
-Destroy field
+```
+
+### Destroy field
+
+`DELETE /admin/fields/:field_id.json`
+
 Only these types can be destroyed: Field::TextField, Field::TextArea, Field::Select,Field::Checkbox, Field::Delivery, Field::FileField (only for Order)
 
-Endpoint
-DELETE /admin/fields/:field_id.json
-Request
-Route
+**Запрос**
+
+```http
 DELETE /admin/fields/23.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get field
-Endpoint
-GET /admin/fields/:field_id.json
-Request
-Route
+```
+
+### Get field
+
+`GET /admin/fields/:field_id.json`
+
+**Запрос**
+
+```http
 GET /admin/fields/23.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 23,
   "destiny": 2,
@@ -6826,22 +8261,29 @@ Body
     }
   ]
 }
-Get fields
-Endpoint
+```
+
+### Get fields
+
+`GET /admin/fields.json`
+
+**Запрос**
+
+```http
 GET /admin/fields.json
-Request
-Route
-GET /admin/fields.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -7213,29 +8655,35 @@ Body
     "type": "Field::TextField"
   }
 ]
-Update field
-Endpoint
-PUT /admin/fields/:non_select_field_id.json
-Parameters
-Name	Description
-field[office_title]	title for backoffice
-field[title]	title
-field[active]	true by default, defines ability of filling field by a customer
-field[for_buyer]	true by defaut, defines visibility for a customer
-field[obligatory]	false by default
-field[show_in_result]	true by default, field will be shown in result
-field[show_in_checkout]	true by default, field will be shown in checkout
-field[position]	position in fields list
-field[handle]	You can create or update value by handle
-field[is_indexed]	boolean, true if searchable
-field[hide_in_backoffice]	boolean, true to hide in backoffice
-Request
-Route
+```
+
+### Update field
+
+`PUT /admin/fields/:non_select_field_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `field[office_title]` |  | title for backoffice |
+| `field[title]` |  | title |
+| `field[active]` |  | true by default, defines ability of filling field by a customer |
+| `field[for_buyer]` |  | true by defaut, defines visibility for a customer |
+| `field[obligatory]` |  | false by default |
+| `field[show_in_result]` |  | true by default, field will be shown in result |
+| `field[show_in_checkout]` |  | true by default, field will be shown in checkout |
+| `field[position]` |  | position in fields list |
+| `field[handle]` |  | You can create or update value by handle |
+| `field[is_indexed]` |  | boolean, true if searchable |
+| `field[hide_in_backoffice]` |  | boolean, true to hide in backoffice |
+
+**Запрос**
+
+```http
 PUT /admin/fields/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "field": {
     "office_title": "state_code",
@@ -7251,14 +8699,18 @@ Body
     "hide_in_backoffice": true
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "destiny": 1,
@@ -7280,30 +8732,36 @@ Body
   "example": null,
   "type": "Field::SystemTextField"
 }
-Update select field
-Endpoint
-PUT /admin/fields/:field_id.json
-Parameters
-Name	Description
-field[office_title]	title for backoffice
-field[title]	title
-field[active]	true by default, defines ability of filling field by a customer
-field[for_buyer]	true by defaut, defines visibility for a customer
-field[obligatory]	false by default
-field[show_in_result]	true by default, field will be shown in result
-field[show_in_checkout]	true by default, field will be shown in checkout
-field[position]	position in fields list
-field[handle]	You can create or update value by handle
-field[is_indexed]	boolean, true if searchable
-field[hide_in_backoffice]	boolean, true to hide in backoffice
-field[field_options_attributes]	array of field options objects
-Request
-Route
+```
+
+### Update select field
+
+`PUT /admin/fields/:field_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `field[office_title]` |  | title for backoffice |
+| `field[title]` |  | title |
+| `field[active]` |  | true by default, defines ability of filling field by a customer |
+| `field[for_buyer]` |  | true by defaut, defines visibility for a customer |
+| `field[obligatory]` |  | false by default |
+| `field[show_in_result]` |  | true by default, field will be shown in result |
+| `field[show_in_checkout]` |  | true by default, field will be shown in checkout |
+| `field[position]` |  | position in fields list |
+| `field[handle]` |  | You can create or update value by handle |
+| `field[is_indexed]` |  | boolean, true if searchable |
+| `field[hide_in_backoffice]` |  | boolean, true to hide in backoffice |
+| `field[field_options_attributes]` |  | array of field options objects |
+
+**Запрос**
+
+```http
 PUT /admin/fields/23.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "field": {
     "office_title": "state_code",
@@ -7328,14 +8786,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 23,
   "destiny": 2,
@@ -7374,128 +8836,180 @@ Body
     }
   ]
 }
-File
-Create file from attachment
-Endpoint
+```
+
+---
+
+## File
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create file from attachment](#create-file-from-attachment) | `POST /admin/files.json` |
+| [Create file from url](#create-file-from-url) | `POST /admin/files.json` |
+| [Destroy file](#destroy-file) | `DELETE /admin/files/:account_file_id.json` |
+| [Get file](#get-file) | `GET /admin/files/:account_file_id.json` |
+| [Get files](#get-files) | `GET /admin/files.json` |
+
+### Create file from attachment
+
+`POST /admin/files.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `file[attachment]` | да | file |
+| `file[filename]` | да | file name |
+
+**Запрос**
+
+```http
 POST /admin/files.json
-Parameters
-Name	Description
-file[attachment] required	file
-file[filename] required	file name
-Request
-Route
-POST /admin/files.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "file": {
     "attachment": "/9j/4AAQSkZJRgABAQEASABIAAD//gA+Q1JFQVRPUjogZ2QtanBlZyB2MS4w\nICh1c2luZyBJSkcgSlBFRyB2NjIpLCBkZWZhdWx0IHF1YWxpdHkK/9sAQwAG\nBAUGBQQGBgUGBwcGCAoQCgoJCQoUDg8MEBcUGBgXFBYWGh0lHxobIxwWFiAs\nICMmJykqKRkfLTAtKDAlKCko/9sAQwEHBwcKCAoTCgoTKBoWGigoKCgoKCgo\nKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo/8AA\nEQgAWQBkAwEiAAIRAQMRAf/EAB0AAAEEAwEBAAAAAAAAAAAAAAgABQYHAQME\nAgn/xABEEAABAwMBBAYHBgIHCQAAAAABAgMEAAURBgcSITEIE0FRYYEUIjJx\nkbHSIzd1lKGzFRg1QkNSYqLwJSYzY3KCksLT/8QAGQEAAgMBAAAAAAAAAAAA\nAAAAAAEDBAUC/8QAIxEAAgICAgIBBQAAAAAAAAAAAAECEQMEEjEhQVEFEyIz\ngf/aAAwDAQACEQMRAD8AKmlVT7Q9oF4sGqV223NxFthpC0hxoqUSQSeO8O6o\ncvbbd23ktO/w5LiuASWFDP8AmrlzivDY+LqwiaVDwNtl5KlpDUTeQMqHobvA\nfGtLm3G9IRvlFvCOPFUZwf8AtS+7D5EEbSoYv5g7qpwIaNqUonAHo7nP/wAq\n4pHSQujDq2nFWhLiCUqSqO5kEdntV1YBVUqEtfSXvGfVVZvy7n1VpV0mL7n1\nTZfyzn1UwC6pUIKukzqDs/gv5Zz661npM6j7DZfyrn10AGFSoOVdJnU39X+C\n/lXPrr2OkjqlxIDD1jW6R/wxDdz8SrFABh0qZ9IXB67aTs1xlhAkS4bL7m4M\nJ3lIBOB2DJpUAUNt3usew67NzmRm5LLbbSeqcGQSUKA4VV8rag2JoQxY7e2w\nocFdWARU86UPUpvxVKSpbG/F6xCTglPrZwe/FVDb1Q4Vyc9HjIQyyvAku4cc\nHHhugjdB8s+NUtnHjk7mrJY5JKPFPwXBZro07aWp98YMVCsKaQ4d31f76u4d\n3fXq/SrdfYhTYoMVx5KSClZwV45lIJ9Y+GKi1usV01pdWFMOmW2jGX3DlpA7\nCByJ9/Luq2bZpyBpiE21bCHZ6R68pwZDiu0b3+h4VhuEMfn38fBS2c1A26g0\n9qELUpNtdbaPFCkxktocHhkAg+BqIXiJJknfeZWiaBhSVJwXMdo7zRoL1XLa\nixw8A2p7rG+rdxlLiBk8+Y4jj41HZ1tsGso5D8CEuafW3mMNqV78cD7+Yra1\nc7nSaKq2+PaAxP61gc6tDa7oFenrupyGHHITw6xpxQ9bHahf+NJ4E9owarAg\npUQoYIrQaa7L+PIskeSMGsVk1ikdirts/wDSDfuPyNcVd1m/pFr3K+RoA+ke\nzj7vtM/hsb9tNKls4+77TP4ZG/bTSoAHXpTuFGonhkAbkfn7lVS1tdRMkIRI\nO6CrOeQzjl8R+tXJ0qsK1M8kkZ6uPgHtOFcKHp9L7LXpLCypkEJWlQzuE8s+\nBqOcFIGX7p2/Lstl/h0Wa20pWSpDDZPDwXgDPPlXbaZl1E1wpnOSG1J+xSXd\n5RPd61UDA1M5AblJVGYeL7WG1nILTg4BYAOMgZ+NXHscntahtsx6Y71a22/R\n9xtPsrUCAodw5ms2enxtmfsY3FOTHDVe0G4yFqhz7UhEtlCmGkqGVNk8CEnx\n8fGvOkhchFEiZPhxIyXApS1kNgAcgnHEnPj8a49QliU6lltaRLDhQCsZ3TnB\nxnxzjspnf07cusT10z0pCVb286d3cAPYOVa+th4pUis+LjXRONfzEaiaSxAl\nFXo32eFew6o4OFA9vcrvobr7C6mW6hbZQQo44csH/XCr2hT4iI4bQ2SFulMh\nwD1lgJGefLPLyrfd9A2fVbyZlnddW8GwpUb2G5I5ApdPAODGCOGR7q1J6jyQ\nuL8ljTuH4+gZyhQVu4416cZcax1ja0Z5bySM0Tlk0JFtqt17diKTzjxkBCz/\nANTisk+VP0pVsYgLju2mJMiKG643JCnQoeJJ/UcakX0ebjfLyauPG8nQINd1\nm4XFr3K+Rp013ZEWPUsyPGSRCU4Vx+OfszxAz4A48qa7QP8AaDXuPyNZE4OE\nnGXaOJRcW0z6R7OPu+0z+GRv200qxs3+73TP4ZG/bTSrkQMnS6WU6kfx2Nxj\n+iqoazXRCHermgLaWnq3N44C0nsPce0HvAq9el2f955A/wCVG+SqHAAUqsTV\nkkn6fUw6gAuuQnfWZkIRkY7j2Z7+NPemrmzoqUtReffYloCHWwNzkchQwSeH\nf41Cos6TFQUR5TzSFc0oWQD5V0tyWpI3JjqgvscPH40JemRyg5KpdFkS7/Gv\nOun7rBJXbmGUuvKVkJBCcqwO/IPGsW3XLc5b5fe6tTn9mTugDuHuFQiTcYkG\nxuW+3uF56Qft3sYSEZB3R3kkDJ7hTAOfCp1kcOiJa8ZLz/C/bJMt7cZW4hS2\nXVgLQlXnnOedTS33q0Wq2b8PcMxSjiO2AXFZ7cJz29tDZbwZMF9pXEhPWDvO\nOf6Zp30/f3LddIRjoyktqQnJxneBGM+PCtjX3opRjJUmSY8Siy29Rank3+0u\nzmS4xIiK3XUJO6efAntyKY7BPdvS3WH3kNvupIbcUopSF9mTngCe3srk01MQ\n9MTujMKYkpIxzJ4EK/xA8KYWUu225vRST1gWUj3d/wAKt5MzXGS66NrBDhT9\nGvarGdbbjCc04zNb3UuNuDCknBHH4cxwPMVBbUMTmz4H5GiCv7LGudGyLbIb\n37tAiqkQXwPX+zGS0T2pKQQO44qgrYAJbZ/vA4+FYW9+2yvvY3DJb9n0X2b/\nAHeaY/DI37aaVY2bfd5pj8Mj/tppVTKZXO1nZReNZarcuMN62iKpltvckqVv\nbyc8cBJHbUI/l2vh5uWH4r+iiiKgOZFa1Ptp9pYFAAvno6Xw/wBrYB5r+isK\n6Od8PJ7T/wDn+iidVPjJ5upFa1XWEkEqkIAHeaABhV0b7+cn0jT481/RVQX6\n3x9Napm2y4W9iWuBIUy8G/VQ4U88HAIHlmjan7SdKQypK7s24ocCGULc/UDF\nBptHuEe5671BOiq3o8ia442VDBKSeHA8qQmME+5W95SPQrOmGBnO4srKvjyx\nVmaJ2IXvV+l4F9t0i0MxZYUptt8rC07qinjhBHNJ7aqXeG9x3fKi02HbR9LW\nnZpY7Xc7mmLLYQ4FpW0vdBLqyPWAxyIpgiCJ6OerEexcrInjng66OPf7FeXO\njlq1a983KyFZ5qLzuT57lE9bL/arpFTIt1wjSWFcAtpYUM93vrsEtg8nUHzp\n2xgrN9HbWbSipq72hCsYymQ8DjyRWgdGvVSTlM6whQ5EOOf/ADosw82eS0/G\nvQWk/wBYUgfkadI2x6zaUs1slKbW/DhtR3FNklJUlABIzxxwpU77w7xSoA5J\nDTqgd2mSdbZzgPV/OpNSoArefp29O56v5moxetCajuEKRG31oQ8goKkLIIBG\nOBq76VKh2CC5sX2kwlbsGe3KYHshxeFAf9wPzrhlbDNYvhx56A6uUs7yt15r\nBPwozKVFCAgOwjXa1bqbKRx9pUlvj5U7RdiG0bqgyyiNDZHAbzyVEfBNGTSp\nhQO2z7ZNqjTLMkv3Bch+SpKnDvHdGBwwPPnVhwdN3xvHWOk+dWNSpUOyLw7T\nPbx1i8+dO7ER5A9ZQpxpUxGkNKA5ilW6lQB//9k=\n",
     "filename": "some file"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 36,
   "created_at": "2026-07-25T01:00:26.288+03:00",
   "absolute_url": "http://minio.insales.io:9000/insales-test-sber/files/1/36/36/original/some_file.?1784930426"
 }
-Create file from url
-Endpoint
+```
+
+### Create file from url
+
+`POST /admin/files.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `file[src]` | да | file url |
+
+**Запрос**
+
+```http
 POST /admin/files.json
-Parameters
-Name	Description
-file[src] required	file url
-Request
-Route
-POST /admin/files.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "file": {
     "src": "https://abc.myinsales.ru/images/no_image_compact.jpg"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 20,
   "created_at": "2026-07-25T01:00:25.986+03:00",
   "absolute_url": "http://minio.insales.io:9000/insales-test-sber/files/1/20/20/original/no_image_compact.jpg?1784930425"
 }
-Destroy file
-Endpoint
-DELETE /admin/files/:account_file_id.json
-Request
-Route
+```
+
+### Destroy file
+
+`DELETE /admin/files/:account_file_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/files/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get file
-Endpoint
-GET /admin/files/:account_file_id.json
-Request
-Route
+```
+
+### Get file
+
+`GET /admin/files/:account_file_id.json`
+
+**Запрос**
+
+```http
 GET /admin/files/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "created_at": "2009-03-18T07:53:15.000+03:00",
   "absolute_url": "http://minio.insales.io:9000/insales-test-sber/files/1/original/thumb_prayerbeads.jpg"
 }
-Get files
-Endpoint
+```
+
+### Get files
+
+`GET /admin/files.json`
+
+**Запрос**
+
+```http
 GET /admin/files.json
-Request
-Route
-GET /admin/files.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -7503,39 +9017,61 @@ Body
     "absolute_url": "http://minio.insales.io:9000/insales-test-sber/files/1/original/thumb_prayerbeads.jpg"
   }
 ]
-Image
-Create image from attachment
+```
+
+---
+
+## Image
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create image from attachment](#create-image-from-attachment) | `POST /admin/products/:product_id/images.json` |
+| [Create image from src](#create-image-from-src) | `POST /admin/products/:product_id/images.json` |
+| [Destroy image](#destroy-image) | `DELETE /admin/products/:product_id/images/:image_id.json` |
+| [Get image](#get-image) | `GET /admin/products/:product_id/images/:image_id.json` |
+| [Get images](#get-images) | `GET /admin/products/:product_id/images.json` |
+| [Update image](#update-image) | `PUT /admin/products/:product_id/images/:image_id.json` |
+
+### Create image from attachment
+
+`POST /admin/products/:product_id/images.json`
+
 After uploading your picture you may find ‘loading.gif’ instead of it. That’s because picture uploading and creating of thumbnails are asynchronous. When it’s uploaded and thumbnails’re created its attribute updated_at will be overwritten with new timestamp.
 
-Endpoint
-POST /admin/products/:product_id/images.json
-Parameters
-Name	Description
-image[attachment] required	image file
-image[filename] required	file name
-image[title]	title
-image[position]	position
-Request
-Route
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `image[attachment]` | да | image file |
+| `image[filename]` | да | file name |
+| `image[title]` |  | title |
+| `image[position]` |  | position |
+
+**Запрос**
+
+```http
 POST /admin/products/1/images.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "image": {
     "attachment": "/9j/4AAQSkZJRgABAQEASABIAAD//gA+Q1JFQVRPUjogZ2QtanBlZyB2MS4w\nICh1c2luZyBJSkcgSlBFRyB2NjIpLCBkZWZhdWx0IHF1YWxpdHkK/9sAQwAG\nBAUGBQQGBgUGBwcGCAoQCgoJCQoUDg8MEBcUGBgXFBYWGh0lHxobIxwWFiAs\nICMmJykqKRkfLTAtKDAlKCko/9sAQwEHBwcKCAoTCgoTKBoWGigoKCgoKCgo\nKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgo/8AA\nEQgAWQBkAwEiAAIRAQMRAf/EAB0AAAEEAwEBAAAAAAAAAAAAAAgABQYHAQME\nAgn/xABEEAABAwMBBAYHBgIHCQAAAAABAgMEAAURBgcSITEIE0FRYYEUIjJx\nkbHSIzd1lKGzFRg1QkNSYqLwJSYzY3KCksLT/8QAGQEAAgMBAAAAAAAAAAAA\nAAAAAAEDBAUC/8QAIxEAAgICAgIBBQAAAAAAAAAAAAECEQMEEjEhQVEFEyIz\ngf/aAAwDAQACEQMRAD8AKmlVT7Q9oF4sGqV223NxFthpC0hxoqUSQSeO8O6o\ncvbbd23ktO/w5LiuASWFDP8AmrlzivDY+LqwiaVDwNtl5KlpDUTeQMqHobvA\nfGtLm3G9IRvlFvCOPFUZwf8AtS+7D5EEbSoYv5g7qpwIaNqUonAHo7nP/wAq\n4pHSQujDq2nFWhLiCUqSqO5kEdntV1YBVUqEtfSXvGfVVZvy7n1VpV0mL7n1\nTZfyzn1UwC6pUIKukzqDs/gv5Zz661npM6j7DZfyrn10AGFSoOVdJnU39X+C\n/lXPrr2OkjqlxIDD1jW6R/wxDdz8SrFABh0qZ9IXB67aTs1xlhAkS4bL7m4M\nJ3lIBOB2DJpUAUNt3usew67NzmRm5LLbbSeqcGQSUKA4VV8rag2JoQxY7e2w\nocFdWARU86UPUpvxVKSpbG/F6xCTglPrZwe/FVDb1Q4Vyc9HjIQyyvAku4cc\nHHhugjdB8s+NUtnHjk7mrJY5JKPFPwXBZro07aWp98YMVCsKaQ4d31f76u4d\n3fXq/SrdfYhTYoMVx5KSClZwV45lIJ9Y+GKi1usV01pdWFMOmW2jGX3DlpA7\nCByJ9/Luq2bZpyBpiE21bCHZ6R68pwZDiu0b3+h4VhuEMfn38fBS2c1A26g0\n9qELUpNtdbaPFCkxktocHhkAg+BqIXiJJknfeZWiaBhSVJwXMdo7zRoL1XLa\nixw8A2p7rG+rdxlLiBk8+Y4jj41HZ1tsGso5D8CEuafW3mMNqV78cD7+Yra1\nc7nSaKq2+PaAxP61gc6tDa7oFenrupyGHHITw6xpxQ9bHahf+NJ4E9owarAg\npUQoYIrQaa7L+PIskeSMGsVk1ikdirts/wDSDfuPyNcVd1m/pFr3K+RoA+ke\nzj7vtM/hsb9tNKls4+77TP4ZG/bTSoAHXpTuFGonhkAbkfn7lVS1tdRMkIRI\nO6CrOeQzjl8R+tXJ0qsK1M8kkZ6uPgHtOFcKHp9L7LXpLCypkEJWlQzuE8s+\nBqOcFIGX7p2/Lstl/h0Wa20pWSpDDZPDwXgDPPlXbaZl1E1wpnOSG1J+xSXd\n5RPd61UDA1M5AblJVGYeL7WG1nILTg4BYAOMgZ+NXHscntahtsx6Y71a22/R\n9xtPsrUCAodw5ms2enxtmfsY3FOTHDVe0G4yFqhz7UhEtlCmGkqGVNk8CEnx\n8fGvOkhchFEiZPhxIyXApS1kNgAcgnHEnPj8a49QliU6lltaRLDhQCsZ3TnB\nxnxzjspnf07cusT10z0pCVb286d3cAPYOVa+th4pUis+LjXRONfzEaiaSxAl\nFXo32eFew6o4OFA9vcrvobr7C6mW6hbZQQo44csH/XCr2hT4iI4bQ2SFulMh\nwD1lgJGefLPLyrfd9A2fVbyZlnddW8GwpUb2G5I5ApdPAODGCOGR7q1J6jyQ\nuL8ljTuH4+gZyhQVu4416cZcax1ja0Z5bySM0Tlk0JFtqt17diKTzjxkBCz/\nANTisk+VP0pVsYgLju2mJMiKG643JCnQoeJJ/UcakX0ebjfLyauPG8nQINd1\nm4XFr3K+Rp013ZEWPUsyPGSRCU4Vx+OfszxAz4A48qa7QP8AaDXuPyNZE4OE\nnGXaOJRcW0z6R7OPu+0z+GRv200qxs3+73TP4ZG/bTSrkQMnS6WU6kfx2Nxj\n+iqoazXRCHermgLaWnq3N44C0nsPce0HvAq9el2f955A/wCVG+SqHAAUqsTV\nkkn6fUw6gAuuQnfWZkIRkY7j2Z7+NPemrmzoqUtReffYloCHWwNzkchQwSeH\nf41Cos6TFQUR5TzSFc0oWQD5V0tyWpI3JjqgvscPH40JemRyg5KpdFkS7/Gv\nOun7rBJXbmGUuvKVkJBCcqwO/IPGsW3XLc5b5fe6tTn9mTugDuHuFQiTcYkG\nxuW+3uF56Qft3sYSEZB3R3kkDJ7hTAOfCp1kcOiJa8ZLz/C/bJMt7cZW4hS2\nXVgLQlXnnOedTS33q0Wq2b8PcMxSjiO2AXFZ7cJz29tDZbwZMF9pXEhPWDvO\nOf6Zp30/f3LddIRjoyktqQnJxneBGM+PCtjX3opRjJUmSY8Siy29Rank3+0u\nzmS4xIiK3XUJO6efAntyKY7BPdvS3WH3kNvupIbcUopSF9mTngCe3srk01MQ\n9MTujMKYkpIxzJ4EK/xA8KYWUu225vRST1gWUj3d/wAKt5MzXGS66NrBDhT9\nGvarGdbbjCc04zNb3UuNuDCknBHH4cxwPMVBbUMTmz4H5GiCv7LGudGyLbIb\n37tAiqkQXwPX+zGS0T2pKQQO44qgrYAJbZ/vA4+FYW9+2yvvY3DJb9n0X2b/\nAHeaY/DI37aaVY2bfd5pj8Mj/tppVTKZXO1nZReNZarcuMN62iKpltvckqVv\nbyc8cBJHbUI/l2vh5uWH4r+iiiKgOZFa1Ptp9pYFAAvno6Xw/wBrYB5r+isK\n6Od8PJ7T/wDn+iidVPjJ5upFa1XWEkEqkIAHeaABhV0b7+cn0jT481/RVQX6\n3x9Napm2y4W9iWuBIUy8G/VQ4U88HAIHlmjan7SdKQypK7s24ocCGULc/UDF\nBptHuEe5671BOiq3o8ia442VDBKSeHA8qQmME+5W95SPQrOmGBnO4srKvjyx\nVmaJ2IXvV+l4F9t0i0MxZYUptt8rC07qinjhBHNJ7aqXeG9x3fKi02HbR9LW\nnZpY7Xc7mmLLYQ4FpW0vdBLqyPWAxyIpgiCJ6OerEexcrInjng66OPf7FeXO\njlq1a983KyFZ5qLzuT57lE9bL/arpFTIt1wjSWFcAtpYUM93vrsEtg8nUHzp\n2xgrN9HbWbSipq72hCsYymQ8DjyRWgdGvVSTlM6whQ5EOOf/ADosw82eS0/G\nvQWk/wBYUgfkadI2x6zaUs1slKbW/DhtR3FNklJUlABIzxxwpU77w7xSoA5J\nDTqgd2mSdbZzgPV/OpNSoArefp29O56v5moxetCajuEKRG31oQ8goKkLIIBG\nOBq76VKh2CC5sX2kwlbsGe3KYHshxeFAf9wPzrhlbDNYvhx56A6uUs7yt15r\nBPwozKVFCAgOwjXa1bqbKRx9pUlvj5U7RdiG0bqgyyiNDZHAbzyVEfBNGTSp\nhQO2z7ZNqjTLMkv3Bch+SpKnDvHdGBwwPPnVhwdN3xvHWOk+dWNSpUOyLw7T\nPbx1i8+dO7ER5A9ZQpxpUxGkNKA5ilW6lQB//9k=\n",
     "filename": "image.jpg"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 51,
   "product_id": 1,
@@ -7555,38 +9091,48 @@ Body
   "has_bitmap_image": false,
   "image_content_type": "image/jpeg"
 }
-Create image from src
+```
+
+### Create image from src
+
+`POST /admin/products/:product_id/images.json`
+
 After uploading your picture you may find ‘loading.gif’ instead of it. That’s because picture uploading and creating of thumbnails are asynchronous. When it’s uploaded and thumbnails’re created its attribute updated_at will be overwritten with a new timestamp.
 
-Endpoint
-POST /admin/products/:product_id/images.json
-Parameters
-Name	Description
-image[src] required	image url
-image[filename]	file name
-image[title]	title
-image[position]	position
-image[external_id]	ID in external system. It helps to identify image after recreation and so on
-Request
-Route
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `image[src]` | да | image url |
+| `image[filename]` |  | file name |
+| `image[title]` |  | title |
+| `image[position]` |  | position |
+| `image[external_id]` |  | ID in external system. It helps to identify image after recreation and so on |
+
+**Запрос**
+
+```http
 POST /admin/products/1/images.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "image": {
     "src": "https://abc.myinsales.ru/images/no_image_compact.jpg"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 35,
   "product_id": 1,
@@ -7606,42 +9152,56 @@ Body
   "has_bitmap_image": false,
   "image_content_type": "image/jpeg"
 }
-Destroy image
-Endpoint
-DELETE /admin/products/:product_id/images/:image_id.json
-Request
-Route
+```
+
+### Destroy image
+
+`DELETE /admin/products/:product_id/images/:image_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/products/1/images/83.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get image
-Endpoint
-GET /admin/products/:product_id/images/:image_id.json
-Request
-Route
+```
+
+### Get image
+
+`GET /admin/products/:product_id/images/:image_id.json`
+
+**Запрос**
+
+```http
 GET /admin/products/1/images/19.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 19,
   "product_id": 1,
@@ -7661,51 +9221,68 @@ Body
   "has_bitmap_image": false,
   "image_content_type": "image/jpeg"
 }
-Get images
-Endpoint
-GET /admin/products/:product_id/images.json
-Request
-Route
+```
+
+### Get images
+
+`GET /admin/products/:product_id/images.json`
+
+**Запрос**
+
+```http
 GET /admin/products/1/images.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 []
-Update image
-Endpoint
-PUT /admin/products/:product_id/images/:image_id.json
-Parameters
-Name	Description
-image[position]	position
-image[title]	title
-Request
-Route
+```
+
+### Update image
+
+`PUT /admin/products/:product_id/images/:image_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `image[position]` |  | position |
+| `image[title]` |  | title |
+
+**Запрос**
+
+```http
 PUT /admin/products/1/images/67.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "image": {
     "position": 5,
     "title": "myimage"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 67,
   "product_id": 1,
@@ -7725,24 +9302,42 @@ Body
   "has_bitmap_image": false,
   "image_content_type": "image/jpeg"
 }
-JsTag
-Create js_tag from code
+```
+
+---
+
+## JsTag
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create js_tag from code](#create-js-tag-from-code) | `POST /admin/js_tags.json` |
+| [Create js_tag from url](#create-js-tag-from-url) | `POST /admin/js_tags.json` |
+| [Destroy js_tag](#destroy-js-tag) | `DELETE /admin/js_tags/:js_tag_id.json` |
+| [Get js_tag](#get-js-tag) | `GET /admin/js_tags/:js_tag_id.json` |
+| [Get js_tags](#get-js-tags) | `GET /admin/js_tags.json` |
+| [Update js_tag](#update-js-tag) | `PUT /admin/js_tags/:js_tag_id.json` |
+
+### Create js_tag from code
+
+`POST /admin/js_tags.json`
+
 Please be careful when plugging in jquery: many default themes use old version of it. Including of a new version of JQuery may result in malfunction of your store.
 
-Endpoint
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `js_tag[type]` | да | JsTag::TextTag |
+| `js_tag[content]` | да | javascript code without tag SCRIPT |
+| `js_tag[name]` |  | name for js tag |
+
+**Запрос**
+
+```http
 POST /admin/js_tags.json
-Parameters
-Name	Description
-js_tag[type] required	JsTag::TextTag
-js_tag[content] required	javascript code without tag SCRIPT
-js_tag[name]	name for js tag
-Request
-Route
-POST /admin/js_tags.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "js_tag": {
     "type": "JsTag::TextTag",
@@ -7750,14 +9345,18 @@ Body
     "name": "alert test"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "content": "alert('test');",
   "id": 57,
@@ -7766,23 +9365,29 @@ Body
   "updated_at": "2026-07-25T01:00:27.000+03:00",
   "type": "JsTag::TextTag"
 }
-Create js_tag from url
+```
+
+### Create js_tag from url
+
+`POST /admin/js_tags.json`
+
 Please be careful while including JQuery: many default themes use an old version of it. Including of a new version of JQuery may result in malfunction of your store.
 
-Endpoint
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `js_tag[type]` | да | JsTag::FileTag |
+| `js_tag[content]` | да | url of javascript file |
+| `js_tag[name]` |  | name for js tag |
+
+**Запрос**
+
+```http
 POST /admin/js_tags.json
-Parameters
-Name	Description
-js_tag[type] required	JsTag::FileTag
-js_tag[content] required	url of javascript file
-js_tag[name]	name for js tag
-Request
-Route
-POST /admin/js_tags.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "js_tag": {
     "type": "JsTag::FileTag",
@@ -7790,14 +9395,18 @@ Body
     "name": "jquery-1.9.1.min"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "content": "http://code.jquery.com/jquery-1.9.1.min.js",
   "id": 89,
@@ -7806,42 +9415,56 @@ Body
   "updated_at": "2026-07-25T01:00:27.000+03:00",
   "type": "JsTag::FileTag"
 }
-Destroy js_tag
-Endpoint
-DELETE /admin/js_tags/:js_tag_id.json
-Request
-Route
+```
+
+### Destroy js_tag
+
+`DELETE /admin/js_tags/:js_tag_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/js_tags/121.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get js_tag
-Endpoint
-GET /admin/js_tags/:js_tag_id.json
-Request
-Route
+```
+
+### Get js_tag
+
+`GET /admin/js_tags/:js_tag_id.json`
+
+**Запрос**
+
+```http
 GET /admin/js_tags/25.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "content": "http://code.jquery.com/jquery-1.9.1.min.js",
   "id": 25,
@@ -7850,22 +9473,29 @@ Body
   "updated_at": "2026-07-25T01:00:26.000+03:00",
   "type": "JsTag::FileTag"
 }
-Get js_tags
-Endpoint
+```
+
+### Get js_tags
+
+`GET /admin/js_tags.json`
+
+**Запрос**
+
+```http
 GET /admin/js_tags.json
-Request
-Route
-GET /admin/js_tags.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "content": "http://code.jquery.com/jquery-1.9.1.min.js",
@@ -7876,34 +9506,44 @@ Body
     "type": "JsTag::FileTag"
   }
 ]
-Update js_tag
-Endpoint
-PUT /admin/js_tags/:js_tag_id.json
-Parameters
-Name	Description
-js_tag[content]	url of javascript file or javascript code without tag SCRIPT
-js_tag[name]	name for js tag
-Request
-Route
+```
+
+### Update js_tag
+
+`PUT /admin/js_tags/:js_tag_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `js_tag[content]` |  | url of javascript file or javascript code without tag SCRIPT |
+| `js_tag[name]` |  | name for js tag |
+
+**Запрос**
+
+```http
 PUT /admin/js_tags/105.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "js_tag": {
     "content": "http://code.jquery.com/jquery-2.2.4.min.js",
     "name": "jquery-2.2.4"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "content": "http://code.jquery.com/jquery-2.2.4.min.js",
   "id": 105,
@@ -7912,25 +9552,46 @@ Body
   "updated_at": "2026-07-25T01:00:27.000+03:00",
   "type": "JsTag::FileTag"
 }
-Marketplace
-Create Google Merchant marketplace
-Endpoint
+```
+
+---
+
+## Marketplace
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create Google Merchant marketplace](#create-google-merchant-marketplace) | `POST /admin/marketplaces.json` |
+| [Create Liquid for Yandex marketplace](#create-liquid-for-yandex-marketplace) | `POST /admin/marketplaces.json` |
+| [Create Model for Yandex marketplace](#create-model-for-yandex-marketplace) | `POST /admin/marketplaces.json` |
+| [Destroy marketplace](#destroy-marketplace) | `DELETE /admin/marketplaces/:ym_marketplace_id.json` |
+| [Get marketplace](#get-marketplace) | `GET /admin/marketplaces/:ym_marketplace_id.json` |
+| [Get marketplaces](#get-marketplaces) | `GET /admin/marketplaces.json` |
+| [Update Google Merchant marketplace](#update-google-merchant-marketplace) | `PUT /admin/marketplaces/:gm_marketplace_id.json` |
+| [Update Liquid for Yandex marketplace](#update-liquid-for-yandex-marketplace) | `PUT /admin/marketplaces/:yl_marketplace_id.json` |
+| [Update Model for Yandex marketplace](#update-model-for-yandex-marketplace) | `PUT /admin/marketplaces/:ym_marketplace_id.json` |
+
+### Create Google Merchant marketplace
+
+`POST /admin/marketplaces.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `marketplace[name]` | да | Name |
+| `marketplace[type]` | да | Marketplace::GoogleMerchant |
+| `marketplace[description_type]` |  | 1 fo short description, 2 for full |
+| `marketplace[local_delivery_cost]` |  | Local delivery cost |
+| `marketplace[adult]` |  | 1 if products are adult-only, else 0 |
+| `marketplace[utm_label]` |  | UTM label |
+
+**Запрос**
+
+```http
 POST /admin/marketplaces.json
-Parameters
-Name	Description
-marketplace[name] required	Name
-marketplace[type] required	Marketplace::GoogleMerchant
-marketplace[description_type]	1 fo short description, 2 for full
-marketplace[local_delivery_cost]	Local delivery cost
-marketplace[adult]	1 if products are adult-only, else 0
-marketplace[utm_label]	UTM label
-Request
-Route
-POST /admin/marketplaces.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "marketplace": {
     "name": "GM",
@@ -7939,14 +9600,18 @@ Body
     "adult": 0
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 73,
   "name": "GM",
@@ -7963,26 +9628,32 @@ Body
   "use_stock_currency": false,
   "use_variants": false
 }
-Create Liquid for Yandex marketplace
-Endpoint
+```
+
+### Create Liquid for Yandex marketplace
+
+`POST /admin/marketplaces.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `marketplace[name]` | да | Name |
+| `marketplace[type]` | да | Marketplace type, e.g. Marketplace::LiquidYandexMarket |
+| `marketplace[shop_name]` |  | Shop name |
+| `marketplace[use_variants]` |  | Create document for all variants, not aggregated product |
+| `marketplace[shop_company]` |  | Company name |
+| `marketplace[page_encoding]` | да | Encoding, windows-1251 or utf-8 |
+| `marketplace[offer_liquid]` | да | Liquid template |
+| `marketplace[collection_ids]` |  | Collections to load |
+
+**Запрос**
+
+```http
 POST /admin/marketplaces.json
-Parameters
-Name	Description
-marketplace[name] required	Name
-marketplace[type] required	Marketplace type, e.g. Marketplace::LiquidYandexMarket
-marketplace[shop_name]	Shop name
-marketplace[use_variants]	Create document for all variants, not aggregated product
-marketplace[shop_company]	Company name
-marketplace[page_encoding] required	Encoding, windows-1251 or utf-8
-marketplace[offer_liquid] required	Liquid template
-marketplace[collection_ids]	Collections to load
-Request
-Route
-POST /admin/marketplaces.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "marketplace": {
     "name": "LYM",
@@ -8003,14 +9674,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 121,
   "name": "LYM",
@@ -8029,35 +9704,41 @@ Body
   "use_stock_currency": false,
   "use_variants": true
 }
-Create Model for Yandex marketplace
-Endpoint
+```
+
+### Create Model for Yandex marketplace
+
+`POST /admin/marketplaces.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `marketplace[name]` | да | Name |
+| `marketplace[type]` | да | Marketplace type, e.g. Marketplace::ModelYandexMarket |
+| `marketplace[shop_name]` |  | Shop name |
+| `marketplace[shop_company]` |  | Company name |
+| `marketplace[description_type]` |  | 1 fo short description, 2 for full |
+| `marketplace[vendor_id]` | да | id of corresponding property |
+| `marketplace[use_sku_as_vendor_code]` |  | Use sku as vendor code |
+| `marketplace[pickup]` |  | Pickup enable |
+| `marketplace[store]` |  | Offline store exists |
+| `marketplace[delivery_style]` |  | Delivery pricing type, 0 for old, 1 for new |
+| `marketplace[local_delivery_cost]` |  | Local delivery cost |
+| `marketplace[adult]` |  | 1 if products are adult-only, else 0 |
+| `marketplace[utm_label]` |  | UTM label |
+| `marketplace[page_encoding]` | да | Encoding, windows-1251 or utf-8 |
+| `marketplace[image_style]` | да | Image style: thumb, compact, medium, large or original |
+| `marketplace[model_type]` | да | Model naming type: name or sku |
+| `marketplace[collection_ids]` |  | Collections to load |
+
+**Запрос**
+
+```http
 POST /admin/marketplaces.json
-Parameters
-Name	Description
-marketplace[name] required	Name
-marketplace[type] required	Marketplace type, e.g. Marketplace::ModelYandexMarket
-marketplace[shop_name]	Shop name
-marketplace[shop_company]	Company name
-marketplace[description_type]	1 fo short description, 2 for full
-marketplace[vendor_id] required	id of corresponding property
-marketplace[use_sku_as_vendor_code]	Use sku as vendor code
-marketplace[pickup]	Pickup enable
-marketplace[store]	Offline store exists
-marketplace[delivery_style]	Delivery pricing type, 0 for old, 1 for new
-marketplace[local_delivery_cost]	Local delivery cost
-marketplace[adult]	1 if products are adult-only, else 0
-marketplace[utm_label]	UTM label
-marketplace[page_encoding] required	Encoding, windows-1251 or utf-8
-marketplace[image_style] required	Image style: thumb, compact, medium, large or original
-marketplace[model_type] required	Model naming type: name or sku
-marketplace[collection_ids]	Collections to load
-Request
-Route
-POST /admin/marketplaces.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "marketplace": {
     "name": "YM",
@@ -8080,14 +9761,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 57,
   "name": "YM",
@@ -8114,42 +9799,56 @@ Body
   "use_stock_currency": false,
   "use_variants": false
 }
-Destroy marketplace
-Endpoint
-DELETE /admin/marketplaces/:ym_marketplace_id.json
-Request
-Route
+```
+
+### Destroy marketplace
+
+`DELETE /admin/marketplaces/:ym_marketplace_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/marketplaces/153.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get marketplace
-Endpoint
-GET /admin/marketplaces/:ym_marketplace_id.json
-Request
-Route
+```
+
+### Get marketplace
+
+`GET /admin/marketplaces/:ym_marketplace_id.json`
+
+**Запрос**
+
+```http
 GET /admin/marketplaces/41.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 41,
   "name": "Yandex Model",
@@ -8176,22 +9875,29 @@ Body
   "use_stock_currency": false,
   "use_variants": false
 }
-Get marketplaces
-Endpoint
+```
+
+### Get marketplaces
+
+`GET /admin/marketplaces.json`
+
+**Запрос**
+
+```http
 GET /admin/marketplaces.json
-Request
-Route
-GET /admin/marketplaces.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 17,
@@ -8228,23 +9934,29 @@ Body
     "use_variants": false
   }
 ]
-Update Google Merchant marketplace
-Endpoint
-PUT /admin/marketplaces/:gm_marketplace_id.json
-Parameters
-Name	Description
-marketplace[name]	Name
-marketplace[description_type]	1 fo short description, 2 for full
-marketplace[local_delivery_cost]	Local delivery cost
-marketplace[adult]	1 if products are adult-only, else 0
-marketplace[utm_label]	UTM label
-Request
-Route
+```
+
+### Update Google Merchant marketplace
+
+`PUT /admin/marketplaces/:gm_marketplace_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `marketplace[name]` |  | Name |
+| `marketplace[description_type]` |  | 1 fo short description, 2 for full |
+| `marketplace[local_delivery_cost]` |  | Local delivery cost |
+| `marketplace[adult]` |  | 1 if products are adult-only, else 0 |
+| `marketplace[utm_label]` |  | UTM label |
+
+**Запрос**
+
+```http
 PUT /admin/marketplaces/105.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "marketplace": {
     "name": "New GM",
@@ -8252,14 +9964,18 @@ Body
     "adult": 0
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 105,
   "name": "New GM",
@@ -8276,38 +9992,48 @@ Body
   "use_stock_currency": false,
   "use_variants": false
 }
-Update Liquid for Yandex marketplace
-Endpoint
-PUT /admin/marketplaces/:yl_marketplace_id.json
-Parameters
-Name	Description
-marketplace[name]	Name
-marketplace[shop_name]	Shop name
-marketplace[use_variants]	Create document for all variants, not aggregated product
-marketplace[shop_company]	Company name
-marketplace[page_encoding]	Encoding, windows-1251 or utf-8
-marketplace[offer_liquid]	Liquid template
-marketplace[collection_ids]	Collections to load
-Request
-Route
+```
+
+### Update Liquid for Yandex marketplace
+
+`PUT /admin/marketplaces/:yl_marketplace_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `marketplace[name]` |  | Name |
+| `marketplace[shop_name]` |  | Shop name |
+| `marketplace[use_variants]` |  | Create document for all variants, not aggregated product |
+| `marketplace[shop_company]` |  | Company name |
+| `marketplace[page_encoding]` |  | Encoding, windows-1251 or utf-8 |
+| `marketplace[offer_liquid]` |  | Liquid template |
+| `marketplace[collection_ids]` |  | Collections to load |
+
+**Запрос**
+
+```http
 PUT /admin/marketplaces/137.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "marketplace": {
     "name": "New LYM"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 137,
   "name": "New LYM",
@@ -8326,34 +10052,40 @@ Body
   "use_stock_currency": false,
   "use_variants": false
 }
-Update Model for Yandex marketplace
-Endpoint
-PUT /admin/marketplaces/:ym_marketplace_id.json
-Parameters
-Name	Description
-marketplace[name]	Name
-marketplace[shop_name]	Shop name
-marketplace[shop_company]	Company name
-marketplace[description_type]	1 fo short description, 2 for full
-marketplace[vendor_id]	id of corresponding property
-marketplace[use_sku_as_vendor_code]	Use sku as vendor code
-marketplace[pickup]	Pickup enable
-marketplace[store]	Offline store exists
-marketplace[delivery_style]	Delivery pricing type, 0 for old, 1 for new
-marketplace[local_delivery_cost]	Local delivery cost
-marketplace[adult]	1 if products are adult-only, else 0
-marketplace[utm_label]	UTM label
-marketplace[page_encoding]	Encoding, windows-1251 or utf-8
-marketplace[image_style]	Image style: thumb, compact, medium, large or original
-marketplace[model_type]	Model naming type: name or sku
-marketplace[collection_ids]	Collections to load
-Request
-Route
+```
+
+### Update Model for Yandex marketplace
+
+`PUT /admin/marketplaces/:ym_marketplace_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `marketplace[name]` |  | Name |
+| `marketplace[shop_name]` |  | Shop name |
+| `marketplace[shop_company]` |  | Company name |
+| `marketplace[description_type]` |  | 1 fo short description, 2 for full |
+| `marketplace[vendor_id]` |  | id of corresponding property |
+| `marketplace[use_sku_as_vendor_code]` |  | Use sku as vendor code |
+| `marketplace[pickup]` |  | Pickup enable |
+| `marketplace[store]` |  | Offline store exists |
+| `marketplace[delivery_style]` |  | Delivery pricing type, 0 for old, 1 for new |
+| `marketplace[local_delivery_cost]` |  | Local delivery cost |
+| `marketplace[adult]` |  | 1 if products are adult-only, else 0 |
+| `marketplace[utm_label]` |  | UTM label |
+| `marketplace[page_encoding]` |  | Encoding, windows-1251 or utf-8 |
+| `marketplace[image_style]` |  | Image style: thumb, compact, medium, large or original |
+| `marketplace[model_type]` |  | Model naming type: name or sku |
+| `marketplace[collection_ids]` |  | Collections to load |
+
+**Запрос**
+
+```http
 PUT /admin/marketplaces/89.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "marketplace": {
     "name": "New YM",
@@ -8369,14 +10101,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 89,
   "name": "New YM",
@@ -8411,95 +10147,132 @@ Body
   "use_stock_currency": false,
   "use_variants": false
 }
-Menu
-Create menu
-Endpoint
+```
+
+---
+
+## Menu
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create menu](#create-menu) | `POST /admin/menus.json` |
+| [Delete menu](#delete-menu) | `DELETE /admin/menus/:menu_id.json` |
+| [API-Usage-Limit: 1/500](#api-usage-limit-1-500) | `GET /admin/menus/:menu_id.json` |
+| [Get menus list](#get-menus-list) | `GET /admin/menus.json` |
+| [Update menu](#update-menu) | `PUT /admin/menus/:menu_id.json` |
+
+### Create menu
+
+`POST /admin/menus.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `menu[name]` | да | menu text |
+| `menu[handle]` | да | handle used in liquid |
+
+**Запрос**
+
+```http
 POST /admin/menus.json
-Parameters
-Name	Description
-menu[name] required	menu text
-menu[handle] required	handle used in liquid
-Request
-Route
-POST /admin/menus.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "menu": {
     "name": "top menu",
     "handle": "top-menu"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 18,
   "name": "top menu",
   "handle": "top-menu",
   "used_in_theme": false
 }
-Delete menu
-Endpoint
-DELETE /admin/menus/:menu_id.json
-Request
-Route
+```
+
+### Delete menu
+
+`DELETE /admin/menus/:menu_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/menus/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
 Content-Type: application/x-www-form-urlencoded
-Response
-Simulated Response
-Status
-200
-Headers
-API-Usage-Limit: 1/500
-Content-Type: application/json
-Get menu
-Endpoint
-GET /admin/menus/:menu_id.json
-Request
-Route
+```
+
+**Ответ**
+
+Status: `200`
+
+### API-Usage-Limit: 1/500
+
+`GET /admin/menus/:menu_id.json`
+
+Content-Type: application/json Get menu
+
+**Запрос**
+
+```http
 GET /admin/menus/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "name": "Main menu",
   "handle": "main",
   "used_in_theme": false
 }
-Get menus list
-Endpoint
+```
+
+### Get menus list
+
+`GET /admin/menus.json`
+
+**Запрос**
+
+```http
 GET /admin/menus.json
-Request
-Route
-GET /admin/menus.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -8514,69 +10287,103 @@ Body
     "used_in_theme": false
   }
 ]
-Update menu
-Endpoint
-PUT /admin/menus/:menu_id.json
-Parameters
-Name	Description
-menu[name]	menu text
-menu[handle]	handle used in liquid
-Request
-Route
+```
+
+### Update menu
+
+`PUT /admin/menus/:menu_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `menu[name]` |  | menu text |
+| `menu[handle]` |  | handle used in liquid |
+
+**Запрос**
+
+```http
 PUT /admin/menus/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "menu": {
     "name": "Bottom menu"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "name": "Bottom menu",
   "handle": "main",
   "used_in_theme": false
 }
-MenuItem
-Add blog to menu
-Endpoint
-POST /admin/menus/:menu_id/items.json
-Parameters
-Name	Description
-menu_item[title] required	menu item text
-menu_item[position]	menu item position
-menu_item[related_object_id] required	referenc to blog: "Blog_#{blog_id}"
-Request
-Route
+```
+
+---
+
+## MenuItem
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Add blog to menu](#add-blog-to-menu) | `POST /admin/menus/:menu_id/items.json` |
+| [Add collection to menu](#add-collection-to-menu) | `POST /admin/menus/:menu_id/items.json` |
+| [Add external link to menu](#add-external-link-to-menu) | `POST /admin/menus/:menu_id/items.json` |
+| [Add page to menu](#add-page-to-menu) | `POST /admin/menus/:menu_id/items.json` |
+| [Delete menu_item](#delete-menu-item) | `DELETE /admin/menus/:menu_id/items/:item_id.json` |
+| [API-Usage-Limit: 1/500](#api-usage-limit-1-500) | `GET /admin/menus/:menu_id/items/:item_id.json` |
+| [Get menu items list](#get-menu-items-list) | `GET /admin/menus/:menu_id/items.json` |
+| [Update menu item](#update-menu-item) | `PUT /admin/menus/:menu_id/items/:item_id.json` |
+
+### Add blog to menu
+
+`POST /admin/menus/:menu_id/items.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `menu_item[title]` | да | menu item text |
+| `menu_item[position]` |  | menu item position |
+| `menu_item[related_object_id]` | да | referenc to blog: "Blog_#{blog_id}" |
+
+**Запрос**
+
+```http
 POST /admin/menus/1/items.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "menu_item": {
     "title": "new item",
     "related_object_id": "Blog_1"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 60,
   "position": 5,
@@ -8584,35 +10391,45 @@ Body
   "url": "/blog",
   "related_object_id": "Blog_1"
 }
-Add collection to menu
-Endpoint
-POST /admin/menus/:menu_id/items.json
-Parameters
-Name	Description
-menu_item[title] required	menu item text
-menu_item[position]	menu item position
-menu_item[related_object_id] required	referenc to collection: "Collection_#{collection_id}"
-Request
-Route
+```
+
+### Add collection to menu
+
+`POST /admin/menus/:menu_id/items.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `menu_item[title]` | да | menu item text |
+| `menu_item[position]` |  | menu item position |
+| `menu_item[related_object_id]` | да | referenc to collection: "Collection_#{collection_id}" |
+
+**Запрос**
+
+```http
 POST /admin/menus/1/items.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "menu_item": {
     "title": "new item",
     "related_object_id": "Collection_1"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 52,
   "position": 5,
@@ -8620,35 +10437,45 @@ Body
   "url": "/collection/футболка",
   "related_object_id": "Collection_1"
 }
-Add external link to menu
-Endpoint
-POST /admin/menus/:menu_id/items.json
-Parameters
-Name	Description
-menu_item[title] required	menu item text
-menu_item[position]	menu item position
-menu_item[url] required	menu item url
-Request
-Route
+```
+
+### Add external link to menu
+
+`POST /admin/menus/:menu_id/items.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `menu_item[title]` | да | menu item text |
+| `menu_item[position]` |  | menu item position |
+| `menu_item[url]` | да | menu item url |
+
+**Запрос**
+
+```http
 POST /admin/menus/1/items.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "menu_item": {
     "title": "new item",
     "url": "http://my-another-shop.com/"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 68,
   "position": 5,
@@ -8656,35 +10483,45 @@ Body
   "url": "http://my-another-shop.com/",
   "related_object_id": "Page_0"
 }
-Add page to menu
-Endpoint
-POST /admin/menus/:menu_id/items.json
-Parameters
-Name	Description
-menu_item[title] required	menu item text
-menu_item[position]	menu item position
-menu_item[related_object_id] required	referenc to page: "Page_#{page_id}"
-Request
-Route
+```
+
+### Add page to menu
+
+`POST /admin/menus/:menu_id/items.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `menu_item[title]` | да | menu item text |
+| `menu_item[position]` |  | menu item position |
+| `menu_item[related_object_id]` | да | referenc to page: "Page_#{page_id}" |
+
+**Запрос**
+
+```http
 POST /admin/menus/1/items.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "menu_item": {
     "title": "new item",
     "related_object_id": "Page_1"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 44,
   "position": 5,
@@ -8692,38 +10529,47 @@ Body
   "url": "/",
   "related_object_id": "Page_1"
 }
-Delete menu_item
-Endpoint
-DELETE /admin/menus/:menu_id/items/:item_id.json
-Request
-Route
+```
+
+### Delete menu_item
+
+`DELETE /admin/menus/:menu_id/items/:item_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/menus/1/items/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
 Content-Type: application/x-www-form-urlencoded
-Response
-Simulated Response
-Status
-200
-Headers
-API-Usage-Limit: 1/500
-Content-Type: application/json
-Get menu item
-Endpoint
-GET /admin/menus/:menu_id/items/:item_id.json
-Request
-Route
+```
+
+**Ответ**
+
+Status: `200`
+
+### API-Usage-Limit: 1/500
+
+`GET /admin/menus/:menu_id/items/:item_id.json`
+
+Content-Type: application/json Get menu item
+
+**Запрос**
+
+```http
 GET /admin/menus/1/items/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "position": 1,
@@ -8731,22 +10577,29 @@ Body
   "url": "/about",
   "related_object_id": "Page_0"
 }
-Get menu items list
-Endpoint
-GET /admin/menus/:menu_id/items.json
-Request
-Route
+```
+
+### Get menu items list
+
+`GET /admin/menus/:menu_id/items.json`
+
+**Запрос**
+
+```http
 GET /admin/menus/1/items.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -8777,36 +10630,46 @@ Body
     "related_object_id": "Collection_1"
   }
 ]
-Update menu item
-Endpoint
-PUT /admin/menus/:menu_id/items/:item_id.json
-Parameters
-Name	Description
-menu_item[title]	menu item text
-menu_item[url]	menu item url
-menu_item[related_object_id]	referenc to collection, page or blog
-menu_item[position]	menu item position
-Request
-Route
+```
+
+### Update menu item
+
+`PUT /admin/menus/:menu_id/items/:item_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `menu_item[title]` |  | menu item text |
+| `menu_item[url]` |  | menu item url |
+| `menu_item[related_object_id]` |  | referenc to collection, page or blog |
+| `menu_item[position]` |  | menu item position |
+
+**Запрос**
+
+```http
 PUT /admin/menus/1/items/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "menu_item": {
     "title": "last menu item",
     "position": 1000
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "position": 1000,
@@ -8814,23 +10677,40 @@ Body
   "url": "/about",
   "related_object_id": "Page_0"
 }
-OAuthApp
-Create o_auth_app
-Endpoint
+```
+
+---
+
+## OAuthApp
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create o_auth_app](#create-o-auth-app) | `POST /admin/o_auth_apps.json` |
+| [Destroy o_auth_app](#destroy-o-auth-app) | `DELETE /admin/o_auth_apps/:o_auth_app_id.json` |
+| [Get o_auth_app](#get-o-auth-app) | `GET /admin/o_auth_apps/:o_auth_app_id.json` |
+| [Get o_auth_apps](#get-o-auth-apps) | `GET /admin/o_auth_apps.json` |
+| [Update o_auth_app](#update-o-auth-app) | `PUT /admin/o_auth_apps/:o_auth_app_id.json` |
+
+### Create o_auth_app
+
+`POST /admin/o_auth_apps.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `o_auth_app[provider_handle]` | да | provider name |
+| `o_auth_app[client_id]` | да | client id |
+| `o_auth_app[client_secret]` | да | client_secret |
+| `o_auth_app[issuer]` | да | issuer |
+
+**Запрос**
+
+```http
 POST /admin/o_auth_apps.json
-Parameters
-Name	Description
-o_auth_app[provider_handle] required	provider name
-o_auth_app[client_id] required	client id
-o_auth_app[client_secret] required	client_secret
-o_auth_app[issuer] required	issuer
-Request
-Route
-POST /admin/o_auth_apps.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "o_auth_app": {
     "provider_handle": "provider name",
@@ -8839,14 +10719,18 @@ Body
     "issuer": "/.well-known/openid-configuration"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "client_id": "10332",
   "client_secret": "NdsaPd",
@@ -8855,42 +10739,56 @@ Body
   "id": 8,
   "enabled": true
 }
-Destroy o_auth_app
-Endpoint
-DELETE /admin/o_auth_apps/:o_auth_app_id.json
-Request
-Route
+```
+
+### Destroy o_auth_app
+
+`DELETE /admin/o_auth_apps/:o_auth_app_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/o_auth_apps/12.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get o_auth_app
-Endpoint
-GET /admin/o_auth_apps/:o_auth_app_id.json
-Request
-Route
+```
+
+### Get o_auth_app
+
+`GET /admin/o_auth_apps/:o_auth_app_id.json`
+
+**Запрос**
+
+```http
 GET /admin/o_auth_apps/4.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "client_id": "953",
   "client_secret": "NdsaPd",
@@ -8899,22 +10797,29 @@ Body
   "id": 4,
   "enabled": true
 }
-Get o_auth_apps
-Endpoint
+```
+
+### Get o_auth_apps
+
+`GET /admin/o_auth_apps.json`
+
+**Запрос**
+
+```http
 GET /admin/o_auth_apps.json
-Request
-Route
-GET /admin/o_auth_apps.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "client_id": "953",
@@ -8925,35 +10830,45 @@ Body
     "enabled": true
   }
 ]
-Update o_auth_app
-Endpoint
-PUT /admin/o_auth_apps/:o_auth_app_id.json
-Parameters
-Name	Description
-o_auth_app[provider_handle]	provider name
-o_auth_app[client_id]	client id
-o_auth_app[client_secret]	client secret
-o_auth_app[issuer]	issuer
-Request
-Route
+```
+
+### Update o_auth_app
+
+`PUT /admin/o_auth_apps/:o_auth_app_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `o_auth_app[provider_handle]` |  | provider name |
+| `o_auth_app[client_id]` |  | client id |
+| `o_auth_app[client_secret]` |  | client secret |
+| `o_auth_app[issuer]` |  | issuer |
+
+**Запрос**
+
+```http
 PUT /admin/o_auth_apps/10.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "o_auth_app": {
     "provider_handle": "new name provider"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "client_id": "953",
   "client_secret": "NdsaPd",
@@ -8962,36 +10877,57 @@ Body
   "id": 10,
   "enabled": true
 }
-OptionName
-Create option_name
-Endpoint
+```
+
+---
+
+## OptionName
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create option_name](#create-option-name) | `POST /admin/option_names.json` |
+| [Destroy option_name](#destroy-option-name) | `DELETE /admin/option_names/:option_name_id.json` |
+| [Get option_name](#get-option-name) | `GET /admin/option_names/:option_name_id.json` |
+| [Get option_names](#get-option-names) | `GET /admin/option_names.json` |
+| [Update option_name](#update-option-name) | `PUT /admin/option_names/:option_name_id.json` |
+
+### Create option_name
+
+`POST /admin/option_names.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `option_name[title]` | да | title |
+| `option_name[position]` |  | position in option names list |
+| `option_name[navigational]` |  | true by default; show in products filter on category page |
+
+**Запрос**
+
+```http
 POST /admin/option_names.json
-Parameters
-Name	Description
-option_name[title] required	title
-option_name[position]	position in option names list
-option_name[navigational]	true by default; show in products filter on category page
-Request
-Route
-POST /admin/option_names.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "option_name": {
     "title": "Colour",
     "navigational": false
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2517850,
   "position": 3,
@@ -9000,42 +10936,56 @@ Body
   "title": "Colour",
   "api_permalink": "o-colour"
 }
-Destroy option_name
-Endpoint
-DELETE /admin/option_names/:option_name_id.json
-Request
-Route
+```
+
+### Destroy option_name
+
+`DELETE /admin/option_names/:option_name_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/option_names/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get option_name
-Endpoint
-GET /admin/option_names/:option_name_id.json
-Request
-Route
+```
+
+### Get option_name
+
+`GET /admin/option_names/:option_name_id.json`
+
+**Запрос**
+
+```http
 GET /admin/option_names/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "position": 1,
@@ -9044,22 +10994,29 @@ Body
   "title": "Вариант",
   "api_permalink": null
 }
-Get option_names
-Endpoint
+```
+
+### Get option_names
+
+`GET /admin/option_names.json`
+
+**Запрос**
+
+```http
 GET /admin/option_names.json
-Request
-Route
-GET /admin/option_names.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -9078,21 +11035,27 @@ Body
     "api_permalink": null
   }
 ]
-Update option_name
-Endpoint
-PUT /admin/option_names/:option_name_id.json
-Parameters
-Name	Description
-option_name[title]	title
-option_name[position]	position
-option_name[navigational]	true by default; show in products filter on category page
-Request
-Route
+```
+
+### Update option_name
+
+`PUT /admin/option_names/:option_name_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `option_name[title]` |  | title |
+| `option_name[position]` |  | position |
+| `option_name[navigational]` |  | true by default; show in products filter on category page |
+
+**Запрос**
+
+```http
 PUT /admin/option_names/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "option_name": {
     "title": "Type",
@@ -9100,14 +11063,18 @@ Body
     "navigational": false
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "position": 2,
@@ -9116,24 +11083,44 @@ Body
   "title": "Type",
   "api_permalink": "o-type"
 }
-OptionValue
-Create option_value
-Endpoint
-POST /admin/option_names/:option_name_id/option_values.json
-Parameters
-Name	Description
-option_value[title] required	title
-option_value[position]	position in option_values list
-option_value[image][filename]	image filename, required if attachment present
-option_value[image][attachment]	base64 encoded image body
-option_value[image][src]	image url
-Request
-Route
+```
+
+---
+
+## OptionValue
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create option_value](#create-option-value) | `POST /admin/option_names/:option_name_id/option_values.json` |
+| [Destroy option_value image](#destroy-option-value-image) | `DELETE /admin/option_names/:option_name_id/option_values/:option_value_id/destroy_image.json` |
+| [Destroy option_value](#destroy-option-value) | `DELETE /admin/option_names/:option_name_id/option_values/:option_value_id.json` |
+| [Get destroy option_value status](#get-destroy-option-value-status) | `GET /admin/option_names/:option_name_id/option_values/:option_value_id/destroy_status.json` |
+| [Get option_value](#get-option-value) | `GET /admin/option_names/:option_name_id/option_values/:option_value_id.json` |
+| [Get option_values for all options](#get-option-values-for-all-options) | `GET /admin/option_values.json` |
+| [Get option_values for specific option](#get-option-values-for-specific-option) | `GET /admin/option_names/:option_name_id/option_values.json` |
+| [Update option_value](#update-option-value) | `PUT /admin/option_names/:option_name_id/option_values/:option_value_id.json` |
+
+### Create option_value
+
+`POST /admin/option_names/:option_name_id/option_values.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `option_value[title]` | да | title |
+| `option_value[position]` |  | position in option_values list |
+| `option_value[image][filename]` |  | image filename, required if attachment present |
+| `option_value[image][attachment]` |  | base64 encoded image body |
+| `option_value[image][src]` |  | image url |
+
+**Запрос**
+
+```http
 POST /admin/option_names/1/option_values.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "option_value": {
     "title": "Blue",
@@ -9143,14 +11130,18 @@ Body
     }
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 21063164,
   "option_name_id": 1,
@@ -9159,23 +11150,30 @@ Body
   "image_url": "http://minio.insales.io:9000/insales-test-sber/images/option_values/1/1532/21063164/thumb/image.jpg?1784930385",
   "permalink": "blue"
 }
-Destroy option_value image
-Endpoint
-DELETE /admin/option_names/:option_name_id/option_values/:option_value_id/destroy_image.json
-Request
-Route
+```
+
+### Destroy option_value image
+
+`DELETE /admin/option_names/:option_name_id/option_values/:option_value_id/destroy_image.json`
+
+**Запрос**
+
+```http
 DELETE /admin/option_names/1/option_values/20/destroy_image.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 20,
   "option_name_id": 1,
@@ -9184,69 +11182,95 @@ Body
   "image_url": null,
   "permalink": "siniy-10"
 }
-Destroy option_value
-Endpoint
-DELETE /admin/option_names/:option_name_id/option_values/:option_value_id.json
-Request
-Route
+```
+
+### Destroy option_value
+
+`DELETE /admin/option_names/:option_name_id/option_values/:option_value_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/option_names/1/option_values/20.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 20,
   "jid": 46
 }
-Get destroy option_value status
-Endpoint
-GET /admin/option_names/:option_name_id/option_values/:option_value_id/destroy_status.json
-Parameters
-Name	Description
-jid required	job id
-Request
-Route
+```
+
+### Get destroy option_value status
+
+`GET /admin/option_names/:option_name_id/option_values/:option_value_id/destroy_status.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `jid` | да | job id |
+
+**Запрос**
+
+```http
 GET /admin/option_names/1/option_values/20/destroy_status.json?jid=101
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Query Parameters
+```
+
+Query:
+
+```text
 jid=101
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "error",
   "error": "Not deleted"
 }
-Get option_value
-Endpoint
-GET /admin/option_names/:option_name_id/option_values/:option_value_id.json
-Request
-Route
+```
+
+### Get option_value
+
+`GET /admin/option_names/:option_name_id/option_values/:option_value_id.json`
+
+**Запрос**
+
+```http
 GET /admin/option_names/1/option_values/2.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "option_name_id": 1,
@@ -9255,22 +11279,29 @@ Body
   "image_url": null,
   "permalink": null
 }
-Get option_values for all options
-Endpoint
+```
+
+### Get option_values for all options
+
+`GET /admin/option_values.json`
+
+**Запрос**
+
+```http
 GET /admin/option_values.json
-Request
-Route
-GET /admin/option_values.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -9313,22 +11344,29 @@ Body
     "permalink": null
   }
 ]
-Get option_values for specific option
-Endpoint
-GET /admin/option_names/:option_name_id/option_values.json
-Request
-Route
+```
+
+### Get option_values for specific option
+
+`GET /admin/option_names/:option_name_id/option_values.json`
+
+**Запрос**
+
+```http
 GET /admin/option_names/1/option_values.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -9363,22 +11401,28 @@ Body
     "permalink": null
   }
 ]
-Update option_value
-Endpoint
-PUT /admin/option_names/:option_name_id/option_values/:option_value_id.json
-Parameters
-Name	Description
-option_value[position]	position
-option_value[image][filename]	image filename, required if attachment present
-option_value[image][attachment]	base64 encoded image body
-option_value[image][src]	image url
-Request
-Route
+```
+
+### Update option_value
+
+`PUT /admin/option_names/:option_name_id/option_values/:option_value_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `option_value[position]` |  | position |
+| `option_value[image][filename]` |  | image filename, required if attachment present |
+| `option_value[image][attachment]` |  | base64 encoded image body |
+| `option_value[image][src]` |  | image url |
+
+**Запрос**
+
+```http
 PUT /admin/option_names/1/option_values/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "option_value": {
     "position": 3,
@@ -9387,14 +11431,18 @@ Body
     }
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "option_name_id": 1,
@@ -9403,24 +11451,52 @@ Body
   "image_url": "http://minio.insales.io:9000/insales-test-sber/images/option_values/1/2/2/thumb/no_image_compact.jpg?1784930386",
   "permalink": "zelenyy"
 }
-Order
-Create discount
-Endpoint
-PUT /admin/orders/:order_id.json
-Parameters
-Name	Description
-order[discounts_attributes] required	discounts attributes
-order[discounts_attributes][][discount] required	discount amount
-order[discounts_attributes][][type_id]	1 - percent (default), 2 - money
-order[discounts_attributes][][description]	description text
-order[discounts_attributes][][discount_order_lines_ids]	ids of affected order lines (all will be affected if not specified)
-Request
-Route
+```
+
+---
+
+## Order
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create discount](#create-discount) | `PUT /admin/orders/:order_id.json` |
+| [Create order line by product_id](#create-order-line-by-product-id) | `PUT /admin/orders/:order_id.json` |
+| [Create order line by variant_id](#create-order-line-by-variant-id) | `PUT /admin/orders/:order_id.json` |
+| [Create order with bundle](#create-order-with-bundle) | `POST /admin/orders.json` |
+| [Create order with product](#create-order-with-product) | `POST /admin/orders.json` |
+| [Get order](#get-order) | `GET /admin/orders/:order_id.json` |
+| [Get orders count](#get-orders-count) | `GET /admin/orders/count.json` |
+| [Get orders](#get-orders) | `GET /admin/orders.json` |
+| [Remove discount](#remove-discount) | `PUT /admin/orders/:order_id.json` |
+| [Remove order line](#remove-order-line) | `PUT /admin/orders/:order_id.json` |
+| [Update custom status](#update-custom-status) | `PUT /admin/orders/:order_id.json` |
+| [Update discount](#update-discount) | `PUT /admin/orders/:order_id.json` |
+| [Update discount](#update-discount) | `PUT /admin/orders/:order_id.json` |
+| [Update order](#update-order) | `PUT /admin/orders/:order_id.json` |
+| [Update order line](#update-order-line) | `PUT /admin/orders/:order_id.json` |
+| [Update shipping address](#update-shipping-address) | `PUT /admin/orders/:order_id.json` |
+
+### Create discount
+
+`PUT /admin/orders/:order_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `order[discounts_attributes]` | да | discounts attributes |
+| `order[discounts_attributes][][discount]` | да | discount amount |
+| `order[discounts_attributes][][type_id]` |  | 1 - percent (default), 2 - money |
+| `order[discounts_attributes][][description]` |  | description text |
+| `order[discounts_attributes][][discount_order_lines_ids]` |  | ids of affected order lines (all will be affected if not specified) |
+
+**Запрос**
+
+```http
 PUT /admin/orders/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "order": {
     "discounts_attributes": [
@@ -9439,14 +11515,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [
     {
@@ -9961,22 +12041,28 @@ Body
   "total_profit": "30.0",
   "warehouse_id": null
 }
-Create order line by product_id
-Endpoint
-PUT /admin/orders/:order_id.json
-Parameters
-Name	Description
-order[order_lines_attributes] required	order lines attributes
-order[order_lines_attributes][][quantity] required	quantity
-order[order_lines_attributes][][vat]	integer, VAT for order line is equal to VAT of its product, by default, products get their value from account by default,if default in account set as 'No VAT', you need to use 'force' to change VAT of order line through API; possible values depend on country, set to -1 if this product is not a subject to VAT
-order[order_lines_attributes][][product_id] required	product id
-Request
-Route
+```
+
+### Create order line by product_id
+
+`PUT /admin/orders/:order_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `order[order_lines_attributes]` | да | order lines attributes |
+| `order[order_lines_attributes][][quantity]` | да | quantity |
+| `order[order_lines_attributes][][vat]` |  | integer, VAT for order line is equal to VAT of its product, by default, products get their value from account by default,if default in account set as 'No VAT', you need to use 'force' to change VAT of order line through API; possible values depend on country, set to -1 if this product is not a subject to VAT |
+| `order[order_lines_attributes][][product_id]` | да | product id |
+
+**Запрос**
+
+```http
 PUT /admin/orders/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "order": {
     "order_lines_attributes": [
@@ -9988,14 +12074,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [
     {
@@ -10409,22 +12499,28 @@ Body
   "total_profit": "210.0",
   "warehouse_id": null
 }
-Create order line by variant_id
-Endpoint
-PUT /admin/orders/:order_id.json
-Parameters
-Name	Description
-order[order_lines_attributes] required	order lines attributes
-order[order_lines_attributes][][quantity] required	quantity
-order[order_lines_attributes][][vat]	integer, VAT for order line is equal to VAT of its product, by default, products get their value from account by default,if default in account set as 'No VAT', you need to use 'force' to change VAT of order line through API; possible values depend on country, set to -1 if this product is not a subject to VAT
-order[order_lines_attributes][][variant_id] required	variant id
-Request
-Route
+```
+
+### Create order line by variant_id
+
+`PUT /admin/orders/:order_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `order[order_lines_attributes]` | да | order lines attributes |
+| `order[order_lines_attributes][][quantity]` | да | quantity |
+| `order[order_lines_attributes][][vat]` |  | integer, VAT for order line is equal to VAT of its product, by default, products get their value from account by default,if default in account set as 'No VAT', you need to use 'force' to change VAT of order line through API; possible values depend on country, set to -1 if this product is not a subject to VAT |
+| `order[order_lines_attributes][][variant_id]` | да | variant id |
+
+**Запрос**
+
+```http
 PUT /admin/orders/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "order": {
     "order_lines_attributes": [
@@ -10436,14 +12532,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [
     {
@@ -10857,33 +12957,39 @@ Body
   "total_profit": "210.0",
   "warehouse_id": null
 }
-Create order with bundle
-Endpoint
+```
+
+### Create order with bundle
+
+`POST /admin/orders.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `order[order_lines_attributes]` | да | order lines attributes |
+| `order[order_lines_attributes][][quantity]` | да | quantity |
+| `order[order_lines_attributes][][variant_id]` | да | variant id |
+| `order[order_lines_attributes][][vat]` |  | do not set vat for bundle, because after order creation bundle will break into bundle components, which have their own VAT rates |
+| `order[client]` | да | client info |
+| `order[client][name]` |  | client name |
+| `order[client][email]` |  | client email |
+| `order[client][phone]` | да | client phone |
+| `order[client][consent_to_personal_data]` | да | consent to personal data |
+| `order[shipping_address_attributes]` | да | array of shipping address attributes |
+| `order[shipping_address_attributes][address]` |  | shipping address |
+| `order[shipping_address_attributes][full_locality_name]` | да | full locality name |
+| `order[delivery_variant_id]` | да | delivery variant id |
+| `order[payment_gateway_id]` | да | payment gateway id |
+| `order[coupon]` |  | discount code |
+
+**Запрос**
+
+```http
 POST /admin/orders.json
-Parameters
-Name	Description
-order[order_lines_attributes] required	order lines attributes
-order[order_lines_attributes][][quantity] required	quantity
-order[order_lines_attributes][][variant_id] required	variant id
-order[order_lines_attributes][][vat]	do not set vat for bundle, because after order creation bundle will break into bundle components, which have their own VAT rates
-order[client] required	client info
-order[client][name]	client name
-order[client][email]	client email
-order[client][phone] required	client phone
-order[client][consent_to_personal_data] required	consent to personal data
-order[shipping_address_attributes] required	array of shipping address attributes
-order[shipping_address_attributes][address]	shipping address
-order[shipping_address_attributes][full_locality_name] required	full locality name
-order[delivery_variant_id] required	delivery variant id
-order[payment_gateway_id] required	payment gateway id
-order[coupon]	discount code
-Request
-Route
-POST /admin/orders.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "order": {
     "order_lines_attributes": [
@@ -10907,14 +13013,18 @@ Body
     "coupon": "20% discount"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [],
   "order_lines": [
@@ -11274,31 +13384,37 @@ Body
   "total_profit": "1200.0",
   "warehouse_id": 1
 }
-Create order with product
-Endpoint
+```
+
+### Create order with product
+
+`POST /admin/orders.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `order[order_lines_attributes]` | да | order lines attributes |
+| `order[order_lines_attributes][][quantity]` | да | quantity |
+| `order[order_lines_attributes][][variant_id]` | да | variant id |
+| `order[order_lines_attributes][][vat]` |  | integer, VAT for order line is equal to VAT of its product, by default, products get their value from account by default,if default in account set as 'No VAT', you need to use 'force' to change VAT of order line through API; possible values depend on country, set to -1 if this product is not a subject to VAT |
+| `order[client]` | да | client info |
+| `order[client][name]` |  | client name |
+| `order[client][email]` |  | client email |
+| `order[client][phone]` | да | client phone |
+| `order[shipping_address_attributes]` | да | array of shipping address attributes |
+| `order[shipping_address_attributes][address]` |  | shipping address |
+| `order[delivery_variant_id]` | да | delivery variant id |
+| `order[payment_gateway_id]` | да | payment gateway id |
+| `order[coupon]` |  | discount code |
+
+**Запрос**
+
+```http
 POST /admin/orders.json
-Parameters
-Name	Description
-order[order_lines_attributes] required	order lines attributes
-order[order_lines_attributes][][quantity] required	quantity
-order[order_lines_attributes][][variant_id] required	variant id
-order[order_lines_attributes][][vat]	integer, VAT for order line is equal to VAT of its product, by default, products get their value from account by default,if default in account set as 'No VAT', you need to use 'force' to change VAT of order line through API; possible values depend on country, set to -1 if this product is not a subject to VAT
-order[client] required	client info
-order[client][name]	client name
-order[client][email]	client email
-order[client][phone] required	client phone
-order[shipping_address_attributes] required	array of shipping address attributes
-order[shipping_address_attributes][address]	shipping address
-order[delivery_variant_id] required	delivery variant id
-order[payment_gateway_id] required	payment gateway id
-order[coupon]	discount code
-Request
-Route
-POST /admin/orders.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "order": {
     "order_lines_attributes": [
@@ -11321,14 +13437,18 @@ Body
     "coupon": "20% discount"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [],
   "order_lines": [
@@ -11659,22 +13779,29 @@ Body
   "total_profit": "960.0",
   "warehouse_id": 1
 }
-Get order
-Endpoint
-GET /admin/orders/:order_id.json
-Request
-Route
+```
+
+### Get order
+
+`GET /admin/orders/:order_id.json`
+
+**Запрос**
+
+```http
 GET /admin/orders/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [
     {
@@ -12120,58 +14247,78 @@ Body
   "total_profit": "1500.0",
   "warehouse_id": null
 }
-Get orders count
-Endpoint
+```
+
+### Get orders count
+
+`GET /admin/orders/count.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `fulfillment_status` |  | array of statuses |
+| `delivery_variant` |  | array of delivery variant ids |
+| `payment_gateway_id` |  | array of payment gateway ids |
+
+**Запрос**
+
+```http
 GET /admin/orders/count.json
-Parameters
-Name	Description
-fulfillment_status	array of statuses
-delivery_variant	array of delivery variant ids
-payment_gateway_id	array of payment gateway ids
-Request
-Route
-GET /admin/orders/count.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "count": 6
 }
-Get orders
-Endpoint
-GET /admin/orders.json
-Parameters
-Name	Description
-fulfillment_status	array of statuses
-delivery_variant	array of delivery variant ids
-payment_gateway_id	array of payment gateway ids
-updated_since	Set datetime to get only data updated after it.
-from_id	Set id to get only data starting from it.
-per_page	Quantity of objects per page.
-Request
-Route
+```
+
+### Get orders
+
+`GET /admin/orders.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `fulfillment_status` |  | array of statuses |
+| `delivery_variant` |  | array of delivery variant ids |
+| `payment_gateway_id` |  | array of payment gateway ids |
+| `updated_since` |  | Set datetime to get only data updated after it. |
+| `from_id` |  | Set id to get only data starting from it. |
+| `per_page` |  | Quantity of objects per page. |
+
+**Запрос**
+
+```http
 GET /admin/orders.json?fulfillment_status[]=new&fulfillment_status[]=delivered&delivery_variant[]=1&delivery_variant[]=2&payment_gateway_id[]=1&payment_gateway_id[]=3
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Query Parameters
+```
+
+Query:
+
+```text
 fulfillment_status=["new", "delivered"]
 delivery_variant=["1", "2"]
 payment_gateway_id=["1", "3"]
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "fields_values": [],
@@ -13996,21 +16143,27 @@ Body
     "warehouse_id": null
   }
 ]
-Remove discount
-Endpoint
-PUT /admin/orders/:order_id.json
-Parameters
-Name	Description
-order[discounts_attributes] required	discounts attributes
-order[discounts_attributes][][id] required	discount id
-order[discounts_attributes][][_destroy] required	destroy marker (1 or true)
-Request
-Route
+```
+
+### Remove discount
+
+`PUT /admin/orders/:order_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `order[discounts_attributes]` | да | discounts attributes |
+| `order[discounts_attributes][][id]` | да | discount id |
+| `order[discounts_attributes][][_destroy]` | да | destroy marker (1 or true) |
+
+**Запрос**
+
+```http
 PUT /admin/orders/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "order": {
     "discounts_attributes": [
@@ -14021,14 +16174,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [
     {
@@ -14471,21 +16628,27 @@ Body
   "total_profit": "170.0",
   "warehouse_id": null
 }
-Remove order line
-Endpoint
-PUT /admin/orders/:order_id.json
-Parameters
-Name	Description
-order[order_lines_attributes] required	order lines attributes
-order[order_lines_attributes][][id] required	order line id
-order[order_lines_attributes][][_destroy] required	destroy marker (1 or true)
-Request
-Route
+```
+
+### Remove order line
+
+`PUT /admin/orders/:order_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `order[order_lines_attributes]` | да | order lines attributes |
+| `order[order_lines_attributes][][id]` | да | order line id |
+| `order[order_lines_attributes][][_destroy]` | да | destroy marker (1 or true) |
+
+**Запрос**
+
+```http
 PUT /admin/orders/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "order": {
     "order_lines_attributes": [
@@ -14496,14 +16659,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [
     {
@@ -14917,35 +17084,45 @@ Body
   "total_profit": "1200.0",
   "warehouse_id": null
 }
-Update custom status
+```
+
+### Update custom status
+
+`PUT /admin/orders/:order_id.json`
+
 This query updates custom status. Despite the fact that “order[fulfillment_status]” parameter is permitted, using both of the parameters is strongly discouraged. Please, keep in mind that if both parameters are transfered they MUST be compatible. Please, notice that you CAN’T update custom status using order[custom_status][permalink] parameter.
 
-Endpoint
-PUT /admin/orders/:order_id.json
-Parameters
-Name	Description
-order[custom_status_permalink] required	custom status
-order[fulfillment_status]	fulfillment status
-Request
-Route
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `order[custom_status_permalink]` | да | custom status |
+| `order[fulfillment_status]` |  | fulfillment status |
+
+**Запрос**
+
+```http
 PUT /admin/orders/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "order": {
     "custom_status_permalink": "v-obrabotke"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [
     {
@@ -15391,24 +17568,30 @@ Body
   "total_profit": "1500.0",
   "warehouse_id": null
 }
-Update discount
-Endpoint
-PUT /admin/orders/:order_id.json
-Parameters
-Name	Description
-order[discounts_attributes] required	discounts attributes
-order[discounts_attributes][][id] required	discount id
-order[discounts_attributes][][discount]	discount amount
-order[discounts_attributes][][type_id]	1 - percent (default), 2 - money
-order[discounts_attributes][][description]	description text
-order[discounts_attributes][][discount_order_lines_ids]	ids of affected order lines (all will be affected if not specified)
-Request
-Route
+```
+
+### Update discount
+
+`PUT /admin/orders/:order_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `order[discounts_attributes]` | да | discounts attributes |
+| `order[discounts_attributes][][id]` | да | discount id |
+| `order[discounts_attributes][][discount]` |  | discount amount |
+| `order[discounts_attributes][][type_id]` |  | 1 - percent (default), 2 - money |
+| `order[discounts_attributes][][description]` |  | description text |
+| `order[discounts_attributes][][discount_order_lines_ids]` |  | ids of affected order lines (all will be affected if not specified) |
+
+**Запрос**
+
+```http
 PUT /admin/orders/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "order": {
     "discounts_attributes": {
@@ -15421,14 +17604,18 @@ Body
     }
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [
     {
@@ -15913,24 +18100,30 @@ Body
   "total_profit": "150.0",
   "warehouse_id": null
 }
-Update discount
-Endpoint
-PUT /admin/orders/:order_id.json
-Parameters
-Name	Description
-order[discounts_attributes] required	discounts attributes
-order[discounts_attributes][][id] required	discount id
-order[discounts_attributes][][discount]	discount amount
-order[discounts_attributes][][type_id]	1 - percent (default), 2 - money
-order[discounts_attributes][][description]	description text
-order[discounts_attributes][][discount_order_lines_ids]	ids of affected order lines (all will be affected if not specified)
-Request
-Route
+```
+
+### Update discount
+
+`PUT /admin/orders/:order_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `order[discounts_attributes]` | да | discounts attributes |
+| `order[discounts_attributes][][id]` | да | discount id |
+| `order[discounts_attributes][][discount]` |  | discount amount |
+| `order[discounts_attributes][][type_id]` |  | 1 - percent (default), 2 - money |
+| `order[discounts_attributes][][description]` |  | description text |
+| `order[discounts_attributes][][discount_order_lines_ids]` |  | ids of affected order lines (all will be affected if not specified) |
+
+**Запрос**
+
+```http
 PUT /admin/orders/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "order": {
     "discounts_attributes": {
@@ -15943,14 +18136,18 @@ Body
     }
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [
     {
@@ -16435,32 +18632,38 @@ Body
   "total_profit": "150.0",
   "warehouse_id": null
 }
-Update order
-Endpoint
-PUT /admin/orders/:order_id.json
-Parameters
-Name	Description
-order[client_attributes]	client info
-order[client_attributes][name]	client name
-order[client_attributes][email]	client email
-order[client_attributes][phone]	client phone
-order[delivery_variant_id]	delivery variant id
-order[payment_gateway_id]	payment gateway id
-order[coupon]	discount code
-order[comment]	client comment to order
-order[manager_comment]	manager comment to order
-order[financial_status]	pending or paid
-order[fields_values_attributes]	fields values array
-order[shipping_address_attributes]	array of shipping address attributes
-order[discounts_attributes]	array of discounts attributes
-order[warehouse_id]	id of a warehouse to reserve products on
-Request
-Route
+```
+
+### Update order
+
+`PUT /admin/orders/:order_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `order[client_attributes]` |  | client info |
+| `order[client_attributes][name]` |  | client name |
+| `order[client_attributes][email]` |  | client email |
+| `order[client_attributes][phone]` |  | client phone |
+| `order[delivery_variant_id]` |  | delivery variant id |
+| `order[payment_gateway_id]` |  | payment gateway id |
+| `order[coupon]` |  | discount code |
+| `order[comment]` |  | client comment to order |
+| `order[manager_comment]` |  | manager comment to order |
+| `order[financial_status]` |  | pending or paid |
+| `order[fields_values_attributes]` |  | fields values array |
+| `order[shipping_address_attributes]` |  | array of shipping address attributes |
+| `order[discounts_attributes]` |  | array of discounts attributes |
+| `order[warehouse_id]` |  | id of a warehouse to reserve products on |
+
+**Запрос**
+
+```http
 PUT /admin/orders/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "order": {
     "client_attributes": {
@@ -16498,14 +18701,18 @@ Body
     "warehouse_id": 50
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [
     {
@@ -16985,25 +19192,31 @@ Body
   "total_profit": "1200.0",
   "warehouse_id": 50
 }
-Update order line
-Endpoint
-PUT /admin/orders/:order_id.json
-Parameters
-Name	Description	Type
-order[order_lines_attributes] required	order lines attributes	
-order[order_lines_attributes][][id] required	order line id	
-order[order_lines_attributes][][sale_price]	order line sale price	
-order[order_lines_attributes][][quantity]	order line quantity	
-order[order_lines_attributes][][comment]	order line comment	
-order[order_lines_attributes][][vat]	integer, VAT for order line is equal to VAT of its product, by default, products get their value from account by default,if default in account set as 'No VAT', you need to use 'force' to change VAT of order line through API; possible values depend on country, set to -1 if this product is not a subject to VAT	
-order[order_lines_attributes][][marking_codes]	array of marking codes	array
-Request
-Route
+```
+
+### Update order line
+
+`PUT /admin/orders/:order_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `order[order_lines_attributes]` | да | order lines attributes |
+| `order[order_lines_attributes][][id]` | да | order line id |
+| `order[order_lines_attributes][][sale_price]` |  | order line sale price |
+| `order[order_lines_attributes][][quantity]` |  | order line quantity |
+| `order[order_lines_attributes][][comment]` |  | order line comment |
+| `order[order_lines_attributes][][vat]` |  | integer, VAT for order line is equal to VAT of its product, by default, products get their value from account by default,if default in account set as 'No VAT', you need to use 'force' to change VAT of order line through API; possible values depend on country, set to -1 if this product is not a subject to VAT |
+| `order[order_lines_attributes][][marking_codes]` |  | array of marking codes  array |
+
+**Запрос**
+
+```http
 PUT /admin/orders/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "order": {
     "order_lines_attributes": [
@@ -17021,14 +19234,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [
     {
@@ -17474,20 +19691,26 @@ Body
   "total_profit": "1400.0",
   "warehouse_id": null
 }
-Update shipping address
-Endpoint
-PUT /admin/orders/:order_id.json
-Parameters
-Name	Description
-order[shipping_address_attributes] required	array of shipping address attributes
-order[shipping_address_attributes][address] required	shipping address
-Request
-Route
+```
+
+### Update shipping address
+
+`PUT /admin/orders/:order_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `order[shipping_address_attributes]` | да | array of shipping address attributes |
+| `order[shipping_address_attributes][address]` | да | shipping address |
+
+**Запрос**
+
+```http
 PUT /admin/orders/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "order": {
     "shipping_address_attributes": {
@@ -17495,14 +19718,18 @@ Body
     }
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "fields_values": [
     {
@@ -17948,25 +20175,42 @@ Body
   "total_profit": "1500.0",
   "warehouse_id": null
 }
-Outlet
-Create outlet
-Endpoint
+```
+
+---
+
+## Outlet
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create outlet](#create-outlet) | `POST /admin/outlets.json` |
+| [Destroy outlet](#destroy-outlet) | `DELETE /admin/outlets/:outlet_id.json` |
+| [API-Usage-Limit: 1/500](#api-usage-limit-1-500) | `GET /admin/outlets/:outlet_id.json` |
+| [Get outlets](#get-outlets) | `GET /admin/outlets.json` |
+| [Update outlet](#update-outlet) | `PUT /admin/outlets/:outlet_id.json` |
+
+### Create outlet
+
+`POST /admin/outlets.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `outlet[title]` | да | title |
+| `outlet[description]` |  | description |
+| `outlet[address]` | да | address in text way |
+| `outlet[price]` | да | delivery price |
+| `outlet[latitude]` | да | point latitude |
+| `outlet[longitude]` | да | point longitude |
+
+**Запрос**
+
+```http
 POST /admin/outlets.json
-Parameters
-Name	Description
-outlet[title] required	title
-outlet[description]	description
-outlet[address] required	address in text way
-outlet[price] required	delivery price
-outlet[latitude] required	point latitude
-outlet[longitude] required	point longitude
-Request
-Route
-POST /admin/outlets.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "outlet": {
     "title": "Point 2",
@@ -17977,14 +20221,18 @@ Body
     "longitude": 37.6173
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 8,
   "account_id": 1,
@@ -18004,38 +20252,47 @@ Body
   "title": "Point 2",
   "description": "Point description"
 }
-Destroy outlet
-Endpoint
-DELETE /admin/outlets/:outlet_id.json
-Request
-Route
+```
+
+### Destroy outlet
+
+`DELETE /admin/outlets/:outlet_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/outlets/12.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
-API-Usage-Limit: 1/500
-Content-Type: application/json
-Get outlet
-Endpoint
-GET /admin/outlets/:outlet_id.json
-Request
-Route
+```
+
+**Ответ**
+
+Status: `200`
+
+### API-Usage-Limit: 1/500
+
+`GET /admin/outlets/:outlet_id.json`
+
+Content-Type: application/json Get outlet
+
+**Запрос**
+
+```http
 GET /admin/outlets/4.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 4,
   "account_id": 1,
@@ -18055,22 +20312,29 @@ Body
   "title": "Самовывоз от метро",
   "description": "Вход через арку во двор"
 }
-Get outlets
-Endpoint
+```
+
+### Get outlets
+
+`GET /admin/outlets.json`
+
+**Запрос**
+
+```http
 GET /admin/outlets.json
-Request
-Route
-GET /admin/outlets.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 2,
@@ -18092,24 +20356,30 @@ Body
     "description": "Вход через арку во двор"
   }
 ]
-Update outlet
-Endpoint
-PUT /admin/outlets/:outlet_id.json
-Parameters
-Name	Description
-outlet[title] required	title
-outlet[description]	description
-outlet[address] required	address in text way
-outlet[price] required	delivery price
-outlet[latitude] required	point latitude
-outlet[longitude] required	point longitude
-Request
-Route
+```
+
+### Update outlet
+
+`PUT /admin/outlets/:outlet_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `outlet[title]` | да | title |
+| `outlet[description]` |  | description |
+| `outlet[address]` | да | address in text way |
+| `outlet[price]` | да | delivery price |
+| `outlet[latitude]` | да | point latitude |
+| `outlet[longitude]` | да | point longitude |
+
+**Запрос**
+
+```http
 PUT /admin/outlets/10.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "outlet": {
     "title": "New point title",
@@ -18120,14 +20390,18 @@ Body
     "longitude": 37.6173
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "delivery_variant_id": 177,
   "title": "New point title",
@@ -18147,26 +20421,43 @@ Body
   "created_at": "2026-07-25T00:58:56.817+03:00",
   "updated_at": "2026-07-25T00:58:56.887+03:00"
 }
-Page
-Create page
-Endpoint
+```
+
+---
+
+## Page
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create page](#create-page) | `POST /admin/pages.json` |
+| [Delete page](#delete-page) | `DELETE /admin/pages/:page_id.json` |
+| [Get page](#get-page) | `GET /admin/pages/:page_id.json` |
+| [Get pages list](#get-pages-list) | `GET /admin/pages.json` |
+| [Update page](#update-page) | `PUT /admin/pages/:page_id.json` |
+
+### Create page
+
+`POST /admin/pages.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `page[title]` | да | page title |
+| `page[content]` | да | page content |
+| `page[permalink]` |  | permalink on /page/* |
+| `page[html_title]` |  | html title tag content |
+| `page[meta_keywords]` |  | html meta words on page |
+| `page[meta_description]` |  | html meta description |
+| `page[created_at]` |  | publication date |
+
+**Запрос**
+
+```http
 POST /admin/pages.json
-Parameters
-Name	Description
-page[title] required	page title
-page[content] required	page content
-page[permalink]	permalink on /page/*
-page[html_title]	html title tag content
-page[meta_keywords]	html meta words on page
-page[meta_description]	html meta description
-page[created_at]	publication date
-Request
-Route
-POST /admin/pages.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "page": {
     "title": "new page",
@@ -18178,14 +20469,18 @@ Body
     "created_at": "2014-09-09"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 20,
   "meta_keywords": "new cool products",
@@ -18201,42 +20496,56 @@ Body
   "html_title": "HTML TAG TITLE",
   "content": "<p>content of my page<p>"
 }
-Delete page
-Endpoint
-DELETE /admin/pages/:page_id.json
-Request
-Route
+```
+
+### Delete page
+
+`DELETE /admin/pages/:page_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/pages/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
 Content-Type: application/x-www-form-urlencoded
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get page
-Endpoint
-GET /admin/pages/:page_id.json
-Request
-Route
+```
+
+### Get page
+
+`GET /admin/pages/:page_id.json`
+
+**Запрос**
+
+```http
 GET /admin/pages/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "meta_keywords": "meta keywords",
@@ -18252,22 +20561,29 @@ Body
   "html_title": "html title",
   "content": "abc"
 }
-Get pages list
-Endpoint
+```
+
+### Get pages list
+
+`GET /admin/pages.json`
+
+**Запрос**
+
+```http
 GET /admin/pages.json
-Request
-Route
-GET /admin/pages.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -18300,62 +20616,90 @@ Body
     "content": "abc"
   }
 ]
-Update page
-Endpoint
-PUT /admin/pages/:page_id.json
-Parameters
-Name	Description
-page[title]	page title
-page[content]	page content
-page[permalink]	permalink on blog/*
-page[html_title]	html title tag content
-page[meta_keywords]	html meta words on page
-page[meta_description]	html meta description
-page[created_at]	publication date
-Request
-Route
+```
+
+### Update page
+
+`PUT /admin/pages/:page_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `page[title]` |  | page title |
+| `page[content]` |  | page content |
+| `page[permalink]` |  | permalink on blog/* |
+| `page[html_title]` |  | html title tag content |
+| `page[meta_keywords]` |  | html meta words on page |
+| `page[meta_description]` |  | html meta description |
+| `page[created_at]` |  | publication date |
+
+**Запрос**
+
+```http
 PUT /admin/pages/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "page": {
     "title": "new title"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-PaymentGateway
-Create Cod or Custom payment_gateway
-Endpoint
+```
+
+---
+
+## PaymentGateway
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create Cod or Custom payment_gateway](#create-cod-or-custom-payment-gateway) | `POST /admin/payment_gateways.json` |
+| [Create External payment_gateway](#create-external-payment-gateway) | `POST /admin/payment_gateways.json` |
+| [Destroy payment_gateway](#destroy-payment-gateway) | `DELETE /admin/payment_gateways/:payment_gateway_id_1.json` |
+| [API-Usage-Limit: 1/500](#api-usage-limit-1-500) | `GET /admin/payment_gateways/:payment_gateway_id_1.json` |
+| [Get payment_gateways](#get-payment-gateways) | `GET /admin/payment_gateways.json` |
+| [Update payment_gateway](#update-payment-gateway) | `PUT /admin/payment_gateways/:payment_gateway_id_1.json` |
+
+### Create Cod or Custom payment_gateway
+
+`POST /admin/payment_gateways.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `payment_gateway[title]` | да | title |
+| `payment_gateway[margin]` |  | margin measured in percentage and applied to order price with current payment method; it should fall in the range from -100 to 1000 |
+| `payment_gateway[position]` |  | position in payment gateways list |
+| `payment_gateway[type]` | да | available types: PaymentGateway::Cod, PaymentGateway::Custom |
+| `payment_gateway[description]` |  | description |
+| `payment_gateway[payment_delivery_variants_attributes]` |  | array of available delivery variants for this payment gateway; payment gateway is unavailable if list is empty |
+| `payment_gateway[payment_delivery_variants_attributes][delivery_variant_id]` |  | id of delivery variant |
+| `payment_gateway[add_delivery_variants]` |  | set all delivery variants available for this payment gateway |
+
+**Запрос**
+
+```http
 POST /admin/payment_gateways.json
-Parameters
-Name	Description
-payment_gateway[title] required	title
-payment_gateway[margin]	margin measured in percentage and applied to order price with current payment method; it should fall in the range from -100 to 1000
-payment_gateway[position]	position in payment gateways list
-payment_gateway[type] required	available types: PaymentGateway::Cod, PaymentGateway::Custom
-payment_gateway[description]	description
-payment_gateway[payment_delivery_variants_attributes]	array of available delivery variants for this payment gateway; payment gateway is unavailable if list is empty
-payment_gateway[payment_delivery_variants_attributes][delivery_variant_id]	id of delivery variant
-payment_gateway[add_delivery_variants]	set all delivery variants available for this payment gateway
-Request
-Route
-POST /admin/payment_gateways.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "payment_gateway": {
     "title": "cash on delivery",
@@ -18369,14 +20713,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 35,
   "type": "PaymentGateway::Cod",
@@ -18396,31 +20744,37 @@ Body
     }
   ]
 }
-Create External payment_gateway
-Endpoint
+```
+
+### Create External payment_gateway
+
+`POST /admin/payment_gateways.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `payment_gateway[title]` | да | title |
+| `payment_gateway[margin]` |  | margin measured in percentage and added to order price with current payment method; it should fall in the range from -100 to 1000 |
+| `payment_gateway[position]` |  | position in payment gateways list |
+| `payment_gateway[type]` | да | PaymentGateway::External |
+| `payment_gateway[description]` |  | description |
+| `payment_gateway[payment_delivery_variants_attributes]` |  | array of available delivery variants for this payment gateway; payment gateway is unavailable if list is empty |
+| `payment_gateway[payment_delivery_variants_attributes][delivery_variant_id]` |  | id of delivery variant |
+| `payment_gateway[url]` | да | url of external payment gateway |
+| `payment_gateway[shop_id]` | да | shop id - store identificator for external systems |
+| `payment_gateway[send_order]` |  | set true to send order_lines information to the "url"; parameter name - "order_json"; do not forget add "order_json" to signature validation to the end of the string. |
+| `payment_gateway[add_delivery_variants]` |  | set all delivery variants available for this payment gateway |
+| `payment_gateway[redirect_to_payment]` |  | true by default; if true automatically redirect to payment after successful order creation; |
+| `payment_gateway[convert_currency]` |  | iso code, if you would like to convert order amount from site currency to another currency |
+
+**Запрос**
+
+```http
 POST /admin/payment_gateways.json
-Parameters
-Name	Description
-payment_gateway[title] required	title
-payment_gateway[margin]	margin measured in percentage and added to order price with current payment method; it should fall in the range from -100 to 1000
-payment_gateway[position]	position in payment gateways list
-payment_gateway[type] required	PaymentGateway::External
-payment_gateway[description]	description
-payment_gateway[payment_delivery_variants_attributes]	array of available delivery variants for this payment gateway; payment gateway is unavailable if list is empty
-payment_gateway[payment_delivery_variants_attributes][delivery_variant_id]	id of delivery variant
-payment_gateway[url] required	url of external payment gateway
-payment_gateway[shop_id] required	shop id - store identificator for external systems
-payment_gateway[send_order]	set true to send order_lines information to the "url"; parameter name - "order_json"; do not forget add "order_json" to signature validation to the end of the string.
-payment_gateway[add_delivery_variants]	set all delivery variants available for this payment gateway
-payment_gateway[redirect_to_payment]	true by default; if true automatically redirect to payment after successful order creation;
-payment_gateway[convert_currency]	iso code, if you would like to convert order amount from site currency to another currency
-Request
-Route
-POST /admin/payment_gateways.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "payment_gateway": {
     "title": "external payment gateway",
@@ -18438,14 +20792,18 @@ Body
     "convert_currency": "LVL"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 37,
   "type": "PaymentGateway::External",
@@ -18485,38 +20843,47 @@ Body
     }
   ]
 }
-Destroy payment_gateway
-Endpoint
-DELETE /admin/payment_gateways/:payment_gateway_id_1.json
-Request
-Route
+```
+
+### Destroy payment_gateway
+
+`DELETE /admin/payment_gateways/:payment_gateway_id_1.json`
+
+**Запрос**
+
+```http
 DELETE /admin/payment_gateways/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
-API-Usage-Limit: 1/500
-Content-Type: application/json
-Get payment_gateway
-Endpoint
-GET /admin/payment_gateways/:payment_gateway_id_1.json
-Request
-Route
+```
+
+**Ответ**
+
+Status: `200`
+
+### API-Usage-Limit: 1/500
+
+`GET /admin/payment_gateways/:payment_gateway_id_1.json`
+
+Content-Type: application/json Get payment_gateway
+
+**Запрос**
+
+```http
 GET /admin/payment_gateways/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "type": "PaymentGateway::Cod",
@@ -18541,22 +20908,29 @@ Body
     }
   ]
 }
-Get payment_gateways
-Endpoint
+```
+
+### Get payment_gateways
+
+`GET /admin/payment_gateways.json`
+
+**Запрос**
+
+```http
 GET /admin/payment_gateways.json
-Request
-Route
-GET /admin/payment_gateways.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -18611,26 +20985,32 @@ Body
     "payment_delivery_variants": []
   }
 ]
-Update payment_gateway
-Endpoint
-PUT /admin/payment_gateways/:payment_gateway_id_1.json
-Parameters
-Name	Description
-payment_gateway[title]	title
-payment_gateway[margin]	margin measured in percentage and added to order price with current payment method; it should fall in the range from -100 to 1000
-payment_gateway[position]	position in payment gateways list
-payment_gateway[description]	description
-payment_gateway[payment_delivery_variants_attributes]	array of available delivery variants for this payment gateway. payment gateway is unavailable if list is empty
-payment_gateway[payment_delivery_variants_attributes][_destroy]	set it 1 to delete delivery variant for this payment gateway
-delivery_variant[payment_delivery_variants_attributes][id]	only for removal: specify id of payment gateway and delivery variant binding you want to delete
-delivery_variant[payment_delivery_variants_attributes][delivery_variant_id]	for creation: specify id of delivery variant you want to bind with this payment gateway
-Request
-Route
+```
+
+### Update payment_gateway
+
+`PUT /admin/payment_gateways/:payment_gateway_id_1.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `payment_gateway[title]` |  | title |
+| `payment_gateway[margin]` |  | margin measured in percentage and added to order price with current payment method; it should fall in the range from -100 to 1000 |
+| `payment_gateway[position]` |  | position in payment gateways list |
+| `payment_gateway[description]` |  | description |
+| `payment_gateway[payment_delivery_variants_attributes]` |  | array of available delivery variants for this payment gateway. payment gateway is unavailable if list is empty |
+| `payment_gateway[payment_delivery_variants_attributes][_destroy]` |  | set it 1 to delete delivery variant for this payment gateway |
+| `delivery_variant[payment_delivery_variants_attributes][id]` |  | only for removal: specify id of payment gateway and delivery variant binding you want to delete |
+| `delivery_variant[payment_delivery_variants_attributes][delivery_variant_id]` |  | for creation: specify id of delivery variant you want to bind with this payment gateway |
+
+**Запрос**
+
+```http
 PUT /admin/payment_gateways/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "payment_gateway": {
     "title": "cash",
@@ -18647,14 +21027,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "type": "PaymentGateway::Cod",
@@ -18679,34 +21063,55 @@ Body
     }
   ]
 }
-PriceKind
-Create price kind
-Endpoint
+```
+
+---
+
+## PriceKind
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create price kind](#create-price-kind) | `POST /admin/price_kinds.json` |
+| [Destroy price kind](#destroy-price-kind) | `DELETE /admin/price_kinds/:price_kind_id.json` |
+| [Get price kind](#get-price-kind) | `GET /admin/price_kinds/:price_kind_id.json` |
+| [Get price kinds](#get-price-kinds) | `GET /admin/price_kinds.json` |
+| [Update price kind](#update-price-kind) | `PUT /admin/price_kinds/:price_kind_id.json` |
+
+### Create price kind
+
+`POST /admin/price_kinds.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `price_kind[title]` | да | title |
+| `price_kind[show_in_lists]` |  | show price in products list in back-office |
+
+**Запрос**
+
+```http
 POST /admin/price_kinds.json
-Parameters
-Name	Description
-price_kind[title] required	title
-price_kind[show_in_lists]	show price in products list in back-office
-Request
-Route
-POST /admin/price_kinds.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "price_kind": {
     "title": "large quantity price"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 175,
   "price_index": 2,
@@ -18714,42 +21119,56 @@ Body
   "show_in_lists": true,
   "variant_price_method_name": "price3"
 }
-Destroy price kind
-Endpoint
-DELETE /admin/price_kinds/:price_kind_id.json
-Request
-Route
+```
+
+### Destroy price kind
+
+`DELETE /admin/price_kinds/:price_kind_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/price_kinds/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get price kind
-Endpoint
-GET /admin/price_kinds/:price_kind_id.json
-Request
-Route
+```
+
+### Get price kind
+
+`GET /admin/price_kinds/:price_kind_id.json`
+
+**Запрос**
+
+```http
 GET /admin/price_kinds/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "price_index": 1,
@@ -18757,22 +21176,29 @@ Body
   "show_in_lists": true,
   "variant_price_method_name": "price2"
 }
-Get price kinds
-Endpoint
+```
+
+### Get price kinds
+
+`GET /admin/price_kinds.json`
+
+**Запрос**
+
+```http
 GET /admin/price_kinds.json
-Request
-Route
-GET /admin/price_kinds.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -18782,33 +21208,43 @@ Body
     "variant_price_method_name": "price2"
   }
 ]
-Update price kind
-Endpoint
-PUT /admin/price_kinds/:price_kind_id.json
-Parameters
-Name	Description
-price_kind[title] required	title
-price_kind[show_in_lists]	show price in products list in back-office
-Request
-Route
+```
+
+### Update price kind
+
+`PUT /admin/price_kinds/:price_kind_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `price_kind[title]` | да | title |
+| `price_kind[show_in_lists]` |  | show price in products list in back-office |
+
+**Запрос**
+
+```http
 PUT /admin/price_kinds/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "price_kind": {
     "title": "price for 10+ quantity"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "price_index": 1,
@@ -18816,28 +21252,48 @@ Body
   "show_in_lists": true,
   "variant_price_method_name": "price2"
 }
-Product
-Create bundle
-Endpoint
+```
+
+---
+
+## Product
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create bundle](#create-bundle) | `POST /admin/products.json` |
+| [Create product](#create-product) | `POST /admin/products.json` |
+| [Destroy product](#destroy-product) | `DELETE /admin/products/:product_id.json` |
+| [Get product](#get-product) | `GET /admin/products/:product_id.json` |
+| [Get products count](#get-products-count) | `GET /admin/products/count.json` |
+| [Get products](#get-products) | `GET /admin/products.json` |
+| [Update bundle](#update-bundle) | `PUT /admin/products/4.json` |
+| [Update product](#update-product) | `PUT /admin/products/:product_id.json` |
+
+### Create bundle
+
+`POST /admin/products.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `product[category_id]` | да | category id |
+| `product[title]` | да | title |
+| `product[description]` |  | description |
+| `product[short_description]` |  | short description |
+| `product[sort_weight]` |  | sort weight |
+| `product[bundle]` | да | bundle |
+| `product[variants_attributes]` | да | variants attributes |
+| `product[vat]` |  | do not set VAT for bundle because order lines will be created with its components, which have their own VAT |
+| `product[product_bundle_components_attributes]` | да | product bundle components attributes |
+
+**Запрос**
+
+```http
 POST /admin/products.json
-Parameters
-Name	Description
-product[category_id] required	category id
-product[title] required	title
-product[description]	description
-product[short_description]	short description
-product[sort_weight]	sort weight
-product[bundle] required	bundle
-product[variants_attributes] required	variants attributes
-product[vat]	do not set VAT for bundle because order lines will be created with its components, which have their own VAT
-product[product_bundle_components_attributes] required	product bundle components attributes
-Request
-Route
-POST /admin/products.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "product": {
     "category_id": 1,
@@ -18857,14 +21313,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 293977361,
   "category_id": 1,
@@ -18943,27 +21403,33 @@ Body
     }
   ]
 }
-Create product
-Endpoint
+```
+
+### Create product
+
+`POST /admin/products.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `product[category_id]` | да | category id |
+| `product[title]` | да | title |
+| `product[description]` |  | description |
+| `product[short_description]` |  | short description |
+| `product[variants_attributes]` | да | variants attributes |
+| `product[sort_weight]` |  | sort weight |
+| `product[ignore_discounts]` |  | set to 1 to make this product ignore discounts |
+| `product[vat]` |  | integer, default value is set in account settings, if default in account set as 'No VAT' you cannot change VAT of products through API; possible values depend on country, set to -1 if this product is not a subject to VAT |
+| `product[product_field_values_attributes]` |  | product field values attributes |
+
+**Запрос**
+
+```http
 POST /admin/products.json
-Parameters
-Name	Description
-product[category_id] required	category id
-product[title] required	title
-product[description]	description
-product[short_description]	short description
-product[variants_attributes] required	variants attributes
-product[sort_weight]	sort weight
-product[ignore_discounts]	set to 1 to make this product ignore discounts
-product[vat]	integer, default value is set in account settings, if default in account set as 'No VAT' you cannot change VAT of products through API; possible values depend on country, set to -1 if this product is not a subject to VAT
-product[product_field_values_attributes]	product field values attributes
-Request
-Route
-POST /admin/products.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "product": {
     "category_id": 1,
@@ -18985,14 +21451,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 293977345,
   "category_id": 1,
@@ -19067,42 +21537,56 @@ Body
     }
   ]
 }
-Destroy product
-Endpoint
-DELETE /admin/products/:product_id.json
-Request
-Route
+```
+
+### Destroy product
+
+`DELETE /admin/products/:product_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/products/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get product
-Endpoint
-GET /admin/products/:product_id.json
-Request
-Route
+```
+
+### Get product
+
+`GET /admin/products/:product_id.json`
+
+**Запрос**
+
+```http
 GET /admin/products/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "category_id": 1,
@@ -19275,51 +21759,70 @@ Body
     }
   ]
 }
-Get products count
-Endpoint
+```
+
+### Get products count
+
+`GET /admin/products/count.json`
+
+**Запрос**
+
+```http
 GET /admin/products/count.json
-Request
-Route
-GET /admin/products/count.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "count": 5
 }
-Get products
-Endpoint
-GET /admin/products.json
-Parameters
-Name	Description
-updated_since	Set datetime to get only data updated after it.
-from_id	Set id to get only data starting from it.
-per_page	Quantity of objects per page.
-with_deleted	Set to true to get also deleted products.
-deleted	Set to true to get only deleted products.
-variant_fields	List of required fields separated with `,`. Possible values are: id,title,product_id,sku,barcode,dimensions,available.
-Request
-Route
+```
+
+### Get products
+
+`GET /admin/products.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `updated_since` |  | Set datetime to get only data updated after it. |
+| `from_id` |  | Set id to get only data starting from it. |
+| `per_page` |  | Quantity of objects per page. |
+| `with_deleted` |  | Set to true to get also deleted products. |
+| `deleted` |  | Set to true to get only deleted products. |
+| `variant_fields` |  | List of required fields separated with `,`. Possible values are: id,title,product_id,sku,barcode,dimensions,available. |
+
+**Запрос**
+
+```http
 GET /admin/products.json?updated_since=2009-01-04+14%3A44%3A43+%2B0300
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Query Parameters
+```
+
+Query:
+
+```text
 updated_since=2009-01-04 14:44:43 +0300
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 5,
@@ -19899,22 +22402,28 @@ Body
     ]
   }
 ]
-Update bundle
-Endpoint
+```
+
+### Update bundle
+
+`PUT /admin/products/4.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `product[title]` |  | title |
+| `product[ignore_discounts]` |  | set to 1 to make this product ignore discounts |
+| `product[vat]` |  | do not set VAT for bundle because order lines will be created with its components, which have their own VAT |
+| `product[product_bundle_components_attributes]` |  | component without the specified identifier (id) will be created (variant_id is required); component with id will be updated (variant_id is optional); component with id and (_destroy: true) attribute will be destroyed; |
+
+**Запрос**
+
+```http
 PUT /admin/products/4.json
-Parameters
-Name	Description
-product[title]	title
-product[ignore_discounts]	set to 1 to make this product ignore discounts
-product[vat]	do not set VAT for bundle because order lines will be created with its components, which have their own VAT
-product[product_bundle_components_attributes]	component without the specified identifier (id) will be created (variant_id is required); component with id will be updated (variant_id is optional); component with id and (_destroy: true) attribute will be destroyed;
-Request
-Route
-PUT /admin/products/4.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "product": {
     "product_bundle_components_attributes": [
@@ -19934,14 +22443,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 4,
   "category_id": 3,
@@ -20038,22 +22551,28 @@ Body
     }
   ]
 }
-Update product
-Endpoint
-PUT /admin/products/:product_id.json
-Parameters
-Name	Description
-product[title]	title
-product[ignore_discounts]	set to 1 to make this product ignore discounts
-product[vat]	integer, default value is set in account settings, if default in account set as 'No VAT' you cannot change VAT of products through API; possible values depend on country, set to -1 if this product is not a subject to VAT
-product[product_field_values_attributes]	product field values attributes
-Request
-Route
+```
+
+### Update product
+
+`PUT /admin/products/:product_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `product[title]` |  | title |
+| `product[ignore_discounts]` |  | set to 1 to make this product ignore discounts |
+| `product[vat]` |  | integer, default value is set in account settings, if default in account set as 'No VAT' you cannot change VAT of products through API; possible values depend on country, set to -1 if this product is not a subject to VAT |
+| `product[product_field_values_attributes]` |  | product field values attributes |
+
+**Запрос**
+
+```http
 PUT /admin/products/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "product": {
     "title": "Van Gogh Notebook",
@@ -20067,14 +22586,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "category_id": 1,
@@ -20247,25 +22770,45 @@ Body
     }
   ]
 }
-ProductField
-Create product_field
-Endpoint
+```
+
+---
+
+## ProductField
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create product_field](#create-product-field) | `POST /admin/product_fields.json` |
+| [Destroy product_field by handle](#destroy-product-field-by-handle) | `DELETE /admin/product_fields/:product_field_handle.json` |
+| [Destroy product_field](#destroy-product-field) | `DELETE /admin/product_fields/:product_field_id.json` |
+| [Get product_field by handle](#get-product-field-by-handle) | `GET /admin/product_fields/:product_field_handle.json` |
+| [Get product_field](#get-product-field) | `GET /admin/product_fields/:product_field_id.json` |
+| [Get product_fields](#get-product-fields) | `GET /admin/product_fields.json` |
+| [Update product_field by handle](#update-product-field-by-handle) | `PUT /admin/product_fields/:product_field_handle.json` |
+| [Update product_field](#update-product-field) | `PUT /admin/product_fields/:product_field_id.json` |
+
+### Create product_field
+
+`POST /admin/product_fields.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `product_field[title]` | да | title |
+| `product_field[handle]` | да | handle used in liquid |
+| `product_field[type]` | да | ProductField::TextArea - textarea, ProductField::TextField - textfield |
+| `product_field[position]` |  | position in product_fields list |
+| `product_field[is_hidden]` |  | boolean |
+| `product_field[is_indexed]` |  | boolean |
+
+**Запрос**
+
+```http
 POST /admin/product_fields.json
-Parameters
-Name	Description
-product_field[title] required	title
-product_field[handle] required	handle used in liquid
-product_field[type] required	ProductField::TextArea - textarea, ProductField::TextField - textfield
-product_field[position]	position in product_fields list
-product_field[is_hidden]	boolean
-product_field[is_indexed]	boolean
-Request
-Route
-POST /admin/product_fields.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "product_field": {
     "title": "Size",
@@ -20273,14 +22816,18 @@ Body
     "type": "ProductField::TextArea"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 8,
   "handle": "size",
@@ -20292,62 +22839,83 @@ Body
   "title": "Size",
   "application_title": "Цифровые товары"
 }
-Destroy product_field by handle
-Endpoint
-DELETE /admin/product_fields/:product_field_handle.json
-Request
-Route
+```
+
+### Destroy product_field by handle
+
+`DELETE /admin/product_fields/:product_field_handle.json`
+
+**Запрос**
+
+```http
 DELETE /admin/product_fields/handle2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Destroy product_field
-Endpoint
-DELETE /admin/product_fields/:product_field_id.json
-Request
-Route
+```
+
+### Destroy product_field
+
+`DELETE /admin/product_fields/:product_field_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/product_fields/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get product_field by handle
-Endpoint
-GET /admin/product_fields/:product_field_handle.json
-Request
-Route
+```
+
+### Get product_field by handle
+
+`GET /admin/product_fields/:product_field_handle.json`
+
+**Запрос**
+
+```http
 GET /admin/product_fields/handle2.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "handle": "handle2",
@@ -20359,22 +22927,29 @@ Body
   "title": "title2",
   "application_title": "Цифровые товары"
 }
-Get product_field
-Endpoint
-GET /admin/product_fields/:product_field_id.json
-Request
-Route
+```
+
+### Get product_field
+
+`GET /admin/product_fields/:product_field_id.json`
+
+**Запрос**
+
+```http
 GET /admin/product_fields/2.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "handle": "handle2",
@@ -20386,22 +22961,29 @@ Body
   "title": "title2",
   "application_title": "Цифровые товары"
 }
-Get product_fields
-Endpoint
+```
+
+### Get product_fields
+
+`GET /admin/product_fields.json`
+
+**Запрос**
+
+```http
 GET /admin/product_fields.json
-Request
-Route
-GET /admin/product_fields.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -20437,37 +23019,47 @@ Body
     "application_title": "Цифровые товары"
   }
 ]
-Update product_field by handle
-Endpoint
-PUT /admin/product_fields/:product_field_handle.json
-Parameters
-Name	Description	Method
-product_field[title]	title	
-product_field[handle]	handle used in liquid	new_handle
-product_field[position]	position in product_fields list	
-product_field[is_hidden]	boolean	
-product_field[is_indexed]	boolean	
-Request
-Route
+```
+
+### Update product_field by handle
+
+`PUT /admin/product_fields/:product_field_handle.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `product_field[title]` |  | title |
+| `product_field[handle]` |  | handle used in liquid  new_handle |
+| `product_field[position]` |  | position in product_fields list |
+| `product_field[is_hidden]` |  | boolean |
+| `product_field[is_indexed]` |  | boolean |
+
+**Запрос**
+
+```http
 PUT /admin/product_fields/handle2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "product_field": {
     "title": "Volume",
     "position": 2
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "handle": "handle2",
@@ -20479,23 +23071,29 @@ Body
   "title": "Volume",
   "application_title": "Цифровые товары"
 }
-Update product_field
-Endpoint
-PUT /admin/product_fields/:product_field_id.json
-Parameters
-Name	Description
-product_field[title]	title
-product_field[handle]	handle used in liquid
-product_field[position]	position in product_fields list
-product_field[is_hidden]	boolean
-product_field[is_indexed]	boolean
-Request
-Route
+```
+
+### Update product_field
+
+`PUT /admin/product_fields/:product_field_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `product_field[title]` |  | title |
+| `product_field[handle]` |  | handle used in liquid |
+| `product_field[position]` |  | position in product_fields list |
+| `product_field[is_hidden]` |  | boolean |
+| `product_field[is_indexed]` |  | boolean |
+
+**Запрос**
+
+```http
 PUT /admin/product_fields/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "product_field": {
     "title": "Volume",
@@ -20503,14 +23101,18 @@ Body
     "position": 2
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "handle": "volume",
@@ -20522,171 +23124,241 @@ Body
   "title": "Volume",
   "application_title": "Цифровые товары"
 }
-ProductFieldValue
-Create product_field_value by handle
-Endpoint
-POST /admin/products/:product_id/product_field_values.json
-Parameters
-Name	Description
-product_field_value[product_field_handle] required	product field handle
-product_field_value[value]	product field value
-Request
-Route
+```
+
+---
+
+## ProductFieldValue
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create product_field_value by handle](#create-product-field-value-by-handle) | `POST /admin/products/:product_id/product_field_values.json` |
+| [Create product_field_value](#create-product-field-value) | `POST /admin/products/:product_id/product_field_values.json` |
+| [Destroy product_field_value by handle](#destroy-product-field-value-by-handle) | `DELETE /admin/products/:product_id/product_field_values/:product_field_handle.json` |
+| [Destroy product_field_value](#destroy-product-field-value) | `DELETE /admin/products/:product_id/product_field_values/:product_field_value_id.json` |
+| [Get product_field_value by handle](#get-product-field-value-by-handle) | `GET /admin/products/:product_id/product_field_values/:product_field_handle.json` |
+| [Get product_field_value](#get-product-field-value) | `GET /admin/products/:product_id/product_field_values/:product_field_value_id.json` |
+| [Get product_field_values](#get-product-field-values) | `GET /admin/products/:product_id/product_field_values.json` |
+| [Update product_field_value by handle](#update-product-field-value-by-handle) | `PUT /admin/products/:product_id/product_field_values/:product_field_handle.json` |
+| [Update product_field_value](#update-product-field-value) | `PUT /admin/products/:product_id/product_field_values/:product_field_value_id.json` |
+
+### Create product_field_value by handle
+
+`POST /admin/products/:product_id/product_field_values.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `product_field_value[product_field_handle]` | да | product field handle |
+| `product_field_value[value]` |  | product field value |
+
+**Запрос**
+
+```http
 POST /admin/products/1/product_field_values.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "product_field_value": {
     "product_field_handle": "handle2",
     "value": "test value"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 7,
   "product_field_id": 2,
   "value": "test value"
 }
-Create product_field_value
-Endpoint
-POST /admin/products/:product_id/product_field_values.json
-Parameters
-Name	Description
-product_field_value[product_field_id] required	product field id
-product_field_value[value]	product field value
-Request
-Route
+```
+
+### Create product_field_value
+
+`POST /admin/products/:product_id/product_field_values.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `product_field_value[product_field_id]` | да | product field id |
+| `product_field_value[value]` |  | product field value |
+
+**Запрос**
+
+```http
 POST /admin/products/1/product_field_values.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "product_field_value": {
     "product_field_id": 2,
     "value": "test value"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 5,
   "product_field_id": 2,
   "value": "test value"
 }
-Destroy product_field_value by handle
-Endpoint
-DELETE /admin/products/:product_id/product_field_values/:product_field_handle.json
-Request
-Route
+```
+
+### Destroy product_field_value by handle
+
+`DELETE /admin/products/:product_id/product_field_values/:product_field_handle.json`
+
+**Запрос**
+
+```http
 DELETE /admin/products/1/product_field_values/handle.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Destroy product_field_value
-Endpoint
-DELETE /admin/products/:product_id/product_field_values/:product_field_value_id.json
-Request
-Route
+```
+
+### Destroy product_field_value
+
+`DELETE /admin/products/:product_id/product_field_values/:product_field_value_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/products/1/product_field_values/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get product_field_value by handle
-Endpoint
-GET /admin/products/:product_id/product_field_values/:product_field_handle.json
-Request
-Route
+```
+
+### Get product_field_value by handle
+
+`GET /admin/products/:product_id/product_field_values/:product_field_handle.json`
+
+**Запрос**
+
+```http
 GET /admin/products/1/product_field_values/handle.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "product_field_id": 1,
   "value": "some product field value"
 }
-Get product_field_value
-Endpoint
-GET /admin/products/:product_id/product_field_values/:product_field_value_id.json
-Request
-Route
+```
+
+### Get product_field_value
+
+`GET /admin/products/:product_id/product_field_values/:product_field_value_id.json`
+
+**Запрос**
+
+```http
 GET /admin/products/1/product_field_values/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "product_field_id": 1,
   "value": "some product field value"
 }
-Get product_field_values
-Endpoint
-GET /admin/products/:product_id/product_field_values.json
-Request
-Route
+```
+
+### Get product_field_values
+
+`GET /admin/products/:product_id/product_field_values.json`
+
+**Запрос**
+
+```http
 GET /admin/products/1/product_field_values.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -20694,87 +23366,124 @@ Body
     "value": "some product field value"
   }
 ]
-Update product_field_value by handle
-Endpoint
-PUT /admin/products/:product_id/product_field_values/:product_field_handle.json
-Parameters
-Name	Description
-product_field_value[value]	product field value
-Request
-Route
+```
+
+### Update product_field_value by handle
+
+`PUT /admin/products/:product_id/product_field_values/:product_field_handle.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `product_field_value[value]` |  | product field value |
+
+**Запрос**
+
+```http
 PUT /admin/products/1/product_field_values/handle.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "product_field_value": {
     "value": "new value"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "product_field_id": 1,
   "value": "new value"
 }
-Update product_field_value
-Endpoint
-PUT /admin/products/:product_id/product_field_values/:product_field_value_id.json
-Parameters
-Name	Description
-product_field_value[value]	product field value
-Request
-Route
+```
+
+### Update product_field_value
+
+`PUT /admin/products/:product_id/product_field_values/:product_field_value_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `product_field_value[value]` |  | product field value |
+
+**Запрос**
+
+```http
 PUT /admin/products/1/product_field_values/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "product_field_value": {
     "value": "new value"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "product_field_id": 1,
   "value": "new value"
 }
-Property
-Create property
-Endpoint
+```
+
+---
+
+## Property
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create property](#create-property) | `POST /admin/properties.json` |
+| [Destroy property](#destroy-property) | `DELETE /admin/properties/:property_id.json` |
+| [Get properties](#get-properties) | `GET /admin/properties.json` |
+| [Get property](#get-property) | `GET /admin/properties/:property_id.json` |
+| [Update property](#update-property) | `PUT /admin/properties/:property_id.json` |
+
+### Create property
+
+`POST /admin/properties.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `property[title]` | да | title |
+| `property[permalink]` |  | permalink |
+| `property[position]` |  | position in property list |
+| `property[backoffice]` |  | show in backoffice |
+| `property[is_hidden]` |  | hide in product page on site |
+| `property[is_navigational]` |  | show in products filter on category page |
+
+**Запрос**
+
+```http
 POST /admin/properties.json
-Parameters
-Name	Description
-property[title] required	title
-property[permalink]	permalink
-property[position]	position in property list
-property[backoffice]	show in backoffice
-property[is_hidden]	hide in product page on site
-property[is_navigational]	show in products filter on category page
-Request
-Route
-POST /admin/properties.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "property": {
     "title": "Country",
@@ -20783,14 +23492,18 @@ Body
     "is_navigational": true
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 35187304,
   "position": 104,
@@ -20800,42 +23513,56 @@ Body
   "permalink": "country",
   "title": "Country"
 }
-Destroy property
-Endpoint
-DELETE /admin/properties/:property_id.json
-Request
-Route
+```
+
+### Destroy property
+
+`DELETE /admin/properties/:property_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/properties/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get properties
-Endpoint
+```
+
+### Get properties
+
+`GET /admin/properties.json`
+
+**Запрос**
+
+```http
 GET /admin/properties.json
-Request
-Route
-GET /admin/properties.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": -1,
@@ -21009,22 +23736,29 @@ Body
     "title": "Категория товара в VK"
   }
 ]
-Get property
-Endpoint
-GET /admin/properties/:property_id.json
-Request
-Route
+```
+
+### Get property
+
+`GET /admin/properties/:property_id.json`
+
+**Запрос**
+
+```http
 GET /admin/properties/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "position": 8,
@@ -21034,32 +23768,42 @@ Body
   "permalink": "producer",
   "title": "Producer"
 }
-Update property
-Endpoint
-PUT /admin/properties/:property_id.json
-Parameters
-Name	Description
-property[title]	title
-Request
-Route
+```
+
+### Update property
+
+`PUT /admin/properties/:property_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `property[title]` |  | title |
+
+**Запрос**
+
+```http
 PUT /admin/properties/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "property": {
     "title": "Brand country"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "position": 8,
@@ -21069,66 +23813,104 @@ Body
   "permalink": "producer",
   "title": "Brand country"
 }
-ProviderToken
-Create or refresh messengers custom provider token
-Endpoint
+```
+
+---
+
+## ProviderToken
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create or refresh messengers custom provider token](#create-or-refresh-messengers-custom-provider-token) | `POST /admin/dialogs/provider_tokens.json` |
+
+### Create or refresh messengers custom provider token
+
+`POST /admin/dialogs/provider_tokens.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `messenger_type` | да | Messenger type  ["whats_app", "telegram", "viber", "sms", "email", "vk", "instagram"] |
+
+**Запрос**
+
+```http
 POST /admin/dialogs/provider_tokens.json
-Parameters
-Name	Description	Enum
-messenger_type required	Messenger type	["whats_app", "telegram", "viber", "sms", "email", "vk", "instagram"]
-Request
-Route
-POST /admin/dialogs/provider_tokens.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "messenger_type": "sms"
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "api_token": "SOME_API_TOKEN",
   "webhook_token": "SOME_WEBHOOK_TOKEN"
 }
-RecurringApplicationCharge
-Create recurring_application_charge
+```
+
+---
+
+## RecurringApplicationCharge
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create recurring_application_charge](#create-recurring-application-charge) | `POST /admin/recurring_application_charge.json` |
+| [Destroy recurring_application_charge](#destroy-recurring-application-charge) | `DELETE /admin/recurring_application_charge.json` |
+| [Get recurring_application_charge](#get-recurring-application-charge) | `GET /admin/recurring_application_charge.json` |
+| [Update recurring_application_charge](#update-recurring-application-charge) | `PUT /admin/recurring_application_charge.json` |
+| [add free days to recurring_application_charge](#add-free-days-to-recurring-application-charge) | `PATCH /admin/recurring_application_charge/add_free_days.json` |
+
+### Create recurring_application_charge
+
+`POST /admin/recurring_application_charge.json`
+
 Application can have only one recurring charge at any given time.
 
-Endpoint
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `recurring_application_charge[monthly]` | да | amount of monthly payment |
+| `recurring_application_charge[trial_expired_at]` |  | trial period ending date, by default it uses trial period from application |
+
+**Запрос**
+
+```http
 POST /admin/recurring_application_charge.json
-Parameters
-Name	Description
-recurring_application_charge[monthly] required	amount of monthly payment
-recurring_application_charge[trial_expired_at]	trial period ending date, by default it uses trial period from application
-Request
-Route
-POST /admin/recurring_application_charge.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "recurring_application_charge": {
     "monthly": 200,
     "trial_expired_at": "2017-02-03"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "monthly": "200.0",
   "trial_expired_at": "2017-02-03",
@@ -21137,42 +23919,56 @@ Body
   "paid_till": "2017-02-03",
   "blocked": false
 }
-Destroy recurring_application_charge
-Endpoint
+```
+
+### Destroy recurring_application_charge
+
+`DELETE /admin/recurring_application_charge.json`
+
+**Запрос**
+
+```http
 DELETE /admin/recurring_application_charge.json
-Request
-Route
-DELETE /admin/recurring_application_charge.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get recurring_application_charge
-Endpoint
+```
+
+### Get recurring_application_charge
+
+`GET /admin/recurring_application_charge.json`
+
+**Запрос**
+
+```http
 GET /admin/recurring_application_charge.json
-Request
-Route
-GET /admin/recurring_application_charge.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "monthly": "1190.0",
   "trial_expired_at": "2026-08-01",
@@ -21181,32 +23977,42 @@ Body
   "paid_till": "2026-08-01",
   "blocked": false
 }
-Update recurring_application_charge
-Endpoint
+```
+
+### Update recurring_application_charge
+
+`PUT /admin/recurring_application_charge.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `recurring_application_charge[monthly]` |  | amount of monthly payment |
+
+**Запрос**
+
+```http
 PUT /admin/recurring_application_charge.json
-Parameters
-Name	Description
-recurring_application_charge[monthly]	amount of monthly payment
-Request
-Route
-PUT /admin/recurring_application_charge.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "recurring_application_charge": {
     "monthly": 300
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "monthly": "300.0",
   "trial_expired_at": "2026-08-01",
@@ -21215,32 +24021,42 @@ Body
   "paid_till": "2026-08-01",
   "blocked": false
 }
-add free days to recurring_application_charge
-Endpoint
+```
+
+### add free days to recurring_application_charge
+
+`PATCH /admin/recurring_application_charge/add_free_days.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `recurring_application_charge[days_count]` |  | how many free days you want to add, it is possible that paid_till attribute would change but trial_expired_at would not, it is normal |
+
+**Запрос**
+
+```http
 PATCH /admin/recurring_application_charge/add_free_days.json
-Parameters
-Name	Description
-recurring_application_charge[days_count]	how many free days you want to add, it is possible that paid_till attribute would change but trial_expired_at would not, it is normal
-Request
-Route
-PATCH /admin/recurring_application_charge/add_free_days.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "recurring_application_charge": {
     "days_count": 21
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "monthly": "400.0",
   "trial_expired_at": "2026-08-23",
@@ -21249,56 +24065,83 @@ Body
   "paid_till": "2026-08-23",
   "blocked": false
 }
-Redirect
-Create redirect
-Endpoint
+```
+
+---
+
+## Redirect
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create redirect](#create-redirect) | `POST /admin/redirects.json` |
+| [Create redirect with removing redirect chains](#create-redirect-with-removing-redirect-chains) | `POST /admin/redirects.json` |
+| [Destroy redirect](#destroy-redirect) | `DELETE /admin/redirects/:redirect_id.json` |
+| [Get redirect](#get-redirect) | `GET /admin/redirects/:redirect_id.json` |
+| [Get redirects](#get-redirects) | `GET /admin/redirects.json` |
+
+### Create redirect
+
+`POST /admin/redirects.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `redirect[old_url]` | да | old url |
+| `redirect[new_url]` | да | new url |
+
+**Запрос**
+
+```http
 POST /admin/redirects.json
-Parameters
-Name	Description
-redirect[old_url] required	old url
-redirect[new_url] required	new url
-Request
-Route
-POST /admin/redirects.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "redirect": {
     "old_url": "/old_url",
     "new_url": "/new_url"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 8,
   "old_url": "/old_url",
   "new_url": "/new_url",
   "created_at": "2026-07-25T01:00:32.791+03:00"
 }
-Create redirect with removing redirect chains
-Endpoint
+```
+
+### Create redirect with removing redirect chains
+
+`POST /admin/redirects.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `redirect[old_url]` | да | old url |
+| `redirect[new_url]` | да | new url |
+| `redirect[remove_redirect_chains]` |  | if set to 1 and given a redirect A=>B when creating a new redirect B=>C, it will destroy old redirect (A=>B) and create new one (A=>C) |
+
+**Запрос**
+
+```http
 POST /admin/redirects.json
-Parameters
-Name	Description
-redirect[old_url] required	old url
-redirect[new_url] required	new url
-redirect[remove_redirect_chains]	if set to 1 and given a redirect A=>B when creating a new redirect B=>C, it will destroy old redirect (A=>B) and create new one (A=>C)
-Request
-Route
-POST /admin/redirects.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "redirect": {
     "old_url": "/like_new_url",
@@ -21306,78 +24149,103 @@ Body
     "remove_redirect_chains": 1
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 12,
   "old_url": "/like_new_url",
   "new_url": "/so_new_url",
   "created_at": "2026-07-25T01:00:33.085+03:00"
 }
-Destroy redirect
-Endpoint
-DELETE /admin/redirects/:redirect_id.json
-Request
-Route
+```
+
+### Destroy redirect
+
+`DELETE /admin/redirects/:redirect_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/redirects/14.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get redirect
-Endpoint
-GET /admin/redirects/:redirect_id.json
-Request
-Route
+```
+
+### Get redirect
+
+`GET /admin/redirects/:redirect_id.json`
+
+**Запрос**
+
+```http
 GET /admin/redirects/4.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 4,
   "old_url": "/so_old_url",
   "new_url": "/like_new_url",
   "created_at": "2026-07-25T01:00:32.445+03:00"
 }
-Get redirects
-Endpoint
+```
+
+### Get redirects
+
+`GET /admin/redirects.json`
+
+**Запрос**
+
+```http
 GET /admin/redirects.json
-Request
-Route
-GET /admin/redirects.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 2,
@@ -21386,25 +24254,42 @@ Body
     "created_at": "2026-07-25T01:00:32.199+03:00"
   }
 ]
-Review
-Create review
-Endpoint
+```
+
+---
+
+## Review
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create review](#create-review) | `POST /admin/reviews.json` |
+| [Destroy review](#destroy-review) | `DELETE /admin/reviews/:review_id.json` |
+| [Get review](#get-review) | `GET /admin/reviews/:review_id.json` |
+| [Get reviews](#get-reviews) | `GET /admin/reviews.json` |
+| [Update review](#update-review) | `PUT /admin/reviews/:review_id.json` |
+
+### Create review
+
+`POST /admin/reviews.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `review[product_id]` | да | product id |
+| `review[author]` | да | author |
+| `review[content]` |  | content |
+| `review[email]` |  | email |
+| `review[published]` |  | should be published? |
+| `review[rating]` |  | product rating (1-10) |
+
+**Запрос**
+
+```http
 POST /admin/reviews.json
-Parameters
-Name	Description
-review[product_id] required	product id
-review[author] required	author
-review[content]	content
-review[email]	email
-review[published]	should be published?
-review[rating]	product rating (1-10)
-Request
-Route
-POST /admin/reviews.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "review": {
     "product_id": 1,
@@ -21415,14 +24300,18 @@ Body
     "rating": 7
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 12,
   "product_id": 1,
@@ -21461,42 +24350,56 @@ Body
     "image_content_type": null
   }
 }
-Destroy review
-Endpoint
-DELETE /admin/reviews/:review_id.json
-Request
-Route
+```
+
+### Destroy review
+
+`DELETE /admin/reviews/:review_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/reviews/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get review
-Endpoint
-GET /admin/reviews/:review_id.json
-Request
-Route
+```
+
+### Get review
+
+`GET /admin/reviews/:review_id.json`
+
+**Запрос**
+
+```http
 GET /admin/reviews/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "product_id": 1,
@@ -21546,22 +24449,29 @@ Body
     "image_content_type": "image/jpeg"
   }
 }
-Get reviews
-Endpoint
+```
+
+### Get reviews
+
+`GET /admin/reviews.json`
+
+**Запрос**
+
+```http
 GET /admin/reviews.json
-Request
-Route
-GET /admin/reviews.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 10,
@@ -21890,32 +24800,42 @@ Body
     }
   }
 ]
-Update review
-Endpoint
-PUT /admin/reviews/:review_id.json
-Parameters
-Name	Description
-review[content]	content
-Request
-Route
+```
+
+### Update review
+
+`PUT /admin/reviews/:review_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `review[content]` |  | content |
+
+**Запрос**
+
+```http
 PUT /admin/reviews/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "review": {
     "content": "Sweet product!"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "product_id": 1,
@@ -21965,33 +24885,53 @@ Body
     "image_content_type": "image/jpeg"
   }
 }
-SalesChannel
-Create sales channel
-Endpoint
+```
+
+---
+
+## SalesChannel
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create sales channel](#create-sales-channel) | `POST /admin/sales_channels.json` |
+| [Destroy sales channel](#destroy-sales-channel) | `DELETE /admin/sales_channels/:sales_channel_id.json` |
+| [Get sales channel](#get-sales-channel) | `GET /admin/sales_channels/:sales_channel_id.json` |
+| [Get sales channels](#get-sales-channels) | `GET /admin/sales_channels.json` |
+
+### Create sales channel
+
+`POST /admin/sales_channels.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `sales_channel[title]` | да | sales channel title |
+
+**Запрос**
+
+```http
 POST /admin/sales_channels.json
-Parameters
-Name	Description
-sales_channel[title] required	sales channel title
-Request
-Route
-POST /admin/sales_channels.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "sales_channel": {
     "title": "sales channel title"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 10,
   "title": "sales channel title",
@@ -22008,42 +24948,56 @@ Body
   "additional_fields": {},
   "auto_export_products": "disabled"
 }
-Destroy sales channel
-Endpoint
-DELETE /admin/sales_channels/:sales_channel_id.json
-Request
-Route
+```
+
+### Destroy sales channel
+
+`DELETE /admin/sales_channels/:sales_channel_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/sales_channels/3.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get sales channel
-Endpoint
-GET /admin/sales_channels/:sales_channel_id.json
-Request
-Route
+```
+
+### Get sales channel
+
+`GET /admin/sales_channels/:sales_channel_id.json`
+
+**Запрос**
+
+```http
 GET /admin/sales_channels/3.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 3,
   "title": "test title",
@@ -22060,22 +25014,29 @@ Body
   "additional_fields": {},
   "auto_export_products": "disabled"
 }
-Get sales channels
-Endpoint
+```
+
+### Get sales channels
+
+`GET /admin/sales_channels.json`
+
+**Запрос**
+
+```http
 GET /admin/sales_channels.json
-Request
-Route
-GET /admin/sales_channels.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 3,
@@ -22094,111 +25055,157 @@ Body
     "auto_export_products": "disabled"
   }
 ]
-Similar
-Create similar
-Endpoint
-POST /admin/products/:product_id/similars.json
-Parameters
-Name	Description
-similar_ids required	similar ids array
-Request
-Route
+```
+
+---
+
+## Similar
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create similar](#create-similar) | `POST /admin/products/:product_id/similars.json` |
+| [Destroy similar](#destroy-similar) | `DELETE /admin/products/:product_id/similars/:similar_id.json` |
+| [Get similars](#get-similars) | `GET /admin/products/:product_id/similars.json` |
+| [Stock Currency](#stock-currency) | `POST /admin/stock_currencies.json` |
+| [Get stock currencies](#get-stock-currencies) | `GET /admin/stock_currencies.json` |
+| [Get stock currency](#get-stock-currency) | `GET /admin/stock_currencies/:stock_currency_id.json` |
+| [Update stock_currency](#update-stock-currency) | `PUT /admin/stock_currencies/:stock_currency_id.json` |
+
+### Create similar
+
+`POST /admin/products/:product_id/similars.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `similar_ids` | да | similar ids array |
+
+**Запрос**
+
+```http
 POST /admin/products/1/similars.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "similar_ids": [
     2
   ]
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Destroy similar
-Endpoint
-DELETE /admin/products/:product_id/similars/:similar_id.json
-Request
-Route
+```
+
+### Destroy similar
+
+`DELETE /admin/products/:product_id/similars/:similar_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/products/1/similars/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get similars
-Endpoint
-GET /admin/products/:product_id/similars.json
-Request
-Route
+```
+
+### Get similars
+
+`GET /admin/products/:product_id/similars.json`
+
+**Запрос**
+
+```http
 GET /admin/products/1/similars.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 3
   }
 ]
-Stock Currency
-Create stock_currency
-Maximal quantity of currencies per account is 5.
+```
 
-Endpoint
+### Stock Currency
+
+`POST /admin/stock_currencies.json`
+
+Create stock_currency Maximal quantity of currencies per account is 5.
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `stock_currency[code]` | да | Available codes:LVL, BYN, USD, EUR, EEK, LTL, AMD, KGS, MDL, EGP, CAD, JPY, TNB, TRY, AZN, PLN, ILS, CNY, BGN, GBP, RUR, UAH, AUD, GEL, AED, CHF, KZT, UZS, TJS, VND, TMT, MXN |
+| `stock_currency[is_default]` |  | false by default, set it true to make this currency default for account |
+| `stock_currency[exchange_rate_use_cb]` |  | true by default, set it false to use manual exchange rate |
+| `stock_currency[exchange_rate_manual]` |  | manual exchange rate |
+| `stock_currency[exchange_rate_percent]` |  | 0 by default, deviation as a percentage from defined exchange rate |
+
+**Запрос**
+
+```http
 POST /admin/stock_currencies.json
-Parameters
-Name	Description
-stock_currency[code] required	Available codes:LVL, BYN, USD, EUR, EEK, LTL, AMD, KGS, MDL, EGP, CAD, JPY, TNB, TRY, AZN, PLN, ILS, CNY, BGN, GBP, RUR, UAH, AUD, GEL, AED, CHF, KZT, UZS, TJS, VND, TMT, MXN
-stock_currency[is_default]	false by default, set it true to make this currency default for account
-stock_currency[exchange_rate_use_cb]	true by default, set it false to use manual exchange rate
-stock_currency[exchange_rate_manual]	manual exchange rate
-stock_currency[exchange_rate_percent]	0 by default, deviation as a percentage from defined exchange rate
-Request
-Route
-POST /admin/stock_currencies.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "stock_currency": {
     "code": "KZT",
     "exchange_rate_percent": 10
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 93,
   "is_default": false,
@@ -22212,22 +25219,29 @@ Body
   "unit": "тг.",
   "exchange_rate": "0.231"
 }
-Get stock currencies
-Endpoint
+```
+
+### Get stock currencies
+
+`GET /admin/stock_currencies.json`
+
+**Запрос**
+
+```http
 GET /admin/stock_currencies.json
-Request
-Route
-GET /admin/stock_currencies.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -22243,22 +25257,29 @@ Body
     "exchange_rate": "30.0"
   }
 ]
-Get stock currency
-Endpoint
-GET /admin/stock_currencies/:stock_currency_id.json
-Request
-Route
+```
+
+### Get stock currency
+
+`GET /admin/stock_currencies/:stock_currency_id.json`
+
+**Запрос**
+
+```http
 GET /admin/stock_currencies/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "is_default": true,
@@ -22272,23 +25293,29 @@ Body
   "unit": "Ls",
   "exchange_rate": "30.0"
 }
-Update stock_currency
-Endpoint
-PUT /admin/stock_currencies/:stock_currency_id.json
-Parameters
-Name	Description
-stock_currency[code]	Available codes:LVL, BYN, USD, EUR, EEK, LTL, AMD, KGS, MDL, EGP, CAD, JPY, TNB, TRY, AZN, PLN, ILS, CNY, BGN, GBP, RUR, UAH, AUD, GEL, AED, CHF, KZT, UZS, TJS, VND, TMT, MXN
-stock_currency[is_default]	false by default, set it true to make this currency default for account
-stock_currency[exchange_rate_use_cb]	true by default, set it false to use manual exchange rate
-stock_currency[exchange_rate_manual]	manual exchange rate
-stock_currency[exchange_rate_percent]	0 by default, deviation as a percentage from defined exchange rate
-Request
-Route
+```
+
+### Update stock_currency
+
+`PUT /admin/stock_currencies/:stock_currency_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `stock_currency[code]` |  | Available codes:LVL, BYN, USD, EUR, EEK, LTL, AMD, KGS, MDL, EGP, CAD, JPY, TNB, TRY, AZN, PLN, ILS, CNY, BGN, GBP, RUR, UAH, AUD, GEL, AED, CHF, KZT, UZS, TJS, VND, TMT, MXN |
+| `stock_currency[is_default]` |  | false by default, set it true to make this currency default for account |
+| `stock_currency[exchange_rate_use_cb]` |  | true by default, set it false to use manual exchange rate |
+| `stock_currency[exchange_rate_manual]` |  | manual exchange rate |
+| `stock_currency[exchange_rate_percent]` |  | 0 by default, deviation as a percentage from defined exchange rate |
+
+**Запрос**
+
+```http
 PUT /admin/stock_currencies/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "stock_currency": {
     "code": "UAH",
@@ -22298,14 +25325,18 @@ Body
     "exchange_rate_percent": 0
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "is_default": true,
@@ -22319,97 +25350,148 @@ Body
   "unit": "грн.",
   "exchange_rate": "40.0"
 }
-Supplementary
-Create supplementary
-Endpoint
-POST /admin/products/:product_id/supplementaries.json
-Parameters
-Name	Description
-supplementary_ids required	supplementary ids array
-Request
-Route
+```
+
+---
+
+## Supplementary
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create supplementary](#create-supplementary) | `POST /admin/products/:product_id/supplementaries.json` |
+| [Destroy supplementary](#destroy-supplementary) | `DELETE /admin/products/:product_id/supplementaries/:supplementary_id.json` |
+| [Get supplementaries](#get-supplementaries) | `GET /admin/products/:product_id/supplementaries.json` |
+
+### Create supplementary
+
+`POST /admin/products/:product_id/supplementaries.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `supplementary_ids` | да | supplementary ids array |
+
+**Запрос**
+
+```http
 POST /admin/products/1/supplementaries.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "supplementary_ids": [
     2,
     3
   ]
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Destroy supplementary
-Endpoint
-DELETE /admin/products/:product_id/supplementaries/:supplementary_id.json
-Request
-Route
+```
+
+### Destroy supplementary
+
+`DELETE /admin/products/:product_id/supplementaries/:supplementary_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/products/1/supplementaries/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get supplementaries
-Endpoint
-GET /admin/products/:product_id/supplementaries.json
-Request
-Route
+```
+
+### Get supplementaries
+
+`GET /admin/products/:product_id/supplementaries.json`
+
+**Запрос**
+
+```http
 GET /admin/products/1/supplementaries.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 3
   }
 ]
-Unit
-Get units
-Endpoint
+```
+
+---
+
+## Unit
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Get units](#get-units) | `GET admin/units.json?lang=ru` |
+
+### Get units
+
+`GET admin/units.json?lang=ru`
+
+**Запрос**
+
+```http
 GET admin/units.json?lang=ru
-Request
-Route
-GET admin/units.json?lang=ru
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Query Parameters
+```
+
+Query:
+
+```text
 lang=ru
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "mmt": "мм",
   "cmt": "см",
@@ -22451,25 +25533,42 @@ Body
   "day": "сут",
   "mth": "мес"
 }
-UserTask
-Create user task
-Endpoint
+```
+
+---
+
+## UserTask
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create user task](#create-user-task) | `POST /admin/user_tasks.json` |
+| [Delete user task](#delete-user-task) | `DELETE /admin/user_tasks/:user_task_id.json` |
+| [API-Usage-Limit: 1/500](#api-usage-limit-1-500) | `GET /admin/user_tasks/:user_task_id.json` |
+| [Get user tasks list](#get-user-tasks-list) | `GET /admin/user_tasks.json` |
+| [Update user task](#update-user-task) | `PUT /admin/user_tasks/:user_task_id.json` |
+
+### Create user task
+
+`POST /admin/user_tasks.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `user_task[title]` | да | user task title |
+| `user_task[description]` | да | user task description |
+| `user_task[assignee_id]` | да | user id |
+| `user_task[deadline_at]` |  | deadline |
+| `user_task[complete]` |  | is task completed? |
+| `user_task[order_id]` |  | order id |
+
+**Запрос**
+
+```http
 POST /admin/user_tasks.json
-Parameters
-Name	Description
-user_task[title] required	user task title
-user_task[description] required	user task description
-user_task[assignee_id] required	user id
-user_task[deadline_at]	deadline
-user_task[complete]	is task completed?
-user_task[order_id]	order id
-Request
-Route
-POST /admin/user_tasks.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "user_task": {
     "title": "dispatch order N2",
@@ -22479,14 +25578,18 @@ Body
     "order_id": 1
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 8,
   "complete": null,
@@ -22502,38 +25605,47 @@ Body
     "number": 1001
   }
 }
-Delete user task
-Endpoint
-DELETE /admin/user_tasks/:user_task_id.json
-Request
-Route
+```
+
+### Delete user task
+
+`DELETE /admin/user_tasks/:user_task_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/user_tasks/12.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
 Content-Type: application/x-www-form-urlencoded
-Response
-Simulated Response
-Status
-200
-Headers
-API-Usage-Limit: 1/500
-Content-Type: application/json
-Get user task
-Endpoint
-GET /admin/user_tasks/:user_task_id.json
-Request
-Route
+```
+
+**Ответ**
+
+Status: `200`
+
+### API-Usage-Limit: 1/500
+
+`GET /admin/user_tasks/:user_task_id.json`
+
+Content-Type: application/json Get user task
+
+**Запрос**
+
+```http
 GET /admin/user_tasks/4.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 4,
   "complete": null,
@@ -22545,22 +25657,29 @@ Body
   "updated_at": "2026-07-25T01:00:33.780+03:00",
   "deadline_at": "2021-01-01T00:00:00.000+03:00"
 }
-Get user tasks list
-Endpoint
+```
+
+### Get user tasks list
+
+`GET /admin/user_tasks.json`
+
+**Запрос**
+
+```http
 GET /admin/user_tasks.json
-Request
-Route
-GET /admin/user_tasks.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 2,
@@ -22574,21 +25693,27 @@ Body
     "deadline_at": "2021-01-01T00:00:00.000+03:00"
   }
 ]
-Update user task
-Endpoint
-PUT /admin/user_tasks/:user_task_id.json
-Parameters
-Name	Description
-user_task[title]	user task title
-user_task[description]	user task position
-user_task[complete]	is user task completed?
-Request
-Route
+```
+
+### Update user task
+
+`PUT /admin/user_tasks/:user_task_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `user_task[title]` |  | user task title |
+| `user_task[description]` |  | user task position |
+| `user_task[complete]` |  | is user task completed? |
+
+**Запрос**
+
+```http
 PUT /admin/user_tasks/10.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "user_task": {
     "title": "new title",
@@ -22596,14 +25721,18 @@ Body
     "complete": true
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 10,
   "complete": true,
@@ -22615,24 +25744,43 @@ Body
   "updated_at": "2026-07-25T01:00:34.401+03:00",
   "deadline_at": "2021-01-01T00:00:00.000+03:00"
 }
-Variant
-Create variant
-Endpoint
-POST /admin/products/:product_id/variants.json
-Parameters
-Name	Description
-variant[price] required	price
-variant[quantity] required	quantity
-variant[options]	options
-variant[image_ids]	image_ids
-variant[variant_field_values_attributes]	variant field values attributes
-Request
-Route
+```
+
+---
+
+## Variant
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create variant](#create-variant) | `POST /admin/products/:product_id/variants.json` |
+| [Destroy variant](#destroy-variant) | `DELETE /admin/products/:product_id/variants/:variant_success_id.json` |
+| [Get variant](#get-variant) | `GET /admin/products/:product_id/variants/:variant_id.json` |
+| [Get variants](#get-variants) | `GET /admin/products/:product_id/variants.json` |
+| [Update group of variants (multi warehouses case)](#update-group-of-variants-multi-warehouses-case) | `PUT /admin/products/variants_group_update.json` |
+| [Update group of variants](#update-group-of-variants) | `PUT /admin/products/variants_group_update.json` |
+| [Update variant](#update-variant) | `PUT /admin/products/:product_id/variants/:variant_id.json` |
+
+### Create variant
+
+`POST /admin/products/:product_id/variants.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `variant[price]` | да | price |
+| `variant[quantity]` | да | quantity |
+| `variant[options]` |  | options |
+| `variant[image_ids]` |  | image_ids |
+| `variant[variant_field_values_attributes]` |  | variant field values attributes |
+
+**Запрос**
+
+```http
 POST /admin/products/1/variants.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "variant": {
     "price": 100,
@@ -22656,14 +25804,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 509944661,
   "title": "Black",
@@ -22714,42 +25866,56 @@ Body
     }
   ]
 }
-Destroy variant
-Endpoint
-DELETE /admin/products/:product_id/variants/:variant_success_id.json
-Request
-Route
+```
+
+### Destroy variant
+
+`DELETE /admin/products/:product_id/variants/:variant_success_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/products/1/variants/509944663.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get variant
-Endpoint
-GET /admin/products/:product_id/variants/:variant_id.json
-Request
-Route
+```
+
+### Get variant
+
+`GET /admin/products/:product_id/variants/:variant_id.json`
+
+**Запрос**
+
+```http
 GET /admin/products/1/variants/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "title": "Red",
@@ -22800,22 +25966,29 @@ Body
     }
   ]
 }
-Get variants
-Endpoint
-GET /admin/products/:product_id/variants.json
-Request
-Route
+```
+
+### Get variants
+
+`GET /admin/products/:product_id/variants.json`
+
+**Запрос**
+
+```http
 GET /admin/products/1/variants.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -22868,57 +26041,63 @@ Body
     ]
   }
 ]
-Update group of variants (multi warehouses case)
-Endpoint
+```
+
+### Update group of variants (multi warehouses case)
+
+`PUT /admin/products/variants_group_update.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `variants` |  | Array with parameters for each variant  array |
+| `variants[][id]` | да | Id of a variant  integer |
+| `variants[][quantity]` |  | Variant quantity  float |
+| `variants[][cost_price]` |  | Cost price of the variant  float |
+| `variants[][old_price]` |  | Old price of the variant  float |
+| `variants[][cost_price]` |  | Cost price of the variant  float |
+| `variants[][price]` |  | First price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price2]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price3]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price4]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price5]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price6]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price7]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price8]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price9]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price10]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price11]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price12]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price13]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price14]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price15]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price16]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price17]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price18]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price19]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price20]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][quantity_at_warehouses]` |  | Array of quantity at each of the warehouses. Could be replaced with quantity_at_warehousesN fields, which have higher priority  array  {"type" => "float"} |
+| `variants[][quantity_at_warehouse0]` |  | Quantity at n-th warehouse  float |
+| `variants[][quantity_at_warehouse1]` |  | Quantity at n-th warehouse  float |
+| `variants[][quantity_at_warehouse2]` |  | Quantity at n-th warehouse  float |
+| `variants[][quantity_at_warehouse3]` |  | Quantity at n-th warehouse  float |
+| `variants[][quantity_at_warehouse4]` |  | Quantity at n-th warehouse  float |
+| `variants[][quantity_at_warehouse5]` |  | Quantity at n-th warehouse  float |
+| `variants[][quantity_at_warehouse6]` |  | Quantity at n-th warehouse  float |
+| `variants[][quantity_at_warehouse7]` |  | Quantity at n-th warehouse  float |
+| `variants[][quantity_at_warehouse8]` |  | Quantity at n-th warehouse  float |
+| `variants[][quantity_at_warehouse9]` |  | Quantity at n-th warehouse  float |
+| `variants[][quantity_at_warehouse10]` |  | Quantity at n-th warehouse  float |
+| `variants[][quantity_at_warehouse11]` |  | Quantity at n-th warehouse  float |
+
+**Запрос**
+
+```http
 PUT /admin/products/variants_group_update.json
-Parameters
-Name	Description	Type	Items
-variants	Array with parameters for each variant	array	
-variants[][id] required	Id of a variant	integer	
-variants[][quantity]	Variant quantity	float	
-variants[][cost_price]	Cost price of the variant	float	
-variants[][old_price]	Old price of the variant	float	
-variants[][cost_price]	Cost price of the variant	float	
-variants[][price]	First price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price2]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price3]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price4]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price5]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price6]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price7]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price8]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price9]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price10]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price11]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price12]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price13]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price14]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price15]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price16]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price17]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price18]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price19]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][price20]	n-th price of the price kinds of the variant (if price kinds are enabled)	float	
-variants[][quantity_at_warehouses]	Array of quantity at each of the warehouses. Could be replaced with quantity_at_warehousesN fields, which have higher priority	array	{"type" => "float"}
-variants[][quantity_at_warehouse0]	Quantity at n-th warehouse	float	
-variants[][quantity_at_warehouse1]	Quantity at n-th warehouse	float	
-variants[][quantity_at_warehouse2]	Quantity at n-th warehouse	float	
-variants[][quantity_at_warehouse3]	Quantity at n-th warehouse	float	
-variants[][quantity_at_warehouse4]	Quantity at n-th warehouse	float	
-variants[][quantity_at_warehouse5]	Quantity at n-th warehouse	float	
-variants[][quantity_at_warehouse6]	Quantity at n-th warehouse	float	
-variants[][quantity_at_warehouse7]	Quantity at n-th warehouse	float	
-variants[][quantity_at_warehouse8]	Quantity at n-th warehouse	float	
-variants[][quantity_at_warehouse9]	Quantity at n-th warehouse	float	
-variants[][quantity_at_warehouse10]	Quantity at n-th warehouse	float	
-variants[][quantity_at_warehouse11]	Quantity at n-th warehouse	float	
-Request
-Route
-PUT /admin/products/variants_group_update.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "variants": [
     {
@@ -22932,55 +26111,65 @@ Body
     }
   ]
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 []
-Update group of variants
+```
+
+### Update group of variants
+
+`PUT /admin/products/variants_group_update.json`
+
 It’s possible to update at most 100 variants per request.
 
-Endpoint
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `variants` |  | Array with parameters for each variant  array |
+| `variants[][id]` | да | Id of a variant  integer |
+| `variants[][quantity]` |  | Variant quantity  float |
+| `variants[][cost_price]` |  | Cost price of the variant  float |
+| `variants[][old_price]` |  | Old price of the variant  float |
+| `variants[][cost_price]` |  | Cost price of the variant  float |
+| `variants[][price]` |  | First price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price2]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price3]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price4]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price5]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price6]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price7]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price8]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price9]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price10]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price11]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price12]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price13]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price14]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price15]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price16]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price17]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price18]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price19]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+| `variants[][price20]` |  | n-th price of the price kinds of the variant (if price kinds are enabled)  float |
+
+**Запрос**
+
+```http
 PUT /admin/products/variants_group_update.json
-Parameters
-Name	Description	Type
-variants	Array with parameters for each variant	array
-variants[][id] required	Id of a variant	integer
-variants[][quantity]	Variant quantity	float
-variants[][cost_price]	Cost price of the variant	float
-variants[][old_price]	Old price of the variant	float
-variants[][cost_price]	Cost price of the variant	float
-variants[][price]	First price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price2]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price3]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price4]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price5]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price6]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price7]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price8]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price9]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price10]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price11]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price12]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price13]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price14]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price15]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price16]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price17]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price18]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price19]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-variants[][price20]	n-th price of the price kinds of the variant (if price kinds are enabled)	float
-Request
-Route
-PUT /admin/products/variants_group_update.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "variants": [
     {
@@ -22990,31 +26179,41 @@ Body
     }
   ]
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 []
-Update variant
-Endpoint
-PUT /admin/products/:product_id/variants/:variant_id.json
-Parameters
-Name	Description
-variant[dimensions]	Length x Width x Height (Ш x Г x В)
-variant[price]	price
-variant[quantity_at_warehouse0]	quantity at warehouse with array index 0 (require multiwarehouses enabled)
-variant[variant_field_values_attributes]	variant field values attributes
-Request
-Route
+```
+
+### Update variant
+
+`PUT /admin/products/:product_id/variants/:variant_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `variant[dimensions]` |  | Length x Width x Height (Ш x Г x В) |
+| `variant[price]` |  | price |
+| `variant[quantity_at_warehouse0]` |  | quantity at warehouse with array index 0 (require multiwarehouses enabled) |
+| `variant[variant_field_values_attributes]` |  | variant field values attributes |
+
+**Запрос**
+
+```http
 PUT /admin/products/1/variants/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "variant": {
     "price": 150,
@@ -23027,14 +26226,18 @@ Body
     ]
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "title": "Red",
@@ -23085,24 +26288,44 @@ Body
     }
   ]
 }
-VariantField
-Create variant_field
-Endpoint
+```
+
+---
+
+## VariantField
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create variant_field](#create-variant-field) | `POST /admin/variant_fields.json` |
+| [Destroy variant_field by handle](#destroy-variant-field-by-handle) | `DELETE /admin/variant_fields/:variant_field_handle.json` |
+| [Destroy variant_field](#destroy-variant-field) | `DELETE /admin/variant_fields/:variant_field_id.json` |
+| [Get variant_field by handle](#get-variant-field-by-handle) | `GET /admin/variant_fields/:variant_field_handle.json` |
+| [Get variant_field](#get-variant-field) | `GET /admin/variant_fields/:variant_field_id.json` |
+| [Get variant_fields](#get-variant-fields) | `GET /admin/variant_fields.json` |
+| [Update variant_field by handle](#update-variant-field-by-handle) | `PUT /admin/variant_fields/:variant_field_handle.json` |
+| [Update variant_field](#update-variant-field) | `PUT /admin/variant_fields/:variant_field_id.json` |
+
+### Create variant_field
+
+`POST /admin/variant_fields.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `variant_field[title]` | да | title |
+| `variant_field[handle]` | да | handle used in liquid |
+| `variant_field[type]` | да | VariantField::TextArea - textarea, VariantField::TextField - textfield |
+| `variant_field[position]` |  | position in variant_fields list |
+| `variant_field[is_hidden]` |  | boolean |
+
+**Запрос**
+
+```http
 POST /admin/variant_fields.json
-Parameters
-Name	Description
-variant_field[title] required	title
-variant_field[handle] required	handle used in liquid
-variant_field[type] required	VariantField::TextArea - textarea, VariantField::TextField - textfield
-variant_field[position]	position in variant_fields list
-variant_field[is_hidden]	boolean
-Request
-Route
-POST /admin/variant_fields.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "variant_field": {
     "title": "Size",
@@ -23110,14 +26333,18 @@ Body
     "type": "VariantField::TextArea"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 5,
   "handle": "size",
@@ -23128,62 +26355,83 @@ Body
   "title": "Size",
   "application_title": "Цифровые товары"
 }
-Destroy variant_field by handle
-Endpoint
-DELETE /admin/variant_fields/:variant_field_handle.json
-Request
-Route
+```
+
+### Destroy variant_field by handle
+
+`DELETE /admin/variant_fields/:variant_field_handle.json`
+
+**Запрос**
+
+```http
 DELETE /admin/variant_fields/handle2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Destroy variant_field
-Endpoint
-DELETE /admin/variant_fields/:variant_field_id.json
-Request
-Route
+```
+
+### Destroy variant_field
+
+`DELETE /admin/variant_fields/:variant_field_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/variant_fields/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get variant_field by handle
-Endpoint
-GET /admin/variant_fields/:variant_field_handle.json
-Request
-Route
+```
+
+### Get variant_field by handle
+
+`GET /admin/variant_fields/:variant_field_handle.json`
+
+**Запрос**
+
+```http
 GET /admin/variant_fields/handle2.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "handle": "handle2",
@@ -23194,22 +26442,29 @@ Body
   "title": "title2",
   "application_title": "Цифровые товары"
 }
-Get variant_field
-Endpoint
-GET /admin/variant_fields/:variant_field_id.json
-Request
-Route
+```
+
+### Get variant_field
+
+`GET /admin/variant_fields/:variant_field_id.json`
+
+**Запрос**
+
+```http
 GET /admin/variant_fields/2.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "handle": "handle2",
@@ -23220,22 +26475,29 @@ Body
   "title": "title2",
   "application_title": "Цифровые товары"
 }
-Get variant_fields
-Endpoint
+```
+
+### Get variant_fields
+
+`GET /admin/variant_fields.json`
+
+**Запрос**
+
+```http
 GET /admin/variant_fields.json
-Request
-Route
-GET /admin/variant_fields.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -23258,36 +26520,46 @@ Body
     "application_title": "Цифровые товары"
   }
 ]
-Update variant_field by handle
-Endpoint
-PUT /admin/variant_fields/:variant_field_handle.json
-Parameters
-Name	Description	Method
-variant_field[title]	title	
-variant_field[handle]	handle used in liquid	new_handle
-variant_field[position]	position in variant_fields list	
-variant_field[is_hidden]	boolean	
-Request
-Route
+```
+
+### Update variant_field by handle
+
+`PUT /admin/variant_fields/:variant_field_handle.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `variant_field[title]` |  | title |
+| `variant_field[handle]` |  | handle used in liquid  new_handle |
+| `variant_field[position]` |  | position in variant_fields list |
+| `variant_field[is_hidden]` |  | boolean |
+
+**Запрос**
+
+```http
 PUT /admin/variant_fields/handle2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "variant_field": {
     "title": "Volume",
     "position": 2
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "handle": "handle2",
@@ -23298,22 +26570,28 @@ Body
   "title": "Volume",
   "application_title": "Цифровые товары"
 }
-Update variant_field
-Endpoint
-PUT /admin/variant_fields/:variant_field_id.json
-Parameters
-Name	Description
-variant_field[title]	title
-variant_field[handle]	handle used in liquid
-variant_field[position]	position in variant_fields list
-variant_field[is_hidden]	boolean
-Request
-Route
+```
+
+### Update variant_field
+
+`PUT /admin/variant_fields/:variant_field_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `variant_field[title]` |  | title |
+| `variant_field[handle]` |  | handle used in liquid |
+| `variant_field[position]` |  | position in variant_fields list |
+| `variant_field[is_hidden]` |  | boolean |
+
+**Запрос**
+
+```http
 PUT /admin/variant_fields/2.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "variant_field": {
     "title": "Volume",
@@ -23321,14 +26599,18 @@ Body
     "position": 2
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 2,
   "handle": "volume",
@@ -23339,171 +26621,241 @@ Body
   "title": "Volume",
   "application_title": "Цифровые товары"
 }
-VariantFieldValue
-Create variant_field_value by handle
-Endpoint
-POST /admin/variants/:variant_id/variant_field_values.json
-Parameters
-Name	Description
-variant_field_value[variant_field_handle] required	variant field handle
-variant_field_value[value]	variant field value
-Request
-Route
+```
+
+---
+
+## VariantFieldValue
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create variant_field_value by handle](#create-variant-field-value-by-handle) | `POST /admin/variants/:variant_id/variant_field_values.json` |
+| [Create variant_field_value](#create-variant-field-value) | `POST /admin/variants/:variant_id/variant_field_values.json` |
+| [Destroy variant_field_value by handle](#destroy-variant-field-value-by-handle) | `DELETE /admin/variants/:variant_id/variant_field_values/:variant_field_handle.json` |
+| [Destroy variant_field_value](#destroy-variant-field-value) | `DELETE /admin/variants/:variant_id/variant_field_values/:variant_field_value_id.json` |
+| [Get variant_field_value by handle](#get-variant-field-value-by-handle) | `GET /admin/variants/:variant_id/variant_field_values/:variant_field_handle.json` |
+| [Get variant_field_value](#get-variant-field-value) | `GET /admin/variants/:variant_id/variant_field_values/:variant_field_value_id.json` |
+| [Get variant_field_values](#get-variant-field-values) | `GET /admin/variants/:variant_id/variant_field_values.json` |
+| [Update variant_field_value by handle](#update-variant-field-value-by-handle) | `PUT /admin/variants/:variant_id/variant_field_values/:variant_field_handle.json` |
+| [Update variant_field_value](#update-variant-field-value) | `PUT /admin/variants/:variant_id/variant_field_values/:variant_field_value_id.json` |
+
+### Create variant_field_value by handle
+
+`POST /admin/variants/:variant_id/variant_field_values.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `variant_field_value[variant_field_handle]` | да | variant field handle |
+| `variant_field_value[value]` |  | variant field value |
+
+**Запрос**
+
+```http
 POST /admin/variants/1/variant_field_values.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "variant_field_value": {
     "variant_field_handle": "handle2",
     "value": "test value"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 5,
   "variant_field_id": 2,
   "value": "test value"
 }
-Create variant_field_value
-Endpoint
-POST /admin/variants/:variant_id/variant_field_values.json
-Parameters
-Name	Description
-variant_field_value[variant_field_id] required	variant field id
-variant_field_value[value]	variant field value
-Request
-Route
+```
+
+### Create variant_field_value
+
+`POST /admin/variants/:variant_id/variant_field_values.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `variant_field_value[variant_field_id]` | да | variant field id |
+| `variant_field_value[value]` |  | variant field value |
+
+**Запрос**
+
+```http
 POST /admin/variants/1/variant_field_values.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "variant_field_value": {
     "variant_field_id": 2,
     "value": "test value"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 3,
   "variant_field_id": 2,
   "value": "test value"
 }
-Destroy variant_field_value by handle
-Endpoint
-DELETE /admin/variants/:variant_id/variant_field_values/:variant_field_handle.json
-Request
-Route
+```
+
+### Destroy variant_field_value by handle
+
+`DELETE /admin/variants/:variant_id/variant_field_values/:variant_field_handle.json`
+
+**Запрос**
+
+```http
 DELETE /admin/variants/1/variant_field_values/handle.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Destroy variant_field_value
-Endpoint
-DELETE /admin/variants/:variant_id/variant_field_values/:variant_field_value_id.json
-Request
-Route
+```
+
+### Destroy variant_field_value
+
+`DELETE /admin/variants/:variant_id/variant_field_values/:variant_field_value_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/variants/1/variant_field_values/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get variant_field_value by handle
-Endpoint
-GET /admin/variants/:variant_id/variant_field_values/:variant_field_handle.json
-Request
-Route
+```
+
+### Get variant_field_value by handle
+
+`GET /admin/variants/:variant_id/variant_field_values/:variant_field_handle.json`
+
+**Запрос**
+
+```http
 GET /admin/variants/1/variant_field_values/handle.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "variant_field_id": 1,
   "value": "some variant field value"
 }
-Get variant_field_value
-Endpoint
-GET /admin/variants/:variant_id/variant_field_values/:variant_field_value_id.json
-Request
-Route
+```
+
+### Get variant_field_value
+
+`GET /admin/variants/:variant_id/variant_field_values/:variant_field_value_id.json`
+
+**Запрос**
+
+```http
 GET /admin/variants/1/variant_field_values/1.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "variant_field_id": 1,
   "value": "some variant field value"
 }
-Get variant_field_values
-Endpoint
-GET /admin/variants/:variant_id/variant_field_values.json
-Request
-Route
+```
+
+### Get variant_field_values
+
+`GET /admin/variants/:variant_id/variant_field_values.json`
+
+**Запрос**
+
+```http
 GET /admin/variants/1/variant_field_values.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -23511,97 +26863,138 @@ Body
     "value": "some variant field value"
   }
 ]
-Update variant_field_value by handle
-Endpoint
-PUT /admin/variants/:variant_id/variant_field_values/:variant_field_handle.json
-Parameters
-Name	Description
-variant_field_value[value]	variant field value
-Request
-Route
+```
+
+### Update variant_field_value by handle
+
+`PUT /admin/variants/:variant_id/variant_field_values/:variant_field_handle.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `variant_field_value[value]` |  | variant field value |
+
+**Запрос**
+
+```http
 PUT /admin/variants/1/variant_field_values/handle.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "variant_field_value": {
     "value": "new value"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "variant_field_id": 1,
   "value": "new value"
 }
-Update variant_field_value
-Endpoint
-PUT /admin/variants/:variant_id/variant_field_values/:variant_field_value_id.json
-Parameters
-Name	Description
-variant_field_value[value]	variant field value
-Request
-Route
+```
+
+### Update variant_field_value
+
+`PUT /admin/variants/:variant_id/variant_field_values/:variant_field_value_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `variant_field_value[value]` |  | variant field value |
+
+**Запрос**
+
+```http
 PUT /admin/variants/1/variant_field_values/1.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "variant_field_value": {
     "value": "new value"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 1,
   "variant_field_id": 1,
   "value": "new value"
 }
-Warehouse
-Create warehouse
-Endpoint
+```
+
+---
+
+## Warehouse
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create warehouse](#create-warehouse) | `POST /admin/warehouses.json` |
+| [Delete warehouse](#delete-warehouse) | `DELETE /admin/warehouses/:warehouse_id.json` |
+| [API-Usage-Limit: 1/500](#api-usage-limit-1-500) | `GET /admin/warehouses/:warehouse_id.json` |
+| [Get warehouses list](#get-warehouses-list) | `GET /admin/warehouses.json` |
+| [Update warehouse](#update-warehouse) | `PUT /admin/warehouses/:warehouse_id.json` |
+
+### Create warehouse
+
+`POST /admin/warehouses.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `warehouse[title]` | да | warehouse title |
+| `warehouse[position]` |  | warehouse position (1 - main priority) |
+
+**Запрос**
+
+```http
 POST /admin/warehouses.json
-Parameters
-Name	Description
-warehouse[title] required	warehouse title
-warehouse[position]	warehouse position (1 - main priority)
-Request
-Route
-POST /admin/warehouses.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "warehouse": {
     "title": "secondary",
     "position": 2
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 96,
   "title": "secondary",
@@ -23611,38 +27004,47 @@ Body
   "updated_at": "2026-07-25T01:00:35.320+03:00",
   "status": "creating"
 }
-Delete warehouse
-Endpoint
-DELETE /admin/warehouses/:warehouse_id.json
-Request
-Route
+```
+
+### Delete warehouse
+
+`DELETE /admin/warehouses/:warehouse_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/warehouses/100.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
 Content-Type: application/x-www-form-urlencoded
-Response
-Simulated Response
-Status
-202
-Headers
-API-Usage-Limit: 1/500
-Content-Type: application/json
-Get warehouse
-Endpoint
-GET /admin/warehouses/:warehouse_id.json
-Request
-Route
+```
+
+**Ответ**
+
+Status: `202`
+
+### API-Usage-Limit: 1/500
+
+`GET /admin/warehouses/:warehouse_id.json`
+
+Content-Type: application/json Get warehouse
+
+**Запрос**
+
+```http
 GET /admin/warehouses/92.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 92,
   "title": "main",
@@ -23652,22 +27054,29 @@ Body
   "updated_at": "2026-07-25T01:00:35.022+03:00",
   "status": "creating"
 }
-Get warehouses list
-Endpoint
+```
+
+### Get warehouses list
+
+`GET /admin/warehouses.json`
+
+**Запрос**
+
+```http
 GET /admin/warehouses.json
-Request
-Route
-GET /admin/warehouses.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "id": 1,
@@ -23688,34 +27097,44 @@ Body
     "status": "creating"
   }
 ]
-Update warehouse
-Endpoint
-PUT /admin/warehouses/:warehouse_id.json
-Parameters
-Name	Description
-warehouse[title]	warehouse title
-warehouse[position]	warehouse position
-Request
-Route
+```
+
+### Update warehouse
+
+`PUT /admin/warehouses/:warehouse_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `warehouse[title]` |  | warehouse title |
+| `warehouse[position]` |  | warehouse position |
+
+**Запрос**
+
+```http
 PUT /admin/warehouses/98.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "warehouse": {
     "title": "new title",
     "position": 2
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "id": 98,
   "title": "new title",
@@ -23725,25 +27144,42 @@ Body
   "updated_at": "2026-07-25T01:00:35.541+03:00",
   "status": "creating"
 }
-Webhook
-Create webhook
-Endpoint
+```
+
+---
+
+## Webhook
+
+| Операция | Метод и путь |
+|----------|--------------|
+| [Create webhook](#create-webhook) | `POST /admin/webhooks.json` |
+| [Destroy webhook](#destroy-webhook) | `DELETE /admin/webhooks/:webhook_id.json` |
+| [Get webhook](#get-webhook) | `GET /admin/webhooks/:webhook_id.json` |
+| [Get webhooks](#get-webhooks) | `GET /admin/webhooks.json` |
+| [Update webhook](#update-webhook) | `PUT /admin/webhooks/:webhook_id.json` |
+
+### Create webhook
+
+`POST /admin/webhooks.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `webhook[address]` | да | address |
+| `webhook[topic]` | да | Topics: 'orders/create', 'orders/update', 'orders/destroy', 'products/create', 'products/update', 'client/create', 'client/update' |
+| `webhook[format_type]` |  | format of data sent by webhook: 'json' or 'xml' |
+| `webhook[warehouse_id]` |  | For 'orders/create', 'orders/update', 'orders/destroy' topics only, filters sent orders by warehouse |
+| `webhook[sales_channel_id]` |  | For 'products/update' topic only, filters sent products by sales channel |
+| `webhook[batch_size]` |  | For 'products/create', 'products/update' topics only, products are sent in batches, default value: 10 |
+
+**Запрос**
+
+```http
 POST /admin/webhooks.json
-Parameters
-Name	Description
-webhook[address] required	address
-webhook[topic] required	Topics: 'orders/create', 'orders/update', 'orders/destroy', 'products/create', 'products/update', 'client/create', 'client/update'
-webhook[format_type]	format of data sent by webhook: 'json' or 'xml'
-webhook[warehouse_id]	For 'orders/create', 'orders/update', 'orders/destroy' topics only, filters sent orders by warehouse
-webhook[sales_channel_id]	For 'products/update' topic only, filters sent products by sales channel
-webhook[batch_size]	For 'products/create', 'products/update' topics only, products are sent in batches, default value: 10
-Request
-Route
-POST /admin/webhooks.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "webhook": {
     "address": "http://application.com/orders/create",
@@ -23751,14 +27187,18 @@ Body
     "format_type": "json"
   }
 }
-Response
-Simulated Response
-Status
-201
-Headers
+```
+
+**Ответ**
+
+Status: `201`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "address": "http://application.com/orders/create",
   "created_at": "2026-07-25T00:58:46.166+03:00",
@@ -23769,42 +27209,56 @@ Body
   "sales_channel_id": null,
   "batch_size": null
 }
-Destroy webhook
-Endpoint
-DELETE /admin/webhooks/:webhook_id.json
-Request
-Route
+```
+
+### Destroy webhook
+
+`DELETE /admin/webhooks/:webhook_id.json`
+
+**Запрос**
+
+```http
 DELETE /admin/webhooks/17.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "status": "ok"
 }
-Get webhook
-Endpoint
-GET /admin/webhooks/:webhook_id.json
-Request
-Route
+```
+
+### Get webhook
+
+`GET /admin/webhooks/:webhook_id.json`
+
+**Запрос**
+
+```http
 GET /admin/webhooks/9.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "address": "http://app.ru/orders/create",
   "created_at": "2026-07-25T00:58:45.884+03:00",
@@ -23815,22 +27269,29 @@ Body
   "sales_channel_id": null,
   "batch_size": null
 }
-Get webhooks
-Endpoint
+```
+
+### Get webhooks
+
+`GET /admin/webhooks.json`
+
+**Запрос**
+
+```http
 GET /admin/webhooks.json
-Request
-Route
-GET /admin/webhooks.json
-Headers
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 [
   {
     "address": "https://webhook.site/4f4dd3e6-46d8-403f-8a3e-4fb0b1f108a0",
@@ -23883,37 +27344,47 @@ Body
     "batch_size": null
   }
 ]
-Update webhook
-Endpoint
-PUT /admin/webhooks/:webhook_id.json
-Parameters
-Name	Description
-webhook[address]	address
-webhook[topic]	Topics: 'orders/create', 'orders/update', 'orders/destroy', 'products/create', 'products/update', 'client/create', 'client/update'
-webhook[format_type]	format of data sent by webhook: json or xml
-webhook[warehouse_id]	For 'orders/create', 'orders/update', 'orders/destroy' topics only, filters sent orders by warehouse
-webhook[sales_channel_id]	For 'products/update' topic only, filters sent products by sales channel
-webhook[batch_size]	For 'products/create', 'products/update' topics only, products are sent in batches, default value: 10
-Request
-Route
+```
+
+### Update webhook
+
+`PUT /admin/webhooks/:webhook_id.json`
+
+| Параметр | Обязательный | Описание |
+|----------|:------------:|----------|
+| `webhook[address]` |  | address |
+| `webhook[topic]` |  | Topics: 'orders/create', 'orders/update', 'orders/destroy', 'products/create', 'products/update', 'client/create', 'client/update' |
+| `webhook[format_type]` |  | format of data sent by webhook: json or xml |
+| `webhook[warehouse_id]` |  | For 'orders/create', 'orders/update', 'orders/destroy' topics only, filters sent orders by warehouse |
+| `webhook[sales_channel_id]` |  | For 'products/update' topic only, filters sent products by sales channel |
+| `webhook[batch_size]` |  | For 'products/create', 'products/update' topics only, products are sent in batches, default value: 10 |
+
+**Запрос**
+
+```http
 PUT /admin/webhooks/15.json
-Headers
 Content-Type: application/json
 Authorization: Basic ZGlnaXRhbC1nb29kczpjNTFjOTA3MDdhMTNjZTNmZmYyMTNhZmJiNWNkMTI3MA==
-Body
+```
+
+```json
 {
   "webhook": {
     "format_type": "xml"
   }
 }
-Response
-Simulated Response
-Status
-200
-Headers
+```
+
+**Ответ**
+
+Status: `200`
+
+```http
 API-Usage-Limit: 1/500
 Content-Type: application/json; charset=utf-8
-Body
+```
+
+```json
 {
   "address": "http://app.ru/orders/create",
   "created_at": "2026-07-25T00:58:46.308+03:00",
@@ -23924,3 +27395,4 @@ Body
   "sales_channel_id": null,
   "batch_size": null
 }
+```
