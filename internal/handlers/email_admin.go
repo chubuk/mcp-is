@@ -208,6 +208,10 @@ func (h *EmailAdminHandler) TestTemplate(w http.ResponseWriter, r *http.Request)
 	if !h.requireAdmin(w, r) {
 		return
 	}
+	if h.mail.IsDisabled() {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "SMTP выключен — письмо не отправлялось"})
+		return
+	}
 	key := r.PathValue("key")
 	var req struct {
 		Email string `json:"email"`
@@ -301,13 +305,6 @@ func (h *EmailAdminHandler) UpdateSMTPSettings(w http.ResponseWriter, r *http.Re
 	}
 
 	cfg := h.mail.Config()
-	if req.Enabled != nil {
-		if *req.Enabled {
-			cfg.Disabled = false
-		} else {
-			cfg.Disabled = true
-		}
-	}
 	if req.Host != nil {
 		cfg.Host = strings.TrimSpace(*req.Host)
 	}
@@ -343,6 +340,17 @@ func (h *EmailAdminHandler) UpdateSMTPSettings(w http.ResponseWriter, r *http.Re
 		}
 	}
 
+	// Final enabled state: enable requires a host.
+	if cfg.Host == "" {
+		if req.Enabled != nil && *req.Enabled {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "Укажите хост SMTP, чтобы включить отправку"})
+			return
+		}
+		cfg.Disabled = true
+	} else if req.Enabled != nil {
+		cfg.Disabled = !*req.Enabled
+	}
+
 	// Persist non-secret fields
 	if req.Enabled != nil {
 		val := "true"
@@ -367,17 +375,8 @@ func (h *EmailAdminHandler) UpdateSMTPSettings(w http.ResponseWriter, r *http.Re
 		h.setSetting("smtp_tls_mode", string(cfg.TLSMode))
 	}
 
-	if cfg.Host != "" {
-		cfg.Disabled = false
-		if req.Enabled != nil && !*req.Enabled {
-			cfg.Disabled = true
-		}
-	} else {
-		cfg.Disabled = true
-	}
-
 	h.mail.Reload(cfg)
-	slog.Info("smtp settings updated", "host", cfg.Host, "port", cfg.Port, "tls", string(cfg.TLSMode), "from", cfg.From)
+	slog.Info("smtp settings updated", "host", cfg.Host, "port", cfg.Port, "tls", string(cfg.TLSMode), "from", cfg.From, "disabled", cfg.Disabled)
 	h.GetSMTPSettings(w, r)
 }
 

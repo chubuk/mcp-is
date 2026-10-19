@@ -85,3 +85,69 @@ func TestUpdateSMTPSettings_KeepsPassword(t *testing.T) {
 		t.Errorf("tls = %q", cfg.TLSMode)
 	}
 }
+
+func TestUpdateSMTPSettings_EnableWithoutHost(t *testing.T) {
+	svc := email.NewService(email.Config{Domain: "example.com"})
+	h := NewEmailAdminHandler(nil, nil, svc, nil)
+
+	body, _ := json.Marshal(map[string]any{"enabled": true, "host": ""})
+	req := httptest.NewRequest("PUT", "/api/admin/smtp/settings", bytes.NewReader(body)).WithContext(ctxWithRole("admin"))
+	rec := httptest.NewRecorder()
+	h.UpdateSMTPSettings(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400 body=%s", rec.Code, rec.Body.String())
+	}
+	if !svc.IsDisabled() {
+		t.Error("must stay disabled when enable without host")
+	}
+}
+
+func TestUpdateSMTPSettings_EnablePersists(t *testing.T) {
+	svc := email.NewService(email.Config{Host: "smtp.x", From: "a@b.c", Domain: "example.com", Disabled: true})
+	h := NewEmailAdminHandler(nil, nil, svc, nil)
+
+	body, _ := json.Marshal(map[string]any{"enabled": true, "host": "smtp.x"})
+	req := httptest.NewRequest("PUT", "/api/admin/smtp/settings", bytes.NewReader(body)).WithContext(ctxWithRole("admin"))
+	rec := httptest.NewRecorder()
+	h.UpdateSMTPSettings(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	if svc.IsDisabled() {
+		t.Fatal("expected enabled after PUT enabled=true")
+	}
+	var resp smtpSettingsResponse
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatal(err)
+	}
+	if !resp.Enabled {
+		t.Errorf("response enabled=false, want true: %s", rec.Body.String())
+	}
+
+	// disable sticks even with host
+	body, _ = json.Marshal(map[string]any{"enabled": false, "host": "smtp.x"})
+	req = httptest.NewRequest("PUT", "/api/admin/smtp/settings", bytes.NewReader(body)).WithContext(ctxWithRole("admin"))
+	rec = httptest.NewRecorder()
+	h.UpdateSMTPSettings(rec, req)
+	if !svc.IsDisabled() {
+		t.Error("Disabled must stick when enabled=false and host set")
+	}
+}
+
+func TestTestTemplate_SMTPDisabled(t *testing.T) {
+	svc := email.NewService(email.Config{Domain: "example.com"})
+	h := NewEmailAdminHandler(nil, nil, svc, nil)
+
+	body, _ := json.Marshal(map[string]any{"email": "user@example.com"})
+	req := httptest.NewRequest("POST", "/api/admin/email/templates/test/test", bytes.NewReader(body)).
+		WithContext(ctxWithRole("admin"))
+	req.SetPathValue("key", "test")
+	rec := httptest.NewRecorder()
+	h.TestTemplate(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400 body=%s", rec.Code, rec.Body.String())
+	}
+	if !bytes.Contains(rec.Body.Bytes(), []byte("SMTP")) {
+		t.Errorf("expected SMTP error message, got %s", rec.Body.String())
+	}
+}

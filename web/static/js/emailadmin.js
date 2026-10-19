@@ -335,11 +335,14 @@ const EmailAdmin = {
         const s = res.data;
         body.innerHTML = `
             <div class="form-group" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;background:#f7f9fc;border:1px solid #d9e2ef;border-radius:6px;margin-bottom:14px">
-                <label for="smtp-enabled" style="margin:0;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px">
+                <label style="margin:0;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px">
                     <input type="checkbox" id="smtp-enabled" ${s.enabled ? 'checked' : ''} style="width:18px;height:18px;cursor:pointer">
                     Включить отправку почты
                 </label>
                 <span style="font-size:12px;color:#666">— письма сброса пароля и уведомления</span>
+                <span id="smtp-enabled-status" style="font-size:12px;font-weight:600;color:${s.enabled ? '#1a7f37' : '#999'}">
+                    ${s.enabled ? 'Отправка: включена' : 'Отправка: выключена'}
+                </span>
             </div>
             <div class="form-row" style="display:flex;gap:12px;flex-wrap:wrap">
                 <div class="form-group" style="flex:2">
@@ -358,8 +361,8 @@ const EmailAdmin = {
                     <input type="text" id="smtp-user" value="${s.user || ''}" placeholder="user@mail.ru">
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label for="smtp-pass">Пароль${s.has_password ? ' <small>(сохранён — пустое = не менять)</small>' : ''}</label>
-                    <input type="password" id="smtp-pass" value="" placeholder="${s.has_password ? '••••••' : 'пароль SMTP'}">
+                    <label for="smtp-pass">Пароль${s.has_password ? ' <small style="color:#1a7f37">(сохранён ✓ — пустое = не менять)</small>' : ''}</label>
+                    <input type="password" id="smtp-pass" data-pw-no-reveal value="" autocomplete="new-password" placeholder="${s.has_password ? '•••••• (сохранён)' : 'пароль SMTP'}">
                 </div>
             </div>
             <div class="form-row" style="display:flex;gap:12px;flex-wrap:wrap">

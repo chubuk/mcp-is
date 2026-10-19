@@ -65,13 +65,12 @@ func (s *Service) SetTemplateStore(store TemplateStore) {
 }
 
 // Reload swaps runtime SMTP config without process restart.
+// Host=="" forces Disabled; otherwise the caller's Disabled flag is kept.
 func (s *Service) Reload(cfg Config) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if cfg.Host == "" {
 		cfg.Disabled = true
-	} else {
-		cfg.Disabled = false
 	}
 	if cfg.TLSMode == "" {
 		cfg.TLSMode = TLSModeStartTLS
@@ -223,8 +222,14 @@ func smtpSend(ctx context.Context, cfg Config, to, subject, htmlBody, textBody s
 		gomail.WithTLSPolicy(tlsPolicy(cfg.TLSMode)),
 		gomail.WithTimeout(15 * time.Second),
 	}
+	if cfg.TLSMode == TLSModeSSL {
+		opts = append(opts, gomail.WithSSL())
+	}
+	if cfg.Domain != "" {
+		opts = append(opts, gomail.WithHELO(cfg.Domain))
+	}
 	if cfg.User != "" {
-		opts = append(opts, gomail.WithSMTPAuth(gomail.SMTPAuthPlain))
+		opts = append(opts, gomail.WithSMTPAuth(gomail.SMTPAuthAutoDiscover))
 	}
 
 	client, err := gomail.NewClient(cfg.Host, opts...)

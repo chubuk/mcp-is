@@ -142,6 +142,22 @@ func TestReload(t *testing.T) {
 	}
 }
 
+func TestReload_PreservesDisabled(t *testing.T) {
+	svc := NewService(Config{Host: "smtp.x", From: "a@b.c", Domain: "example.com"})
+	svc.Reload(Config{Host: "smtp.x", From: "a@b.c", Disabled: true})
+	if !svc.IsDisabled() {
+		t.Error("Disabled=true must be preserved when host is set")
+	}
+	svc.Reload(Config{Host: "smtp.x", From: "a@b.c", Disabled: false})
+	if svc.IsDisabled() {
+		t.Error("Disabled=false must be preserved when host is set")
+	}
+	svc.Reload(Config{Host: "", From: "a@b.c", Disabled: false})
+	if !svc.IsDisabled() {
+		t.Error("empty host must force disabled")
+	}
+}
+
 func TestMemoryStore(t *testing.T) {
 	s := NewMemoryStore()
 	tpl, err := s.Get("welcome")

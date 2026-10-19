@@ -38,7 +38,7 @@ const App = {
 
     // Adds a show/hide toggle to every password input (existing and dynamically rendered)
     enhancePasswordInputs(root) {
-        root.querySelectorAll('input[type="password"]:not(.pw-done)').forEach((input) => {
+        root.querySelectorAll('input[type="password"]:not(.pw-done):not([data-pw-no-reveal])').forEach((input) => {
             input.classList.add('pw-done');
             const wrap = document.createElement('div');
             wrap.className = 'pw-wrap';
