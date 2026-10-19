@@ -564,7 +564,6 @@ EOF
     print_status "OK" "Файл .env создан с безопасными паролями"
     print_status "INFO" "Пароли сохранены в: $credentials_file"
     print_status "INFO" "Для доступа к БД: PGPASSWORD=$db_password psql -h localhost -U admin -d mcp_is"
-    print_status "INFO" "Для доступа к VDS: ~/.ssh/mimo_deploy"
 
     return 0
 }

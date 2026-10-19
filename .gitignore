@@ -15,3 +15,5 @@ backups/
 # playwright local artifacts
 .playwright/
 .playwright-cli/
+
+config.yaml
