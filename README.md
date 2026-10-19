@@ -450,6 +450,9 @@ curl -X POST http://localhost:8080/mcp \
 | Просмотр | `/admin/users/:id` | admin, super_admin |
 | Статистика | `/admin/stats` | admin, super_admin |
 | Настройки сервера | `/admin/server` | admin, super_admin |
+| ПДн | `/admin/pdn` | admin, super_admin |
+| Бэкапы | `/admin/backup` | admin, super_admin |
+| Почта | `/admin/email` | admin, super_admin |
 
 ### Настройки сервера
 
@@ -793,6 +796,10 @@ make deb            # Собрать .deb пакет
 | Пользователи | `/admin/users` | Управление пользователями (создание, удаление) | admin, super_admin |
 | Просмотр | `/admin/users/:id` | Детали пользователя | admin, super_admin |
 | Статистика | `/admin/stats` | Статистика системы | admin, super_admin |
+| Сервер | `/admin/server` | Домен, HTTPS, сертификаты | admin, super_admin |
+| ПДн | `/admin/pdn` | Защита персональных данных | admin, super_admin |
+| Бэкапы | `/admin/backup` | Резервные копии | admin, super_admin |
+| Почта | `/admin/email` | SMTP, шаблоны писем, тест | admin, super_admin |
 
 ### Технологии
 
