@@ -490,13 +490,13 @@ curl -X POST http://localhost:8080/mcp \
 
 ```env
 SMTP_HOST=smtp.mail.ru
-SMTP_PORT=587
+SMTP_PORT=465
 SMTP_USER=user@mail.ru
-SMTP_PASS=пароль-приложения
+SMTP_PASS=пароль-приложений   # mail.ru: НЕ основной пароль, см. docs/setup/EMAIL-DNS.md
 SMTP_FROM=MCP IS <user@mail.ru>
 ```
 
-- **DNS (SPF/DKIM/DMARC)** — чтобы письма не попадали в спам: таблица в `docs/setup/EMAIL-DNS.md`, проверка `./scripts/check-email-dns.sh`.
+- **DNS (SPF/DKIM/DMARC)** и **пароль приложений mail.ru** — `docs/setup/EMAIL-DNS.md`, проверка `./scripts/check-email-dns.sh`.
 - **Шаблоны писем** — тема + тело (Quill/HTML/plain), переменные, preview, тест-письмо, сброс — там же в `/admin/email`.
 - Без SMTP токены сброса логируются в консоль.
 
