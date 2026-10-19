@@ -52,6 +52,9 @@ const EmailAdmin = {
                         «от кого» будет не ваш домен.
                         <br><strong>С доменом:</strong> <code>SMTP_FROM=MCP IS &lt;noreply@ваш-домен&gt;</code>
                         и все записи выше.
+                        <br><strong>Mail.ru / biz.mail.ru:</strong> SMTP-пароль —
+                        <strong>пароль приложений</strong> (Настройки → Безопасность → Пароли для внешних приложений),
+                        не основной пароль ящика. Ошибка <code>535</code> = нужен app-password.
                         <br>Подробнее и скрипт проверки: <code>docs/setup/EMAIL-DNS.md</code>,
                         <code>./scripts/check-email-dns.sh</code>
                     </p>
