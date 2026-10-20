@@ -182,3 +182,15 @@ func TestListProductAccessoryLinks_Path(t *testing.T) {
 		t.Errorf("path=%s", (*reqs)[0].Path)
 	}
 }
+
+func TestMapFieldValues_NullValue(t *testing.T) {
+	var fvs []InSalesFieldValue
+	err := json.Unmarshal([]byte(`[{"id":1,"product_field_id":2,"value":null},{"id":2,"product_field_id":3,"value":"ok"}]`), &fvs)
+	if err != nil {
+		t.Fatalf("unmarshal null value must not fail, got %v", err)
+	}
+	got := mapFieldValues(fvs)
+	if len(got) != 2 {
+		t.Fatalf("got %#v", got)
+	}
+}

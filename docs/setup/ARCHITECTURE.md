@@ -43,7 +43,7 @@
 │              InSales API Client                             │
 │  • HTTP Basic Auth                                          │
 │  • AES-GCM encrypted passwords                              │
-│  • 74+ REST endpoints                                       │
+│  • InSales REST (products, orders, fields, …)               │
 └──────────────────────────┬──────────────────────────────────┘
                            │
                            ▼

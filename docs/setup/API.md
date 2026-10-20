@@ -225,7 +225,7 @@
     {"name": "list_products", "description": "Получить список товаров"},
     {"name": "get_product", "description": "Получить товар по ID"}
   ],
-  "count": 225,
+  "count": 282,
   "updated_at": "02.07.2026 14:30"
 }
 ```
