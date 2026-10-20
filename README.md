@@ -107,7 +107,7 @@ curl http://localhost:8080/health
 
 ## MCP Инструменты
 
-Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **282 инструмента** (120 read-only). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent`.
+Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **284 инструмента** (120 read-only). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent`.
 
 По умолчанию `tools/list` возвращает **core surface** (~30 tools) + discovery meta-tools. Полный каталог — `search_insales_tools` → `call_insales_tool` или `MCP_TOOLS_MODE=all`.
 
@@ -612,7 +612,7 @@ SMTP_FROM=MCP IS <user@mail.ru>
 |-------|--------|----------|
 | core (default tools/list) | ~30 | products/orders/clients/categories/collections/fields/pipelines/export + discovery meta-tools |
 | read-only catalog | 120 | все read-команды (list_*, get_*, export, pipeline) |
-| read/write catalog | 282 | все команды включая create/update/delete + пайплайны |
+| read/write catalog | 284 | все команды включая create/update/delete + пайплайны |
 
 ## Пайплайн-инструменты
 

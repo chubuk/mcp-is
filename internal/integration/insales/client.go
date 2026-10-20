@@ -304,6 +304,7 @@ type Client interface {
 	ListRecurringApplicationCharges(ctx context.Context) ([]any, error)
 	GetRecurringApplicationCharge(ctx context.Context, id string) (any, error)
 	CreateRecurringApplicationCharge(ctx context.Context, args map[string]any) (any, error)
+	UpdateRecurringApplicationCharge(ctx context.Context, args map[string]any) (any, error)
 	DeleteRecurringApplicationCharge(ctx context.Context, id string) error
 
 	// BonusSystemTransactions

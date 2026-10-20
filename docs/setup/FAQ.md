@@ -33,7 +33,7 @@ NGINX_HTTPS_PORT=8443
 Включён режим "Только чтение" или вы смотрите на core surface. Проверьте:
 - В `.env`: `MCP_READ_ONLY=false`
 - Или в Web UI: Магазины → редактировать → снять галку "Только чтение"
-- **`tools/list` по умолчанию возвращает core surface (~30 tools)**, а не все 282. Для редких операций AI вызывает `search_insales_tools` → `call_insales_tool`, либо задайте `MCP_TOOLS_MODE=all`
+- **`tools/list` по умолчанию возвращает core surface (~30 tools)**, а не все 284. Для редких операций AI вызывает `search_insales_tools` → `call_insales_tool`, либо задайте `MCP_TOOLS_MODE=all`
 
 ### Как AI работает с пользовательскими полями товаров?
 

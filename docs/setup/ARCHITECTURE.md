@@ -23,7 +23,7 @@
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
 │  │ Auth Layer  │  │ MCP Server  │  │ Web API (REST)      │ │
 │  │ JWT/API Key │  │ mcp-go SDK  │  │ handlers/shops/...  │ │
-│  │ Rate Limit  │  │ 282 tools   │  │ admin/auth/server   │ │
+│  │ Rate Limit  │  │ 284 tools   │  │ admin/auth/server   │ │
 │  └─────────────┘  └──────┬──────┘  └──────────┬──────────┘ │
 │                          │                     │            │
 │  ┌───────────────────────┴─────────────────────┴──────────┐ │
@@ -67,7 +67,7 @@
 - **Role-based access** — super_admin, admin, user
 
 ### 3. MCP Server (mcp-go SDK)
-- **282 инструмента** для работы с InSales (120 read-only / 162 write)
+- **284 инструмента** для работы с InSales (120 read-only / 164 write)
 - **Progressive discovery** — default `tools/list` ≈ core surface (~30) + `search_insales_tools` / `call_insales_tool`; полный каталог через catalog или `MCP_TOOLS_MODE=all`
 - **Tool annotations** — readOnlyHint, destructiveHint, idempotentHint, openWorldHint
 - **Tool filtering** — read-only режим скрывает write-команды; nil ReadOnlyHint трактуется как write
@@ -152,7 +152,7 @@ sudo systemctl start mcp-is
 
 ### 6. Покрытие InSales API → MCP tools (op→tool)
 
-Сгенерировано из `docs/api/Insales-api-docs.md` vs `internal/mcp/tools.go`. Ресурсов: 57, операций API: 327, MCP tools: 282.
+Сгенерировано из `docs/api/Insales-api-docs.md` vs `internal/mcp/tools.go`. Ресурсов: 57, операций API: 327, MCP tools: 284.
 
 Статусы: **OK** — есть list/get/create/update/delete (или API не даёт большего); **частично** — нет отдельных вербов (часто в API их и нет); **out-of-scope** — ресурс не нужен / сломан на стороне InSales.
 
@@ -171,7 +171,7 @@ sudo systemctl start mcp-is
 | Characteristic | 5 | DELETE, GET, POST, PUT | `create_characteristic`, `delete_characteristic`, `get_characteristic`, `update_characteristic` | OK |
 | Client | 6 | DELETE, GET, POST, PUT | `client_full_profile`, `create_client`, `create_client_group`, `delete_client`, `delete_client_group`, `get_client`, `get_client_group`, `list_client_bonus_transactions`… | OK |
 | ClientGroup | 5 | DELETE, GET, POST, PUT | `create_client_group`, `delete_client_group`, `get_client_group`, `update_client_group` | OK |
-| Collect | 7 | DELETE, GET, POST, PUT | `add_product_to_collection`, `get_collects_by_product`, `list_collects` | частично: нет update,delete |
+| Collect | 7 | DELETE, GET, POST, PUT | `add_product_to_collection`, `get_collects_by_product`, `list_collects`, `update_collect`, `remove_product_from_collection` | OK |
 | Collection | 5 | DELETE, GET, POST, PUT | `add_product_to_collection`, `collection_products`, `create_collection`, `create_collection_field`, `create_collection_filter`, `delete_collection`, `delete_collection_field`, `delete_collection_filter`… | OK |
 | CollectionField | 8 | DELETE, GET, POST, PUT | `create_collection_field`, `delete_collection_field`, `get_collection_field`, `get_collection_field_value`, `list_collection_field_values`, `update_collection_field`, `update_collection_field_value` | OK |
 | CollectionFieldValue | 5 | GET, PUT | `get_collection_field_value`, `update_collection_field_value` | OK (API: только list/get/update) |
@@ -202,7 +202,7 @@ sudo systemctl start mcp-is
 | ProductFieldValue | 9 | DELETE, GET, POST, PUT | `create_product_field_value`, `delete_product_field_value`, `get_product_field_value`, `update_product_field_value` | OK |
 | Property | 5 | DELETE, GET, POST, PUT | `create_property`, `create_property_value`, `delete_property`, `delete_property_value`, `get_property`, `list_property_values`, `update_property`, `update_property_value` | OK |
 | ProviderToken | 1 | POST | `create_provider_token` | OK,update,delete |
-| RecurringApplicationCharge | 5 | DELETE, GET, PATCH, POST, PUT | `create_recurring_application_charge`, `delete_recurring_application_charge`, `get_recurring_application_charge` | частично: нет update |
+| RecurringApplicationCharge | 5 | DELETE, GET, PATCH, POST, PUT | `create_recurring_application_charge`, `update_recurring_application_charge`, `delete_recurring_application_charge`, `get_recurring_application_charge` | OK |
 | Redirect | 5 | DELETE, GET, POST | `create_redirect`, `delete_redirect` | OK (create/delete/list — без update в API) |
 | Review | 5 | DELETE, GET, POST, PUT | `create_review`, `delete_review`, `get_review`, `update_review` | OK |
 | SalesChannel | 4 | DELETE, GET, POST | `create_sales_channel`, `delete_sales_channel`, `get_sales_channel`, `update_sales_channel` | OK |

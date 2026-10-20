@@ -2248,6 +2248,16 @@ func (s *Service) CreateRecurringApplicationCharge(ctx context.Context, args map
 	}
 	return c.CreateRecurringApplicationCharge(ctx, args)
 }
+func (s *Service) UpdateRecurringApplicationCharge(ctx context.Context, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateRecurringApplicationCharge(ctx, args)
+}
 func (s *Service) DeleteRecurringApplicationCharge(ctx context.Context, id string) error {
 	c, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {

@@ -225,14 +225,14 @@
     {"name": "list_products", "description": "Получить список товаров"},
     {"name": "get_product", "description": "Получить товар по ID"}
   ],
-  "count": 282,
+  "count": 284,
   "updated_at": "02.07.2026 14:30"
 }
 ```
 
 **Логика:**
 - `is_read_only=true` → read-команды (list_*, get_*, system)
-- `is_read_only=false` → все 282 команды (полный каталог; default tools/list — core surface)
+- `is_read_only=false` → все 284 команды (полный каталог; default tools/list — core surface)
 ```
 
 #### GET /api/shops

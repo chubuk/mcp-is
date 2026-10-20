@@ -2312,6 +2312,10 @@ func (c *InSalesClient) GetRecurringApplicationCharge(ctx context.Context, id st
 func (c *InSalesClient) CreateRecurringApplicationCharge(ctx context.Context, args map[string]any) (any, error) {
 	return c.crudCreate(ctx, "/recurring_application_charges.json", "recurring_application_charge", args)
 }
+func (c *InSalesClient) UpdateRecurringApplicationCharge(ctx context.Context, args map[string]any) (any, error) {
+	// InSales documents PUT /recurring_application_charge.json (singular) with monthly only
+	return c.crudUpdate(ctx, "/recurring_application_charge.json", "recurring_application_charge", args)
+}
 func (c *InSalesClient) DeleteRecurringApplicationCharge(ctx context.Context, id string) error {
 	return c.crudDelete(ctx, fmt.Sprintf("/recurring_application_charges/%s.json", id))
 }

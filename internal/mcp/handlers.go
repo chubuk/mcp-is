@@ -1345,6 +1345,32 @@ func createCollectHandler(svc *service.Service) func(ctx context.Context, req mc
 	}
 }
 
+func updateCollectHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		collectID, err := req.RequireString("collect_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		delete(args, "collect_id")
+		payload := map[string]any{}
+		if v, ok := args["collection_id"]; ok && v != nil && v != "" {
+			payload["collection_id"] = v
+		}
+		if v, ok := args["position"]; ok && v != nil {
+			payload["position"] = v
+		}
+		if len(payload) == 0 {
+			return mcp.NewToolResultError("collection_id or position is required"), nil
+		}
+		result, err := svc.UpdateCollect(ctx, collectID, payload)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return toolResult(result), nil
+	}
+}
+
 func deleteCollectHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		collectID, err := req.RequireString("collect_id")
@@ -1359,6 +1385,20 @@ func deleteCollectHandler(svc *service.Service) func(ctx context.Context, req mc
 }
 
 // === PROPERTIES ===
+
+func updateRecurringApplicationChargeHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		monthly, ok := req.GetArguments()["monthly"]
+		if !ok || monthly == nil || monthly == "" {
+			return mcp.NewToolResultError("monthly is required"), nil
+		}
+		result, err := svc.UpdateRecurringApplicationCharge(ctx, map[string]any{"monthly": monthly})
+		if err != nil {
+			return toolError(err), nil
+		}
+		return toolResult(result), nil
+	}
+}
 
 func listPropertiesHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {

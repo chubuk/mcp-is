@@ -194,3 +194,51 @@ func TestMapFieldValues_NullValue(t *testing.T) {
 		t.Fatalf("got %#v", got)
 	}
 }
+
+func TestUpdateCollect_And_RecurringCharge(t *testing.T) {
+	t.Run("update collect move/position", func(t *testing.T) {
+		c, reqs := testClientWithCapture(t, func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, `{"collect":{"id":11}}`)
+		})
+		if _, err := c.UpdateCollect(context.Background(), "11", map[string]any{
+			"collection_id": 2,
+			"position":      5,
+		}); err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		if len(*reqs) != 1 {
+			t.Fatalf("reqs = %d", len(*reqs))
+		}
+		r := (*reqs)[0]
+		if r.Method != "PUT" || r.Path != "/collects/11.json" {
+			t.Errorf("req = %s %s", r.Method, r.Path)
+		}
+		want := map[string]any{"collect": map[string]any{"collection_id": 2, "position": 5}}
+		got, _ := json.Marshal(r.Body)
+		wantJSON, _ := json.Marshal(want)
+		if string(got) != string(wantJSON) {
+			t.Errorf("body = %s, want %s", got, wantJSON)
+		}
+	})
+
+	t.Run("update recurring charge monthly", func(t *testing.T) {
+		c, reqs := testClientWithCapture(t, func(w http.ResponseWriter, r *http.Request) {
+			jsonResponse(w, 200, `{"recurring_application_charge":{"id":1}}`)
+		})
+		if _, err := c.UpdateRecurringApplicationCharge(context.Background(), map[string]any{"monthly": 1990}); err != nil {
+			t.Fatalf("err: %v", err)
+		}
+		if len(*reqs) != 1 {
+			t.Fatalf("reqs = %d", len(*reqs))
+		}
+		r := (*reqs)[0]
+		if r.Method != "PUT" || r.Path != "/recurring_application_charge.json" {
+			t.Errorf("req = %s %s", r.Method, r.Path)
+		}
+		got, _ := json.Marshal(r.Body)
+		wantJSON := `{"recurring_application_charge":{"monthly":1990}}`
+		if string(got) != wantJSON {
+			t.Errorf("body = %s, want %s", got, wantJSON)
+		}
+	})
+}

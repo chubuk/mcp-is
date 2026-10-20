@@ -1146,12 +1146,25 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), createCollectHandler(svc))
 
 	s.AddTool(mcp.NewTool("remove_product_from_collection",
-		mcp.WithDescription("Delete or remove collection on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить товар из коллекции"),
-		mcp.WithString("collect_id", mcp.Required(), mcp.Description("ID связи")),
+		mcp.WithDescription("Remove a product from a collection (collect link). Destructive on the link only."),
+		mcp.WithToolTitle("Удалить товар из коллекции"),
+		mcp.WithString("collect_id", mcp.Required(), mcp.Description("Collect link id")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), deleteCollectHandler(svc))
+
+	s.AddTool(mcp.NewTool("update_collect",
+		mcp.WithDescription("Move a product to another collection or change position in the list. Uses collect link id."),
+		mcp.WithToolTitle("Обновить связь товар-коллекция"),
+		mcp.WithString("collect_id", mcp.Required(), mcp.Description("Collect link id")),
+		mcp.WithNumber("collection_id", mcp.Description("Target collection id (move)")),
+		mcp.WithNumber("position", mcp.Description("New position")),
+		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(true),
+		mcp.WithDestructiveHintAnnotation(false),
+		mcp.WithOpenWorldHintAnnotation(false),
+	), updateCollectHandler(svc))
 
 	// === СВОЙСТВА ТОВАРОВ (Properties) ===
 	s.AddTool(mcp.NewTool("list_properties",
@@ -2060,6 +2073,12 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateRecurringApplicationCharge))
+	s.AddTool(mcp.NewTool("update_recurring_application_charge", mcp.WithDescription("Update the recurring application charge monthly amount. InSales uses a singleton PUT path (no charge_id)."), mcp.WithToolTitle("Обновить рекуррентный счёт"), mcp.WithNumber("monthly", mcp.Required(), mcp.Description("Monthly payment amount")),
+		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(true),
+		mcp.WithDestructiveHintAnnotation(false),
+		mcp.WithOpenWorldHintAnnotation(false),
+	), updateRecurringApplicationChargeHandler(svc))
 	s.AddTool(mcp.NewTool("delete_recurring_application_charge", mcp.WithDescription("Delete or remove recurring application charge on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить рекуррентный счёт"), mcp.WithString("charge_id", mcp.Required(), mcp.Description("ID счёта")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
