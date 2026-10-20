@@ -9,6 +9,7 @@ import (
 
 	"github.com/chubuk/mcp-is/internal/core"
 	"github.com/chubuk/mcp-is/internal/service"
+	"github.com/chubuk/mcp-is/internal/storage"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -99,7 +100,7 @@ func toolFilter(globalReadOnly bool) server.ToolFilterFunc {
 }
 
 // RegisterDiscoveryTools adds search_insales_tools / call_insales_tool.
-func RegisterDiscoveryTools(s *server.MCPServer, _ *service.Service) {
+func RegisterDiscoveryTools(s *server.MCPServer, _ *service.Service, auditRepo *storage.AuditRepository) {
 	s.AddTool(mcp.NewTool("search_insales_tools",
 		mcp.WithDescription("Search insales tools and return matching data in one call. Pipeline tool: combines lookup steps for common workflows. Returns JSON items relevant to the query."),
 		mcp.WithToolTitle("Поиск инструментов InSales"),
@@ -118,7 +119,7 @@ func RegisterDiscoveryTools(s *server.MCPServer, _ *service.Service) {
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), callInSalesToolHandler(s))
+	), callInSalesToolHandler(s, auditRepo))
 }
 
 func searchInSalesToolsHandler(s *server.MCPServer) server.ToolHandlerFunc {
@@ -189,7 +190,7 @@ func searchInSalesToolsHandler(s *server.MCPServer) server.ToolHandlerFunc {
 	}
 }
 
-func callInSalesToolHandler(s *server.MCPServer) server.ToolHandlerFunc {
+func callInSalesToolHandler(s *server.MCPServer, auditRepo *storage.AuditRepository) server.ToolHandlerFunc {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		name := strings.TrimSpace(req.GetString("name", ""))
 		if name == "" {
@@ -210,6 +211,13 @@ func callInSalesToolHandler(s *server.MCPServer) server.ToolHandlerFunc {
 		}
 		isWrite := st.Tool.Annotations.ReadOnlyHint == nil || !*st.Tool.Annotations.ReadOnlyHint
 		if readOnly && isWrite {
+			if auditRepo != nil {
+				args := map[string]any{}
+				if raw, ok := req.GetArguments()["args"].(map[string]any); ok {
+					args = raw
+				}
+				recordDenied(auditRepo, ctx, name, args)
+			}
 			return mcp.NewToolResultError(fmt.Sprintf("tool %q is write; session is read-only", name)), nil
 		}
 
@@ -229,6 +237,18 @@ func callInSalesToolHandler(s *server.MCPServer) server.ToolHandlerFunc {
 				Name:      name,
 				Arguments: args,
 			},
+		}
+		if isWrite {
+			// nested dispatch bypasses server middleware — audit write tools explicitly
+			res, err := st.Handler(ctx, sub)
+			action, ok := "call", true
+			if err != nil || (res != nil && res.IsError) {
+				action, ok = "error", false
+			}
+			if auditRepo != nil {
+				auditRepo.Insert(ctx, auditFromContext(ctx, name, action, args, ok))
+			}
+			return res, err
 		}
 		return st.Handler(ctx, sub)
 	}

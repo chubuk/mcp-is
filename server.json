@@ -1,0 +1,19 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.chubuk/mcp-is",
+  "title": "MCP IS",
+  "description": "MCP server for InSales e-commerce: products, orders, clients, custom fields, menus.",
+  "repository": {
+    "url": "https://github.com/chubuk/mcp-is",
+    "source": "github"
+  },
+  "version": "0.6.0",
+  "website": "https://mcp-is.ru",
+  "license": "LicenseRef-BSL-1.1",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://mcp-is.ru/mcp"
+    }
+  ]
+}

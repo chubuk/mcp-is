@@ -156,6 +156,8 @@ sudo systemctl start mcp-is
 
 Статусы: **OK** — есть list/get/create/update/delete (или API не даёт большего); **частично** — нет отдельных вербов (часто в API их и нет); **out-of-scope** — ресурс не нужен / сломан на стороне InSales.
 
+> **«частично» = лимит InSales API, а не roadmap MCP-IS.** ApplicationCharge / BonusSystemTransaction / File / Supplementary / Unit / ProviderToken — в API InSales нет update/delete, добавлять нечего. Field (destiny 1–6) — отдельный ресурс от ProductField.
+
 | Ресурс InSales | Ops | Methods | MCP tools | Статус |
 |----------------|----:|---------|-----------|--------|
 | Accessories | 5 | DELETE, GET, POST, PUT | `create_accessory`, `delete_accessory`, `get_accessory`, `list_accessories`, `list_product_accessory_links`, `update_accessory` | OK |
@@ -221,3 +223,13 @@ sudo systemctl start mcp-is
 - `CollectionFieldValue` — в API только GET/PUT.
 - `Field` (destiny 1–6) — отдельный ресурс от ProductField/VariantField/CollectionField.
 - Нестыковки имён: `AccessoryValues` = `*_property_values`, `Article` = `blog_posts`.
+
+## Roadmap (осознанно отложено)
+
+| Тема | Статус | Условие |
+|------|--------|---------|
+| MCP 2026-07-28 (stateless, `server/discover`, `resultType`) | отложено | поддержка в mcp-go (сейчас v0.56 = legacy handshake) |
+| OAuth 2.1 + RFC 9728 | отложено | public multi-tenant / paid tiers |
+| Verb-family rename (`issue_read`) | **не планируется** | breaking; только с alias-политикой ≥12 мес |
+| Registry publish (`server.json` есть в корне) | файл готов | публикация через `mcp-publisher` по команде |
+| Blog/pages tools | не делаем | сломано на стороне InSales API |

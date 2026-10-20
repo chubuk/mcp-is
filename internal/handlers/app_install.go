@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"crypto/hmac"
 	"crypto/rand"
 	"crypto/sha256"
@@ -16,6 +17,7 @@ import (
 	"github.com/chubuk/mcp-is/internal/appinstall"
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/core"
+	"github.com/chubuk/mcp-is/internal/integration/insales"
 	"github.com/chubuk/mcp-is/internal/storage"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -31,10 +33,11 @@ type AppHandler struct {
 	jwt      *auth.JWTManager
 	manager  *core.AccountManager
 
-	appKey     string
-	secretKey  string
-	domain     string
-	hmacSecret string
+	appKey         string
+	secretKey      string
+	domain         string
+	hmacSecret     string
+	billingMonthly int // 0 = free (default)
 }
 
 func NewAppHandler(
@@ -46,11 +49,13 @@ func NewAppHandler(
 	jwt *auth.JWTManager,
 	manager *core.AccountManager,
 	appKey, secretKey, domain, hmacSecret string,
+	billingMonthly int,
 ) *AppHandler {
 	return &AppHandler{
 		installs: installs, users: users, shops: shops, aiKeys: aiKeys,
 		aes: aes, jwt: jwt, manager: manager,
 		appKey: appKey, secretKey: secretKey, domain: domain, hmacSecret: hmacSecret,
+		billingMonthly: billingMonthly,
 	}
 }
 
@@ -278,6 +283,23 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if h.billingMonthly > 0 {
+		if redirectURL, paid, berr := h.ensureRecurringCharge(inst, password); berr != nil {
+			slog.Error("app autologin: billing", "error", berr)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		} else if !paid {
+			// unpaid: key is created but not delivered until charge is active
+			_ = h.installs.SetUser(insalesID, user.ID)
+			if redirectURL != "" {
+				http.Redirect(w, r, redirectURL, http.StatusFound)
+				return
+			}
+			http.Redirect(w, r, "/onboarding?billing=pending", http.StatusFound)
+			return
+		}
+	}
+
 	code, err := h.issueCode(user.ID, rawKey)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -348,6 +370,50 @@ func (h *AppHandler) LinkPending(w http.ResponseWriter, r *http.Request) {
 
 // provisionUserAndShop creates (or reuses) the user, upserts the shop and a shop-bound MCP key.
 // email/userName are only used when creating a new user (empty on link-pending path).
+
+// ensureRecurringCharge creates or re-checks the singleton RecurringApplicationCharge.
+// Returns (confirmation_url, paid). paid=true when charge exists and is not blocked.
+func (h *AppHandler) ensureRecurringCharge(inst *storage.AppInstall, password string) (string, bool, error) {
+	client, err := insales.NewClient(inst.ShopHost, h.appKey, password)
+	if err != nil {
+		return "", false, err
+	}
+	ctx := context.Background()
+
+	existing, err := client.GetRecurringApplicationCharge(ctx, "")
+	if err == nil && existing != nil {
+		if m, ok := existing.(map[string]any); ok {
+			if blocked, _ := m["blocked"].(bool); blocked {
+				return chargeConfirmationURL(m), false, nil
+			}
+			// active charge (trial or paid)
+			return "", true, nil
+		}
+	}
+
+	charge, err := client.CreateRecurringApplicationCharge(ctx, map[string]any{
+		"monthly": h.billingMonthly,
+	})
+	if err != nil {
+		return "", false, fmt.Errorf("create recurring charge: %w", err)
+	}
+	m, _ := charge.(map[string]any)
+	if blocked, _ := m["blocked"].(bool); blocked {
+		return chargeConfirmationURL(m), false, nil
+	}
+	// newly created charge in trial is usable
+	return chargeConfirmationURL(m), true, nil
+}
+
+func chargeConfirmationURL(m map[string]any) string {
+	for _, k := range []string{"confirmation_url", "url"} {
+		if s, ok := m[k].(string); ok && strings.HasPrefix(s, "http") {
+			return s
+		}
+	}
+	return ""
+}
+
 func (h *AppHandler) provisionUserAndShop(inst *storage.AppInstall, email, userName string) (*storage.User, string, error) {
 	userID := inst.UserID
 	if userID == "" {

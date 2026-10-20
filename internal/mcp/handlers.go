@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/chubuk/mcp-is/internal/integration/insales"
 	"github.com/chubuk/mcp-is/internal/pdn"
 	"github.com/chubuk/mcp-is/internal/service"
 	"github.com/mark3labs/mcp-go/mcp"
@@ -107,7 +108,7 @@ func listProductsHandler(svc *service.Service) func(ctx context.Context, req mcp
 		if err != nil {
 			return toolError(err), nil
 		}
-		return toolResult(result), nil
+		return toolResult(ProductsPage{Items: result, Total: len(result), Page: page, PerPage: perPage}), nil
 	}
 }
 
@@ -194,7 +195,8 @@ func listOrdersHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 			return toolError(err), nil
 		}
 		masked := applyPDNToResult(ctx, result, "list_orders")
-		return toolResult(masked), nil
+		orders, _ := masked.([]insales.Order)
+		return toolResult(OrdersPage{Items: orders, Total: len(orders), Page: page, PerPage: perPage}), nil
 	}
 }
 
@@ -263,7 +265,8 @@ func listClientsHandler(svc *service.Service) func(ctx context.Context, req mcp.
 			return toolError(err), nil
 		}
 		masked := applyPDNToResult(ctx, result, "list_clients")
-		return toolResult(masked), nil
+		clients, _ := masked.([]any)
+		return toolResult(ClientsPage{Items: clients, Total: len(clients), Page: page, PerPage: perPage}), nil
 	}
 }
 

@@ -42,6 +42,20 @@ func RunMigrations(pool *pgxpool.Pool) {
 			is_modified BOOLEAN DEFAULT FALSE,
 			updated_at TIMESTAMPTZ DEFAULT NOW()
 		)`,
+		`CREATE TABLE IF NOT EXISTS audit_log (
+			id BIGSERIAL PRIMARY KEY,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			request_id TEXT,
+			user_id TEXT,
+			api_key_id TEXT,
+			shop_id TEXT,
+			tool_name TEXT NOT NULL,
+			action TEXT NOT NULL,
+			args_hash TEXT,
+			result_ok BOOLEAN
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_audit_log_tool ON audit_log(tool_name)`,
 		`CREATE TABLE IF NOT EXISTS mcp_client_types (
 			id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
 			name TEXT NOT NULL UNIQUE,

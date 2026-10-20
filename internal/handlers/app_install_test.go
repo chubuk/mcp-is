@@ -22,7 +22,7 @@ func newTestAppHandler(t *testing.T) (*AppHandler, *mockAppInstallRepo, *mockUse
 	keys := newMockAIKeyRepo()
 	jwt := auth.NewJWTManager("test-jwt-secret", time.Hour)
 	h := NewAppHandler(installs, users, shops, keys, aes, jwt, nil,
-		"myapplogin", "mysecret", "mcp-is.ru", "test-jwt-secret")
+		"myapplogin", "mysecret", "mcp-is.ru", "test-jwt-secret", 0)
 	return h, installs, users, shops, keys
 }
 
@@ -118,5 +118,22 @@ func TestExchangeCode_Invalid(t *testing.T) {
 	}
 	if _, _, ok := h.consumeCode("deadbeef.payload"); ok {
 		t.Error("consumeCode accepted bad signature")
+	}
+}
+
+func TestChargeConfirmationURL(t *testing.T) {
+	got := chargeConfirmationURL(map[string]any{"confirmation_url": "https://x.myinsales.ru/confirm/1"})
+	if got != "https://x.myinsales.ru/confirm/1" {
+		t.Errorf("got %q", got)
+	}
+	if chargeConfirmationURL(map[string]any{"blocked": true}) != "" {
+		t.Error("expected empty when no url")
+	}
+}
+
+func TestNewAppHandler_BillingMonthly(t *testing.T) {
+	h, _, _, _, _ := newTestAppHandler(t)
+	if h.billingMonthly != 0 {
+		t.Errorf("default billing = %d", h.billingMonthly)
 	}
 }

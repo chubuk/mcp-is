@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 
+	"github.com/chubuk/mcp-is/internal/integration/insales"
 	"github.com/chubuk/mcp-is/internal/service"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
@@ -61,6 +62,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 			mcp.WithReadOnlyHintAnnotation(true),
 			mcp.WithIdempotentHintAnnotation(true),
 			mcp.WithOpenWorldHintAnnotation(false),
+			mcp.WithOutputSchema[ProductsPage](),
 		), listProductsHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_product",
@@ -70,6 +72,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
+		mcp.WithOutputSchema[insales.Product](),
 	), getProductHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_product",
@@ -119,6 +122,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
+		mcp.WithOutputSchema[OrdersPage](),
 	), listOrdersHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_order",
@@ -127,6 +131,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
+		mcp.WithOutputSchema[insales.Order](),
 	), getOrderHandler(svc))
 
 	s.AddTool(mcp.NewTool("update_order",
@@ -297,6 +302,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
+		mcp.WithOutputSchema[ClientsPage](),
 	), listClientsHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_client",
@@ -539,6 +545,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
+		mcp.WithOutputSchema[insales.StoreInfo](),
 	), getShopInfoHandler(svc))
 
 	s.AddTool(mcp.NewTool("list_currencies",
@@ -2300,6 +2307,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
+		mcp.WithOutputSchema[SearchProductDetailsOut](),
 	), searchProductDetailsHandler(svc))
 
 	s.AddTool(mcp.NewTool("order_full_details",
@@ -2308,6 +2316,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
+		mcp.WithOutputSchema[OrderFullDetailsOut](),
 	), orderFullDetailsHandler(svc))
 
 	s.AddTool(mcp.NewTool("client_full_profile",
@@ -2316,6 +2325,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
+		mcp.WithOutputSchema[ClientFullProfileOut](),
 	), clientFullProfileHandler(svc))
 
 	s.AddTool(mcp.NewTool("product_catalog_search",
@@ -2328,6 +2338,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
+		mcp.WithOutputSchema[CatalogSearchOut](),
 	), productCatalogSearchHandler(svc))
 
 	s.AddTool(mcp.NewTool("collection_products",
@@ -2336,6 +2347,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
+		mcp.WithOutputSchema[CollectionProductsOut](),
 	), collectionProductsHandler(svc))
 
 	// === DATA EXPORT (CSV) ===

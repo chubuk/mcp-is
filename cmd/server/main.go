@@ -56,7 +56,8 @@ func main() {
 
 	manager := core.NewAccountManager(shopRepo, aesCipher, cfg.ReadOnly)
 	svc := service.NewService(manager)
-	mcpServer := mcp.NewMCPServer(svc, cfg.ReadOnly, cfg.PDNAutoProtect, cfg.ServerCountry)
+	auditRepo := storage.NewAuditRepository(pool)
+	mcpServer := mcp.NewMCPServer(svc, cfg.ReadOnly, cfg.PDNAutoProtect, cfg.ServerCountry, auditRepo)
 
 	emailCfg := handlers.LoadSMTPConfigFromSettings(settingsRepo, email.Config{
 		Host:   cfg.SMTPHost,
@@ -111,6 +112,7 @@ func main() {
 		appInstallRepo, userRepo, shopRepo, aiKeyRepo,
 		aesCipher, jwtMgr, manager,
 		cfg.InSalesAppKey, cfg.InSalesSecretKey, cfg.Domain, cfg.JWTSecret,
+		cfg.BillingMonthly,
 	)
 	if cfg.AppModeEnabled() {
 		slog.Info("InSales app mode enabled", "app_key", cfg.InSalesAppKey)

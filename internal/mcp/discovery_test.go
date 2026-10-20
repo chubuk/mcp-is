@@ -26,7 +26,7 @@ func newDiscoveryTestServer() *server.MCPServer {
 	), func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		return mcp.NewToolResultText(`{"items":[],"total":0}`), nil
 	})
-	RegisterDiscoveryTools(s, nil)
+	RegisterDiscoveryTools(s, nil, nil)
 	return s
 }
 
@@ -77,7 +77,7 @@ func TestSearchInSalesToolsHidesWriteInReadOnly(t *testing.T) {
 
 func TestCallInSalesTool(t *testing.T) {
 	s := newDiscoveryTestServer()
-	h := callInSalesToolHandler(s)
+	h := callInSalesToolHandler(s, nil)
 	req := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Name: "call_insales_tool",
@@ -99,7 +99,7 @@ func TestCallInSalesTool(t *testing.T) {
 
 func TestCallInSalesToolBlocksWriteInReadOnly(t *testing.T) {
 	s := newDiscoveryTestServer()
-	h := callInSalesToolHandler(s)
+	h := callInSalesToolHandler(s, nil)
 	ctx := context.WithValue(context.Background(), mcpReadOnlyKey, true)
 	req := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
@@ -121,7 +121,7 @@ func TestCallInSalesToolBlocksWriteInReadOnly(t *testing.T) {
 
 func TestCallInSalesToolUnknown(t *testing.T) {
 	s := newDiscoveryTestServer()
-	h := callInSalesToolHandler(s)
+	h := callInSalesToolHandler(s, nil)
 	req := mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Name:      "call_insales_tool",
@@ -185,6 +185,43 @@ func TestLooksLikeRelatedObjectID(t *testing.T) {
 	for _, s := range bad {
 		if looksLikeRelatedObjectID(s) {
 			t.Errorf("want invalid: %q", s)
+		}
+	}
+}
+
+func TestCoreToolsHaveOutputSchema(t *testing.T) {
+	want := []string{
+		"list_products", "get_product", "list_orders", "get_order",
+		"list_clients", "get_shop_info", "search_product_details",
+		"order_full_details", "client_full_profile", "product_catalog_search",
+		"collection_products",
+	}
+	s := server.NewMCPServer("test", "1.0")
+	RegisterTools(s, nil)
+	for _, name := range want {
+		st := s.GetTool(name)
+		if st == nil || st.Tool.Name == "" {
+			t.Fatalf("tool %s not registered", name)
+		}
+		if st.Tool.OutputSchema.Type != "object" || len(st.Tool.OutputSchema.Properties) == 0 {
+			t.Errorf("%s: outputSchema missing/empty: %+v", name, st.Tool.OutputSchema)
+		}
+	}
+}
+
+func TestListProductsEnvelope(t *testing.T) {
+	got := ProductsPage{Items: nil, Total: 0, Page: 2, PerPage: 10}
+	b, err := json.Marshal(got)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		t.Fatal(err)
+	}
+	for _, k := range []string{"items", "total", "page", "per_page"} {
+		if _, ok := m[k]; !ok {
+			t.Errorf("missing key %q in %s", k, b)
 		}
 	}
 }

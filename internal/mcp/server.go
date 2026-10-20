@@ -9,6 +9,7 @@ import (
 	"github.com/chubuk/mcp-is/internal/core"
 	"github.com/chubuk/mcp-is/internal/pdn"
 	"github.com/chubuk/mcp-is/internal/service"
+	"github.com/chubuk/mcp-is/internal/storage"
 	"github.com/mark3labs/mcp-go/server"
 )
 
@@ -30,7 +31,7 @@ const (
 	mcpAIKeyPDNKey mcpContextKey = "ai_key_pdn_enabled"
 )
 
-func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry string) *MCPServer {
+func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry string, auditRepo *storage.AuditRepository) *MCPServer {
 	s := server.NewMCPServer(
 		"mcp-is",
 		"0.6.0",
@@ -57,7 +58,10 @@ search_product_details, order_full_details, client_full_profile, product_catalog
 	)
 
 	RegisterTools(s, svc)
-	RegisterDiscoveryTools(s, svc)
+	RegisterDiscoveryTools(s, svc, auditRepo)
+	if auditRepo != nil {
+		s.Use(auditServerMiddleware(s, auditRepo))
+	}
 
 	httpServer := server.NewStreamableHTTPServer(s)
 

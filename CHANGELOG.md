@@ -1,5 +1,19 @@
 # Changelog
 
+## [Unreleased] — 2026-10-20 (backlog A/C)
+
+### Добавлено
+- **outputSchema** на 11 core tools (`WithOutputSchema`); `list_products`/`list_orders`/`list_clients` → envelope `{items,total,page,per_page}`
+- **Audit logging** write-tools: таблица `audit_log` (args только hash — PDN), middleware + `call_insales_tool` nested path
+- **Интеграционные тесты PostgreSQL** (`-tags integration`): app_installs, email_templates, ai_keys.shop_id ON DELETE SET NULL, audit_log; CI job `integration` с postgres:16
+- **server.json** (MCP Registry remote-only card) + тест синхронизации версии
+- **BILLING_MONTHLY** — опциональный RecurringApplicationCharge при установке InSales-приложения (0 = бесплатно)
+- RecurringApplicationCharge: пути приведены к singleton API InSales (`/recurring_application_charge.json`)
+
+### Документация
+- ARCHITECTURE: «частично» = лимиты InSales API; roadmap MCP 2026-07-28 / OAuth 2.1 / rename
+- INSALES-APP: раздел «Биллинг»
+
 ## [0.6.0] — 2026-10-20 (MCP coverage + discovery)
 
 ### Добавлено

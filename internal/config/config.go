@@ -32,6 +32,7 @@ type Config struct {
 	PDNAutoProtect      bool
 	ServerCountry       string
 	RegistrationEnabled bool
+	BillingMonthly      int // RUB/month for InSales app; 0 = free
 }
 
 func Load() *Config {
@@ -59,6 +60,7 @@ func Load() *Config {
 		JWTExpiry:        parseDuration(getEnv("JWT_EXPIRY_HOURS", "24"), time.Hour),
 		// Default false: registration is admin-only unless explicitly enabled (see .env.example).
 		RegistrationEnabled: getEnv("REGISTRATION_ENABLED", "false") == "true",
+		BillingMonthly:      getEnvInt("BILLING_MONTHLY", 0),
 	}
 
 	// Security warnings
@@ -108,4 +110,16 @@ func parseDuration(s string, unit time.Duration) time.Duration {
 		return 24 * time.Hour
 	}
 	return time.Duration(n) * unit
+}
+
+func getEnvInt(key string, def int) int {
+	v := strings.TrimSpace(os.Getenv(key))
+	if v == "" {
+		return def
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 {
+		return def
+	}
+	return n
 }

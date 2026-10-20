@@ -150,3 +150,20 @@ CREATE TABLE IF NOT EXISTS backup_incidents (
 
 CREATE INDEX IF NOT EXISTS idx_backup_incidents_ts ON backup_incidents(ts DESC);
 CREATE INDEX IF NOT EXISTS idx_backup_incidents_severity ON backup_incidents(severity);
+
+-- Audit log for MCP write-tool calls (args stored as hash only — PDN)
+CREATE TABLE IF NOT EXISTS audit_log (
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    request_id TEXT,
+    user_id TEXT,
+    api_key_id TEXT,
+    shop_id TEXT,
+    tool_name TEXT NOT NULL,
+    action TEXT NOT NULL,
+    args_hash TEXT,
+    result_ok BOOLEAN
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_audit_log_tool ON audit_log(tool_name);
