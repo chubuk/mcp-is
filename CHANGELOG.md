@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] — 2026-10-20 (MCP coverage + discovery)
+## [0.6.0] — 2026-10-20 (MCP coverage + discovery)
 
 ### Добавлено
 - **284 MCP tools** (120 read-only): поля товаров/вариантов/коллекций (CRUD значений id **и** handle), order lines/discounts/shipping/custom status, menu items, delivery/payment CRUD, accessory links, collect move/position/remove, update recurring application charge
