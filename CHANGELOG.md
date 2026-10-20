@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] — 2026-10-20 (backlog A/C)
+## [0.7.0] — 2026-10-20 (backlog A/C)
 
 ### Добавлено
 - **outputSchema** на 11 core tools (`WithOutputSchema`); `list_products`/`list_orders`/`list_clients` → envelope `{items,total,page,per_page}`

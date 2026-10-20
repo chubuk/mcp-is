@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"regexp"
 	"testing"
 )
 
@@ -79,7 +80,16 @@ func TestServerJSONVersionMatches(t *testing.T) {
 	if err := json.Unmarshal(raw, &doc); err != nil {
 		t.Fatal(err)
 	}
-	if doc.Version != "0.6.0" {
-		t.Errorf("server.json version %q != server.go 0.6.0", doc.Version)
+	// keep in sync with server.go NewMCPServer version literal
+	src, err := os.ReadFile("server.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := regexp.MustCompile(`"(\d+\.\d+\.\d+)"`).FindStringSubmatch(string(src))
+	if want == nil {
+		t.Fatal("version literal not found in server.go")
+	}
+	if doc.Version != want[1] {
+		t.Errorf("server.json version %q != server.go %q", doc.Version, want[1])
 	}
 }
