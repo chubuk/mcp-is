@@ -107,17 +107,40 @@ curl http://localhost:8080/health
 
 ## MCP Инструменты
 
-Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). Каждый инструмент имеет аннотации `readOnlyHint`/`destructiveHint` для AI.
+Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **282 инструмента** (120 read-only). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent`.
+
+По умолчанию `tools/list` возвращает **core surface** (~30 tools) + discovery meta-tools. Полный каталог — `search_insales_tools` → `call_insales_tool` или `MCP_TOOLS_MODE=all`.
+
+### Discovery
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `search_insales_tools` | Поиск tool по ключевому слову | `query`, `resource?` |
+| `call_insales_tool` | Вызов любого tool из каталога | `name`, `args?` |
 
 ### Товары
 
 | Инструмент | Описание | Параметры |
 |------------|----------|-----------|
 | `list_products` | Список товаров | `page`, `per_page`, `category_id`, `collection_id`, `q` |
-| `get_product` | Детали товара | `product_id` |
+| `get_product` | Детали товара (field_values c handle/title) | `product_id` |
 | `create_product` | Создать товар | `title`, `price`, `description`, `vendor`, `sku`, `quantity` |
 | `update_product` | Обновить товар | `product_id`, `title`, `price`, `quantity` |
 | `delete_product` | Удалить товар | `product_id` |
+
+### Пользовательские поля товаров
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `list_product_fields` / `get_product_field` | Справочник полей (title, handle, type) | `field_id` (id или handle) |
+| `create_product_field` / `update_product_field` | CRUD определения поля | `title`, `handle`*, `type`, `is_hidden`, `is_indexed`, `position` |
+| `delete_product_field` | Удалить поле | `field_id` |
+| `list_product_field_values` | Значения полей товара | `product_id` |
+| `get_product_field_value` / `update_product_field_value` / `delete_product_field_value` | Значение по id или handle | `product_id`, `value_id` |
+| `create_product_field_value` | Установить значение | `product_id`, `product_field_id` **или** `product_field_handle`, `value` |
+| `list_product_accessory_links` | Связи аксессуаров | `product_id` |
+
+Аналогично: `*_variant_field_value`, `*_collection_field_value` (collection: только list/get/update).
 
 ### Заказы
 
@@ -125,8 +148,12 @@ curl http://localhost:8080/health
 |------------|----------|-----------|
 | `list_orders` | Список заказов | `page`, `per_page`, `status`, `fulfillment_status`, `paid` |
 | `get_order` | Детали заказа | `order_id` |
-| `create_order` | Создать заказ | `client_id`, `comment` |
-| `update_order` | Обновить заказ | `order_id`, `status`, `fulfillment_status`, `comment` |
+| `create_order` | Создать заказ | `client_id` **или** `client`, `order_lines_attributes[]`, `shipping_address_attributes`, `status`→`financial_status` |
+| `update_order` | Обновить заказ | `order_id`, `status`/`financial_status`, `custom_status_permalink`, lines/discounts/address |
+| `add_order_line` / `update_order_line` / `remove_order_line` | Строки заказа | `order_id`, `product_id`\|`variant_id`, `quantity`, `line_id` |
+| `add_order_discount` / `update_order_discount` / `remove_order_discount` | Скидки | `discount`, `type_id` (1=percent, 2=money) |
+| `update_order_shipping_address` | Адрес доставки | `address`, `full_locality_name`, … |
+| `update_order_custom_status` | Кастомный статус | `custom_status_permalink` |
 
 ### Клиенты
 
@@ -184,13 +211,23 @@ curl http://localhost:8080/health
 | `update_webhook` | Обновить вебхук | `webhook_id`, `url` |
 | `delete_webhook` | Удалить вебхук | `webhook_id` |
 
-### Системные
+### Системные / доставка / оплата
 
 | Инструмент | Описание | Параметры |
 |------------|----------|-----------|
 | `list_currencies` | Валюты магазина | — |
-| `list_delivery_variants` | Способы доставки | — |
-| `list_payment_gateways` | Способы оплаты | — |
+| `list_delivery_variants` / `get_delivery_variant` | Способы доставки | `variant_id` |
+| `create_delivery_variant` / `update_delivery_variant` / `delete_delivery_variant` | CRUD доставки | `title`, `type` (External\|Fixed\|LocationDepend\|PickUp\|PriceDepend) |
+| `list_payment_gateways` / `get_payment_gateway` | Способы оплаты | `gateway_id` |
+| `create_payment_gateway` / `update_payment_gateway` / `delete_payment_gateway` | CRUD оплаты | `title`, `type` (Cod\|Custom) |
+
+### Меню
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `list_menus` / `get_menu` / `create_menu` / `update_menu` / `delete_menu` | Меню | `menu_id`, `title`, `handle` |
+| `list_menu_items` / `get_menu_item` | Пункты меню | `menu_id`, `item_id` |
+| `create_menu_item` / `update_menu_item` / `delete_menu_item` | Пункт меню | `related_object_id` = `Blog_1` \| `Page_2` \| `Collection_3` \| URL |
 
 ### Страницы
 

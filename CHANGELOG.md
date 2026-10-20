@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased] — 2026-10-20 (MCP coverage + discovery)
+
+### Добавлено
+- **282 MCP tools** (120 read-only): поля товаров/вариантов/коллекций (CRUD значений id **и** handle), order lines/discounts/shipping/custom status, menu items, delivery/payment CRUD, accessory links
+- **Progressive discovery**: default `tools/list` ≈ core surface (~30) + `search_insales_tools` / `call_insales_tool`; `MCP_TOOLS_MODE=all` — полный каталог
+- **LLM-формат**: результат JSON text + `structuredContent`; envelope `{items,total,page,per_page}`; id/`product_field_id` как string
+- **Описания tools**: EN description + RU `title` (UI); language-invariant args
+- **Аннотации** у всех tools: `readOnlyHint` / `destructiveHint` / `idempotentHint` / `openWorldHint`
+- **Матрица покрытия** InSales API → tools в `ARCHITECTURE.md` (57 ресурсов / 327 ops)
+
+### Исправлено
+- **`create_order` терял payload** — строки/адрес/скидки не доходили до InSales
+- **`update_order`** — `order_id` утекал в body; `status` теперь alias `financial_status`
+- **`toolFilter`** — tool без `ReadOnlyHint` больше не считается read-only
+- **`field_values` в `get_product`** — join `handle`/`title` из справочника полей
+- **docs** — counts 74/96/225 → 282; пример `initialize` без `2024-11-05`/`0.1.0`
+
 ## [0.5.3] - 2026-10-19
 
 ### Исправлено
