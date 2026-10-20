@@ -149,3 +149,75 @@ sudo dpkg -i mcp-is_0.1.0_amd64.deb
 sudo nano /etc/mcp-is/.env
 sudo systemctl start mcp-is
 ```
+
+### 6. Покрытие InSales API → MCP tools (op→tool)
+
+Сгенерировано из `docs/api/Insales-api-docs.md` vs `internal/mcp/tools.go`. Ресурсов: 57, операций API: 327, MCP tools: 282.
+
+Статусы: **OK** — есть list/get/create/update/delete (или API не даёт большего); **частично** — нет отдельных вербов (часто в API их и нет); **out-of-scope** — ресурс не нужен / сломан на стороне InSales.
+
+| Ресурс InSales | Ops | Methods | MCP tools | Статус |
+|----------------|----:|---------|-----------|--------|
+| Accessories | 5 | DELETE, GET, POST, PUT | `create_accessory`, `delete_accessory`, `get_accessory`, `list_accessories`, `list_product_accessory_links`, `update_accessory` | OK |
+| AccessoryValues | 8 | DELETE, GET, POST, PUT | `create_property_value`, `delete_property_value`, `list_property_values`, `update_property_value` | OK |
+| Account | 2 | GET, PUT | `get_shop_info`, `update_account` | OK (get_shop_info + update_account) |
+| ApplicationAction | 5 | DELETE, GET, POST, PUT | `create_application_action`, `delete_application_action`, `get_application_action`, `update_application_action` | OK |
+| ApplicationCharge | 4 | GET, POST | `create_application_charge`, `create_recurring_application_charge`, `decline_application_charge`, `delete_recurring_application_charge`, `get_application_charge`, `get_recurring_application_charge` | частично: нет update |
+| ApplicationWidget | 5 | DELETE, GET, POST, PUT | `create_application_widget`, `delete_application_widget`, `get_application_widget`, `update_application_widget` | OK |
+| Article | 5 | DELETE, GET, POST, PUT | `create_blog_post`, `delete_blog_post`, `get_blog_post`, `list_blog_posts`, `update_blog_post` | OK (API InSales местами 404/500) |
+| Blog | 5 | DELETE, GET, POST, PUT | `create_blog`, `create_blog_post`, `delete_blog`, `delete_blog_post`, `get_blog`, `get_blog_post`, `list_blog_posts`, `update_blog`… | OK |
+| BonusSystemTransaction | 4 | GET, POST | `create_bonus_system_transaction`, `get_bonus_system_transaction` | частично: нет update,delete |
+| Category | 5 | DELETE, GET, POST, PUT | `create_category`, `delete_category`, `get_category`, `update_category` | OK |
+| Characteristic | 5 | DELETE, GET, POST, PUT | `create_characteristic`, `delete_characteristic`, `get_characteristic`, `update_characteristic` | OK |
+| Client | 6 | DELETE, GET, POST, PUT | `client_full_profile`, `create_client`, `create_client_group`, `delete_client`, `delete_client_group`, `get_client`, `get_client_group`, `list_client_bonus_transactions`… | OK |
+| ClientGroup | 5 | DELETE, GET, POST, PUT | `create_client_group`, `delete_client_group`, `get_client_group`, `update_client_group` | OK |
+| Collect | 7 | DELETE, GET, POST, PUT | `add_product_to_collection`, `get_collects_by_product`, `list_collects` | частично: нет update,delete |
+| Collection | 5 | DELETE, GET, POST, PUT | `add_product_to_collection`, `collection_products`, `create_collection`, `create_collection_field`, `create_collection_filter`, `delete_collection`, `delete_collection_field`, `delete_collection_filter`… | OK |
+| CollectionField | 8 | DELETE, GET, POST, PUT | `create_collection_field`, `delete_collection_field`, `get_collection_field`, `get_collection_field_value`, `list_collection_field_values`, `update_collection_field`, `update_collection_field_value` | OK |
+| CollectionFieldValue | 5 | GET, PUT | `get_collection_field_value`, `update_collection_field_value` | OK (API: только list/get/update) |
+| CollectionFilter | 5 | DELETE, GET, POST, PUT | `create_collection_filter`, `delete_collection_filter`, `get_collection_filter`, `update_collection_filter` | OK |
+| CustomStatus | 5 | DELETE, GET, POST, PUT | `create_custom_status`, `delete_custom_status`, `get_custom_status`, `update_custom_status`, `update_order_custom_status` | OK |
+| DeliveryVariant | 9 | DELETE, GET, POST, PUT | `create_delivery_variant`, `delete_delivery_variant`, `get_delivery_variant`, `update_delivery_variant` | OK |
+| DiscountCode | 5 | DELETE, GET, POST, PUT | `create_discount_code`, `delete_discount_code`, `get_discount_code`, `update_discount_code` | OK |
+| DiscountCollectionsGroup | 3 | GET | `create_discount_collections_group`, `delete_discount_collections_group`, `get_discount_collections_group`, `update_discount_collections_group` | OK |
+| Domain | 5 | DELETE, GET, POST, PUT | `create_domain`, `delete_domain`, `get_domain`, `update_domain` | OK |
+| ExternalDiscount | 5 | DELETE, GET, POST, PUT | `create_external_discount`, `delete_external_discount`, `get_external_discount`, `update_external_discount` | OK |
+| Field | 7 | DELETE, GET, POST, PUT | — | out-of-scope: глобальные Field ≠ ProductField |
+| File | 5 | DELETE, GET, POST | `create_file`, `delete_file`, `get_file` | частично: нет update |
+| Image | 6 | DELETE, GET, POST, PUT | `add_image`, `delete_image`, `list_images` | OK (list/add/delete — без update в API-практике) |
+| JsTag | 6 | DELETE, GET, POST, PUT | `create_js_tag`, `delete_js_tag`, `get_js_tag`, `update_js_tag` | OK |
+| Marketplace | 9 | DELETE, GET, POST, PUT | `create_marketplace`, `delete_marketplace`, `get_marketplace`, `update_marketplace` | OK |
+| Menu | 5 | DELETE, GET, POST, PUT | `create_menu`, `create_menu_item`, `delete_menu`, `delete_menu_item`, `get_menu`, `get_menu_item`, `list_menu_items`, `update_menu`… | OK |
+| MenuItem | 8 | DELETE, GET, POST, PUT | `create_menu_item`, `delete_menu_item`, `get_menu_item`, `list_menu_items`, `update_menu_item` | OK |
+| OAuthApp | 5 | DELETE, GET, POST, PUT | `create_oauth_app`, `delete_oauth_app`, `get_oauth_app`, `list_oauth_apps`, `update_oauth_app` | OK |
+| OptionName | 5 | DELETE, GET, POST, PUT | `create_option_name`, `delete_option_name`, `get_option_name`, `update_option_name` | OK |
+| OptionValue | 8 | DELETE, GET, POST, PUT | `create_option_value`, `delete_option_value`, `get_option_value`, `update_option_value` | OK |
+| Order | 16 | GET, POST, PUT | `add_order_discount`, `add_order_line`, `create_order`, `get_order`, `order_full_details`, `remove_order_discount`, `remove_order_line`, `update_order`… | OK |
+| Outlet | 5 | DELETE, GET, POST, PUT | `create_outlet`, `delete_outlet`, `get_outlet`, `update_outlet` | OK |
+| Page | 5 | DELETE, GET, POST, PUT | `create_page`, `delete_page`, `get_page`, `update_page` | OK |
+| PaymentGateway | 6 | DELETE, GET, POST, PUT | `create_payment_gateway`, `delete_payment_gateway`, `get_payment_gateway`, `update_payment_gateway` | OK |
+| PriceKind | 5 | DELETE, GET, POST, PUT | `create_price_kind`, `delete_price_kind`, `get_price_kind`, `update_price_kind` | OK |
+| Product | 8 | DELETE, GET, POST, PUT | `add_product_to_collection`, `create_product`, `create_product_field`, `create_product_field_value`, `delete_product`, `delete_product_field`, `delete_product_field_value`, `get_collects_by_product`… | OK |
+| ProductField | 8 | DELETE, GET, POST, PUT | `create_product_field`, `create_product_field_value`, `delete_product_field`, `delete_product_field_value`, `get_product_field`, `get_product_field_value`, `list_product_field_values`, `update_product_field`… | OK |
+| ProductFieldValue | 9 | DELETE, GET, POST, PUT | `create_product_field_value`, `delete_product_field_value`, `get_product_field_value`, `update_product_field_value` | OK |
+| Property | 5 | DELETE, GET, POST, PUT | `create_property`, `create_property_value`, `delete_property`, `delete_property_value`, `get_property`, `list_property_values`, `update_property`, `update_property_value` | OK |
+| ProviderToken | 1 | POST | `create_provider_token` | OK,update,delete |
+| RecurringApplicationCharge | 5 | DELETE, GET, PATCH, POST, PUT | `create_recurring_application_charge`, `delete_recurring_application_charge`, `get_recurring_application_charge` | частично: нет update |
+| Redirect | 5 | DELETE, GET, POST | `create_redirect`, `delete_redirect` | OK (create/delete/list — без update в API) |
+| Review | 5 | DELETE, GET, POST, PUT | `create_review`, `delete_review`, `get_review`, `update_review` | OK |
+| SalesChannel | 4 | DELETE, GET, POST | `create_sales_channel`, `delete_sales_channel`, `get_sales_channel`, `update_sales_channel` | OK |
+| Similar | 7 | DELETE, GET, POST, PUT | `create_similar`, `delete_similar` | OK,update |
+| Supplementary | 3 | DELETE, GET, POST | `create_supplementary`, `delete_supplementary`, `get_supplementary` | частично: нет update |
+| Unit | 1 | GET | — | OK (в API только list) |
+| UserTask | 5 | DELETE, GET, POST, PUT | `create_user_task`, `delete_user_task`, `get_user_task`, `update_user_task` | OK |
+| Variant | 7 | DELETE, GET, POST, PUT | `create_delivery_variant`, `create_variant_field`, `create_variant_field_value`, `delete_delivery_variant`, `delete_variant`, `delete_variant_field`, `delete_variant_field_value`, `get_delivery_variant`… | OK |
+| VariantField | 8 | DELETE, GET, POST, PUT | `create_variant_field`, `create_variant_field_value`, `delete_variant_field`, `delete_variant_field_value`, `get_variant_field`, `get_variant_field_value`, `list_variant_field_values`, `update_variant_field`… | OK |
+| VariantFieldValue | 9 | DELETE, GET, POST, PUT | `create_variant_field_value`, `delete_variant_field_value`, `get_variant_field_value`, `update_variant_field_value` | OK |
+| Warehouse | 5 | DELETE, GET, POST, PUT | `create_warehouse`, `delete_warehouse`, `get_warehouse`, `update_warehouse` | OK |
+| Webhook | 5 | DELETE, GET, POST, PUT | `create_webhook`, `delete_webhook`, `update_webhook` | OK |
+
+Примечания:
+- `Article`/`Page` — ограничения API InSales (404/500), не баги mcp-is.
+- `CollectionFieldValue` — в API только GET/PUT.
+- `Field` (destiny 1–6) — отдельный ресурс от ProductField/VariantField/CollectionField.
+- Нестыковки имён: `AccessoryValues` = `*_property_values`, `Article` = `blog_posts`.

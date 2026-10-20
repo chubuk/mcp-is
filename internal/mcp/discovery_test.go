@@ -173,3 +173,18 @@ func TestToolResultDualPayload(t *testing.T) {
 		t.Errorf("text mirror missing fields: %s", text)
 	}
 }
+
+func TestLooksLikeRelatedObjectID(t *testing.T) {
+	ok := []string{"Blog_1", "Page_2", "Collection_3", "https://example.com", "http://x.ru/a"}
+	bad := []string{"", "Blog", "Blog_", "_1", "Page_xx", "just text"}
+	for _, s := range ok {
+		if !looksLikeRelatedObjectID(s) {
+			t.Errorf("want valid: %q", s)
+		}
+	}
+	for _, s := range bad {
+		if looksLikeRelatedObjectID(s) {
+			t.Errorf("want invalid: %q", s)
+		}
+	}
+}

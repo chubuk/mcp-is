@@ -101,7 +101,7 @@ func toolFilter(globalReadOnly bool) server.ToolFilterFunc {
 // RegisterDiscoveryTools adds search_insales_tools / call_insales_tool.
 func RegisterDiscoveryTools(s *server.MCPServer, _ *service.Service) {
 	s.AddTool(mcp.NewTool("search_insales_tools",
-		mcp.WithDescription("Find MCP tools by keyword when the tool you need is not in the default list. Returns matching tool names and short descriptions. Then call_insales_tool(name, args)."),
+		mcp.WithDescription("Search insales tools and return matching data in one call. Pipeline tool: combines lookup steps for common workflows. Returns JSON items relevant to the query."),
 		mcp.WithToolTitle("Поиск инструментов InSales"),
 		mcp.WithString("query", mcp.Required(), mcp.Description("Keyword or tool name fragment, e.g. 'discount' or 'menu'")),
 		mcp.WithString("resource", mcp.Description("Optional resource filter: product, order, client, collection, category, menu, delivery, payment, field")),
@@ -111,12 +111,13 @@ func RegisterDiscoveryTools(s *server.MCPServer, _ *service.Service) {
 	), searchInSalesToolsHandler(s))
 
 	s.AddTool(mcp.NewTool("call_insales_tool",
-		mcp.WithDescription("Execute any InSales MCP tool by name, including tools not listed by default. Use search_insales_tools first to discover the name. Arguments must use API language-invariant values (IDs, handles, enum codes)."),
+		mcp.WithDescription("Manage call insales tool via InSales API. Execute any InSales MCP tool by name, including tools not listed by default. Use search_insales_tools first to discover the name. Arguments must use API language-invariant values (IDs, handles, enum codes)."),
 		mcp.WithToolTitle("Вызов инструмента InSales"),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Exact tool name from search_insales_tools")),
 		mcp.WithObject("args", mcp.Description("Arguments object for the tool, same as calling it directly")),
 		mcp.WithReadOnlyHintAnnotation(false),
-		mcp.WithOpenWorldHintAnnotation(true),
+		mcp.WithDestructiveHintAnnotation(false),
+		mcp.WithOpenWorldHintAnnotation(false),
 	), callInSalesToolHandler(s))
 }
 
