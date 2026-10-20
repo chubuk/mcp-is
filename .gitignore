@@ -19,3 +19,7 @@ backups/
 config.yaml
 
 docs/api/Insales-api-docs.txt
+
+# research scratch (keep findings/REPORT)
+research/**/_cache/
+research/**/tmp/

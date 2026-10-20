@@ -47,7 +47,8 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	// === ТОВАРЫ ===
 	registerTool("list_products", "Получить список товаров магазина с пагинацией и фильтрацией",
 		mcp.NewTool("list_products",
-			mcp.WithDescription("Получить список товаров магазина с пагинацией и фильтрацией"),
+			mcp.WithDescription("List shop products with pagination and filters. Returns envelope {items, total, page, per_page}. Each product includes id (string), title, price, variants, field_values (handle/title when known). Use page/per_page (max 250)."),
+			mcp.WithToolTitle("Список товаров"),
 			mcp.WithNumber("page", mcp.Description("Номер страницы"), mcp.DefaultNumber(1)),
 			mcp.WithNumber("per_page", mcp.Description("Товаров на странице (макс 250)"), mcp.DefaultNumber(25)),
 			mcp.WithString("category_id", mcp.Description("Фильтр по категории")),
@@ -61,8 +62,9 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		), listProductsHandler(svc))
 
 	s.AddTool(mcp.NewTool("get_product",
-		mcp.WithDescription("Получить детальную информацию о товаре по ID"),
-		mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
+		mcp.WithDescription("Get full product details by id, including variants, images, and custom field_values (each value has id, product_field_id, value, handle, title). Prefer this over list_products when you know the id."),
+		mcp.WithToolTitle("Товар по ID"),
+		mcp.WithString("product_id", mcp.Required(), mcp.Description("Product id (string)")),
 		mcp.WithReadOnlyHintAnnotation(true),
 	), getProductHandler(svc))
 
@@ -115,20 +117,138 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), getOrderHandler(svc))
 
 	s.AddTool(mcp.NewTool("update_order",
-		mcp.WithDescription("Обновить статус или данные заказа"),
+		mcp.WithDescription("Обновить заказ: статус, комментарий, строки, скидки, адрес доставки. status — alias для financial_status"),
 		mcp.WithString("order_id", mcp.Required(), mcp.Description("ID заказа")),
-		mcp.WithString("status", mcp.Description("Статус")),
+		mcp.WithString("status", mcp.Description("Alias для financial_status: pending | paid")),
+		mcp.WithString("financial_status", mcp.Description("Финансовый статус: pending | paid")),
+		mcp.WithString("custom_status_permalink", mcp.Description("Permalink кастомного статуса")),
 		mcp.WithString("fulfillment_status", mcp.Description("Статус выполнения")),
-		mcp.WithString("comment", mcp.Description("Комментарий")),
+		mcp.WithString("comment", mcp.Description("Комментарий клиента")),
+		mcp.WithString("manager_comment", mcp.Description("Комментарий менеджера")),
+		mcp.WithNumber("delivery_variant_id", mcp.Description("ID способа доставки")),
+		mcp.WithNumber("payment_gateway_id", mcp.Description("ID платёжного шлюза")),
+		mcp.WithNumber("warehouse_id", mcp.Description("ID склада")),
+		mcp.WithString("coupon", mcp.Description("Промокод")),
+		mcp.WithArray("order_lines_attributes", mcp.Description("Строки заказа: {id, quantity?, sale_price?, vat?, comment?, _destroy?}"),
+			mcp.Items(map[string]any{
+				"type":                 "object",
+				"additionalProperties": true,
+			})),
+		mcp.WithArray("discounts_attributes", mcp.Description("Скидки: {discount, type_id? (1=percent,2=money), description?, id?, _destroy?, discount_order_lines_ids?}"),
+			mcp.Items(map[string]any{
+				"type":                 "object",
+				"additionalProperties": true,
+			})),
+		mcp.WithObject("shipping_address_attributes", mcp.Description("Адрес доставки: {address?, full_locality_name?, ...}")),
 		mcp.WithReadOnlyHintAnnotation(false),
 	), updateOrderHandler(svc))
 
 	s.AddTool(mcp.NewTool("create_order",
-		mcp.WithDescription("Создать новый заказ вручную"),
-		mcp.WithNumber("client_id", mcp.Required(), mcp.Description("ID клиента")),
+		mcp.WithDescription("Создать заказ: клиент (client_id ИЛИ client name/email/phone) и опционально строки/адрес/оплата"),
+		mcp.WithNumber("client_id", mcp.Description("ID существующего клиента")),
+		mcp.WithObject("client", mcp.Description("Новый клиент: {name?, email?, phone?, consent_to_personal_data?}")),
 		mcp.WithString("comment", mcp.Description("Комментарий")),
+		mcp.WithString("manager_comment", mcp.Description("Комментарий менеджера")),
+		mcp.WithString("status", mcp.Description("Alias для financial_status: pending | paid")),
+		mcp.WithString("financial_status", mcp.Description("Финансовый статус: pending | paid")),
+		mcp.WithNumber("delivery_variant_id", mcp.Description("ID способа доставки")),
+		mcp.WithNumber("payment_gateway_id", mcp.Description("ID платёжного шлюза")),
+		mcp.WithString("coupon", mcp.Description("Промокод")),
+		mcp.WithArray("order_lines_attributes", mcp.Description("Строки: {product_id ИЛИ variant_id, quantity, vat?, sale_price?}"),
+			mcp.Items(map[string]any{
+				"type":                 "object",
+				"additionalProperties": true,
+			})),
+		mcp.WithObject("shipping_address_attributes", mcp.Description("Адрес: {address?, full_locality_name?}")),
 		mcp.WithReadOnlyHintAnnotation(false),
 	), createOrderHandler(svc))
+
+	// === ORDER LINES / DISCOUNTS / SHIPPING (B1) ===
+	s.AddTool(mcp.NewTool("add_order_line",
+		mcp.WithDescription("Add a line to an order. Exactly one of product_id or variant_id. quantity is required."),
+		mcp.WithToolTitle("Добавить строку заказа"),
+		mcp.WithString("order_id", mcp.Required(), mcp.Description("Order id")),
+		mcp.WithString("product_id", mcp.Description("Product id (use either product_id or variant_id)")),
+		mcp.WithString("variant_id", mcp.Description("Variant id")),
+		mcp.WithNumber("quantity", mcp.Required(), mcp.Description("Quantity")),
+		mcp.WithNumber("vat", mcp.Description("VAT, use force if needed")),
+		mcp.WithNumber("sale_price", mcp.Description("Sale price override")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(false), mcp.WithOpenWorldHintAnnotation(false),
+	), addOrderLineHandler(svc))
+
+	s.AddTool(mcp.NewTool("update_order_line",
+		mcp.WithDescription("Update an existing order line (quantity, vat, sale_price, comment)."),
+		mcp.WithToolTitle("Обновить строку заказа"),
+		mcp.WithString("order_id", mcp.Required(), mcp.Description("Order id")),
+		mcp.WithString("line_id", mcp.Required(), mcp.Description("Order line id")),
+		mcp.WithNumber("quantity", mcp.Description("New quantity")),
+		mcp.WithNumber("vat", mcp.Description("VAT")),
+		mcp.WithNumber("sale_price", mcp.Description("Sale price")),
+		mcp.WithString("comment", mcp.Description("Line comment")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), updateOrderLineHandler(svc))
+
+	s.AddTool(mcp.NewTool("remove_order_line",
+		mcp.WithDescription("Remove a line from an order (sets _destroy)."),
+		mcp.WithToolTitle("Удалить строку заказа"),
+		mcp.WithString("order_id", mcp.Required(), mcp.Description("Order id")),
+		mcp.WithString("line_id", mcp.Required(), mcp.Description("Order line id")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), removeOrderLineHandler(svc))
+
+	s.AddTool(mcp.NewTool("add_order_discount",
+		mcp.WithDescription("Add a discount to an order. type_id: 1=percent (default), 2=money."),
+		mcp.WithToolTitle("Добавить скидку к заказу"),
+		mcp.WithString("order_id", mcp.Required(), mcp.Description("Order id")),
+		mcp.WithNumber("discount", mcp.Required(), mcp.Description("Discount amount")),
+		mcp.WithNumber("type_id", mcp.Description("1=percent, 2=money")),
+		mcp.WithString("description", mcp.Description("Description")),
+		mcp.WithArray("line_ids", mcp.Description("Affected order line ids; all lines if omitted"), mcp.WithNumberItems()),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(false), mcp.WithOpenWorldHintAnnotation(false),
+	), addOrderDiscountHandler(svc))
+
+	s.AddTool(mcp.NewTool("update_order_discount",
+		mcp.WithDescription("Update an order discount by id."),
+		mcp.WithToolTitle("Обновить скидку заказа"),
+		mcp.WithString("order_id", mcp.Required(), mcp.Description("Order id")),
+		mcp.WithString("discount_id", mcp.Required(), mcp.Description("Discount id")),
+		mcp.WithNumber("discount", mcp.Description("Discount amount")),
+		mcp.WithNumber("type_id", mcp.Description("1=percent, 2=money")),
+		mcp.WithString("description", mcp.Description("Description")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), updateOrderDiscountHandler(svc))
+
+	s.AddTool(mcp.NewTool("remove_order_discount",
+		mcp.WithDescription("Remove a discount from an order."),
+		mcp.WithToolTitle("Удалить скидку заказа"),
+		mcp.WithString("order_id", mcp.Required(), mcp.Description("Order id")),
+		mcp.WithString("discount_id", mcp.Required(), mcp.Description("Discount id")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), removeOrderDiscountHandler(svc))
+
+	s.AddTool(mcp.NewTool("update_order_shipping_address",
+		mcp.WithDescription("Update order shipping address fields."),
+		mcp.WithToolTitle("Обновить адрес доставки"),
+		mcp.WithString("order_id", mcp.Required(), mcp.Description("Order id")),
+		mcp.WithString("address", mcp.Description("Street address")),
+		mcp.WithString("full_locality_name", mcp.Description("Full locality name")),
+		mcp.WithString("country", mcp.Description("Country")),
+		mcp.WithString("region", mcp.Description("Region")),
+		mcp.WithString("city", mcp.Description("City")),
+		mcp.WithString("zip", mcp.Description("Zip")),
+		mcp.WithString("phone", mcp.Description("Phone")),
+		mcp.WithString("full_name", mcp.Description("Recipient full name")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), updateOrderShippingAddressHandler(svc))
+
+	s.AddTool(mcp.NewTool("update_order_custom_status",
+		mcp.WithDescription("Set order custom status by permalink (language-invariant slug)."),
+		mcp.WithToolTitle("Обновить кастомный статус заказа"),
+		mcp.WithString("order_id", mcp.Required(), mcp.Description("Order id")),
+		mcp.WithString("custom_status_permalink", mcp.Required(), mcp.Description("Custom status permalink, e.g. v-obrabotke")),
+		mcp.WithString("fulfillment_status", mcp.Description("Optional fulfillment status")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), updateOrderCustomStatusHandler(svc))
 
 	// === КЛИЕНТЫ ===
 	s.AddTool(mcp.NewTool("list_clients",
@@ -336,14 +456,96 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), listCurrenciesHandler(svc))
 
 	s.AddTool(mcp.NewTool("list_delivery_variants",
-		mcp.WithDescription("Получить доступные способы доставки"),
-		mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithDescription("List delivery variants."),
+		mcp.WithToolTitle("Способы доставки"),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
 	), listDeliveryVariantsHandler(svc))
 
+	s.AddTool(mcp.NewTool("get_delivery_variant",
+		mcp.WithDescription("Get a delivery variant by id."),
+		mcp.WithToolTitle("Способ доставки"),
+		mcp.WithString("variant_id", mcp.Required(), mcp.Description("Delivery variant id")),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), genericGetHandler(svc, "variant_id", svc.GetDeliveryVariant))
+
+	s.AddTool(mcp.NewTool("create_delivery_variant",
+		mcp.WithDescription("Create a delivery variant. type is required: DeliveryVariant::External|Fixed|LocationDepend|PickUp|PriceDepend (documented create types)."),
+		mcp.WithToolTitle("Создать способ доставки"),
+		mcp.WithString("title", mcp.Required(), mcp.Description("Title")),
+		mcp.WithString("type", mcp.Required(), mcp.Description("DeliveryVariant::External|Fixed|LocationDepend|PickUp|PriceDepend")),
+		mcp.WithString("description", mcp.Description("Description")),
+		mcp.WithNumber("position", mcp.Description("Position")),
+		mcp.WithBoolean("add_payment_gateways", mcp.Description("Add all payment gateways")),
+		mcp.WithBoolean("customer_pickup", mcp.Description("Customer pickup")),
+		mcp.WithBoolean("inverted", mcp.Description("Invert locations filter")),
+		mcp.WithNumber("charge_up_to", mcp.Description("Free delivery from sum")),
+		mcp.WithString("url", mcp.Description("External estimation URL")),
+		mcp.WithString("api_version", mcp.Description("v1 or v2")),
+		mcp.WithArray("delivery_locations_attributes", mcp.Description("Locations [{country?, region, area?, city?}]"),
+			mcp.Items(map[string]any{"type": "object", "additionalProperties": true})),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(false), mcp.WithOpenWorldHintAnnotation(false),
+	), genericCreateHandler(svc, svc.CreateDeliveryVariant))
+
+	s.AddTool(mcp.NewTool("update_delivery_variant",
+		mcp.WithDescription("Update a delivery variant."),
+		mcp.WithToolTitle("Обновить способ доставки"),
+		mcp.WithString("variant_id", mcp.Required(), mcp.Description("Delivery variant id")),
+		mcp.WithString("title", mcp.Description("Title")),
+		mcp.WithString("description", mcp.Description("Description")),
+		mcp.WithNumber("position", mcp.Description("Position")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), genericUpdateHandler(svc, "variant_id", svc.UpdateDeliveryVariant))
+
+	s.AddTool(mcp.NewTool("delete_delivery_variant",
+		mcp.WithDescription("Delete a delivery variant."),
+		mcp.WithToolTitle("Удалить способ доставки"),
+		mcp.WithString("variant_id", mcp.Required(), mcp.Description("Delivery variant id")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), genericDeleteHandler(svc.DeleteDeliveryVariant, "variant_id", "Способ доставки удалён"))
+
 	s.AddTool(mcp.NewTool("list_payment_gateways",
-		mcp.WithDescription("Получить доступные способы оплаты"),
-		mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithDescription("List payment gateways."),
+		mcp.WithToolTitle("Способы оплаты"),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
 	), listPaymentGatewaysHandler(svc))
+
+	s.AddTool(mcp.NewTool("get_payment_gateway",
+		mcp.WithDescription("Get a payment gateway by id."),
+		mcp.WithToolTitle("Способ оплаты"),
+		mcp.WithString("gateway_id", mcp.Required(), mcp.Description("Payment gateway id")),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), genericGetHandler(svc, "gateway_id", svc.GetPaymentGateway))
+
+	s.AddTool(mcp.NewTool("create_payment_gateway",
+		mcp.WithDescription("Create a payment gateway. type is required: PaymentGateway::Cod|Custom (documented create types)."),
+		mcp.WithToolTitle("Создать способ оплаты"),
+		mcp.WithString("title", mcp.Required(), mcp.Description("Title")),
+		mcp.WithString("type", mcp.Required(), mcp.Description("PaymentGateway::Cod|Custom")),
+		mcp.WithString("description", mcp.Description("Description")),
+		mcp.WithNumber("margin", mcp.Description("Margin percent -100..1000")),
+		mcp.WithNumber("position", mcp.Description("Position")),
+		mcp.WithBoolean("add_delivery_variants", mcp.Description("Link all delivery variants")),
+		mcp.WithArray("payment_delivery_variants_attributes", mcp.Description("[{delivery_variant_id}]"),
+			mcp.Items(map[string]any{"type": "object", "additionalProperties": true})),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(false), mcp.WithOpenWorldHintAnnotation(false),
+	), genericCreateHandler(svc, svc.CreatePaymentGateway))
+
+	s.AddTool(mcp.NewTool("update_payment_gateway",
+		mcp.WithDescription("Update a payment gateway."),
+		mcp.WithToolTitle("Обновить способ оплаты"),
+		mcp.WithString("gateway_id", mcp.Required(), mcp.Description("Payment gateway id")),
+		mcp.WithString("title", mcp.Description("Title")),
+		mcp.WithString("description", mcp.Description("Description")),
+		mcp.WithNumber("margin", mcp.Description("Margin percent")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), genericUpdateHandler(svc, "gateway_id", svc.UpdatePaymentGateway))
+
+	s.AddTool(mcp.NewTool("delete_payment_gateway",
+		mcp.WithDescription("Delete a payment gateway."),
+		mcp.WithToolTitle("Удалить способ оплаты"),
+		mcp.WithString("gateway_id", mcp.Required(), mcp.Description("Payment gateway id")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), genericDeleteHandler(svc.DeletePaymentGateway, "gateway_id", "Способ оплаты удалён"))
 
 	// === СТРАНИЦЫ ===
 	s.AddTool(mcp.NewTool("list_pages",
@@ -514,6 +716,59 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
 	), deleteMenuHandler(svc))
+
+	// === MENU ITEMS (B2) ===
+	s.AddTool(mcp.NewTool("list_menu_items",
+		mcp.WithDescription("List items of a navigation menu."),
+		mcp.WithToolTitle("Пункты меню"),
+		mcp.WithString("menu_id", mcp.Required(), mcp.Description("Menu id")),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedListHandler(func(ctx context.Context, parentID string) ([]any, error) {
+		return svc.ListMenuItems(ctx, parentID)
+	}, "menu_id"))
+
+	s.AddTool(mcp.NewTool("get_menu_item",
+		mcp.WithDescription("Get one navigation menu item."),
+		mcp.WithToolTitle("Пункт меню"),
+		mcp.WithString("menu_id", mcp.Required(), mcp.Description("Menu id")),
+		mcp.WithString("item_id", mcp.Required(), mcp.Description("Menu item id")),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedGetHandler(func(ctx context.Context, parentID, key string) (any, error) {
+		return svc.GetMenuItem(ctx, parentID, key)
+	}, "menu_id", "item_id"))
+
+	s.AddTool(mcp.NewTool("create_menu_item",
+		mcp.WithDescription("Add an item to a menu. related_object_id is a composite: Blog_1, Page_2, Collection_3, or a URL for external link. Do not split into type+id."),
+		mcp.WithToolTitle("Добавить пункт меню"),
+		mcp.WithString("menu_id", mcp.Required(), mcp.Description("Menu id")),
+		mcp.WithString("title", mcp.Required(), mcp.Description("Item title")),
+		mcp.WithString("related_object_id", mcp.Required(), mcp.Description(`Composite ref: "Blog_1" | "Page_2" | "Collection_3" | https://...`)),
+		mcp.WithNumber("position", mcp.Description("Sort position")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(false), mcp.WithOpenWorldHintAnnotation(false),
+	), createMenuItemHandler(svc))
+
+	s.AddTool(mcp.NewTool("update_menu_item",
+		mcp.WithDescription("Update a navigation menu item (title, position, related_object_id)."),
+		mcp.WithToolTitle("Обновить пункт меню"),
+		mcp.WithString("menu_id", mcp.Required(), mcp.Description("Menu id")),
+		mcp.WithString("item_id", mcp.Required(), mcp.Description("Menu item id")),
+		mcp.WithString("title", mcp.Description("Item title")),
+		mcp.WithString("related_object_id", mcp.Description("Composite ref: Blog_1 | Page_2 | Collection_3 | URL")),
+		mcp.WithNumber("position", mcp.Description("Sort position")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedUpdateHandler(func(ctx context.Context, parentID, key string, args map[string]any) (any, error) {
+		return svc.UpdateMenuItem(ctx, parentID, key, args)
+	}, "menu_id", "item_id"))
+
+	s.AddTool(mcp.NewTool("delete_menu_item",
+		mcp.WithDescription("Delete a navigation menu item."),
+		mcp.WithToolTitle("Удалить пункт меню"),
+		mcp.WithString("menu_id", mcp.Required(), mcp.Description("Menu id")),
+		mcp.WithString("item_id", mcp.Required(), mcp.Description("Menu item id")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedDeleteHandler(func(ctx context.Context, parentID, key string) error {
+		return svc.DeleteMenuItem(ctx, parentID, key)
+	}, "menu_id", "item_id", "Пункт меню удалён"))
 
 	// === РЕДИРЕКТЫ ===
 	s.AddTool(mcp.NewTool("list_redirects",
@@ -845,11 +1100,179 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	s.AddTool(mcp.NewTool("delete_custom_status", mcp.WithDescription("Удалить кастомный статус"), mcp.WithString("status_id", mcp.Required(), mcp.Description("ID статуса")), mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(true)), genericDeleteHandler(svc.DeleteCustomStatus, "status_id", "Статус удалён"))
 
 	// === PRODUCT FIELDS ===
-	s.AddTool(mcp.NewTool("list_product_fields", mcp.WithDescription("Список полей товаров"), mcp.WithReadOnlyHintAnnotation(true)), genericListHandler(svc, svc.ListProductFields))
-	s.AddTool(mcp.NewTool("get_product_field", mcp.WithDescription("Получить поле товара"), mcp.WithString("field_id", mcp.Required(), mcp.Description("ID поля")), mcp.WithReadOnlyHintAnnotation(true)), genericGetHandler(svc, "field_id", svc.GetProductField))
-	s.AddTool(mcp.NewTool("create_product_field", mcp.WithDescription("Создать поле товара"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithString("field_type", mcp.Required(), mcp.Description("Тип поля")), mcp.WithReadOnlyHintAnnotation(false)), genericCreateHandler(svc, svc.CreateProductField))
-	s.AddTool(mcp.NewTool("update_product_field", mcp.WithDescription("Обновить поле товара"), mcp.WithString("field_id", mcp.Required(), mcp.Description("ID поля")), mcp.WithString("title", mcp.Description("Название")), mcp.WithReadOnlyHintAnnotation(false)), genericUpdateHandler(svc, "field_id", svc.UpdateProductField))
-	s.AddTool(mcp.NewTool("delete_product_field", mcp.WithDescription("Удалить поле товара"), mcp.WithString("field_id", mcp.Required(), mcp.Description("ID поля")), mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(true)), genericDeleteHandler(svc.DeleteProductField, "field_id", "Поле удалено"))
+	s.AddTool(mcp.NewTool("list_product_fields",
+		mcp.WithDescription("List product custom field definitions (title, handle, type). Use with product field_values."),
+		mcp.WithToolTitle("Список полей товаров"),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), genericListHandler(svc, svc.ListProductFields))
+	s.AddTool(mcp.NewTool("get_product_field",
+		mcp.WithDescription("Get one product custom field definition by id or handle."),
+		mcp.WithToolTitle("Поле товара"),
+		mcp.WithString("field_id", mcp.Required(), mcp.Description("Field id or handle")),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), genericGetHandler(svc, "field_id", svc.GetProductField))
+	s.AddTool(mcp.NewTool("create_product_field",
+		mcp.WithDescription("Create a product custom field. handle is required (API slug). type: ProductField::TextField or ProductField::TextArea."),
+		mcp.WithToolTitle("Создать поле товара"),
+		mcp.WithString("title", mcp.Required(), mcp.Description("Display title")),
+		mcp.WithString("handle", mcp.Required(), mcp.Description("API handle/slug, e.g. dosage — language-invariant")),
+		mcp.WithString("type", mcp.Description("ProductField::TextField | ProductField::TextArea")),
+		mcp.WithString("field_type", mcp.Description("Alias for type (legacy)")),
+		mcp.WithBoolean("is_hidden", mcp.Description("Hide in admin UI")),
+		mcp.WithBoolean("is_indexed", mcp.Description("Include in search index")),
+		mcp.WithNumber("position", mcp.Description("Sort position")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(false), mcp.WithOpenWorldHintAnnotation(false),
+	), createProductFieldHandler(svc))
+	s.AddTool(mcp.NewTool("update_product_field",
+		mcp.WithDescription("Update a product custom field definition by id or handle."),
+		mcp.WithToolTitle("Обновить поле товара"),
+		mcp.WithString("field_id", mcp.Required(), mcp.Description("Field id or handle")),
+		mcp.WithString("title", mcp.Description("Display title")),
+		mcp.WithString("handle", mcp.Description("API handle/slug")),
+		mcp.WithString("type", mcp.Description("ProductField::TextField | ProductField::TextArea")),
+		mcp.WithBoolean("is_hidden", mcp.Description("Hide in admin UI")),
+		mcp.WithBoolean("is_indexed", mcp.Description("Include in search index")),
+		mcp.WithNumber("position", mcp.Description("Sort position")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), updateProductFieldHandler(svc))
+	s.AddTool(mcp.NewTool("delete_product_field",
+		mcp.WithDescription("Delete a product custom field definition by id or handle. Values on products are removed."),
+		mcp.WithToolTitle("Удалить поле товара"),
+		mcp.WithString("field_id", mcp.Required(), mcp.Description("Field id or handle")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), genericDeleteHandler(svc.DeleteProductField, "field_id", "Поле удалено"))
+
+	// === PRODUCT FIELD VALUES (custom field values on a product) ===
+	s.AddTool(mcp.NewTool("list_product_field_values",
+		mcp.WithDescription("List custom field values on a product. Items include id, product_field_id, value, handle, title."),
+		mcp.WithToolTitle("Значения полей товара"),
+		mcp.WithString("product_id", mcp.Required(), mcp.Description("Product id")),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedListHandler(func(ctx context.Context, parentID string) ([]any, error) {
+		return svc.ListProductFieldValues(ctx, parentID)
+	}, "product_id"))
+	s.AddTool(mcp.NewTool("get_product_field_value",
+		mcp.WithDescription("Get one custom field value on a product by value id or field handle."),
+		mcp.WithToolTitle("Значение поля товара"),
+		mcp.WithString("product_id", mcp.Required(), mcp.Description("Product id")),
+		mcp.WithString("value_id", mcp.Required(), mcp.Description("Field value id OR field handle")),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedGetHandler(func(ctx context.Context, parentID, key string) (any, error) {
+		return svc.GetProductFieldValue(ctx, parentID, key)
+	}, "product_id", "value_id"))
+	s.AddTool(mcp.NewTool("create_product_field_value",
+		mcp.WithDescription("Set a custom field value on a product. Identify field by product_field_id OR product_field_handle (language-invariant handle)."),
+		mcp.WithToolTitle("Установить значение поля товара"),
+		mcp.WithString("product_id", mcp.Required(), mcp.Description("Product id")),
+		mcp.WithString("product_field_id", mcp.Description("Field definition id")),
+		mcp.WithString("product_field_handle", mcp.Description("Field handle, e.g. dosage")),
+		mcp.WithString("value", mcp.Description("Value text")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(false), mcp.WithOpenWorldHintAnnotation(false),
+	), createProductFieldValueHandler(svc))
+	s.AddTool(mcp.NewTool("update_product_field_value",
+		mcp.WithDescription("Update a custom field value on a product by value id or field handle."),
+		mcp.WithToolTitle("Обновить значение поля товара"),
+		mcp.WithString("product_id", mcp.Required(), mcp.Description("Product id")),
+		mcp.WithString("value_id", mcp.Required(), mcp.Description("Field value id OR field handle")),
+		mcp.WithString("value", mcp.Description("New value text")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedUpdateHandler(func(ctx context.Context, parentID, key string, args map[string]any) (any, error) {
+		return svc.UpdateProductFieldValue(ctx, parentID, key, args)
+	}, "product_id", "value_id"))
+	s.AddTool(mcp.NewTool("delete_product_field_value",
+		mcp.WithDescription("Delete a custom field value from a product by value id or field handle."),
+		mcp.WithToolTitle("Удалить значение поля товара"),
+		mcp.WithString("product_id", mcp.Required(), mcp.Description("Product id")),
+		mcp.WithString("value_id", mcp.Required(), mcp.Description("Field value id OR field handle")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedDeleteHandler(func(ctx context.Context, parentID, key string) error {
+		return svc.DeleteProductFieldValue(ctx, parentID, key)
+	}, "product_id", "value_id", "Значение удалено"))
+
+	s.AddTool(mcp.NewTool("list_product_accessory_links",
+		mcp.WithDescription("List accessory links of a product (related/compatible products)."),
+		mcp.WithToolTitle("Связи аксессуаров товара"),
+		mcp.WithString("product_id", mcp.Required(), mcp.Description("Product id")),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedListHandler(func(ctx context.Context, parentID string) ([]any, error) {
+		return svc.ListProductAccessoryLinks(ctx, parentID)
+	}, "product_id"))
+
+	// === VARIANT FIELD VALUES ===
+	s.AddTool(mcp.NewTool("list_variant_field_values",
+		mcp.WithDescription("List custom field values on a product variant."),
+		mcp.WithToolTitle("Значения полей варианта"),
+		mcp.WithString("variant_id", mcp.Required(), mcp.Description("Variant id")),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedListHandler(func(ctx context.Context, parentID string) ([]any, error) {
+		return svc.ListVariantFieldValues(ctx, parentID)
+	}, "variant_id"))
+	s.AddTool(mcp.NewTool("get_variant_field_value",
+		mcp.WithDescription("Get one custom field value on a variant by value id or field handle."),
+		mcp.WithToolTitle("Значение поля варианта"),
+		mcp.WithString("variant_id", mcp.Required(), mcp.Description("Variant id")),
+		mcp.WithString("value_id", mcp.Required(), mcp.Description("Field value id OR field handle")),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedGetHandler(func(ctx context.Context, parentID, key string) (any, error) {
+		return svc.GetVariantFieldValue(ctx, parentID, key)
+	}, "variant_id", "value_id"))
+	s.AddTool(mcp.NewTool("create_variant_field_value",
+		mcp.WithDescription("Set a custom field value on a variant by variant_field_id or variant_field_handle."),
+		mcp.WithToolTitle("Установить значение поля варианта"),
+		mcp.WithString("variant_id", mcp.Required(), mcp.Description("Variant id")),
+		mcp.WithString("variant_field_id", mcp.Description("Field definition id")),
+		mcp.WithString("variant_field_handle", mcp.Description("Field handle")),
+		mcp.WithString("value", mcp.Description("Value text")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithOpenWorldHintAnnotation(false),
+	), createVariantFieldValueHandler(svc))
+	s.AddTool(mcp.NewTool("update_variant_field_value",
+		mcp.WithDescription("Update a custom field value on a variant by value id or field handle."),
+		mcp.WithToolTitle("Обновить значение поля варианта"),
+		mcp.WithString("variant_id", mcp.Required(), mcp.Description("Variant id")),
+		mcp.WithString("value_id", mcp.Required(), mcp.Description("Field value id OR field handle")),
+		mcp.WithString("value", mcp.Description("New value text")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedUpdateHandler(func(ctx context.Context, parentID, key string, args map[string]any) (any, error) {
+		return svc.UpdateVariantFieldValue(ctx, parentID, key, args)
+	}, "variant_id", "value_id"))
+	s.AddTool(mcp.NewTool("delete_variant_field_value",
+		mcp.WithDescription("Delete a custom field value from a variant by value id or field handle."),
+		mcp.WithToolTitle("Удалить значение поля варианта"),
+		mcp.WithString("variant_id", mcp.Required(), mcp.Description("Variant id")),
+		mcp.WithString("value_id", mcp.Required(), mcp.Description("Field value id OR field handle")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithDestructiveHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedDeleteHandler(func(ctx context.Context, parentID, key string) error {
+		return svc.DeleteVariantFieldValue(ctx, parentID, key)
+	}, "variant_id", "value_id", "Значение удалено"))
+
+	// === COLLECTION FIELD VALUES (GET/PUT only) ===
+	s.AddTool(mcp.NewTool("list_collection_field_values",
+		mcp.WithDescription("List custom field values on a collection."),
+		mcp.WithToolTitle("Значения полей коллекции"),
+		mcp.WithString("collection_id", mcp.Required(), mcp.Description("Collection id")),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedListHandler(func(ctx context.Context, parentID string) ([]any, error) {
+		return svc.ListCollectionFieldValues(ctx, parentID)
+	}, "collection_id"))
+	s.AddTool(mcp.NewTool("get_collection_field_value",
+		mcp.WithDescription("Get one custom field value on a collection by field id or handle."),
+		mcp.WithToolTitle("Значение поля коллекции"),
+		mcp.WithString("collection_id", mcp.Required(), mcp.Description("Collection id")),
+		mcp.WithString("value_id", mcp.Required(), mcp.Description("Field value id OR field handle")),
+		mcp.WithReadOnlyHintAnnotation(true), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedGetHandler(func(ctx context.Context, parentID, key string) (any, error) {
+		return svc.GetCollectionFieldValue(ctx, parentID, key)
+	}, "collection_id", "value_id"))
+	s.AddTool(mcp.NewTool("update_collection_field_value",
+		mcp.WithDescription("Update a custom field value on a collection (InSales supports get/update only)."),
+		mcp.WithToolTitle("Обновить значение поля коллекции"),
+		mcp.WithString("collection_id", mcp.Required(), mcp.Description("Collection id")),
+		mcp.WithString("value_id", mcp.Required(), mcp.Description("Field value id OR field handle")),
+		mcp.WithString("value", mcp.Description("New value text")),
+		mcp.WithReadOnlyHintAnnotation(false), mcp.WithIdempotentHintAnnotation(true), mcp.WithOpenWorldHintAnnotation(false),
+	), nestedUpdateHandler(func(ctx context.Context, parentID, key string, args map[string]any) (any, error) {
+		return svc.UpdateCollectionFieldValue(ctx, parentID, key, args)
+	}, "collection_id", "value_id"))
 
 	// === VARIANT FIELDS ===
 	s.AddTool(mcp.NewTool("list_variant_fields", mcp.WithDescription("Список полей вариантов"), mcp.WithReadOnlyHintAnnotation(true)), genericListHandler(svc, svc.ListVariantFields))

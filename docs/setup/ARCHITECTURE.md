@@ -23,7 +23,7 @@
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
 │  │ Auth Layer  │  │ MCP Server  │  │ Web API (REST)      │ │
 │  │ JWT/API Key │  │ mcp-go SDK  │  │ handlers/shops/...  │ │
-│  │ Rate Limit  │  │ 74 tools    │  │ admin/auth/server   │ │
+│  │ Rate Limit  │  │ 282 tools   │  │ admin/auth/server   │ │
 │  └─────────────┘  └──────┬──────┘  └──────────┬──────────┘ │
 │                          │                     │            │
 │  ┌───────────────────────┴─────────────────────┴──────────┐ │
@@ -67,10 +67,12 @@
 - **Role-based access** — super_admin, admin, user
 
 ### 3. MCP Server (mcp-go SDK)
-- **74 инструмента** для работы с InSales
-- **Tool annotations** — readOnlyHint, destructiveHint
-- **Tool filtering** — read-only режим скрывает write-команды
-- **Server instructions** — контекст для AI
+- **282 инструмента** для работы с InSales (120 read-only / 162 write)
+- **Progressive discovery** — default `tools/list` ≈ core surface (~30) + `search_insales_tools` / `call_insales_tool`; полный каталог через catalog или `MCP_TOOLS_MODE=all`
+- **Tool annotations** — readOnlyHint, destructiveHint, idempotentHint, openWorldHint
+- **Tool filtering** — read-only режим скрывает write-команды; nil ReadOnlyHint трактуется как write
+- **Server instructions** — discovery, envelope, language-invariant args, pipelines
+- **Результаты** — JSON text + structuredContent (двойная форма)
 
 ### 4. Service Layer
 - **Service** — бизнес-логика, вызов InSales API

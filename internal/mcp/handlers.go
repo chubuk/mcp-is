@@ -22,6 +22,12 @@ func formatResult(v any) string {
 	return string(b)
 }
 
+// toolResult returns the same payload as pretty JSON text and as structuredContent
+// (MCP dual form; clients may use either).
+func toolResult(v any) *mcp.CallToolResult {
+	return mcp.NewToolResultStructured(v, formatResult(v))
+}
+
 func isHTMLResponse(s string) bool {
 	trimmed := strings.TrimSpace(s)
 	return strings.HasPrefix(trimmed, "<!DOCTYPE") ||
@@ -101,7 +107,7 @@ func listProductsHandler(svc *service.Service) func(ctx context.Context, req mcp
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -115,7 +121,7 @@ func getProductHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -134,7 +140,7 @@ func createProductHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -149,7 +155,7 @@ func updateProductHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -188,7 +194,7 @@ func listOrdersHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 			return toolError(err), nil
 		}
 		masked := applyPDNToResult(ctx, result, "list_orders")
-		return mcp.NewToolResultText(formatResult(masked)), nil
+		return toolResult(masked), nil
 	}
 }
 
@@ -203,7 +209,7 @@ func getOrderHandler(svc *service.Service) func(ctx context.Context, req mcp.Cal
 			return toolError(err), nil
 		}
 		masked := applyPDNToResult(ctx, result, "get_order")
-		return mcp.NewToolResultText(formatResult(masked)), nil
+		return toolResult(masked), nil
 	}
 }
 
@@ -214,11 +220,12 @@ func updateOrderHandler(svc *service.Service) func(ctx context.Context, req mcp.
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
+		delete(args, "order_id")
 		result, err := svc.UpdateOrder(ctx, orderID, args)
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -226,14 +233,21 @@ func createOrderHandler(svc *service.Service) func(ctx context.Context, req mcp.
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
 		clientID := int(getFloat(args, "client_id", 0))
+		// client_id optional when client / client_attributes present
 		if clientID == 0 {
-			return mcp.NewToolResultError("client_id is required"), nil
+			if _, hasClient := args["client"]; !hasClient {
+				if _, hasAttrs := args["client_attributes"]; !hasAttrs {
+					if _, hasEmail := args["client_email"]; !hasEmail {
+						return mcp.NewToolResultError("client_id or client (name/email/phone) is required"), nil
+					}
+				}
+			}
 		}
 		result, err := svc.CreateOrder(ctx, clientID, args)
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -249,7 +263,7 @@ func listClientsHandler(svc *service.Service) func(ctx context.Context, req mcp.
 			return toolError(err), nil
 		}
 		masked := applyPDNToResult(ctx, result, "list_clients")
-		return mcp.NewToolResultText(formatResult(masked)), nil
+		return toolResult(masked), nil
 	}
 }
 
@@ -264,7 +278,7 @@ func getClientHandler(svc *service.Service) func(ctx context.Context, req mcp.Ca
 			return toolError(err), nil
 		}
 		masked := applyPDNToResult(ctx, result, "get_client")
-		return mcp.NewToolResultText(formatResult(masked)), nil
+		return toolResult(masked), nil
 	}
 }
 
@@ -276,7 +290,7 @@ func createClientHandler(svc *service.Service) func(ctx context.Context, req mcp
 			return toolError(err), nil
 		}
 		masked := applyPDNToResult(ctx, result, "create_client")
-		return mcp.NewToolResultText(formatResult(masked)), nil
+		return toolResult(masked), nil
 	}
 }
 
@@ -292,7 +306,7 @@ func updateClientHandler(svc *service.Service) func(ctx context.Context, req mcp
 			return toolError(err), nil
 		}
 		masked := applyPDNToResult(ctx, result, "update_client")
-		return mcp.NewToolResultText(formatResult(masked)), nil
+		return toolResult(masked), nil
 	}
 }
 
@@ -320,7 +334,7 @@ func listCategoriesHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -334,7 +348,7 @@ func getCategoryHandler(svc *service.Service) func(ctx context.Context, req mcp.
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -349,7 +363,7 @@ func createCategoryHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -364,7 +378,7 @@ func updateCategoryHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -392,7 +406,7 @@ func listCollectionsHandler(svc *service.Service) func(ctx context.Context, req 
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -406,7 +420,7 @@ func getCollectionHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -420,7 +434,7 @@ func createCollectionHandler(svc *service.Service) func(ctx context.Context, req
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -435,7 +449,7 @@ func updateCollectionHandler(svc *service.Service) func(ctx context.Context, req
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -464,7 +478,7 @@ func listImagesHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -483,7 +497,7 @@ func addImageHandler(svc *service.Service) func(ctx context.Context, req mcp.Cal
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -513,7 +527,7 @@ func listMetaFieldsHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -524,7 +538,7 @@ func createMetaFieldHandler(svc *service.Service) func(ctx context.Context, req 
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -539,7 +553,7 @@ func updateMetaFieldHandler(svc *service.Service) func(ctx context.Context, req 
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -564,7 +578,7 @@ func listWebhooksHandler(svc *service.Service) func(ctx context.Context, req mcp
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -583,7 +597,7 @@ func createWebhookHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -598,7 +612,7 @@ func updateWebhookHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -623,7 +637,7 @@ func getShopInfoHandler(svc *service.Service) func(ctx context.Context, req mcp.
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -633,7 +647,7 @@ func listCurrenciesHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -643,7 +657,7 @@ func listDeliveryVariantsHandler(svc *service.Service) func(ctx context.Context,
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -653,7 +667,7 @@ func listPaymentGatewaysHandler(svc *service.Service) func(ctx context.Context, 
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -668,7 +682,7 @@ func listPagesHandler(svc *service.Service) func(ctx context.Context, req mcp.Ca
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -682,7 +696,7 @@ func getPageHandler(svc *service.Service) func(ctx context.Context, req mcp.Call
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -701,7 +715,7 @@ func createPageHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -716,7 +730,7 @@ func updatePageHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -744,7 +758,7 @@ func listAccessoriesHandler(svc *service.Service) func(ctx context.Context, req 
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -758,7 +772,7 @@ func getAccessoryHandler(svc *service.Service) func(ctx context.Context, req mcp
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -773,7 +787,7 @@ func createAccessoryHandler(svc *service.Service) func(ctx context.Context, req 
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -788,7 +802,7 @@ func updateAccessoryHandler(svc *service.Service) func(ctx context.Context, req 
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -817,7 +831,7 @@ func listVariantsHandler(svc *service.Service) func(ctx context.Context, req mcp
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -835,7 +849,7 @@ func getVariantHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -854,7 +868,7 @@ func updateVariantHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -887,7 +901,7 @@ func listPropertyValuesHandler(svc *service.Service) func(ctx context.Context, r
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -905,7 +919,7 @@ func createPropertyValueHandler(svc *service.Service) func(ctx context.Context, 
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -924,7 +938,7 @@ func updatePropertyValueHandler(svc *service.Service) func(ctx context.Context, 
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -953,7 +967,7 @@ func listMenusHandler(svc *service.Service) func(ctx context.Context, req mcp.Ca
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -967,7 +981,7 @@ func getMenuHandler(svc *service.Service) func(ctx context.Context, req mcp.Call
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -982,7 +996,7 @@ func createMenuHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -997,7 +1011,7 @@ func updateMenuHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1022,7 +1036,7 @@ func listRedirectsHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1040,7 +1054,7 @@ func createRedirectHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1065,7 +1079,7 @@ func listBlogsHandler(svc *service.Service) func(ctx context.Context, req mcp.Ca
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1079,7 +1093,7 @@ func getBlogHandler(svc *service.Service) func(ctx context.Context, req mcp.Call
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1094,7 +1108,7 @@ func createBlogHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1122,7 +1136,7 @@ func updateBlogHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1138,7 +1152,7 @@ func listBlogPostsHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1156,7 +1170,7 @@ func getBlogPostHandler(svc *service.Service) func(ctx context.Context, req mcp.
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1178,7 +1192,7 @@ func createBlogPostHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1197,7 +1211,7 @@ func updateBlogPostHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1229,7 +1243,7 @@ func listDiscountCodesHandler(svc *service.Service) func(ctx context.Context, re
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1243,7 +1257,7 @@ func getDiscountCodeHandler(svc *service.Service) func(ctx context.Context, req 
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1254,7 +1268,7 @@ func createDiscountCodeHandler(svc *service.Service) func(ctx context.Context, r
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1269,7 +1283,7 @@ func updateDiscountCodeHandler(svc *service.Service) func(ctx context.Context, r
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1297,7 +1311,7 @@ func listCollectsHandler(svc *service.Service) func(ctx context.Context, req mcp
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1311,7 +1325,7 @@ func getCollectsByProductHandler(svc *service.Service) func(ctx context.Context,
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1327,7 +1341,7 @@ func createCollectHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1352,7 +1366,7 @@ func listPropertiesHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1366,7 +1380,7 @@ func getPropertyHandler(svc *service.Service) func(ctx context.Context, req mcp.
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1377,7 +1391,7 @@ func createPropertyHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1392,7 +1406,7 @@ func updatePropertyHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1421,7 +1435,7 @@ func listCharacteristicsHandler(svc *service.Service) func(ctx context.Context, 
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1439,7 +1453,7 @@ func getCharacteristicHandler(svc *service.Service) func(ctx context.Context, re
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1454,7 +1468,7 @@ func createCharacteristicHandler(svc *service.Service) func(ctx context.Context,
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1473,7 +1487,7 @@ func updateCharacteristicHandler(svc *service.Service) func(ctx context.Context,
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1505,7 +1519,7 @@ func listReviewsHandler(svc *service.Service) func(ctx context.Context, req mcp.
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1519,7 +1533,7 @@ func getReviewHandler(svc *service.Service) func(ctx context.Context, req mcp.Ca
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1530,7 +1544,7 @@ func createReviewHandler(svc *service.Service) func(ctx context.Context, req mcp
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1545,7 +1559,7 @@ func updateReviewHandler(svc *service.Service) func(ctx context.Context, req mcp
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1570,7 +1584,7 @@ func listFilesHandler(svc *service.Service) func(ctx context.Context, req mcp.Ca
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1584,7 +1598,7 @@ func getFileHandler(svc *service.Service) func(ctx context.Context, req mcp.Call
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1595,7 +1609,7 @@ func createFileHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1620,7 +1634,7 @@ func genericListHandler(svc *service.Service, listFn func(ctx context.Context) (
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1634,7 +1648,7 @@ func genericGetHandler(svc *service.Service, param string, getFn func(ctx contex
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1645,7 +1659,7 @@ func genericCreateHandler(svc *service.Service, createFn func(ctx context.Contex
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1660,7 +1674,7 @@ func genericUpdateHandler(svc *service.Service, param string, updateFn func(ctx 
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1677,6 +1691,433 @@ func genericDeleteHandler(deleteFn func(ctx context.Context, id string) error, p
 	}
 }
 
+// nested helpers for parent-scoped resources (product_id + value_id, etc.)
+
+func nestedListHandler(listFn func(ctx context.Context, parentID string) ([]any, error), parentParam string) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		parentID, err := req.RequireString(parentParam)
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := listFn(ctx, parentID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return toolResult(map[string]any{
+			"items": result,
+			"total": len(result),
+		}), nil
+	}
+}
+
+func nestedGetHandler(getFn func(ctx context.Context, parentID, key string) (any, error), parentParam, keyParam string) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		parentID, err := req.RequireString(parentParam)
+		if err != nil {
+			return toolError(err), nil
+		}
+		key, err := req.RequireString(keyParam)
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := getFn(ctx, parentID, key)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return toolResult(result), nil
+	}
+}
+
+func nestedUpdateHandler(updateFn func(ctx context.Context, parentID, key string, args map[string]any) (any, error), parentParam, keyParam string) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		parentID, err := req.RequireString(parentParam)
+		if err != nil {
+			return toolError(err), nil
+		}
+		key, err := req.RequireString(keyParam)
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		delete(args, parentParam)
+		delete(args, keyParam)
+		// body is only the value payload
+		payload := map[string]any{}
+		if v, ok := args["value"]; ok {
+			payload["value"] = v
+		}
+		for k, v := range args {
+			if k != "value" && k != "name" && k != "args" {
+				payload[k] = v
+			}
+		}
+		result, err := updateFn(ctx, parentID, key, payload)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return toolResult(result), nil
+	}
+}
+
+func nestedDeleteHandler(deleteFn func(ctx context.Context, parentID, key string) error, parentParam, keyParam, deletedMsg string) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		parentID, err := req.RequireString(parentParam)
+		if err != nil {
+			return toolError(err), nil
+		}
+		key, err := req.RequireString(keyParam)
+		if err != nil {
+			return toolError(err), nil
+		}
+		if err := deleteFn(ctx, parentID, key); err != nil {
+			return toolError(err), nil
+		}
+		return mcp.NewToolResultText(deletedMsg), nil
+	}
+}
+
+func createProductFieldHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		if _, ok := args["type"]; !ok {
+			if ft, ok := args["field_type"].(string); ok && ft != "" {
+				args["type"] = ft
+			}
+		}
+		delete(args, "field_type")
+		if _, ok := args["handle"].(string); !ok {
+			return mcp.NewToolResultError("handle is required (language-invariant slug)"), nil
+		}
+		if _, ok := args["type"].(string); !ok {
+			return mcp.NewToolResultError("type is required: ProductField::TextField | ProductField::TextArea"), nil
+		}
+		result, err := svc.CreateProductField(ctx, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return toolResult(result), nil
+	}
+}
+
+func updateProductFieldHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		fieldID, err := req.RequireString("field_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		delete(args, "field_id")
+		delete(args, "field_type")
+		if ft, ok := req.GetArguments()["field_type"].(string); ok && ft != "" {
+			if _, has := args["type"]; !has {
+				args["type"] = ft
+			}
+		}
+		result, err := svc.UpdateProductField(ctx, fieldID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return toolResult(result), nil
+	}
+}
+
+func createProductFieldValueHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		productID, err := req.RequireString("product_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		delete(args, "product_id")
+		if _, ok := args["product_field_id"]; !ok {
+			if _, ok := args["product_field_handle"]; !ok {
+				return mcp.NewToolResultError("product_field_id or product_field_handle is required"), nil
+			}
+		}
+		result, err := svc.CreateProductFieldValue(ctx, productID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return toolResult(result), nil
+	}
+}
+
+func createVariantFieldValueHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		variantID, err := req.RequireString("variant_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		delete(args, "variant_id")
+		if _, ok := args["variant_field_id"]; !ok {
+			if _, ok := args["variant_field_handle"]; !ok {
+				return mcp.NewToolResultError("variant_field_id or variant_field_handle is required"), nil
+			}
+		}
+		result, err := svc.CreateVariantFieldValue(ctx, variantID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return toolResult(result), nil
+	}
+}
+
+// === ORDER SUB-OPERATIONS (map into order[...] via UpdateOrder) ===
+
+func orderSubHandler(svc *service.Service, build func(req mcp.CallToolRequest) (orderID string, body map[string]any, err error)) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		orderID, body, err := build(req)
+		if err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.UpdateOrder(ctx, orderID, body)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return toolResult(result), nil
+	}
+}
+
+func strArg(req mcp.CallToolRequest, key string) string {
+	return req.GetString(key, "")
+}
+
+func floatArg(req mcp.CallToolRequest, key string) (float64, bool) {
+	args := req.GetArguments()
+	v, ok := args[key].(float64)
+	return v, ok
+}
+
+func addOrderLineHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return orderSubHandler(svc, func(req mcp.CallToolRequest) (string, map[string]any, error) {
+		orderID, err := req.RequireString("order_id")
+		if err != nil {
+			return "", nil, err
+		}
+		productID := strArg(req, "product_id")
+		variantID := strArg(req, "variant_id")
+		if productID == "" && variantID == "" {
+			return "", nil, errString("product_id or variant_id is required")
+		}
+		if productID != "" && variantID != "" {
+			return "", nil, errString("pass only one of product_id or variant_id")
+		}
+		line := map[string]any{}
+		if productID != "" {
+			line["product_id"] = productID
+		}
+		if variantID != "" {
+			line["variant_id"] = variantID
+		}
+		if q, ok := floatArg(req, "quantity"); ok {
+			line["quantity"] = q
+		} else {
+			return "", nil, errString("quantity is required")
+		}
+		if v, ok := floatArg(req, "vat"); ok {
+			line["vat"] = v
+		}
+		if p, ok := floatArg(req, "sale_price"); ok {
+			line["sale_price"] = p
+		}
+		return orderID, map[string]any{"order_lines_attributes": []any{line}}, nil
+	})
+}
+
+func updateOrderLineHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return orderSubHandler(svc, func(req mcp.CallToolRequest) (string, map[string]any, error) {
+		orderID, err := req.RequireString("order_id")
+		if err != nil {
+			return "", nil, err
+		}
+		lineID, err := req.RequireString("line_id")
+		if err != nil {
+			return "", nil, err
+		}
+		line := map[string]any{"id": lineID}
+		if q, ok := floatArg(req, "quantity"); ok {
+			line["quantity"] = q
+		}
+		if v, ok := floatArg(req, "vat"); ok {
+			line["vat"] = v
+		}
+		if p, ok := floatArg(req, "sale_price"); ok {
+			line["sale_price"] = p
+		}
+		if c := strArg(req, "comment"); c != "" {
+			line["comment"] = c
+		}
+		return orderID, map[string]any{"order_lines_attributes": []any{line}}, nil
+	})
+}
+
+func removeOrderLineHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return orderSubHandler(svc, func(req mcp.CallToolRequest) (string, map[string]any, error) {
+		orderID, err := req.RequireString("order_id")
+		if err != nil {
+			return "", nil, err
+		}
+		lineID, err := req.RequireString("line_id")
+		if err != nil {
+			return "", nil, err
+		}
+		return orderID, map[string]any{
+			"order_lines_attributes": []any{
+				map[string]any{"id": lineID, "_destroy": true},
+			},
+		}, nil
+	})
+}
+
+func addOrderDiscountHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return orderSubHandler(svc, func(req mcp.CallToolRequest) (string, map[string]any, error) {
+		orderID, err := req.RequireString("order_id")
+		if err != nil {
+			return "", nil, err
+		}
+		d, ok := floatArg(req, "discount")
+		if !ok {
+			return "", nil, errString("discount is required")
+		}
+		item := map[string]any{"discount": d}
+		if t, ok := floatArg(req, "type_id"); ok {
+			item["type_id"] = t
+		}
+		if desc := strArg(req, "description"); desc != "" {
+			item["description"] = desc
+		}
+		if ids, ok := req.GetArguments()["line_ids"].([]any); ok && len(ids) > 0 {
+			item["discount_order_lines_ids"] = ids
+		}
+		return orderID, map[string]any{"discounts_attributes": []any{item}}, nil
+	})
+}
+
+func updateOrderDiscountHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return orderSubHandler(svc, func(req mcp.CallToolRequest) (string, map[string]any, error) {
+		orderID, err := req.RequireString("order_id")
+		if err != nil {
+			return "", nil, err
+		}
+		discountID, err := req.RequireString("discount_id")
+		if err != nil {
+			return "", nil, err
+		}
+		item := map[string]any{"id": discountID}
+		if d, ok := floatArg(req, "discount"); ok {
+			item["discount"] = d
+		}
+		if t, ok := floatArg(req, "type_id"); ok {
+			item["type_id"] = t
+		}
+		if desc := strArg(req, "description"); desc != "" {
+			item["description"] = desc
+		}
+		return orderID, map[string]any{"discounts_attributes": []any{item}}, nil
+	})
+}
+
+func removeOrderDiscountHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return orderSubHandler(svc, func(req mcp.CallToolRequest) (string, map[string]any, error) {
+		orderID, err := req.RequireString("order_id")
+		if err != nil {
+			return "", nil, err
+		}
+		discountID, err := req.RequireString("discount_id")
+		if err != nil {
+			return "", nil, err
+		}
+		return orderID, map[string]any{
+			"discounts_attributes": []any{
+				map[string]any{"id": discountID, "_destroy": true},
+			},
+		}, nil
+	})
+}
+
+func updateOrderShippingAddressHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return orderSubHandler(svc, func(req mcp.CallToolRequest) (string, map[string]any, error) {
+		orderID, err := req.RequireString("order_id")
+		if err != nil {
+			return "", nil, err
+		}
+		addr := map[string]any{}
+		args := req.GetArguments()
+		for _, k := range []string{"address", "full_locality_name", "country", "region", "city", "zip", "phone", "full_name", "comment"} {
+			if v, ok := args[k]; ok && v != nil && v != "" {
+				addr[k] = v
+			}
+		}
+		if len(addr) == 0 {
+			return "", nil, errString("at least one address field is required")
+		}
+		return orderID, map[string]any{"shipping_address_attributes": addr}, nil
+	})
+}
+
+func updateOrderCustomStatusHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return orderSubHandler(svc, func(req mcp.CallToolRequest) (string, map[string]any, error) {
+		orderID, err := req.RequireString("order_id")
+		if err != nil {
+			return "", nil, err
+		}
+		permalink, err := req.RequireString("custom_status_permalink")
+		if err != nil {
+			return "", nil, err
+		}
+		body := map[string]any{"custom_status_permalink": permalink}
+		if fs := strArg(req, "fulfillment_status"); fs != "" {
+			body["fulfillment_status"] = fs
+		}
+		return orderID, body, nil
+	})
+}
+
+type errString string
+
+func (e errString) Error() string { return string(e) }
+
+func createMenuItemHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		menuID, err := req.RequireString("menu_id")
+		if err != nil {
+			return toolError(err), nil
+		}
+		args := req.GetArguments()
+		delete(args, "menu_id")
+		rel, _ := args["related_object_id"].(string)
+		if rel == "" {
+			return mcp.NewToolResultError("related_object_id is required (Blog_1, Page_2, Collection_3, or URL)"), nil
+		}
+		if !looksLikeRelatedObjectID(rel) {
+			return mcp.NewToolResultError(`related_object_id must be composite like "Blog_1", "Page_2", "Collection_3", or an absolute URL`), nil
+		}
+		result, err := svc.CreateMenuItem(ctx, menuID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return toolResult(result), nil
+	}
+}
+
+func looksLikeRelatedObjectID(rel string) bool {
+	if strings.HasPrefix(rel, "http://") || strings.HasPrefix(rel, "https://") {
+		return true
+	}
+	// Type_id composite: Blog_1, Page_2, Collection_3, ...
+	i := strings.IndexByte(rel, '_')
+	if i <= 0 || i == len(rel)-1 {
+		return false
+	}
+	for _, r := range rel[i+1:] {
+		if r < '0' || r > '9' {
+			return false
+		}
+	}
+	return true
+}
+
 // === OPTION VALUES handlers (nested resource) ===
 
 func genericListOptionValuesHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -1689,7 +2130,7 @@ func genericListOptionValuesHandler(svc *service.Service) func(ctx context.Conte
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1707,7 +2148,7 @@ func genericGetOptionValueHandler(svc *service.Service) func(ctx context.Context
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1722,7 +2163,7 @@ func genericCreateOptionValueHandler(svc *service.Service) func(ctx context.Cont
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1741,7 +2182,7 @@ func genericUpdateOptionValueHandler(svc *service.Service) func(ctx context.Cont
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1788,7 +2229,7 @@ func createBonusSystemTransactionHandler(svc *service.Service) func(ctx context.
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1802,7 +2243,7 @@ func listClientBonusTransactionsHandler(svc *service.Service) func(ctx context.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1816,7 +2257,7 @@ func listSimilarsByProductHandler(svc *service.Service) func(ctx context.Context
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1832,7 +2273,7 @@ func createProviderTokenHandler(svc *service.Service) func(ctx context.Context, 
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1845,7 +2286,7 @@ func updateAccountHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1858,7 +2299,7 @@ func getOrdersCountHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(map[string]any{"count": count})), nil
+		return toolResult(map[string]any{"count": count}), nil
 	}
 }
 
@@ -1868,7 +2309,7 @@ func getProductsCountHandler(svc *service.Service) func(ctx context.Context, req
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(map[string]any{"count": count})), nil
+		return toolResult(map[string]any{"count": count}), nil
 	}
 }
 
@@ -1886,7 +2327,7 @@ func searchProductDetailsHandler(svc *service.Service) func(ctx context.Context,
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1900,7 +2341,7 @@ func orderFullDetailsHandler(svc *service.Service) func(ctx context.Context, req
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1914,7 +2355,7 @@ func clientFullProfileHandler(svc *service.Service) func(ctx context.Context, re
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1926,7 +2367,7 @@ func productCatalogSearchHandler(svc *service.Service) func(ctx context.Context,
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 
@@ -1940,7 +2381,7 @@ func collectionProductsHandler(svc *service.Service) func(ctx context.Context, r
 		if err != nil {
 			return toolError(err), nil
 		}
-		return mcp.NewToolResultText(formatResult(result)), nil
+		return toolResult(result), nil
 	}
 }
 

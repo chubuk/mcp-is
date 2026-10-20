@@ -40,6 +40,9 @@ type InSalesFieldValue struct {
 	ID             int    `json:"id"`
 	ProductFieldID int    `json:"product_field_id"`
 	Value          string `json:"value"`
+	Handle         string `json:"handle,omitempty"`
+	Title          string `json:"title,omitempty"`
+	Name           string `json:"name,omitempty"`
 }
 
 type InSalesProductProperty struct {
@@ -367,8 +370,11 @@ type InSalesProductFieldResponse struct {
 	ID        int    `json:"id"`
 	Title     string `json:"title"`
 	Handle    string `json:"handle"`
+	Type      string `json:"type"`
 	FieldType string `json:"field_type"`
 	Position  int    `json:"position"`
+	IsHidden  *bool  `json:"is_hidden"`
+	IsIndexed *bool  `json:"is_indexed"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
 }

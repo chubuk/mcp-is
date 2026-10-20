@@ -386,7 +386,7 @@ func (c *InSalesClient) GetOrder(ctx context.Context, orderID string) (*Order, e
 
 func (c *InSalesClient) UpdateOrder(ctx context.Context, orderID string, args map[string]any) (*Order, error) {
 	payload := map[string]any{
-		"order": args,
+		"order": BuildOrderBody(args),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/orders/%s.json", orderID), payload)
 	if err != nil {
@@ -400,12 +400,11 @@ func (c *InSalesClient) UpdateOrder(ctx context.Context, orderID string, args ma
 }
 
 func (c *InSalesClient) CreateOrder(ctx context.Context, clientID int, args map[string]any) (*Order, error) {
-	payload := map[string]any{
-		"order": map[string]any{
-			"client_id": clientID,
-			"comment":   args["comment"],
-		},
+	order := BuildOrderBody(args)
+	if clientID != 0 {
+		order["client_id"] = clientID
 	}
+	payload := map[string]any{"order": order}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/orders.json", payload)
 	if err != nil {
 		return nil, err
@@ -821,6 +820,50 @@ func (c *InSalesClient) ListPaymentGateways(ctx context.Context) (any, error) {
 		return nil, fmt.Errorf("decode payment gateways: %w", err)
 	}
 	return result, nil
+}
+
+func (c *InSalesClient) GetDeliveryVariant(ctx context.Context, id string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/delivery_variants/%s.json", id))
+}
+func (c *InSalesClient) CreateDeliveryVariant(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/delivery_variants.json", "delivery_variant", args)
+}
+func (c *InSalesClient) UpdateDeliveryVariant(ctx context.Context, id string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/delivery_variants/%s.json", id), "delivery_variant", args)
+}
+func (c *InSalesClient) DeleteDeliveryVariant(ctx context.Context, id string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/delivery_variants/%s.json", id))
+}
+
+func (c *InSalesClient) GetPaymentGateway(ctx context.Context, id string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/payment_gateways/%s.json", id))
+}
+func (c *InSalesClient) CreatePaymentGateway(ctx context.Context, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, "/payment_gateways.json", "payment_gateway", args)
+}
+func (c *InSalesClient) UpdatePaymentGateway(ctx context.Context, id string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/payment_gateways/%s.json", id), "payment_gateway", args)
+}
+func (c *InSalesClient) DeletePaymentGateway(ctx context.Context, id string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/payment_gateways/%s.json", id))
+}
+
+// === MENU ITEMS ===
+
+func (c *InSalesClient) ListMenuItems(ctx context.Context, menuID string) ([]any, error) {
+	return c.crudList(ctx, fmt.Sprintf("/menus/%s/items.json", menuID))
+}
+func (c *InSalesClient) GetMenuItem(ctx context.Context, menuID, itemID string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/menus/%s/items/%s.json", menuID, itemID))
+}
+func (c *InSalesClient) CreateMenuItem(ctx context.Context, menuID string, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, fmt.Sprintf("/menus/%s/items.json", menuID), "menu_item", args)
+}
+func (c *InSalesClient) UpdateMenuItem(ctx context.Context, menuID, itemID string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/menus/%s/items/%s.json", menuID, itemID), "menu_item", args)
+}
+func (c *InSalesClient) DeleteMenuItem(ctx context.Context, menuID, itemID string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/menus/%s/items/%s.json", menuID, itemID))
 }
 
 func (c *InSalesClient) ListPages(ctx context.Context, page, perPage int) ([]Page, error) {
@@ -1924,6 +1967,70 @@ func (c *InSalesClient) UpdateProductField(ctx context.Context, fieldID string, 
 }
 func (c *InSalesClient) DeleteProductField(ctx context.Context, fieldID string) error {
 	return c.crudDelete(ctx, fmt.Sprintf("/product_fields/%s.json", fieldID))
+}
+
+// === PRODUCT FIELD VALUES (nested) ===
+
+func (c *InSalesClient) ListProductFieldValues(ctx context.Context, productID string) ([]any, error) {
+	return c.crudList(ctx, fmt.Sprintf("/products/%s/product_field_values.json", productID))
+}
+
+func (c *InSalesClient) GetProductFieldValue(ctx context.Context, productID, valueKey string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/products/%s/product_field_values/%s.json", productID, valueKey))
+}
+
+func (c *InSalesClient) CreateProductFieldValue(ctx context.Context, productID string, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, fmt.Sprintf("/products/%s/product_field_values.json", productID), "product_field_value", args)
+}
+
+func (c *InSalesClient) UpdateProductFieldValue(ctx context.Context, productID, valueKey string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/products/%s/product_field_values/%s.json", productID, valueKey), "product_field_value", args)
+}
+
+func (c *InSalesClient) DeleteProductFieldValue(ctx context.Context, productID, valueKey string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/products/%s/product_field_values/%s.json", productID, valueKey))
+}
+
+// === VARIANT FIELD VALUES ===
+
+func (c *InSalesClient) ListVariantFieldValues(ctx context.Context, variantID string) ([]any, error) {
+	return c.crudList(ctx, fmt.Sprintf("/variants/%s/variant_field_values.json", variantID))
+}
+
+func (c *InSalesClient) GetVariantFieldValue(ctx context.Context, variantID, valueKey string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/variants/%s/variant_field_values/%s.json", variantID, valueKey))
+}
+
+func (c *InSalesClient) CreateVariantFieldValue(ctx context.Context, variantID string, args map[string]any) (any, error) {
+	return c.crudCreate(ctx, fmt.Sprintf("/variants/%s/variant_field_values.json", variantID), "variant_field_value", args)
+}
+
+func (c *InSalesClient) UpdateVariantFieldValue(ctx context.Context, variantID, valueKey string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/variants/%s/variant_field_values/%s.json", variantID, valueKey), "variant_field_value", args)
+}
+
+func (c *InSalesClient) DeleteVariantFieldValue(ctx context.Context, variantID, valueKey string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/variants/%s/variant_field_values/%s.json", variantID, valueKey))
+}
+
+// === COLLECTION FIELD VALUES (GET/PUT) ===
+
+func (c *InSalesClient) ListCollectionFieldValues(ctx context.Context, collectionID string) ([]any, error) {
+	return c.crudList(ctx, fmt.Sprintf("/collections/%s/collection_field_values.json", collectionID))
+}
+
+func (c *InSalesClient) GetCollectionFieldValue(ctx context.Context, collectionID, valueKey string) (any, error) {
+	return c.crudGet(ctx, fmt.Sprintf("/collections/%s/collection_field_values/%s.json", collectionID, valueKey))
+}
+
+func (c *InSalesClient) UpdateCollectionFieldValue(ctx context.Context, collectionID, valueKey string, args map[string]any) (any, error) {
+	return c.crudUpdate(ctx, fmt.Sprintf("/collections/%s/collection_field_values/%s.json", collectionID, valueKey), "collection_field_value", args)
+}
+
+// === PRODUCT ACCESSORY LINKS ===
+
+func (c *InSalesClient) ListProductAccessoryLinks(ctx context.Context, productID string) ([]any, error) {
+	return c.crudList(ctx, fmt.Sprintf("/products/%s/product_accessory_links.json", productID))
 }
 
 // === VARIANT FIELDS ===

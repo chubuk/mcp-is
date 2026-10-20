@@ -47,7 +47,17 @@ func (s *Service) GetProduct(ctx context.Context, productID string) (*insales.Pr
 	if err != nil {
 		return nil, err
 	}
-	return client.GetProduct(ctx, productID)
+	product, err := client.GetProduct(ctx, productID)
+	if err != nil {
+		return nil, err
+	}
+	// join handle/title onto field_values so LLM can resolve names without a second call
+	if product != nil && len(product.FieldValues) > 0 {
+		if fields, ferr := client.ListProductFields(ctx); ferr == nil {
+			product.FieldValues = insales.EnrichFieldValues(product.FieldValues, fields)
+		}
+	}
+	return product, nil
 }
 
 func (s *Service) CreateProduct(ctx context.Context, title, price string, args map[string]any) (*insales.Product, error) {
@@ -418,6 +428,128 @@ func (s *Service) ListPaymentGateways(ctx context.Context) (any, error) {
 		return nil, err
 	}
 	return client.ListPaymentGateways(ctx)
+}
+
+func (s *Service) GetDeliveryVariant(ctx context.Context, id string) (any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.GetDeliveryVariant(ctx, id)
+}
+func (s *Service) CreateDeliveryVariant(ctx context.Context, args map[string]any) (any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.CreateDeliveryVariant(ctx, args)
+}
+func (s *Service) UpdateDeliveryVariant(ctx context.Context, id string, args map[string]any) (any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.UpdateDeliveryVariant(ctx, id, args)
+}
+func (s *Service) DeleteDeliveryVariant(ctx context.Context, id string) error {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return client.DeleteDeliveryVariant(ctx, id)
+}
+
+func (s *Service) GetPaymentGateway(ctx context.Context, id string) (any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.GetPaymentGateway(ctx, id)
+}
+func (s *Service) CreatePaymentGateway(ctx context.Context, args map[string]any) (any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.CreatePaymentGateway(ctx, args)
+}
+func (s *Service) UpdatePaymentGateway(ctx context.Context, id string, args map[string]any) (any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.UpdatePaymentGateway(ctx, id, args)
+}
+func (s *Service) DeletePaymentGateway(ctx context.Context, id string) error {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return client.DeletePaymentGateway(ctx, id)
+}
+
+// === MENU ITEMS ===
+func (s *Service) ListMenuItems(ctx context.Context, menuID string) ([]any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.ListMenuItems(ctx, menuID)
+}
+func (s *Service) GetMenuItem(ctx context.Context, menuID, itemID string) (any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.GetMenuItem(ctx, menuID, itemID)
+}
+func (s *Service) CreateMenuItem(ctx context.Context, menuID string, args map[string]any) (any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.CreateMenuItem(ctx, menuID, args)
+}
+func (s *Service) UpdateMenuItem(ctx context.Context, menuID, itemID string, args map[string]any) (any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.UpdateMenuItem(ctx, menuID, itemID, args)
+}
+func (s *Service) DeleteMenuItem(ctx context.Context, menuID, itemID string) error {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return client.DeleteMenuItem(ctx, menuID, itemID)
 }
 
 // === СТРАНИЦЫ ===
@@ -1275,6 +1407,140 @@ func (s *Service) DeleteProductField(ctx context.Context, id string) error {
 		return err
 	}
 	return c.DeleteProductField(ctx, id)
+}
+
+// === PRODUCT FIELD VALUES ===
+func (s *Service) ListProductFieldValues(ctx context.Context, productID string) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	values, err := c.ListProductFieldValues(ctx, productID)
+	if err != nil {
+		return nil, err
+	}
+	if fields, ferr := c.ListProductFields(ctx); ferr == nil {
+		values = insales.EnrichFieldValues(values, fields)
+	}
+	return values, nil
+}
+func (s *Service) GetProductFieldValue(ctx context.Context, productID, valueKey string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetProductFieldValue(ctx, productID, valueKey)
+}
+func (s *Service) CreateProductFieldValue(ctx context.Context, productID string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateProductFieldValue(ctx, productID, args)
+}
+func (s *Service) UpdateProductFieldValue(ctx context.Context, productID, valueKey string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateProductFieldValue(ctx, productID, valueKey, args)
+}
+func (s *Service) DeleteProductFieldValue(ctx context.Context, productID, valueKey string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteProductFieldValue(ctx, productID, valueKey)
+}
+
+// === VARIANT FIELD VALUES ===
+func (s *Service) ListVariantFieldValues(ctx context.Context, variantID string) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListVariantFieldValues(ctx, variantID)
+}
+func (s *Service) GetVariantFieldValue(ctx context.Context, variantID, valueKey string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetVariantFieldValue(ctx, variantID, valueKey)
+}
+func (s *Service) CreateVariantFieldValue(ctx context.Context, variantID string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.CreateVariantFieldValue(ctx, variantID, args)
+}
+func (s *Service) UpdateVariantFieldValue(ctx context.Context, variantID, valueKey string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateVariantFieldValue(ctx, variantID, valueKey, args)
+}
+func (s *Service) DeleteVariantFieldValue(ctx context.Context, variantID, valueKey string) error {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return err
+	}
+	return c.DeleteVariantFieldValue(ctx, variantID, valueKey)
+}
+
+// === COLLECTION FIELD VALUES ===
+func (s *Service) ListCollectionFieldValues(ctx context.Context, collectionID string) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListCollectionFieldValues(ctx, collectionID)
+}
+func (s *Service) GetCollectionFieldValue(ctx context.Context, collectionID, valueKey string) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.GetCollectionFieldValue(ctx, collectionID, valueKey)
+}
+func (s *Service) UpdateCollectionFieldValue(ctx context.Context, collectionID, valueKey string, args map[string]any) (any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return c.UpdateCollectionFieldValue(ctx, collectionID, valueKey, args)
+}
+
+// === PRODUCT ACCESSORY LINKS ===
+func (s *Service) ListProductAccessoryLinks(ctx context.Context, productID string) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListProductAccessoryLinks(ctx, productID)
 }
 
 // === VARIANT FIELDS ===
@@ -2327,7 +2593,8 @@ func (s *Service) ProductCatalogSearch(ctx context.Context, query string, filter
 	}
 
 	result := map[string]any{
-		"products": products,
+		"items":    products,
+		"total":    len(products),
 		"page":     page,
 		"per_page": perPage,
 	}

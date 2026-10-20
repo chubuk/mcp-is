@@ -43,7 +43,15 @@ type Client interface {
 	DeleteWebhook(ctx context.Context, webhookID string) error
 	ListCurrencies(ctx context.Context) (any, error)
 	ListDeliveryVariants(ctx context.Context) (any, error)
+	GetDeliveryVariant(ctx context.Context, id string) (any, error)
+	CreateDeliveryVariant(ctx context.Context, args map[string]any) (any, error)
+	UpdateDeliveryVariant(ctx context.Context, id string, args map[string]any) (any, error)
+	DeleteDeliveryVariant(ctx context.Context, id string) error
 	ListPaymentGateways(ctx context.Context) (any, error)
+	GetPaymentGateway(ctx context.Context, id string) (any, error)
+	CreatePaymentGateway(ctx context.Context, args map[string]any) (any, error)
+	UpdatePaymentGateway(ctx context.Context, id string, args map[string]any) (any, error)
+	DeletePaymentGateway(ctx context.Context, id string) error
 	ListPages(ctx context.Context, page, perPage int) ([]Page, error)
 	GetPage(ctx context.Context, pageID string) (*Page, error)
 	CreatePage(ctx context.Context, title, content, handle string) (*Page, error)
@@ -158,6 +166,35 @@ type Client interface {
 	CreateProductField(ctx context.Context, args map[string]any) (any, error)
 	UpdateProductField(ctx context.Context, fieldID string, args map[string]any) (any, error)
 	DeleteProductField(ctx context.Context, fieldID string) error
+
+	// ProductFieldValues (nested under product)
+	ListProductFieldValues(ctx context.Context, productID string) ([]any, error)
+	GetProductFieldValue(ctx context.Context, productID, valueKey string) (any, error)
+	CreateProductFieldValue(ctx context.Context, productID string, args map[string]any) (any, error)
+	UpdateProductFieldValue(ctx context.Context, productID, valueKey string, args map[string]any) (any, error)
+	DeleteProductFieldValue(ctx context.Context, productID, valueKey string) error
+
+	// VariantFieldValues
+	ListVariantFieldValues(ctx context.Context, variantID string) ([]any, error)
+	GetVariantFieldValue(ctx context.Context, variantID, valueKey string) (any, error)
+	CreateVariantFieldValue(ctx context.Context, variantID string, args map[string]any) (any, error)
+	UpdateVariantFieldValue(ctx context.Context, variantID, valueKey string, args map[string]any) (any, error)
+	DeleteVariantFieldValue(ctx context.Context, variantID, valueKey string) error
+
+	// CollectionFieldValues (GET/PUT only in InSales)
+	ListCollectionFieldValues(ctx context.Context, collectionID string) ([]any, error)
+	GetCollectionFieldValue(ctx context.Context, collectionID, valueKey string) (any, error)
+	UpdateCollectionFieldValue(ctx context.Context, collectionID, valueKey string, args map[string]any) (any, error)
+
+	// Product accessory links (RO list)
+	ListProductAccessoryLinks(ctx context.Context, productID string) ([]any, error)
+
+	// Menu items (nested under menu)
+	ListMenuItems(ctx context.Context, menuID string) ([]any, error)
+	GetMenuItem(ctx context.Context, menuID, itemID string) (any, error)
+	CreateMenuItem(ctx context.Context, menuID string, args map[string]any) (any, error)
+	UpdateMenuItem(ctx context.Context, menuID, itemID string, args map[string]any) (any, error)
+	DeleteMenuItem(ctx context.Context, menuID, itemID string) error
 
 	// VariantFields
 	ListVariantFields(ctx context.Context) ([]any, error)

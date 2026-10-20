@@ -565,7 +565,7 @@ SMTP_FROM=MCP IS <user@mail.ru>
 }
 ```
 
-При `tools/list` с read-only возвращаются только 30 read-команд (без create/update/delete).
+При `tools/list` с read-only write-инструменты скрыты. По умолчанию возвращается core surface (~30 tools) + `search_insales_tools` / `call_insales_tool`; полный каталог — через catalog или `MCP_TOOLS_MODE=all`.
 
 ## Доступные команды
 
@@ -573,8 +573,9 @@ SMTP_FROM=MCP IS <user@mail.ru>
 
 | Режим | Команд | Описание |
 |-------|--------|----------|
-| read-only | ~42 | list_*, get_*, system, pipeline, export команды |
-| read/write | 96 | Все команды включая create/update/delete + пайплайны |
+| core (default tools/list) | ~30 | products/orders/clients/categories/collections/fields/pipelines/export + discovery meta-tools |
+| read-only catalog | 120 | все read-команды (list_*, get_*, export, pipeline) |
+| read/write catalog | 282 | все команды включая create/update/delete + пайплайны |
 
 ## Пайплайн-инструменты
 

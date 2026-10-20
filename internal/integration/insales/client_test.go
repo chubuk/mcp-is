@@ -243,7 +243,7 @@ func TestMapProduct_IncludesFieldValues(t *testing.T) {
 	if fv1["value"] != "Противопоказания: Беременность" {
 		t.Errorf("expected field value 'Противопоказания: Беременность', got %v", fv1["value"])
 	}
-	if fv1["product_field_id"] != 1 {
+	if fv1["product_field_id"] != "1" {
 		t.Errorf("expected product_field_id 1, got %v", fv1["product_field_id"])
 	}
 }

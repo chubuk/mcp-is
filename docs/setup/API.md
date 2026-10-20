@@ -232,7 +232,7 @@
 
 **Логика:**
 - `is_read_only=true` → read-команды (list_*, get_*, system)
-- `is_read_only=false` → все 225 команд
+- `is_read_only=false` → все 282 команды (полный каталог; default tools/list — core surface)
 ```
 
 #### GET /api/shops
@@ -786,18 +786,19 @@ Authorization: Bearer <AI_KEY>
 }
 ```
 
-Ответ:
+Ответ (фактический; protocolVersion согласуется SDK — legacy handshake era ≤2025-11-25):
 ```json
 {
   "jsonrpc": "2.0",
   "id": 1,
   "result": {
-    "protocolVersion": "2024-11-05",
-    "capabilities": {"tools": {}},
+    "protocolVersion": "2025-11-25",
+    "capabilities": {"tools": {"listChanged": true}},
     "serverInfo": {
       "name": "mcp-is",
-      "version": "0.1.0"
-    }
+      "version": "0.5.3"
+    },
+    "instructions": "Discovery: default tools/list is a core surface; use search_insales_tools → call_insales_tool for the full catalog. MCP_TOOLS_MODE=all lists everything."
   }
 }
 ```
@@ -805,6 +806,8 @@ Authorization: Bearer <AI_KEY>
 ### tools/list
 
 Получить список доступных инструментов.
+
+По умолчанию возвращается **core surface** (~30 tools: products/orders/clients/categories/collections/product fields/pipelines/export + `search_insales_tools`/`call_insales_tool`). Полный каталог (~280) — через catalog meta-tools или env `MCP_TOOLS_MODE=all`. Результат каждого tool: JSON text + `structuredContent`.
 
 ```json
 {

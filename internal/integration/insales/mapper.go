@@ -74,13 +74,62 @@ func mapImages(images []InSalesImage) []any {
 func mapFieldValues(fvs []InSalesFieldValue) []any {
 	result := make([]any, len(fvs))
 	for i, fv := range fvs {
-		result[i] = map[string]any{
-			"id":               fv.ID,
-			"product_field_id": fv.ProductFieldID,
+		item := map[string]any{
+			"id":               fmt.Sprintf("%d", fv.ID),
+			"product_field_id": fmt.Sprintf("%d", fv.ProductFieldID),
 			"value":            fv.Value,
 		}
+		if fv.Handle != "" {
+			item["handle"] = fv.Handle
+		}
+		if fv.Title != "" {
+			item["title"] = fv.Title
+		} else if fv.Name != "" {
+			item["title"] = fv.Name
+		}
+		result[i] = item
 	}
 	return result
+}
+
+// EnrichFieldValues joins handle/title from a product-field catalog into field_values.
+// catalog items: {id, handle, title} (as returned by /product_fields.json).
+func EnrichFieldValues(values []any, catalog []any) []any {
+	if len(values) == 0 || len(catalog) == 0 {
+		return values
+	}
+	byID := map[string]map[string]any{}
+	for _, raw := range catalog {
+		m, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		id := fmt.Sprintf("%v", m["id"])
+		byID[id] = m
+	}
+	for _, raw := range values {
+		m, ok := raw.(map[string]any)
+		if !ok {
+			continue
+		}
+		id := fmt.Sprintf("%v", m["product_field_id"])
+		if m["product_field_id"] == nil {
+			id = fmt.Sprintf("%v", m["field_id"])
+		}
+		if cat, ok := byID[id]; ok {
+			if _, has := m["handle"]; !has {
+				if h, ok := cat["handle"].(string); ok && h != "" {
+					m["handle"] = h
+				}
+			}
+			if _, has := m["title"]; !has {
+				if t, ok := cat["title"].(string); ok && t != "" {
+					m["title"] = t
+				}
+			}
+		}
+	}
+	return values
 }
 
 func mapProductProperties(props []InSalesProductProperty) []any {
@@ -453,12 +502,19 @@ func MapCustomStatus(resp *InSalesCustomStatusResponse) map[string]any {
 }
 
 func MapProductField(resp *InSalesProductFieldResponse) map[string]any {
+	fieldType := resp.Type
+	if fieldType == "" {
+		fieldType = resp.FieldType
+	}
 	return map[string]any{
 		"id":         resp.ID,
 		"title":      resp.Title,
 		"handle":     resp.Handle,
-		"field_type": resp.FieldType,
+		"type":       fieldType,
+		"field_type": fieldType,
 		"position":   resp.Position,
+		"is_hidden":  resp.IsHidden,
+		"is_indexed": resp.IsIndexed,
 		"created_at": resp.CreatedAt,
 		"updated_at": resp.UpdatedAt,
 	}

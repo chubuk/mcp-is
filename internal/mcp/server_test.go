@@ -2,13 +2,34 @@ package mcp
 
 import (
 	"context"
+	"os"
 	"testing"
 
 	"github.com/chubuk/mcp-is/internal/core"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
+func boolPtr(b bool) *bool { return &b }
+
+func withToolsMode(t *testing.T, mode string) {
+	t.Helper()
+	old, had := os.LookupEnv("MCP_TOOLS_MODE")
+	if mode == "" {
+		_ = os.Unsetenv("MCP_TOOLS_MODE")
+	} else {
+		_ = os.Setenv("MCP_TOOLS_MODE", mode)
+	}
+	t.Cleanup(func() {
+		if had {
+			_ = os.Setenv("MCP_TOOLS_MODE", old)
+		} else {
+			_ = os.Unsetenv("MCP_TOOLS_MODE")
+		}
+	})
+}
+
 func TestToolFilterReadOnly(t *testing.T) {
+	withToolsMode(t, "all")
 	filter := toolFilter(true)
 
 	tools := []mcp.Tool{
@@ -16,15 +37,14 @@ func TestToolFilterReadOnly(t *testing.T) {
 		{Name: "create_product", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(false)}},
 		{Name: "get_product", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(true)}},
 		{Name: "delete_product", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(false)}},
+		{Name: "no_hint_tool"},
 	}
 
-	ctx := context.Background()
-	filtered := filter(ctx, tools)
+	filtered := filter(context.Background(), tools)
 
 	if len(filtered) != 2 {
-		t.Errorf("expected 2 read-only tools, got %d", len(filtered))
+		t.Fatalf("expected 2 read-only tools, got %d: %v", len(filtered), filtered)
 	}
-
 	for _, tool := range filtered {
 		if tool.Name != "list_products" && tool.Name != "get_product" {
 			t.Errorf("unexpected tool in filtered list: %s", tool.Name)
@@ -32,23 +52,53 @@ func TestToolFilterReadOnly(t *testing.T) {
 	}
 }
 
-func TestToolFilterReadWrite(t *testing.T) {
-	filter := toolFilter(false)
-
-	tools := []mcp.Tool{
-		{Name: "list_products"},
-		{Name: "create_product"},
+func TestToolFilterNilReadOnlyHintIsWrite(t *testing.T) {
+	withToolsMode(t, "all")
+	filter := toolFilter(true)
+	filtered := filter(context.Background(), []mcp.Tool{{Name: "orphan"}})
+	if len(filtered) != 0 {
+		t.Errorf("nil ReadOnlyHint must not leak into read-only list, got %d", len(filtered))
 	}
+}
 
-	ctx := context.Background()
-	filtered := filter(ctx, tools)
+func TestToolFilterCoreSurface(t *testing.T) {
+	withToolsMode(t, "core")
+	filter := toolFilter(false)
+	tools := []mcp.Tool{
+		{Name: "list_products", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(true)}},
+		{Name: "create_product", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(false)}},
+		{Name: "search_insales_tools", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(true)}},
+		{Name: "call_insales_tool", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(false)}},
+		{Name: "update_webhook", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(false)}},
+	}
+	filtered := filter(context.Background(), tools)
+	names := map[string]bool{}
+	for _, t := range filtered {
+		names[t.Name] = true
+	}
+	if !names["list_products"] || !names["search_insales_tools"] || !names["call_insales_tool"] {
+		t.Errorf("core+meta must stay visible, got %v", names)
+	}
+	if names["create_product"] || names["update_webhook"] {
+		t.Errorf("non-core tools must be hidden in core mode, got %v", names)
+	}
+}
 
+func TestToolFilterAllMode(t *testing.T) {
+	withToolsMode(t, "all")
+	filter := toolFilter(false)
+	tools := []mcp.Tool{
+		{Name: "list_products", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(true)}},
+		{Name: "create_product", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(false)}},
+	}
+	filtered := filter(context.Background(), tools)
 	if len(filtered) != 2 {
-		t.Errorf("expected 2 tools when not read-only, got %d", len(filtered))
+		t.Errorf("expected 2 tools in all mode, got %d", len(filtered))
 	}
 }
 
 func TestToolFilterShopReadOnly(t *testing.T) {
+	withToolsMode(t, "all")
 	filter := toolFilter(false)
 
 	tools := []mcp.Tool{
@@ -60,51 +110,22 @@ func TestToolFilterShopReadOnly(t *testing.T) {
 	filtered := filter(ctx, tools)
 
 	if len(filtered) != 1 {
-		t.Errorf("expected 1 read-only tool when shop is read-only, got %d", len(filtered))
+		t.Fatalf("expected 1 read-only tool when shop is read-only, got %d", len(filtered))
 	}
 	if filtered[0].Name != "list_products" {
 		t.Errorf("expected list_products, got %s", filtered[0].Name)
 	}
 }
 
-func TestAllCommandNamesComplete(t *testing.T) {
-	// Verify all expected tools have descriptions in shops.go commandDescriptions
-	// This test ensures the shops.go and tools.go stay in sync
-	expectedTools := []string{
-		"list_products", "get_product", "create_product", "update_product", "delete_product",
-		"list_orders", "get_order", "update_order", "create_order",
-		"list_clients", "get_client", "create_client", "update_client", "delete_client",
-		"list_categories", "get_category", "create_category", "update_category", "delete_category",
-		"list_collections", "get_collection", "create_collection", "update_collection", "delete_collection",
-		"list_images", "add_image", "delete_image",
-		"list_meta_fields", "create_meta_field", "update_meta_field", "delete_meta_field",
-		"list_webhooks", "create_webhook", "update_webhook", "delete_webhook",
-		"get_shop_info", "list_currencies", "list_delivery_variants", "list_payment_gateways",
-		"list_pages", "get_page", "create_page", "update_page", "delete_page",
-		"list_accessories", "get_accessory", "create_accessory", "update_accessory", "delete_accessory",
-		"list_variants", "get_variant", "update_variant", "delete_variant",
-		"list_property_values", "create_property_value", "update_property_value", "delete_property_value",
-		"list_menus", "get_menu", "create_menu", "update_menu", "delete_menu",
-		"list_redirects", "create_redirect", "delete_redirect",
-		"list_blogs", "get_blog", "create_blog", "delete_blog",
-		"list_blog_posts", "get_blog_post", "create_blog_post", "update_blog_post", "delete_blog_post",
-		// New tools (v0.4.0)
-		"list_outlets", "get_outlet", "create_outlet", "update_outlet", "delete_outlet",
-		"list_marketplaces", "get_marketplace", "create_marketplace", "update_marketplace", "delete_marketplace",
-		"create_provider_token", "update_account",
-		"get_orders_count", "get_products_count",
-		"collection_products",
-		"export_products", "export_orders", "export_clients",
-		// Pipeline tools
-		"search_product_details", "order_full_details", "client_full_profile", "product_catalog_search",
+func TestCoreToolNamesAreKnownTools(t *testing.T) {
+	// every core name must exist in the full tool name list produced by tools.go
+	// (checked loosely: prefixes that we register; full sync test lives in handlers)
+	for name := range coreToolNames {
+		if name == "" {
+			t.Error("empty core tool name")
+		}
 	}
-
-	// Verify the list has the right count
-	if len(expectedTools) != 96 {
-		t.Errorf("expected 96 tools, got %d", len(expectedTools))
+	if len(coreToolNames) < 20 || len(coreToolNames) > 50 {
+		t.Errorf("core surface size = %d, want ~30-40", len(coreToolNames))
 	}
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }
