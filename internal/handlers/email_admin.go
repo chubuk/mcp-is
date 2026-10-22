@@ -265,7 +265,7 @@ type smtpSettingsRequest struct {
 	Host    *string `json:"host,omitempty"`
 	Port    *string `json:"port,omitempty"`
 	User    *string `json:"user,omitempty"`
-	Pass    *string `json:"pass,omitempty"` // empty = keep existing
+	Pass    *string `json:"pass,omitempty"` // omitted = keep existing; empty string = clear
 	From    *string `json:"from,omitempty"`
 	TLSMode *string `json:"tls_mode,omitempty"`
 }
@@ -332,14 +332,20 @@ func (h *EmailAdminHandler) UpdateSMTPSettings(w http.ResponseWriter, r *http.Re
 			return
 		}
 	}
-	if req.Pass != nil && *req.Pass != "" {
+	if req.Pass != nil {
 		cfg.Pass = *req.Pass
-		enc, err := h.aes.Encrypt(cfg.Pass)
-		if err == nil {
-			if err := h.setSetting("smtp_pass_encrypted", enc); err != nil {
-				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save settings"})
+		enc := ""
+		if cfg.Pass != "" {
+			var err error
+			enc, err = h.aes.Encrypt(cfg.Pass)
+			if err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to encrypt password"})
 				return
 			}
+		}
+		if err := h.setSetting("smtp_pass_encrypted", enc); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save settings"})
+			return
 		}
 	}
 

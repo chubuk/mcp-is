@@ -122,8 +122,8 @@ const Shops = {
                             <input type="text" id="edit-shop-apikey" required>
                         </div>
                         <div class="form-group">
-                            <label>Пароль ключа (оставьте пустым чтобы не менять)</label>
-                            <input type="password" id="edit-shop-apipass">
+                            <label>Пароль ключа <small style="color:#1a7f37" id="edit-shop-apipass-hint"></small></label>
+                            <input type="password" id="edit-shop-apipass" data-has-pass="0">
                         </div>
                         <div class="form-group">
                             <label><input type="checkbox" id="edit-shop-default"> Магазин по умолчанию</label>
@@ -187,6 +187,10 @@ const Shops = {
         document.getElementById('edit-shop-url').value = shop.shop_url || '';
         document.getElementById('edit-shop-apikey').value = shop.api_key_id || '';
         document.getElementById('edit-shop-apipass').value = '';
+        const passInput = document.getElementById('edit-shop-apipass');
+        passInput.dataset.hasPass = shop.has_password ? '1' : '0';
+        document.getElementById('edit-shop-apipass-hint').textContent =
+            shop.has_password ? '(сохранён ✓ — пустое поле сотрёт его)' : '(не задан)';
         document.getElementById('edit-shop-default').checked = shop.is_default;
         document.getElementById('edit-shop-readonly').checked = shop.is_read_only;
         document.getElementById('edit-shop-pdn').checked = shop.pdn_enabled;
@@ -314,7 +318,11 @@ const Shops = {
                         '<div class="alert alert--error">Название магазина обязательно</div>';
                     return;
                 }
-                if (!body.api_password) delete body.api_password;
+                if (body.api_password === '' && document.getElementById('edit-shop-apipass')?.dataset.hasPass === '1') {
+                    if (!confirm('Поле пароля пустое — стереть сохранённый пароль API магазина?')) {
+                        delete body.api_password;
+                    }
+                }
 
                 const res = await API.put('/api/shops/' + id, body);
                 if (res && res.ok) {

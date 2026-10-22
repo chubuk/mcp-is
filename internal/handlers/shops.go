@@ -25,13 +25,13 @@ func NewShopHandler(shopRepo storage.ShopRepositoryInterface, aiKeyRepo storage.
 }
 
 type ShopRequest struct {
-	Name        string `json:"name"`
-	ShopURL     string `json:"shop_url"`
-	APIKeyID    string `json:"api_key_id"`
-	APIPassword string `json:"api_password"`
-	IsDefault   bool   `json:"is_default"`
-	IsReadOnly  bool   `json:"is_read_only"`
-	PDNEnabled  bool   `json:"pdn_enabled"`
+	Name        string  `json:"name"`
+	ShopURL     string  `json:"shop_url"`
+	APIKeyID    string  `json:"api_key_id"`
+	APIPassword *string `json:"api_password,omitempty"` // omitted = keep existing; empty string = clear
+	IsDefault   bool    `json:"is_default"`
+	IsReadOnly  bool    `json:"is_read_only"`
+	PDNEnabled  bool    `json:"pdn_enabled"`
 }
 
 type ShopResponse struct {
@@ -42,6 +42,7 @@ type ShopResponse struct {
 	IsDefault    bool   `json:"is_default"`
 	IsReadOnly   bool   `json:"is_read_only"`
 	PDNEnabled   bool   `json:"pdn_enabled"`
+	HasPass      bool   `json:"has_password"`
 	Jurisdiction string `json:"jurisdiction,omitempty"`
 	CreatedAt    string `json:"created_at,omitempty"`
 	Error        string `json:"error,omitempty"`
@@ -60,12 +61,12 @@ func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, ShopResponse{Error: "name is required"})
 		return
 	}
-	if req.ShopURL == "" || req.APIKeyID == "" || req.APIPassword == "" {
+	if req.ShopURL == "" || req.APIKeyID == "" || req.APIPassword == nil || *req.APIPassword == "" {
 		writeJSON(w, http.StatusBadRequest, ShopResponse{Error: "shop_url, api_key_id and api_password are required"})
 		return
 	}
 
-	encrypted, err := h.aes.Encrypt(req.APIPassword)
+	encrypted, err := h.aes.Encrypt(*req.APIPassword)
 	if err != nil {
 		slog.Error("encrypt password", "error", err)
 		writeJSON(w, http.StatusInternalServerError, ShopResponse{Error: "encryption error"})
@@ -109,6 +110,7 @@ func (h *ShopHandler) List(w http.ResponseWriter, r *http.Request) {
 	for i, s := range shops {
 		resp := ShopResponse{
 			ID: s.ID, Name: s.Name, ShopURL: s.ShopURL, APIKeyID: s.APIKeyID, IsDefault: s.IsDefault, IsReadOnly: s.IsReadOnly, PDNEnabled: s.PDNEnabled, CreatedAt: s.CreatedAt,
+			HasPass: s.APIPasswordEncrypted != "",
 		}
 		if isAdmin {
 			resp.Jurisdiction = s.Jurisdiction
@@ -138,24 +140,24 @@ func (h *ShopHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	encrypted := ""
-	if req.APIPassword != "" {
-		var err error
-		encrypted, err = h.aes.Encrypt(req.APIPassword)
-		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, ShopResponse{Error: "encryption error"})
-			return
-		}
-	}
-
 	existing, err := h.shopRepo.GetByID(shopID)
 	if err != nil {
 		writeJSON(w, http.StatusNotFound, ShopResponse{Error: "shop not found"})
 		return
 	}
 
-	if encrypted == "" {
+	var encrypted string
+	switch {
+	case req.APIPassword == nil:
 		encrypted = existing.APIPasswordEncrypted
+	case *req.APIPassword == "":
+		encrypted = ""
+	default:
+		encrypted, err = h.aes.Encrypt(*req.APIPassword)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, ShopResponse{Error: "encryption error"})
+			return
+		}
 	}
 
 	if req.ShopURL == "" {
@@ -170,7 +172,7 @@ func (h *ShopHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, ShopResponse{ID: shopID, Name: req.Name, ShopURL: req.ShopURL, APIKeyID: req.APIKeyID, IsDefault: req.IsDefault, IsReadOnly: req.IsReadOnly, PDNEnabled: req.PDNEnabled})
+	writeJSON(w, http.StatusOK, ShopResponse{ID: shopID, Name: req.Name, ShopURL: req.ShopURL, APIKeyID: req.APIKeyID, IsDefault: req.IsDefault, IsReadOnly: req.IsReadOnly, PDNEnabled: req.PDNEnabled, HasPass: encrypted != ""})
 }
 
 func (h *ShopHandler) Delete(w http.ResponseWriter, r *http.Request) {

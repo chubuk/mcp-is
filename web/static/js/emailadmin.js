@@ -372,8 +372,8 @@ const EmailAdmin = {
                     <input type="text" id="smtp-user" value="${s.user || ''}" placeholder="user@mail.ru">
                 </div>
                 <div class="form-group" style="flex:1">
-                    <label for="smtp-pass">Пароль${s.has_password ? ' <small style="color:#1a7f37">(сохранён ✓ — пустое = не менять)</small>' : ''}</label>
-                    <input type="password" id="smtp-pass" data-pw-no-reveal value="" autocomplete="new-password" placeholder="${s.has_password ? '•••••• (сохранён)' : 'пароль SMTP'}">
+                    <label for="smtp-pass">Пароль${s.has_password ? ' <small style="color:#1a7f37">(сохранён ✓ — пустое поле сотрёт его)</small>' : ''}</label>
+                    <input type="password" id="smtp-pass" data-pw-no-reveal data-has-pass="${s.has_password ? '1' : '0'}" value="" autocomplete="new-password" placeholder="${s.has_password ? '•••••• (сохранён)' : 'пароль SMTP'}">
                 </div>
             </div>
             <div class="form-row" style="display:flex;gap:12px;flex-wrap:wrap">
@@ -404,7 +404,11 @@ const EmailAdmin = {
             tls_mode: ['smtp-tls', 'text'],
             pass: ['smtp-pass', 'text'],
         });
-        if (!body.pass) delete body.pass;
+        if (body.pass === '' && document.getElementById('smtp-pass')?.dataset.hasPass === '1') {
+            if (!confirm('Поле пароля пустое — стереть сохранённый пароль SMTP?')) {
+                delete body.pass;
+            }
+        }
         const res = await API.put('/api/admin/smtp/settings', body);
         const alertEl = document.getElementById('smtp-settings-alert');
         if (res && res.ok) {

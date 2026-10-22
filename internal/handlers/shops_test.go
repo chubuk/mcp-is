@@ -29,7 +29,7 @@ func TestShopCreate_Success(t *testing.T) {
 		Name:        "Мой магазин",
 		ShopURL:     "myshop.myinsales.ru",
 		APIKeyID:    "key123",
-		APIPassword: "secret",
+		APIPassword: strPtr("secret"),
 		IsDefault:   true,
 	})
 
@@ -76,7 +76,7 @@ func TestShopCreate_PDNEnabledPersists(t *testing.T) {
 		Name:        "qa-pdn-shop",
 		ShopURL:     "qa-pdn.myinsales.ru",
 		APIKeyID:    "k",
-		APIPassword: "p",
+		APIPassword: strPtr("p"),
 		PDNEnabled:  true,
 	})
 	req := httptest.NewRequest(http.MethodPost, "/api/shops", bytes.NewReader(body))
@@ -108,7 +108,7 @@ func TestShopCreate_EncryptsPassword(t *testing.T) {
 		Name:        "Тестовый",
 		ShopURL:     "test.myinsales.ru",
 		APIKeyID:    "key",
-		APIPassword: "my-password",
+		APIPassword: strPtr("my-password"),
 	})
 	req := httptest.NewRequest(http.MethodPost, "/api/shops", bytes.NewReader(body))
 	req = req.WithContext(withUserID(req.Context(), "user-1"))
@@ -122,6 +122,42 @@ func TestShopCreate_EncryptsPassword(t *testing.T) {
 	}
 	if shops[0].APIPasswordEncrypted == "my-password" {
 		t.Error("password should be encrypted, not plaintext")
+	}
+}
+
+func TestShopUpdate_EmptyPassClears_OmittedKeeps(t *testing.T) {
+	h, repo := setupShopHandler()
+	shop, _ := repo.Create("user-1", "Тестовый", "test.myinsales.ru", "key", "enc-old", false, false, false)
+
+	// omitted api_password → keep
+	keep := strPtr("новое имя")
+	body, _ := json.Marshal(map[string]any{"name": *keep})
+	req := httptest.NewRequest(http.MethodPut, "/api/shops/"+shop.ID, bytes.NewReader(body))
+	req = req.WithContext(withUserID(req.Context(), "user-1"))
+	req.SetPathValue("id", shop.ID)
+	w := httptest.NewRecorder()
+	h.Update(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("keep: status = %d body=%s", w.Code, w.Body.String())
+	}
+	got, _ := repo.GetByID(shop.ID)
+	if got.APIPasswordEncrypted != "enc-old" {
+		t.Errorf("omitted pass must keep existing, got %q", got.APIPasswordEncrypted)
+	}
+
+	// empty api_password → clear
+	body, _ = json.Marshal(map[string]any{"name": "Тестовый", "api_password": ""})
+	req = httptest.NewRequest(http.MethodPut, "/api/shops/"+shop.ID, bytes.NewReader(body))
+	req = req.WithContext(withUserID(req.Context(), "user-1"))
+	req.SetPathValue("id", shop.ID)
+	w = httptest.NewRecorder()
+	h.Update(w, req)
+	if w.Code != http.StatusOK {
+		t.Fatalf("clear: status = %d body=%s", w.Code, w.Body.String())
+	}
+	got, _ = repo.GetByID(shop.ID)
+	if got.APIPasswordEncrypted != "" {
+		t.Errorf("empty pass must clear, got %q", got.APIPasswordEncrypted)
 	}
 }
 
@@ -338,7 +374,7 @@ func TestShopCreate_NameRequired(t *testing.T) {
 	body, _ := json.Marshal(ShopRequest{
 		ShopURL:     "test.ru",
 		APIKeyID:    "key",
-		APIPassword: "pass",
+		APIPassword: strPtr("pass"),
 	})
 	req := httptest.NewRequest(http.MethodPost, "/api/shops", bytes.NewReader(body))
 	req = req.WithContext(withUserID(req.Context(), "user-1"))

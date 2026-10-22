@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.7.4] — 2026-10-23 (clear secrets on empty field + version alignment)
+
+### Изменено
+- **Стиране пароля при пустом поле**: SMTP (`pass: ""`) и API-пароль магазина (`api_password: ""`) теперь очищаются; поле не отправлено (omit) = оставить как есть. UI спрашивает подтверждение перед стиранием. Раньше пустое поле только «не меняло» пароль.
+- **PostgreSQL 16**: compose / deploy.sh / документация; prod-миграция 15→16 через `pg_dump` (см. INSTALL).
+- **Версии продуктов**: Go ≥1.25, golangci-lint v2.15.0, примеры/UI 0.7.4, MCP protocolVersion 2025-11-25.
+
+### Добавлено
+- `TestUpdateSMTPSettings_EmptyPassClears`, `TestShopUpdate_EmptyPassClears_OmittedKeeps`
+- `has_password` в ответе `/api/shops` (для подсказки/подтверждения в UI)
+
 ## [0.7.3] — 2026-10-22 (form helper + docs)
 
 ### Изменено

@@ -86,6 +86,23 @@ func TestUpdateSMTPSettings_KeepsPassword(t *testing.T) {
 	}
 }
 
+func TestUpdateSMTPSettings_EmptyPassClears(t *testing.T) {
+	aes, _ := auth.NewAESCipher("test-encryption-key-32-bytes!!!!")
+	svc := email.NewService(email.Config{Host: "smtp.x", Port: "587", Pass: "oldpass", From: "a@b.c", Domain: "example.com"})
+	h := NewEmailAdminHandler(nil, nil, svc, aes)
+
+	body, _ := json.Marshal(map[string]any{"pass": ""})
+	req := httptest.NewRequest("PUT", "/api/admin/smtp/settings", bytes.NewReader(body)).WithContext(ctxWithRole("super_admin"))
+	rec := httptest.NewRecorder()
+	h.UpdateSMTPSettings(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d body=%s", rec.Code, rec.Body.String())
+	}
+	if cfg := svc.Config(); cfg.Pass != "" {
+		t.Errorf("Pass = %q, want empty after clear", cfg.Pass)
+	}
+}
+
 func TestUpdateSMTPSettings_EnableWithoutHost(t *testing.T) {
 	svc := email.NewService(email.Config{Domain: "example.com"})
 	h := NewEmailAdminHandler(nil, nil, svc, nil)
