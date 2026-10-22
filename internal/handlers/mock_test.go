@@ -227,7 +227,7 @@ func newMockShopRepo() *mockShopRepo {
 	return &mockShopRepo{shops: make(map[string]*storage.Shop)}
 }
 
-func (m *mockShopRepo) Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) (*storage.Shop, error) {
+func (m *mockShopRepo) Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) (*storage.Shop, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -241,6 +241,7 @@ func (m *mockShopRepo) Create(userID, name, shopURL, apiKeyID, apiPasswordEncryp
 		APIPasswordEncrypted: apiPasswordEncrypted,
 		IsDefault:            isDefault,
 		IsReadOnly:           isReadOnly,
+		PDNEnabled:           pdnEnabled,
 		CreatedAt:            "2026-01-01T00:00:00Z",
 	}
 	m.shops[s.ID] = s

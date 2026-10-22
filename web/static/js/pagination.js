@@ -1,9 +1,22 @@
+// Единая библиотека пагинации. Новый список: renderPagination(...) + showPage(renderFn, page, perPage).
+// Не писать свой goPage — он уже здесь.
+
 function getPerPage() {
     return parseInt(localStorage.getItem('perPage') || '20');
 }
 
 function setPerPage(n) {
     localStorage.setItem('perPage', String(n));
+}
+
+// Стандартный переход по страницам: запомнить perPage, отрисовать renderFn(page, perPage) в #app.
+// renderFn должен возвращать Promise<string> (HTML).
+function showPage(renderFn, page, perPage) {
+    if (perPage) setPerPage(perPage);
+    return Promise.resolve(renderFn(page, perPage || getPerPage())).then((html) => {
+        const app = document.getElementById('app');
+        if (app) app.innerHTML = html;
+    });
 }
 
 // handlerPath — строка вида "Admin.goUsersPage": inline onclick видит только window,

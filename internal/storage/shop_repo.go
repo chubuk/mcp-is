@@ -30,13 +30,13 @@ func NewShopRepository(db *pgxpool.Pool) *ShopRepository {
 	return &ShopRepository{db: db}
 }
 
-func (r *ShopRepository) Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) (*Shop, error) {
+func (r *ShopRepository) Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) (*Shop, error) {
 	var s Shop
 	err := r.db.QueryRow(context.Background(),
-		`INSERT INTO shops (user_id, name, shop_url, api_key_id, api_password_encrypted, is_default, is_read_only)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7)
+		`INSERT INTO shops (user_id, name, shop_url, api_key_id, api_password_encrypted, is_default, is_read_only, pdn_enabled)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 		 RETURNING id, user_id, name, shop_url, api_key_id, is_default, is_read_only, COALESCE(jurisdiction,'AUTO'), pdn_enabled, created_at::text`,
-		userID, name, shopURL, apiKeyID, apiPasswordEncrypted, isDefault, isReadOnly,
+		userID, name, shopURL, apiKeyID, apiPasswordEncrypted, isDefault, isReadOnly, pdnEnabled,
 	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.Jurisdiction, &s.PDNEnabled, &s.CreatedAt)
 
 	if err != nil {
@@ -60,7 +60,7 @@ func (r *ShopRepository) GetByID(id string) (*Shop, error) {
 
 func (r *ShopRepository) ListByUserID(userID string) ([]Shop, error) {
 	rows, err := r.db.Query(context.Background(),
-		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, is_default, is_read_only, created_at::text, updated_at::text
+		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, is_default, is_read_only, pdn_enabled, created_at::text, updated_at::text
 		 FROM shops WHERE user_id = $1 ORDER BY is_default DESC, created_at DESC`, userID,
 	)
 	if err != nil {
@@ -71,7 +71,7 @@ func (r *ShopRepository) ListByUserID(userID string) ([]Shop, error) {
 	var shops []Shop
 	for rows.Next() {
 		var s Shop
-		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.PDNEnabled, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan shop: %w", err)
 		}
 		shops = append(shops, s)
@@ -94,7 +94,7 @@ func (r *ShopRepository) ListByUserIDFiltered(userID string, page, perPage int) 
 	}
 
 	rows, err := r.db.Query(context.Background(),
-		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, is_default, is_read_only, created_at::text, updated_at::text
+		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, is_default, is_read_only, pdn_enabled, created_at::text, updated_at::text
 		 FROM shops WHERE user_id = $1 ORDER BY is_default DESC, created_at DESC LIMIT $2 OFFSET $3`,
 		userID, perPage, offset,
 	)
@@ -106,7 +106,7 @@ func (r *ShopRepository) ListByUserIDFiltered(userID string, page, perPage int) 
 	var shops []Shop
 	for rows.Next() {
 		var s Shop
-		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.PDNEnabled, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, 0, fmt.Errorf("scan shop: %w", err)
 		}
 		shops = append(shops, s)

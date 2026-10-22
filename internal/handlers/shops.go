@@ -72,7 +72,7 @@ func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shop, err := h.shopRepo.Create(userID, req.Name, req.ShopURL, req.APIKeyID, encrypted, req.IsDefault, req.IsReadOnly)
+	shop, err := h.shopRepo.Create(userID, req.Name, req.ShopURL, req.APIKeyID, encrypted, req.IsDefault, req.IsReadOnly, req.PDNEnabled)
 	if err != nil {
 		slog.Warn("create shop failed", "error", err)
 		writeJSON(w, http.StatusInternalServerError, ShopResponse{Error: "failed to create shop"})
@@ -81,7 +81,7 @@ func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	slog.Info("shop created", "id", shop.ID, "name", shop.Name, "url", shop.ShopURL)
 	writeJSON(w, http.StatusCreated, ShopResponse{
-		ID: shop.ID, Name: shop.Name, ShopURL: shop.ShopURL, APIKeyID: shop.APIKeyID, IsDefault: shop.IsDefault, IsReadOnly: shop.IsReadOnly,
+		ID: shop.ID, Name: shop.Name, ShopURL: shop.ShopURL, APIKeyID: shop.APIKeyID, IsDefault: shop.IsDefault, IsReadOnly: shop.IsReadOnly, PDNEnabled: shop.PDNEnabled,
 	})
 }
 

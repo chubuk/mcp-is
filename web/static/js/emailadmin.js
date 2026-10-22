@@ -120,9 +120,13 @@ const EmailAdmin = {
         await this.loadList();
     },
 
+    // SPA wipes #tpl-quill on every route render (app.js innerHTML) — always bind to the live node.
     initQuill() {
-        if (this.quill) return;
-        this.quill = new Quill('#tpl-quill', {
+        const el = document.getElementById('tpl-quill');
+        if (!el) return;
+        if (this.quill && this.quill.container === el && el.isConnected) return;
+        el.innerHTML = '';
+        this.quill = new Quill(el, {
             theme: 'snow',
             modules: {
                 toolbar: [
@@ -167,20 +171,24 @@ const EmailAdmin = {
         }
     },
 
-    // Quill ignores root.innerHTML for its Delta — must paste via clipboard.
+    // Quill ignores root.innerHTML for its Delta — convert via clipboard.
     loadIntoQuill(bodyHTML) {
+        this.initQuill();
         if (!this.quill) return;
-        this.quill.enable(false);
-        this.quill.setContents([]);
         const clean = (bodyHTML || '').trim();
+        this.quill.setContents([]);
         if (clean && clean !== '<p><br></p>') {
             try {
-                this.quill.clipboard.dangerouslyPasteHTML(clean);
+                const delta = this.quill.clipboard.convert({ html: clean });
+                this.quill.setContents(delta);
             } catch (e) {
                 this.quill.setText(clean.replace(/<[^>]+>/g, ' '));
             }
+            if (!this.quill.getText().trim()) {
+                console.error('Quill load empty for non-empty template body');
+                this.quill.setText(clean.replace(/<[^>]+>/g, ' '));
+            }
         }
-        this.quill.enable(true);
     },
 
     getHTML() {

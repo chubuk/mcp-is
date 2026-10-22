@@ -122,11 +122,8 @@ const Admin = {
     },
 
     goUsersPage(page, perPage) {
-        setPerPage(perPage);
         Admin._usersPage = page;
-        Admin.renderUsers(page, perPage).then(html => {
-            document.getElementById('app').innerHTML = html;
-        });
+        return showPage((p, pp) => Admin.renderUsers(p, pp), page, perPage);
     },
 
     async showUser(id) {
@@ -600,7 +597,7 @@ const Admin = {
                     <label>
                         <input type="checkbox" id="pdn-auto" ${s.auto_protect !== false ? 'checked' : ''}> АвтоПДн (автоматическая защита для РФ + иностранных LLM)
                     </label>
-                    <small style="color:#888">Отключите для тестирования. В .env: PDN_AUTO_PROTECT=false</small>
+                    <span class="form-check-hint">Отключите для тестирования. В .env: PDN_AUTO_PROTECT=false</span>
                 </div>
                 <button class="btn btn--primary" onclick="Admin.savePDN()">💾 Сохранить</button>
             </div>
@@ -820,19 +817,13 @@ const Admin = {
     },
 
     goBackupLogPage(page, perPage) {
-        setPerPage(perPage);
         Admin._backupLogPage = page;
-        Admin.renderBackup(page, Admin._incidentsPage).then(html => {
-            document.getElementById('app').innerHTML = html;
-        });
+        return showPage(() => Admin.renderBackup(page, Admin._incidentsPage), page, perPage);
     },
 
     goIncidentsPage(page, perPage) {
-        setPerPage(perPage);
         Admin._incidentsPage = page;
-        Admin.renderBackup(Admin._backupLogPage, page).then(html => {
-            document.getElementById('app').innerHTML = html;
-        });
+        return showPage(() => Admin.renderBackup(Admin._backupLogPage, page), page, perPage);
     },
 
     async saveBackup() {

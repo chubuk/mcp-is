@@ -15,7 +15,7 @@ func TestAIKeyRepo_ShopDeleteSetsNull(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	shop, err := shopRepo.Create(user.ID, "FK Shop", "fk.myinsales.ru", "ik", "ip", true, false)
+	shop, err := shopRepo.Create(user.ID, "FK Shop", "fk.myinsales.ru", "ik", "ip", true, false, false)
 	if err != nil {
 		t.Fatal(err)
 	}

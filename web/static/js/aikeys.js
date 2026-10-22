@@ -121,7 +121,7 @@ const AIKeys = {
                             <label>
                                 <input type="checkbox" id="aikey-pdn"> Защита персональных данных (152-ФЗ)
                             </label>
-                            <small style="color:#888">Маскировка email, телефона, ФИО для AI</small>
+                            <span class="form-check-hint">Маскировка email, телефона, ФИО для AI</span>
                         </div>
                         <button type="submit" class="btn btn--primary">💾 Создать ключ</button>
                         <button type="button" class="btn btn--ghost" onclick="AIKeys.hideForm()">✖️ Отмена</button>
@@ -141,7 +141,7 @@ const AIKeys = {
                         </div>
                         <div class="form-group">
                             <label><input type="checkbox" id="edit-aikey-pdn"> Защита персональных данных (152-ФЗ)</label>
-                            <small style="color:#888">Маскировка email, телефона, ФИО для AI</small>
+                            <span class="form-check-hint">Маскировка email, телефона, ФИО для AI</span>
                         </div>
                         <div style="margin-bottom:12px">
                             <label style="font-weight:600;font-size:13px;color:#555">🌐 MCP Server URL</label>
@@ -400,9 +400,6 @@ const AIKeys = {
     },
 
     goPage(page, perPage) {
-        setPerPage(perPage);
-        AIKeys.render(page, perPage).then(html => {
-            document.getElementById('app').innerHTML = html;
-        });
+        return showPage((p, pp) => AIKeys.render(p, pp), page, perPage);
     }
 };

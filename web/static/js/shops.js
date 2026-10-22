@@ -93,7 +93,7 @@ const Shops = {
                             <label>
                                 <input type="checkbox" id="shop-pdn"> Защита персональных данных (152-ФЗ)
                             </label>
-                            <small style="color:#888">Маскировка email, телефона, ФИО для AI</small>
+                            <span class="form-check-hint">Маскировка email, телефона, ФИО для AI</span>
                         </div>
                         <div id="test-connection-result" style="display:none;margin-bottom:16px"></div>
                         <button type="button" class="btn btn--secondary" onclick="Shops.testConnection()">🔍 Проверить соединение</button>
@@ -133,7 +133,7 @@ const Shops = {
                         </div>
                         <div class="form-group">
                             <label><input type="checkbox" id="edit-shop-pdn"> Защита персональных данных (152-ФЗ)</label>
-                            <small style="color:#888">Маскировка email, телефона, ФИО для AI</small>
+                            <span class="form-check-hint">Маскировка email, телефона, ФИО для AI</span>
                         </div>
                         <button type="submit" class="btn btn--primary">💾 Сохранить</button>
                         <button type="button" class="btn btn--ghost" onclick="Shops.hideEditForm()">✖️ Отмена</button>
@@ -401,9 +401,6 @@ const Shops = {
     },
 
     goPage(page, perPage) {
-        setPerPage(perPage);
-        Shops.render(page, perPage).then(html => {
-            document.getElementById('app').innerHTML = html;
-        });
+        return showPage((p, pp) => Shops.render(p, pp), page, perPage);
     }
 };

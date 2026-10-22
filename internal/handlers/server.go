@@ -104,7 +104,10 @@ func (h *ServerHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		if *req.HTTPSEnabled {
 			value = "true"
 		}
-		_ = h.settingsRepo.Set("https_enabled", value)
+		if err := h.settingsRepo.Set("https_enabled", value); err != nil {
+			writeJSON(w, http.StatusInternalServerError, ServerSettingsResponse{Error: "failed to save settings"})
+			return
+		}
 	}
 
 	if req.AutoRenew != nil {
@@ -112,7 +115,10 @@ func (h *ServerHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		if *req.AutoRenew {
 			value = "true"
 		}
-		_ = h.settingsRepo.Set("auto_renew", value)
+		if err := h.settingsRepo.Set("auto_renew", value); err != nil {
+			writeJSON(w, http.StatusInternalServerError, ServerSettingsResponse{Error: "failed to save settings"})
+			return
+		}
 	}
 
 	if req.RenewDaysBefore != nil {
@@ -122,11 +128,17 @@ func (h *ServerHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		if *req.RenewDaysBefore > 60 {
 			*req.RenewDaysBefore = 60
 		}
-		_ = h.settingsRepo.Set("renew_days_before", fmt.Sprintf("%d", *req.RenewDaysBefore))
+		if err := h.settingsRepo.Set("renew_days_before", fmt.Sprintf("%d", *req.RenewDaysBefore)); err != nil {
+			writeJSON(w, http.StatusInternalServerError, ServerSettingsResponse{Error: "failed to save settings"})
+			return
+		}
 	}
 
 	if req.LetsencryptEmail != nil {
-		_ = h.settingsRepo.Set("letsencrypt_email", *req.LetsencryptEmail)
+		if err := h.settingsRepo.Set("letsencrypt_email", *req.LetsencryptEmail); err != nil {
+			writeJSON(w, http.StatusInternalServerError, ServerSettingsResponse{Error: "failed to save settings"})
+			return
+		}
 	}
 
 	h.GetSettings(w, r)

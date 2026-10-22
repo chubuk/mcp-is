@@ -287,11 +287,11 @@ func (h *EmailAdminHandler) GetSMTPSettings(w http.ResponseWriter, r *http.Reque
 	})
 }
 
-func (h *EmailAdminHandler) setSetting(key, value string) {
+func (h *EmailAdminHandler) setSetting(key, value string) error {
 	if h.settings == nil {
-		return
+		return nil
 	}
-	_ = h.settings.Set(key, value)
+	return h.settings.Set(key, value)
 }
 
 func (h *EmailAdminHandler) UpdateSMTPSettings(w http.ResponseWriter, r *http.Request) {
@@ -336,7 +336,10 @@ func (h *EmailAdminHandler) UpdateSMTPSettings(w http.ResponseWriter, r *http.Re
 		cfg.Pass = *req.Pass
 		enc, err := h.aes.Encrypt(cfg.Pass)
 		if err == nil {
-			h.setSetting("smtp_pass_encrypted", enc)
+			if err := h.setSetting("smtp_pass_encrypted", enc); err != nil {
+				writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save settings"})
+				return
+			}
 		}
 	}
 
@@ -352,27 +355,36 @@ func (h *EmailAdminHandler) UpdateSMTPSettings(w http.ResponseWriter, r *http.Re
 	}
 
 	// Persist non-secret fields
+	save := func(k, v string) bool {
+		if err := h.setSetting(k, v); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "failed to save settings"})
+			return false
+		}
+		return true
+	}
 	if req.Enabled != nil {
 		val := "true"
 		if cfg.Disabled {
 			val = "false"
 		}
-		h.setSetting("smtp_enabled", val)
+		if !save("smtp_enabled", val) {
+			return
+		}
 	}
-	if req.Host != nil {
-		h.setSetting("smtp_host", cfg.Host)
+	if req.Host != nil && !save("smtp_host", cfg.Host) {
+		return
 	}
-	if req.Port != nil {
-		h.setSetting("smtp_port", cfg.Port)
+	if req.Port != nil && !save("smtp_port", cfg.Port) {
+		return
 	}
-	if req.User != nil {
-		h.setSetting("smtp_user", cfg.User)
+	if req.User != nil && !save("smtp_user", cfg.User) {
+		return
 	}
-	if req.From != nil {
-		h.setSetting("smtp_from", cfg.From)
+	if req.From != nil && !save("smtp_from", cfg.From) {
+		return
 	}
-	if req.TLSMode != nil {
-		h.setSetting("smtp_tls_mode", string(cfg.TLSMode))
+	if req.TLSMode != nil && !save("smtp_tls_mode", string(cfg.TLSMode)) {
+		return
 	}
 
 	h.mail.Reload(cfg)

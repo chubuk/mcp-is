@@ -432,7 +432,7 @@ func (h *AppHandler) provisionUserAndShop(inst *storage.AppInstall, email, userN
 		userID = user.ID
 	}
 
-	shop, err := h.shops.Create(userID, inst.ShopHost, inst.ShopHost, h.appKey, inst.APIPasswordEncrypted, true, false)
+	shop, err := h.shops.Create(userID, inst.ShopHost, inst.ShopHost, h.appKey, inst.APIPasswordEncrypted, true, false, false)
 	if err != nil {
 		return nil, "", fmt.Errorf("create shop: %w", err)
 	}

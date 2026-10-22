@@ -8,17 +8,20 @@ import (
 
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/pdn"
+	"github.com/chubuk/mcp-is/internal/storage"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PDNHandler struct {
 	db            *pgxpool.Pool
+	settingsRepo  *storage.SettingsRepository
 	settingsCache *pdn.PDNSettingsCache
 }
 
-func NewPDNHandler(db *pgxpool.Pool) *PDNHandler {
+func NewPDNHandler(db *pgxpool.Pool, settingsRepo *storage.SettingsRepository) *PDNHandler {
 	return &PDNHandler{
 		db:            db,
+		settingsRepo:  settingsRepo,
 		settingsCache: pdn.NewPDNSettingsCache(),
 	}
 }
@@ -78,16 +81,27 @@ func (h *PDNHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.Enabled != nil {
-		h.settingsCache.Invalidate()
+	save := func(key string, v *bool) bool {
+		if v == nil {
+			return true
+		}
+		val := "false"
+		if *v {
+			val = "true"
+		}
+		if err := h.settingsRepo.Set(key, val); err != nil {
+			writeJSON(w, http.StatusInternalServerError, PDNSettingsResponse{Error: "failed to save settings"})
+			return false
+		}
+		return true
 	}
-	if req.Log != nil {
-		h.settingsCache.Invalidate()
+	if !save("pdn_control_enabled", req.Enabled) ||
+		!save("pdn_log_access", req.Log) ||
+		!save("pdn_mask_pii", req.MaskPII) ||
+		!save("pdn_auto_protect", req.AutoProtect) {
+		return
 	}
-	if req.MaskPII != nil {
-		h.settingsCache.Invalidate()
-	}
-	if req.AutoProtect != nil {
+	if req.Enabled != nil || req.Log != nil || req.MaskPII != nil || req.AutoProtect != nil {
 		h.settingsCache.Invalidate()
 	}
 

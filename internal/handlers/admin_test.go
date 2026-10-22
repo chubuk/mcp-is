@@ -380,9 +380,9 @@ func TestStats_Success(t *testing.T) {
 	u1, _ := userRepo.Create("user1", "u1@test.com", "", "", "", "hash")
 	u2, _ := userRepo.Create("user2", "u2@test.com", "", "", "", "hash")
 
-	shopRepo.Create(u1.ID, "Магазин 1", "shop1.myinsales.ru", "key1", "pass1", true, false)
-	shopRepo.Create(u2.ID, "Магазин 2", "shop2.myinsales.ru", "key2", "pass2", true, false)
-	shopRepo.Create(u1.ID, "Магазин 3", "shop3.myinsales.ru", "key3", "pass3", false, false)
+	shopRepo.Create(u1.ID, "Магазин 1", "shop1.myinsales.ru", "key1", "pass1", true, false, false)
+	shopRepo.Create(u2.ID, "Магазин 2", "shop2.myinsales.ru", "key2", "pass2", true, false, false)
+	shopRepo.Create(u1.ID, "Магазин 3", "shop3.myinsales.ru", "key3", "pass3", false, false, false)
 
 	aiKeyRepo.Create(u1.ID, "hash1", "AI Key 1")
 

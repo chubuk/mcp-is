@@ -105,7 +105,7 @@ func main() {
 	aiKeyHandler := handlers.NewAIKeyHandler(aiKeyRepo)
 	adminHandler := handlers.NewAdminHandler(userRepo, shopRepo, aiKeyRepo, jwtMgr, emailSvc)
 	serverHandler := handlers.NewServerHandler(settingsRepo)
-	pdnHandler := handlers.NewPDNHandler(pool)
+	pdnHandler := handlers.NewPDNHandler(pool, settingsRepo)
 
 	appInstallRepo := storage.NewAppInstallRepository(pool)
 	appHandler := handlers.NewAppHandler(

@@ -68,6 +68,39 @@ func TestShopCreate_MissingFields(t *testing.T) {
 	}
 }
 
+// Regression: Create used to drop pdn_enabled (INSERT omitted the column).
+func TestShopCreate_PDNEnabledPersists(t *testing.T) {
+	h, repo := setupShopHandler()
+
+	body, _ := json.Marshal(ShopRequest{
+		Name:        "qa-pdn-shop",
+		ShopURL:     "qa-pdn.myinsales.ru",
+		APIKeyID:    "k",
+		APIPassword: "p",
+		PDNEnabled:  true,
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/shops", bytes.NewReader(body))
+	req = req.WithContext(withUserID(req.Context(), "user-1"))
+	w := httptest.NewRecorder()
+	h.Create(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("expected 201, got %d: %s", w.Code, w.Body.String())
+	}
+	var resp ShopResponse
+	json.NewDecoder(w.Body).Decode(&resp)
+	if !resp.PDNEnabled {
+		t.Fatal("response pdn_enabled=false, want true")
+	}
+	got, err := repo.GetByID(resp.ID)
+	if err != nil {
+		t.Fatalf("GetByID: %v", err)
+	}
+	if !got.PDNEnabled {
+		t.Fatal("stored pdn_enabled=false, want true")
+	}
+}
+
 func TestShopCreate_EncryptsPassword(t *testing.T) {
 	h, repo := setupShopHandler()
 
@@ -95,8 +128,8 @@ func TestShopCreate_EncryptsPassword(t *testing.T) {
 func TestShopList_Success(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	repo.Create("user-1", "Магазин 1", "shop1.ru", "k1", "enc1", true, false)
-	repo.Create("user-1", "Магазин 2", "shop2.ru", "k2", "enc2", false, false)
+	repo.Create("user-1", "Магазин 1", "shop1.ru", "k1", "enc1", true, false, false)
+	repo.Create("user-1", "Магазин 2", "shop2.ru", "k2", "enc2", false, false, false)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/shops", nil)
 	ctx := withUserID(req.Context(), "user-1")
@@ -143,7 +176,7 @@ func TestShopList_Empty(t *testing.T) {
 func TestShopUpdate_Success(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	shop, _ := repo.Create("user-1", "Старое имя", "old.ru", "k1", "enc1", false, false)
+	shop, _ := repo.Create("user-1", "Старое имя", "old.ru", "k1", "enc1", false, false, false)
 
 	body, _ := json.Marshal(ShopRequest{
 		Name:     "Новое имя",
@@ -181,7 +214,7 @@ func TestShopUpdate_NotFound(t *testing.T) {
 func TestShopDelete_Success(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	shop, _ := repo.Create("user-1", "Удаляемый", "del.ru", "k", "enc", false, false)
+	shop, _ := repo.Create("user-1", "Удаляемый", "del.ru", "k", "enc", false, false, false)
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/shops/"+shop.ID, nil)
 	req.SetPathValue("id", shop.ID)
@@ -257,7 +290,7 @@ func TestTestConnection_InvalidDomain(t *testing.T) {
 func TestCheckCommands_ReadOnly(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	shop, _ := repo.Create("user-1", "Тестовый", "test.ru", "k", "enc", false, true)
+	shop, _ := repo.Create("user-1", "Тестовый", "test.ru", "k", "enc", false, true, false)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/shops/"+shop.ID+"/check-commands", nil)
 	req.SetPathValue("id", shop.ID)

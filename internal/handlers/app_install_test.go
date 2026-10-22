@@ -86,7 +86,7 @@ func TestUninstall_OK(t *testing.T) {
 	password := appinstall.InstallPassword("token123", "mysecret")
 	enc, _ := h.aes.Encrypt(password)
 	_, _ = installs.UpsertInstall("123", "test.myinsales.ru", enc)
-	shop, _ := shops.Create("user-1", "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false)
+	shop, _ := shops.Create("user-1", "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false)
 	_, _ = keys.CreateForShop("user-1", shop.ID, "hash1", "InSales: test.myinsales.ru")
 	_ = installs.LinkShop("123", "user-1", shop.ID)
 

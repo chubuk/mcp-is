@@ -49,7 +49,7 @@ func TestAppInstallRepo_UninstallAndPendingLink(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	shop, err := shopRepo.Create(user.ID, "App Shop", "appshop.myinsales.ru", "key", "pass", true, false)
+	shop, err := shopRepo.Create(user.ID, "App Shop", "appshop.myinsales.ru", "key", "pass", true, false, false)
 	if err != nil {
 		t.Fatal(err)
 	}

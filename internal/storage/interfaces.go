@@ -22,7 +22,7 @@ type UserRepositoryInterface interface {
 }
 
 type ShopRepositoryInterface interface {
-	Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly bool) (*Shop, error)
+	Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) (*Shop, error)
 	GetByID(id string) (*Shop, error)
 	ListByUserID(userID string) ([]Shop, error)
 	ListByUserIDFiltered(userID string, page, perPage int) ([]Shop, int, error)
