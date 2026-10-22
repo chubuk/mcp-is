@@ -34,7 +34,7 @@ const (
 func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry string, auditRepo *storage.AuditRepository) *MCPServer {
 	s := server.NewMCPServer(
 		"mcp-is",
-		"0.7.2",
+		"0.7.3",
 		server.WithToolCapabilities(true),
 		server.WithToolFilter(toolFilter(readOnly)),
 		server.WithRecovery(),

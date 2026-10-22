@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.7.3] — 2026-10-22 (form helper + docs)
+
+### Изменено
+- **`App.readFields` / `App.check`** — единый разбор полей формы (`bool|text|trim|int`); `saveServer` / `savePDN` / `saveSMTP` / create-edit магазинов и AI-ключей переведены с разрозненных `getElementById().checked/.value`
+- **Документация**: `ui-smoke.sh` в CONTRIBUTING и README (UI-регресс рядом с `make lint` / `go test`)
+
 ## [0.7.2] — 2026-10-22 (golangci-lint gate + auth error handling)
 
 ### Исправлено

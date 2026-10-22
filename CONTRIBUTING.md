@@ -59,6 +59,9 @@ make lint
 
 # Auto-fix formatting issues (gofmt)
 make lint-fix
+
+# UI regression smoke (local docker on :8443; sticky checkboxes + Quill remount)
+./scripts/ui-smoke.sh
 ```
 
 ### Project Structure

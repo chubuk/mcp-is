@@ -802,11 +802,13 @@ WantedBy=multi-user.target
 make build          # Собрать бинарник
 make run            # Запустить локально
 make test           # Запустить тесты
+make lint           # golangci-lint (обязательно перед коммитом)
 make docker-up      # Запустить в Docker
 make docker-down    # Остановить Docker
 make logs           # Смотреть логи
 make clean          # Очистить собранные файлы
 make deb            # Собрать .deb пакет
+./scripts/ui-smoke.sh   # UI smoke: sticky чекбоксы + Quill (нужен локальный :8443)
 ```
 
 ## Веб-интерфейс
