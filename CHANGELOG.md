@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.7.1] — 2026-10-22 (UI audit fixes)
+
+### Исправлено
+- **ПДн-настройки не сохранялись** — `PUT /api/admin/pdn` только сбрасывал кэш, чекбоксы «отскакивали» после «Сохранить»; теперь пишутся в `server_settings`
+- **`pdn_enabled` терялся при создании магазина** — INSERT не включал колонку; список магазинов тоже не отдавал флаг
+- **Quill «Визуально» пустой** после SPA-перехода (уход/возврат на `/admin/email`) — редактор оставался привязан к удалённому DOM; HTML/Plain text при этом работали. Регрессия `b086f98`
+- **Чекбоксы «выше/ниже» подписи** — `input { width:100% }` растягивал checkbox; единый hint `.form-check-hint`
+- **Ошибки записи настроек** (`setSetting` / `settingsRepo.Set`) больше не игнорируются — UI получает 500 вместо ложного «сохранено»
+
+### Добавлено
+- `showPage()` в `pagination.js` — единая точка перехода по страницам (без своих `goPage`)
+- `scripts/ui-smoke.sh` — регресс-guard: login, sticky чекбоксы, Quill после SPA re-mount
+- Регресс-тесты: PDN persist, shop create `pdn_enabled`
+- CI job `integration` (Postgres) в `.github/workflows/ci.yml`
+
 ## [0.7.0] — 2026-10-20 (backlog A/C)
 
 ### Добавлено
