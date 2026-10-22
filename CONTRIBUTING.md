@@ -109,13 +109,20 @@ make lint-fix
 5. **Documentation**: Update docs if behavior changes
 6. **Breaking changes**: Clearly mark in description
 
-### PR Checklist
+### PR Checklist (Definition of Done)
 
+A change is **done** only when all applicable checks are green:
+
+- [ ] `make lint` (golangci-lint: govet, staticcheck, errcheck, ineffassign, gofmt)
+- [ ] `go vet ./...`
+- [ ] `go test ./...`
+- [ ] `scripts/check-schema.sh` — **required** if Go structs or SQL/migrations changed
+- [ ] `./scripts/ui-smoke.sh` — **required** if UI changed (local docker on `https://127.0.0.1:8443`)
 - [ ] Code follows project style guidelines
 - [ ] Tests added/updated and passing
-- [ ] Documentation updated (if applicable)
+- [ ] Documentation updated (if behavior changes)
 - [ ] No breaking changes (or clearly documented)
-- [ ] Commit messages follow conventions
+- [ ] Commit messages follow Conventional Commits
 
 ### Review Process
 
@@ -134,7 +141,42 @@ go test ./internal/handlers/ -v -run TestLogin
 
 # Run with coverage
 go test -cover ./...
+
+# Integration tests (needs PostgreSQL; never point at production data)
+TEST_DB_URL='postgres://admin:password@127.0.0.1:55432/mcp_is?sslmode=disable' \
+  go test -tags integration ./internal/storage/... -count=1
 ```
+
+### UI
+
+Frontend is a vanilla JS SPA (no bundler). Prefer shared helpers — do not invent a new form/pager per page:
+
+| Helper | Where | Use for |
+|--------|--------|---------|
+| `App.readFields` / `App.check` | `web/static/js/app.js` | reading form fields (`bool` / `text` / `trim` / `int`) |
+| `renderPagination` / `showPage` / `getPerPage` | `web/static/js/pagination.js` | lists and page navigation |
+| `.form-check-hint` | `web/static/css/style.css` | checkbox/radio caption hint under the control |
+
+UI regression smoke (login, sticky checkboxes, Quill remount after SPA nav):
+
+```bash
+./scripts/ui-smoke.sh   # default https://127.0.0.1:8443
+```
+
+## Go standards (summary)
+
+Full house rules live in `.project_rules.md` / `.github` workflow gates. In short:
+
+- Errors: wrap with `fmt.Errorf("…: %w", err)`; never discard non-trivial errors
+- Logging: `log/slog`; user-facing API/UI errors in Russian
+- Tests: table-driven where it pays off; `got` / `want` in failures
+- No `panic` for control flow; `context.Context` as first parameter; no magic reflection kits
+- Deps: stdlib first; add a module only if it clearly pays for itself
+- SQL: parameterized queries only; migrations versioned and reversible
+
+## What does **not** belong in public docs
+
+Agent/workspace tooling (internal skills, SSH hosts, deploy tokens, private paths) stays in local workspace config and project rules — not in README/CONTRIBUTING. Publish only what every contributor needs (lint, tests, smoke, style).
 
 ## License
 
