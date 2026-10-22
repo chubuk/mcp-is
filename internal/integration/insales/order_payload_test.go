@@ -140,9 +140,6 @@ func captureOrderRequest(t *testing.T, method string, fn func(c *InSalesClient) 
 	if _, err := fn(c); err != nil {
 		t.Fatalf("call failed: %v", err)
 	}
-	if method != "" {
-		// path/method checked by caller if needed
-	}
 	return captured
 }
 

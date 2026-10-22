@@ -1,4 +1,4 @@
-.PHONY: build run test docker-up docker-down logs clean deb
+.PHONY: build run test docker-up docker-down logs clean deb lint lint-fix
 
 build:
 	CGO_ENABLED=0 go build -tags netgo -o bin/mcp-is ./cmd/server
@@ -25,3 +25,9 @@ clean:
 
 deb:
 	./packaging/build-deb.sh
+
+lint:
+	golangci-lint run ./...
+
+lint-fix:
+	golangci-lint run ./... --fix

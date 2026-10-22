@@ -214,7 +214,7 @@ func smtpSend(ctx context.Context, cfg Config, to, subject, htmlBody, textBody s
 		port = 25
 	}
 	if cfg.Port != "" {
-		fmt.Sscanf(cfg.Port, "%d", &port)
+		_, _ = fmt.Sscanf(cfg.Port, "%d", &port)
 	}
 
 	opts := []gomail.Option{

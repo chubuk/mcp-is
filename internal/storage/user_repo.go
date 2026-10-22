@@ -233,7 +233,7 @@ func (r *UserRepository) CreateSuperAdmin(nickname, email, phone, firstName, las
 	if err != nil {
 		return nil, fmt.Errorf("begin transaction: %w", err)
 	}
-	defer tx.Rollback(context.Background())
+	defer func() { _ = tx.Rollback(context.Background()) }()
 
 	var u User
 	err = tx.QueryRow(context.Background(),

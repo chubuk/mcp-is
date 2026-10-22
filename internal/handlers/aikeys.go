@@ -59,7 +59,10 @@ func (h *AIKeyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if req.PDNEnabled {
-		h.keyRepo.UpdatePDNEnabled(key.ID, true)
+		if err := h.keyRepo.UpdatePDNEnabled(key.ID, true); err != nil {
+			writeJSON(w, http.StatusInternalServerError, AIKeyResponse{Error: "failed to update key"})
+			return
+		}
 	}
 
 	slog.Info("ai key created", "id", key.ID, "name", key.Name, "pdn", req.PDNEnabled)

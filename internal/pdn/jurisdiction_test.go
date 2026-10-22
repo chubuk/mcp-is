@@ -172,10 +172,7 @@ func TestAutoPDN_Logic(t *testing.T) {
 			shopInRU := shopJurisdiction == "RU"
 			llmForeign := llmJurisdiction != "RU"
 
-			got := false
-			if (!serverInRU && shopInRU) || (serverInRU && shopInRU && llmForeign) {
-				got = true
-			}
+			got := (!serverInRU && shopInRU) || (serverInRU && shopInRU && llmForeign)
 
 			if got != tt.want {
 				t.Errorf("autoPDN(server=%s, shop=%s, llm=%s) = %v, want %v",

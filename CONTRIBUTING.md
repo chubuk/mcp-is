@@ -54,8 +54,11 @@ docker compose up -d
 # Run tests
 go test ./...
 
-# Run linter (if installed)
-golangci-lint run
+# Run linter (required; CI runs the same golangci-lint version and config)
+make lint
+
+# Auto-fix formatting issues (gofmt)
+make lint-fix
 ```
 
 ### Project Structure
@@ -79,6 +82,7 @@ golangci-lint run
 
 - Follow [Effective Go](https://go.dev/doc/effective_go) guidelines
 - Use `gofmt` and `goimports`
+- Run `make lint` before committing — CI enforces the same golangci-lint config
 - Names: camelCase for variables, PascalCase for exported
 - Comments: exported functions must have doc comments
 - Errors: use `fmt.Errorf("context: %w", err)` for wrapping

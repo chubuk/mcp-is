@@ -335,12 +335,7 @@ func MapPropertyValue(resp *InSalesPropertyValueResponse) *PropertyValue {
 func MapMenu(resp *InSalesMenuResponse) *Menu {
 	items := make([]MenuItem, len(resp.Items))
 	for i, item := range resp.Items {
-		items[i] = MenuItem{
-			ID:       item.ID,
-			Title:    item.Title,
-			URL:      item.URL,
-			Position: item.Position,
-		}
+		items[i] = MenuItem(item)
 	}
 	return &Menu{
 		ID:        fmt.Sprintf("%d", resp.ID),

@@ -3,6 +3,7 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"sort"
 	"strings"
@@ -246,7 +247,9 @@ func callInSalesToolHandler(s *server.MCPServer, auditRepo *storage.AuditReposit
 				action, ok = "error", false
 			}
 			if auditRepo != nil {
-				auditRepo.Insert(ctx, auditFromContext(ctx, name, action, args, ok))
+				if err := auditRepo.Insert(ctx, auditFromContext(ctx, name, action, args, ok)); err != nil {
+					slog.Error("audit insert", "error", err, "tool", name)
+				}
 			}
 			return res, err
 		}

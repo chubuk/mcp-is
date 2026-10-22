@@ -69,10 +69,10 @@ func (h *ServerHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if v, ok := settings["renew_days_before"]; ok && v != "" {
-		fmt.Sscanf(v, "%d", &resp.RenewDaysBefore)
+		_, _ = fmt.Sscanf(v, "%d", &resp.RenewDaysBefore)
 	}
 	if v, ok := settings["retry_count"]; ok && v != "" {
-		fmt.Sscanf(v, "%d", &resp.RetryCount)
+		_, _ = fmt.Sscanf(v, "%d", &resp.RetryCount)
 	}
 
 	writeJSON(w, http.StatusOK, resp)
@@ -164,9 +164,9 @@ func (h *ServerHandler) IssueCert(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("issuing certificate", "domain", domain, "email", email)
-	h.settingsRepo.Set("cert_needs_attention", "false")
-	h.settingsRepo.Set("last_renew_error", "")
-	h.settingsRepo.Set("retry_count", "0")
+	_ = h.settingsRepo.Set("cert_needs_attention", "false")
+	_ = h.settingsRepo.Set("last_renew_error", "")
+	_ = h.settingsRepo.Set("retry_count", "0")
 
 	writeJSON(w, http.StatusOK, map[string]string{
 		"message": "certificate issuance started",

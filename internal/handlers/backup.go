@@ -210,7 +210,7 @@ func (h *BackupHandler) GetLog(w http.ResponseWriter, r *http.Request) {
 	page, perPage, offset := backupPageParams(r)
 
 	var total int
-	h.db.QueryRow(context.Background(), "SELECT COUNT(*) FROM backup_log").Scan(&total)
+	_ = h.db.QueryRow(context.Background(), "SELECT COUNT(*) FROM backup_log").Scan(&total)
 
 	rows, err := h.db.Query(context.Background(),
 		`SELECT id, ts::text, status, COALESCE(size_bytes, 0), COALESCE(error_msg, ''),
@@ -248,7 +248,7 @@ func (h *BackupHandler) GetIncidents(w http.ResponseWriter, r *http.Request) {
 	page, perPage, offset := backupPageParams(r)
 
 	var total int
-	h.db.QueryRow(context.Background(), "SELECT COUNT(*) FROM backup_incidents").Scan(&total)
+	_ = h.db.QueryRow(context.Background(), "SELECT COUNT(*) FROM backup_incidents").Scan(&total)
 
 	rows, err := h.db.Query(context.Background(),
 		`SELECT id, ts::text, type, message, severity, resolved
@@ -323,16 +323,16 @@ func (h *BackupHandler) GetStatus(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Total backups
-	h.db.QueryRow(context.Background(), "SELECT COUNT(*) FROM backup_log").Scan(&resp.TotalBackups)
+	_ = h.db.QueryRow(context.Background(), "SELECT COUNT(*) FROM backup_log").Scan(&resp.TotalBackups)
 
 	// Total size
-	h.db.QueryRow(context.Background(), "SELECT COALESCE(SUM(size_bytes), 0) FROM backup_log").Scan(&resp.TotalSize)
+	_ = h.db.QueryRow(context.Background(), "SELECT COALESCE(SUM(size_bytes), 0) FROM backup_log").Scan(&resp.TotalSize)
 
 	// Current load
 	var load1, load5, load15 float64
 	data, _ := readFile("/proc/loadavg")
 	if len(data) > 0 {
-		fmt.Sscanf(string(data), "%f %f %f", &load1, &load5, &load15)
+		_, _ = fmt.Sscanf(string(data), "%f %f %f", &load1, &load5, &load15)
 	}
 	resp.Load1m = load1
 	resp.Load5m = load5
@@ -360,7 +360,7 @@ func (h *BackupHandler) getSettingInt(key string, fallback int) int {
 		return fallback
 	}
 	var result int
-	fmt.Sscanf(value, "%d", &result)
+	_, _ = fmt.Sscanf(value, "%d", &result)
 	return result
 }
 

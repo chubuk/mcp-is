@@ -129,7 +129,7 @@ func (c *InSalesClient) doRequestRaw(ctx context.Context, method, path string, b
 	if err != nil {
 		return nil, 0, fmt.Errorf("execute request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -219,7 +219,7 @@ func (c *InSalesClient) fetchStoreTitle(ctx context.Context) string {
 	if err != nil {
 		return ""
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 10<<20))
 	if err != nil {

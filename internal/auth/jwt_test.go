@@ -34,7 +34,7 @@ func TestJWTManager_GenerateAndValidate(t *testing.T) {
 		t.Error("expected ExpiresAt to be set")
 	}
 
-	if claims.ExpiresAt.Time.Before(time.Now()) {
+	if claims.ExpiresAt.Before(time.Now()) {
 		t.Error("token already expired")
 	}
 }

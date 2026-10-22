@@ -241,7 +241,10 @@ func (h *AuthHandler) ChangePassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.userRepo.UpdateRequirePasswordChange(userID, false)
+	if err := h.userRepo.UpdateRequirePasswordChange(userID, false); err != nil {
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "failed to update password"})
+		return
+	}
 
 	slog.Info("password changed", "user_id", userID)
 	writeJSON(w, http.StatusOK, AuthResponse{UserID: userID})
@@ -286,7 +289,10 @@ func (h *AuthHandler) ForceChangePassword(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	h.userRepo.UpdateRequirePasswordChange(userID, false)
+	if err := h.userRepo.UpdateRequirePasswordChange(userID, false); err != nil {
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "failed to update password"})
+		return
+	}
 
 	slog.Info("password force changed", "user_id", userID)
 	writeJSON(w, http.StatusOK, AuthResponse{UserID: userID})
@@ -318,7 +324,9 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	}
 	expiresAt := time.Now().Add(1 * time.Hour).Format(time.RFC3339)
 
-	h.userRepo.CleanExpiredResetTokens()
+	if err := h.userRepo.CleanExpiredResetTokens(); err != nil {
+		slog.Warn("clean expired reset tokens", "error", err)
+	}
 
 	if err := h.userRepo.CreateResetToken(user.ID, token, expiresAt); err != nil {
 		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "failed to create reset token"})
@@ -332,7 +340,11 @@ func (h *AuthHandler) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 		if user.FirstName != "" {
 			name = user.FirstName
 		}
-		go h.emailSvc.SendResetPassword(user.Email, name, token)
+		go func() {
+			if err := h.emailSvc.SendResetPassword(user.Email, name, token); err != nil {
+				slog.Error("send reset password email", "error", err, "user_id", user.ID)
+			}
+		}()
 	}
 
 	writeJSON(w, http.StatusOK, AuthResponse{Message: "If the email exists, a reset link has been sent"})
@@ -377,8 +389,14 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	h.userRepo.UpdateRequirePasswordChange(user.ID, false)
-	h.userRepo.ClearResetTokens(user.ID)
+	if err := h.userRepo.UpdateRequirePasswordChange(user.ID, false); err != nil {
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "failed to update password"})
+		return
+	}
+	if err := h.userRepo.ClearResetTokens(user.ID); err != nil {
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "failed to update password"})
+		return
+	}
 	slog.Info("password reset", "user_id", user.ID)
 	writeJSON(w, http.StatusOK, AuthResponse{Message: "Password updated successfully"})
 }

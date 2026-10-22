@@ -102,7 +102,7 @@ func (rl *RateLimiter) Middleware(next http.HandlerFunc) http.HandlerFunc {
 			w.Header().Set("Content-Type", "application/json")
 			w.Header().Set("Retry-After", "60")
 			w.WriteHeader(http.StatusTooManyRequests)
-			w.Write([]byte(`{"error":"too many requests, try again later"}`))
+			_, _ = w.Write([]byte(`{"error":"too many requests, try again later"}`))
 			return
 		}
 

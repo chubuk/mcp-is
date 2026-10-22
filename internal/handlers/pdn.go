@@ -150,8 +150,8 @@ func (h *PDNHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var totalToday, totalMasked int
-	h.db.QueryRow(context.Background(), `SELECT COUNT(*) FROM pdn_access_log WHERE ts >= CURRENT_DATE`).Scan(&totalToday)
-	h.db.QueryRow(context.Background(), `SELECT COUNT(*) FROM pdn_access_log WHERE ts >= CURRENT_DATE AND masked = TRUE`).Scan(&totalMasked)
+	_ = h.db.QueryRow(context.Background(), `SELECT COUNT(*) FROM pdn_access_log WHERE ts >= CURRENT_DATE`).Scan(&totalToday)
+	_ = h.db.QueryRow(context.Background(), `SELECT COUNT(*) FROM pdn_access_log WHERE ts >= CURRENT_DATE AND masked = TRUE`).Scan(&totalMasked)
 
 	writeJSON(w, http.StatusOK, map[string]any{
 		"total_today":    totalToday,
@@ -183,10 +183,10 @@ func (h *PDNHandler) GetJurisdictions(w http.ResponseWriter, r *http.Request) {
 
 	// Count auto-protected vs manual today
 	var autoProtected, manualProtected int
-	h.db.QueryRow(context.Background(),
+	_ = h.db.QueryRow(context.Background(),
 		`SELECT COUNT(*) FROM pdn_access_log WHERE ts >= CURRENT_DATE AND masked = TRUE AND llm_provider != 'RU' AND llm_provider != ''`,
 	).Scan(&autoProtected)
-	h.db.QueryRow(context.Background(),
+	_ = h.db.QueryRow(context.Background(),
 		`SELECT COUNT(*) FROM pdn_access_log WHERE ts >= CURRENT_DATE AND masked = TRUE AND llm_provider = 'RU'`,
 	).Scan(&manualProtected)
 

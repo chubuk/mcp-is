@@ -86,7 +86,7 @@ func RecoveryMiddleware(next http.Handler) http.Handler {
 				slog.Error("panic recovered", "error", rec, "path", r.URL.Path)
 				w.Header().Set("Content-Type", "application/json")
 				w.WriteHeader(http.StatusInternalServerError)
-				w.Write([]byte(`{"error":"internal error"}`))
+				_, _ = w.Write([]byte(`{"error":"internal error"}`))
 			}
 		}()
 		next.ServeHTTP(w, r)
@@ -204,7 +204,11 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 			}
 
 			if shouldUpdateLastUsed(keyID) {
-				go db.Exec(context.Background(), `UPDATE ai_keys SET last_used_at = NOW() WHERE id = $1`, keyID)
+				go func() {
+					if _, err := db.Exec(context.Background(), `UPDATE ai_keys SET last_used_at = NOW() WHERE id = $1`, keyID); err != nil {
+						slog.Warn("update ai key last_used_at", "error", err, "key_id", keyID)
+					}
+				}()
 			}
 
 			ctx := context.WithValue(r.Context(), UserIDKey, userID)

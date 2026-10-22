@@ -57,15 +57,15 @@ func (s *CertbotService) IssueCert(domain, email string) error {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		slog.Error("certbot issue failed", "error", err, "output", string(output))
-		s.settingsRepo.Set("last_renew_error", string(output))
+		_ = s.settingsRepo.Set("last_renew_error", string(output))
 		return fmt.Errorf("certbot issue: %w", err)
 	}
 
 	slog.Info("certificate issued successfully", "domain", domain)
-	s.settingsRepo.Set("cert_issuer", "Let's Encrypt")
-	s.settingsRepo.Set("cert_needs_attention", "false")
-	s.settingsRepo.Set("last_renew_error", "")
-	s.settingsRepo.Set("retry_count", "0")
+	_ = s.settingsRepo.Set("cert_issuer", "Let's Encrypt")
+	_ = s.settingsRepo.Set("cert_needs_attention", "false")
+	_ = s.settingsRepo.Set("last_renew_error", "")
+	_ = s.settingsRepo.Set("retry_count", "0")
 
 	return nil
 }
@@ -86,10 +86,10 @@ func (s *CertbotService) RenewCert(domain string) error {
 	}
 
 	slog.Info("certificate renewed successfully", "domain", domain)
-	s.settingsRepo.Set("cert_needs_attention", "false")
-	s.settingsRepo.Set("last_renew_error", "")
-	s.settingsRepo.Set("retry_count", "0")
-	s.settingsRepo.Set("cert_expires_at", time.Now().Add(90*24*time.Hour).Format(time.RFC3339))
+	_ = s.settingsRepo.Set("cert_needs_attention", "false")
+	_ = s.settingsRepo.Set("last_renew_error", "")
+	_ = s.settingsRepo.Set("retry_count", "0")
+	_ = s.settingsRepo.Set("cert_expires_at", time.Now().Add(90*24*time.Hour).Format(time.RFC3339))
 
 	s.reloadNginx()
 	return nil
@@ -134,7 +134,7 @@ func (s *CertbotService) CheckRenewal(domain string) (needsRenewal bool, daysLef
 	daysLeft = int(time.Until(info.ExpiresAt).Hours() / 24)
 	renewDaysStr := s.settingsRepo.GetDefault("renew_days_before", "30")
 	renewDays := 30
-	fmt.Sscanf(renewDaysStr, "%d", &renewDays)
+	_, _ = fmt.Sscanf(renewDaysStr, "%d", &renewDays)
 
 	return daysLeft <= renewDays, daysLeft, nil
 }
@@ -142,7 +142,7 @@ func (s *CertbotService) CheckRenewal(domain string) (needsRenewal bool, daysLef
 func (s *CertbotService) ShouldRetry() bool {
 	retryCountStr := s.settingsRepo.GetDefault("retry_count", "0")
 	retryCount := 0
-	fmt.Sscanf(retryCountStr, "%d", &retryCount)
+	_, _ = fmt.Sscanf(retryCountStr, "%d", &retryCount)
 
 	if retryCount >= MaxRetryCount {
 		return false
@@ -164,15 +164,15 @@ func (s *CertbotService) ShouldRetry() bool {
 func (s *CertbotService) incrementRetry(errorMsg string) {
 	retryCountStr := s.settingsRepo.GetDefault("retry_count", "0")
 	retryCount := 0
-	fmt.Sscanf(retryCountStr, "%d", &retryCount)
+	_, _ = fmt.Sscanf(retryCountStr, "%d", &retryCount)
 	retryCount++
 
-	s.settingsRepo.Set("retry_count", fmt.Sprintf("%d", retryCount))
-	s.settingsRepo.Set("last_retry_at", time.Now().Format(time.RFC3339))
-	s.settingsRepo.Set("last_renew_error", errorMsg)
+	_ = s.settingsRepo.Set("retry_count", fmt.Sprintf("%d", retryCount))
+	_ = s.settingsRepo.Set("last_retry_at", time.Now().Format(time.RFC3339))
+	_ = s.settingsRepo.Set("last_renew_error", errorMsg)
 
 	if retryCount >= MaxRetryCount {
-		s.settingsRepo.Set("cert_needs_attention", "true")
+		_ = s.settingsRepo.Set("cert_needs_attention", "true")
 		slog.Error("certificate renewal exhausted all retries", "count", retryCount)
 	}
 }
