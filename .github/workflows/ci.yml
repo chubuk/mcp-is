@@ -121,6 +121,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # buildx docker-container driver required for cache-to/from type=gha
+      - uses: docker/setup-buildx-action@v3
+
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
@@ -166,7 +169,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             sleep 10
-            curl -sf http://localhost:8080/health || {
+            curl -sf https://mcp-is.ru/health || {
               echo "Health check failed, rolling back..."
               cd /opt/mcp-is
               git checkout HEAD~1
