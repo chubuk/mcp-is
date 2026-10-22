@@ -42,7 +42,7 @@ readonly ENV_EXAMPLE=".env.example"
 readonly DOCKER_IMAGES=(
     "ghcr.io/chubuk/mcp-is:latest"
     "ghcr.io/chubuk/mcp-is-nginx:latest"
-    "postgres:15-alpine"
+    "postgres:16-alpine"
 )
 
 # Порты по умолчанию

@@ -35,7 +35,7 @@ scripts/
 ## Технологии
 
 - **Язык**: Go 1.25
-- **БД**: PostgreSQL 15
+- **БД**: PostgreSQL 16
 - **Контейнеризация**: Docker (multi-stage сборка, статическая компиляция)
 - **Протокол**: MCP 2025-11-25 (через [mcp-go SDK](https://github.com/mark3labs/mcp-go))
 - **Транспорт**: Streamable HTTP

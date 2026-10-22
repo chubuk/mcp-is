@@ -48,7 +48,7 @@
                            │
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│              PostgreSQL 15                                  │
+│              PostgreSQL 16                                  │
 │  users • shops • ai_keys • server_settings • password_resets│
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -80,7 +80,7 @@
 - **Context propagation** — shop_name, key_name, shop_url в контексте
 
 ### 5. Data Layer
-- **PostgreSQL 15** — пользователи, магазины, ключи, настройки
+- **PostgreSQL 16** — пользователи, магазины, ключи, настройки
 - **AES-GCM** — шифрование паролей InSales
 - **CASCADE deletes** — каскадное удаление данных
 
@@ -138,14 +138,14 @@ Tool filtering (tools/list возвращает только read-команды
 | Сервис | Описание | Порты |
 |--------|----------|-------|
 | app | Go API + MCP Server | 8080 (internal) |
-| db | PostgreSQL 15 | 5432 |
+| db | PostgreSQL 16 | 5432 |
 | nginx | Reverse proxy + SSL | 80/443 |
 
 ### На VPS
 
 ```bash
 # Установка
-sudo dpkg -i mcp-is_0.1.0_amd64.deb
+sudo dpkg -i mcp-is_0.7.3_amd64.deb
 sudo nano /etc/mcp-is/.env
 sudo systemctl start mcp-is
 ```

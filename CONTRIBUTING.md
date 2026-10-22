@@ -37,9 +37,10 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
 
 ### Prerequisites
 
-- Go 1.21+
+- Go 1.25+
 - Docker and Docker Compose v2
-- PostgreSQL 15+ (or use Docker)
+- PostgreSQL 16+ (or use Docker)
+- golangci-lint v2.15.0 (v1.x cannot build against Go 1.25)
 
 ### Getting Started
 

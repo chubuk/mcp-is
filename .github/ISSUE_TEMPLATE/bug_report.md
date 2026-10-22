@@ -27,7 +27,7 @@ What actually happened.
 
 ## Environment
 
-- OS: [e.g., Ubuntu 22.04]
+- OS: [e.g., Ubuntu 24.04]
 - Browser: [e.g., Chrome 120] (if applicable)
 - App Version: [e.g., 0.2.0]
 - Docker Version: [e.g., 24.0.7] (if applicable)
