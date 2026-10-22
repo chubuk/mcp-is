@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.7.2] — 2026-10-22 (golangci-lint gate + auth error handling)
+
+### Исправлено
+- **Смена пароля / сброс** — ошибки `UpdateRequirePasswordChange`, `ClearResetTokens` игнорировались: пользователь мог застрять с `require_password_change=true`, reset-токены не инвалидировались после использования; теперь возвращается 500
+- **`CleanExpiredResetTokens` / `SendResetPassword`** — ошибки логируются (раньше молча терялись)
+- **AI-ключи** — `UpdatePDNEnabled` при создании ключа: ошибка → 500 (раньше ключ создавался без PDN-флага)
+- **Audit log** — `Insert` на nested write-tools теперь логирует ошибку
+- **`tx.Rollback`** в `CreateSuperAdmin` — явная обработка
+
+### Инструменты
+- **golangci-lint v2.15.0 gate**: `make lint` / `make lint-fix`, `.golangci.yml` (govet, staticcheck, errcheck, ineffassign, gofmt), CI job `lint`
+- Исправлены errcheck/staticcheck находки по auth/storage/backup/pdn/certbot
+- `.project_rules.md`: критерий готовности — `make lint` / `go vet` / `go test` зелёные
+
 ## [0.7.1] — 2026-10-22 (UI audit fixes)
 
 ### Исправлено
