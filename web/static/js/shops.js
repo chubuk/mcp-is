@@ -269,22 +269,22 @@ const Shops = {
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const name = document.getElementById('shop-name').value.trim();
-            if (!name) {
+            const f = App.readFields({
+                name: ['shop-name', 'trim'],
+                shop_url: ['shop-url', 'text'],
+                api_key_id: ['shop-apikey', 'text'],
+                api_password: ['shop-apipass', 'text'],
+                is_default: ['shop-default', 'bool'],
+                is_read_only: ['shop-readonly', 'bool'],
+                pdn_enabled: ['shop-pdn', 'bool'],
+            });
+            if (!f.name) {
                 document.getElementById('shop-alert').innerHTML =
                     '<div class="alert alert--error">Название магазина обязательно</div>';
                 return;
             }
 
-            const res = await API.post('/api/shops', {
-                name: name,
-                shop_url: document.getElementById('shop-url').value,
-                api_key_id: document.getElementById('shop-apikey').value,
-                api_password: document.getElementById('shop-apipass').value,
-                is_default: document.getElementById('shop-default').checked,
-                is_read_only: document.getElementById('shop-readonly').checked,
-                pdn_enabled: document.getElementById('shop-pdn').checked,
-            });
+            const res = await API.post('/api/shops', f);
 
             if (res && res.ok) {
                 App.navigate('/shops');
@@ -300,24 +300,21 @@ const Shops = {
             editForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const id = document.getElementById('edit-shop-id').value;
-                const name = document.getElementById('edit-shop-name').value.trim();
-                if (!name) {
+                const body = App.readFields({
+                    name: ['edit-shop-name', 'trim'],
+                    shop_url: ['edit-shop-url', 'text'],
+                    api_key_id: ['edit-shop-apikey', 'text'],
+                    is_default: ['edit-shop-default', 'bool'],
+                    is_read_only: ['edit-shop-readonly', 'bool'],
+                    pdn_enabled: ['edit-shop-pdn', 'bool'],
+                    api_password: ['edit-shop-apipass', 'text'],
+                });
+                if (!body.name) {
                     document.getElementById('edit-shop-alert').innerHTML =
                         '<div class="alert alert--error">Название магазина обязательно</div>';
                     return;
                 }
-
-                const body = {
-                    name: name,
-                    shop_url: document.getElementById('edit-shop-url').value,
-                    api_key_id: document.getElementById('edit-shop-apikey').value,
-                    is_default: document.getElementById('edit-shop-default').checked,
-                    is_read_only: document.getElementById('edit-shop-readonly').checked,
-                    pdn_enabled: document.getElementById('edit-shop-pdn').checked,
-                };
-
-                const pass = document.getElementById('edit-shop-apipass').value;
-                if (pass) body.api_password = pass;
+                if (!body.api_password) delete body.api_password;
 
                 const res = await API.put('/api/shops/' + id, body);
                 if (res && res.ok) {

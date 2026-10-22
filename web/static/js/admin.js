@@ -448,18 +448,20 @@ const Admin = {
     },
 
     async saveServer() {
-        const domain = document.getElementById('srv-domain').value.trim();
+        const f = App.readFields({
+            domain: ['srv-domain', 'trim'],
+            email: ['srv-email', 'trim'],
+            auto_renew: ['srv-auto-renew', 'bool'],
+            renew_days: ['srv-renew-days', 'int'],
+        });
         const https = document.querySelector('input[name="srv-https"]:checked').value === 'true';
-        const email = document.getElementById('srv-email').value.trim();
-        const autoRenew = document.getElementById('srv-auto-renew').checked;
-        const renewDays = parseInt(document.getElementById('srv-renew-days').value) || 30;
 
         const res = await API.put('/api/admin/server', {
-            domain: domain,
+            domain: f.domain,
             https_enabled: https,
-            letsencrypt_email: email,
-            auto_renew: autoRenew,
-            renew_days_before: renewDays,
+            letsencrypt_email: f.email,
+            auto_renew: f.auto_renew,
+            renew_days_before: f.renew_days || 30,
         });
 
         if (res && res.ok) {
@@ -623,17 +625,14 @@ const Admin = {
     },
 
     async savePDN() {
-        const enabled = document.getElementById('pdn-enabled').checked;
-        const log = document.getElementById('pdn-log').checked;
-        const mask = document.getElementById('pdn-mask').checked;
-        const autoPdn = document.getElementById('pdn-auto').checked;
-
-        const res = await API.put('/api/admin/pdn', {
-            enabled: enabled,
-            log: log,
-            mask_pii: mask,
-            auto_protect: autoPdn,
+        const f = App.readFields({
+            enabled: ['pdn-enabled', 'bool'],
+            log: ['pdn-log', 'bool'],
+            mask_pii: ['pdn-mask', 'bool'],
+            auto_protect: ['pdn-auto', 'bool'],
         });
+
+        const res = await API.put('/api/admin/pdn', f);
 
         if (res && res.ok) {
             document.getElementById('pdn-alert').innerHTML =

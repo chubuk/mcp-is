@@ -21,6 +21,29 @@ const App = {
 
     currentPage: null,
 
+    // Единый разбор полей формы. schema: { key: [elementId, type] }, type: bool|text|trim|int
+    readFields(schema) {
+        const out = {};
+        for (const [key, spec] of Object.entries(schema)) {
+            const [id, type] = Array.isArray(spec) ? spec : [spec, 'text'];
+            const el = document.getElementById(id);
+            if (!el) {
+                out[key] = type === 'bool' ? false : type === 'int' ? 0 : '';
+                continue;
+            }
+            if (type === 'bool') out[key] = !!el.checked;
+            else if (type === 'int') out[key] = parseInt(el.value, 10) || 0;
+            else if (type === 'trim') out[key] = String(el.value || '').trim();
+            else out[key] = el.value;
+        }
+        return out;
+    },
+
+    check(id) {
+        const el = document.getElementById(id);
+        return el ? !!el.checked : false;
+    },
+
     init() {
         window.addEventListener('popstate', () => this.route());
         document.addEventListener('click', (e) => {

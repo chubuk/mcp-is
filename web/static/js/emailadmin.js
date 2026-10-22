@@ -395,16 +395,16 @@ const EmailAdmin = {
     },
 
     async saveSMTP() {
-        const body = {
-            enabled: document.getElementById('smtp-enabled').checked,
-            host: document.getElementById('smtp-host').value,
-            port: document.getElementById('smtp-port').value,
-            user: document.getElementById('smtp-user').value,
-            from: document.getElementById('smtp-from').value,
-            tls_mode: document.getElementById('smtp-tls').value,
-        };
-        const pass = document.getElementById('smtp-pass').value;
-        if (pass) body.pass = pass;
+        const body = App.readFields({
+            enabled: ['smtp-enabled', 'bool'],
+            host: ['smtp-host', 'trim'],
+            port: ['smtp-port', 'trim'],
+            user: ['smtp-user', 'trim'],
+            from: ['smtp-from', 'trim'],
+            tls_mode: ['smtp-tls', 'text'],
+            pass: ['smtp-pass', 'text'],
+        });
+        if (!body.pass) delete body.pass;
         const res = await API.put('/api/admin/smtp/settings', body);
         const alertEl = document.getElementById('smtp-settings-alert');
         if (res && res.ok) {

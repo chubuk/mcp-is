@@ -211,18 +211,20 @@ const AIKeys = {
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const name = document.getElementById('aikey-name').value.trim();
-            if (!name) {
+            const f = App.readFields({
+                name: ['aikey-name', 'trim'],
+                pdn_enabled: ['aikey-pdn', 'bool'],
+            });
+            if (!f.name) {
                 document.getElementById('aikey-alert').innerHTML =
                     '<div class="alert alert--error">Название ключа обязательно</div>';
                 return;
             }
 
-            const pdn = document.getElementById('aikey-pdn').checked;
-            const res = await API.post('/api/ai-keys', { name, pdn_enabled: pdn });
+            const res = await API.post('/api/ai-keys', f);
             if (res && res.ok && res.data.key) {
                 this.newKey = res.data.key;
-                this.newKeyName = name;
+                this.newKeyName = f.name;
                 this.newMCPUrl = res.data.mcp_url;
                 App.navigate('/ai-keys');
             } else {
@@ -237,14 +239,16 @@ const AIKeys = {
             editForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const id = document.getElementById('edit-aikey-id').value;
-                const name = document.getElementById('edit-aikey-name').value.trim();
-                if (!name) {
+                const f = App.readFields({
+                    name: ['edit-aikey-name', 'trim'],
+                    pdn_enabled: ['edit-aikey-pdn', 'bool'],
+                });
+                if (!f.name) {
                     document.getElementById('aikey-edit-alert').innerHTML =
                         '<div class="alert alert--error">Название обязательно</div>';
                     return;
                 }
-                const pdn = document.getElementById('edit-aikey-pdn').checked;
-                const res = await API.put('/api/ai-keys/' + id, { name, pdn_enabled: pdn });
+                const res = await API.put('/api/ai-keys/' + id, f);
                 if (res && res.ok) {
                     App.navigate('/ai-keys');
                 } else {
