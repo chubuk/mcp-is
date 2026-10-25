@@ -1,5 +1,17 @@
 # Changelog
 
+## [Unreleased] — expired-login cache leak (security)
+
+### Исправлено
+- **Кеш при протухшем JWT**: после истечения токена браузер мог показывать прежнюю страницу (DOM/JSON из кеша или bfcache) вместо формы логина. Теперь:
+  - nginx: HTML/SPA/API/MCP/health — `Cache-Control: no-store`; JS/CSS — `private, max-age=3600`; security-заголовки (HSTS, CSP, …) больше не теряются на статике (общий `snippets/security-headers.conf`)
+  - Go: `NoStoreMiddleware` на все ответы API
+  - SPA: `API.isLoggedIn()` проверяет `exp` JWT (base64url); `pageshow` + bfcache restore → повторная проверка / login
+
+### Добавлено
+- `TestNoStoreMiddleware`
+- Сниппет `web/nginx/snippets/security-headers.conf`
+
 ## [0.7.4] — 2026-10-23 (clear secrets on empty field + version alignment)
 
 ### Изменено

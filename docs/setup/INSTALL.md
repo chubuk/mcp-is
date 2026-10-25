@@ -332,7 +332,8 @@ chown -R 1001:1001 /opt/mcp-is/backups   # appuser контейнера app
 - `.env`, `.git`, `.sql`, `.log` — заблокированы (403)
 - `/metrics` — заблокирован (Prometheus не доступен снаружи)
 - Rate limiting: login (5 req/min), API (10 req/s), reset-password (3 req/min), MCP (30 req/min)
-- Security headers: HSTS, CSP, X-Frame-Options, Permissions-Policy
+- Security headers: HSTS, CSP, X-Frame-Options, Permissions-Policy (общий блок `snippets/security-headers.conf`)
+- **Cache-Control**: HTML/SPA/API/MCP/health — `no-store` (протухший JWT не должен показывать кеш); JS/CSS/шрифты — `private, max-age=3600`
 
 #### API
 

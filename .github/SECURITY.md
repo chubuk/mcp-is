@@ -43,6 +43,7 @@ Send an email to **chubuk@mail.ru** with:
 - **Rate limiting**: 10 req/min on auth endpoints
 - **CORS**: Configurable allowed origins
 - **CSP**: Content Security Policy headers
+- **Cache protection**: `Cache-Control: no-store` on HTML/API (client also checks JWT `exp` and re-validates on bfcache restore)
 - **Input validation**: All endpoints validated
 - **SQL injection**: Parameterized queries throughout
 - **PDN protection**: Auto-protection for Russian shops + foreign LLMs
