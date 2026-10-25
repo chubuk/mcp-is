@@ -56,3 +56,4 @@ Send an email to **chubuk@mail.ru** with:
 - Configure `ALLOWED_ORIGINS` instead of using `*`
 - Use strong passwords (8+ chars, uppercase, digit)
 - Keep dependencies updated (`govulncheck ./...`)
+- Do not store server SSH credentials in GitHub Secrets (deploy is manual)

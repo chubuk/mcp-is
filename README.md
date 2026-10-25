@@ -753,15 +753,9 @@ curl -k https://YOUR_DOMAIN/health
 
 ### CI/CD (GitHub Actions)
 
-Автоматический деплой при пуше в main:
+CI на push в main: lint → test → integration → сборка Docker-образов (app и nginx) и push в `ghcr.io`.
 
-1. Бэкап перед деплоем
-2. Сборка Docker образов
-3. Деплой на VDS
-4. Health check
-5. Rollback при ошибке
-
-Требуются GitHub Secrets: `SERVER_HOST`, `SERVER_USER`, `SSH_KEY`.
+**Деплой — только вручную** (локальная сборка → `ghcr.io` → VDS), см. `.mimocode/skills/mcp-is-deploy/SKILL.md`. Автодеплой удалён: **GitHub не хранит SSH-доступ к серверу** (Secrets `SERVER_HOST` / `SERVER_USER` / `SSH_KEY` не используются и не должны добавляться).
 
 ### Безопасность
 
