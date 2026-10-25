@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased] — nginx config cleanup
+
+### Исправлено
+- **nginx warn'ы**: `listen … http2` (deprecated) → `http2 on;`; убран `ssl_stapling`/`ssl_stapling_verify` (Let's Encrypt серт без OCSP responder URL — stapling игнорировался). `nginx -t` без предупреждений.
+
 ## [0.7.5] — 2026-10-25 (expired-login cache leak)
 
 ### Исправлено
