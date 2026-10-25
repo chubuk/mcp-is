@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased] — expired-login cache leak (security)
+## [0.7.5] — 2026-10-25 (expired-login cache leak)
 
 ### Исправлено
 - **Кеш при протухшем JWT**: после истечения токена браузер мог показывать прежнюю страницу (DOM/JSON из кеша или bfcache) вместо формы логина. Теперь:
