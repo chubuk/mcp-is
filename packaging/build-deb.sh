@@ -39,6 +39,8 @@ cp -r "${PROJECT_DIR}/internal" "${BUILD_DIR}/opt/mcp-is/"
 cp -r "${PROJECT_DIR}/cmd" "${BUILD_DIR}/opt/mcp-is/"
 cp -r "${PROJECT_DIR}/web" "${BUILD_DIR}/opt/mcp-is/"
 cp -r "${PROJECT_DIR}/scripts" "${BUILD_DIR}/opt/mcp-is/"
+# never ship local rollback backups
+find "${BUILD_DIR}" -name '*.bak-*' -delete
 cp "${PROJECT_DIR}/packaging/update.sh" "${BUILD_DIR}/opt/mcp-is/" 2>/dev/null || true
 
 # Copy DEBIAN files
