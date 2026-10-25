@@ -93,6 +93,14 @@ func RecoveryMiddleware(next http.Handler) http.Handler {
 	})
 }
 
+// NoStoreMiddleware marks responses as non-cacheable (JWT/API payloads are sensitive).
+func NoStoreMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func CORSMiddleware(allowedOrigins []string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

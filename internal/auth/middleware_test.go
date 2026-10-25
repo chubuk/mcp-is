@@ -137,3 +137,21 @@ func TestRequireRole_ImpersonatedUser(t *testing.T) {
 		t.Errorf("expected 403 for user role, got %d", w.Code)
 	}
 }
+
+func TestNoStoreMiddleware(t *testing.T) {
+	handler := NoStoreMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/shops", nil)
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if got := w.Header().Get("Cache-Control"); got != "no-store" {
+		t.Errorf("Cache-Control: got %q, want %q", got, "no-store")
+	}
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d", w.Code)
+	}
+}

@@ -39,7 +39,22 @@ const API = {
     },
 
     isLoggedIn() {
-        return !!this.token;
+        if (!this.token) return false;
+        try {
+            // JWT payload is base64url — normalize before atob
+            let p = this.token.split('.')[1] || '';
+            p = p.replace(/-/g, '+').replace(/_/g, '/');
+            while (p.length % 4) p += '=';
+            const claims = JSON.parse(atob(p));
+            if (claims.exp && claims.exp * 1000 <= Date.now()) {
+                this.clearToken();
+                return false;
+            }
+        } catch {
+            this.clearToken();
+            return false;
+        }
+        return true;
     },
 
     impersonate(token, userId, nickname, role) {

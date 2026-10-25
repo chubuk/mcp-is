@@ -46,6 +46,14 @@ const App = {
 
     init() {
         window.addEventListener('popstate', () => this.route());
+        window.addEventListener('pageshow', (e) => {
+            if (!e.persisted) return;
+            if (!API.isLoggedIn()) {
+                this.navigate('/login');
+                return;
+            }
+            this.route();
+        });
         document.addEventListener('click', (e) => {
             const link = e.target.closest('a[href]');
             if (link) {

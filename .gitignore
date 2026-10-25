@@ -24,3 +24,6 @@ docs/api/Insales-api-docs.txt
 research/**/_cache/
 research/**/tmp/
 output/
+
+# rollback backups (see project rules: create rollback point before edits)
+*.bak-*
