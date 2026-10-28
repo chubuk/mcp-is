@@ -3,9 +3,11 @@ package mcp
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/chubuk/mcp-is/internal/core"
 	"github.com/chubuk/mcp-is/internal/integration/insales"
 	"github.com/chubuk/mcp-is/internal/pdn"
 	"github.com/chubuk/mcp-is/internal/service"
@@ -62,6 +64,9 @@ func cleanError(err error) error {
 }
 
 func toolError(err error) *mcp.CallToolResult {
+	if errors.Is(err, core.ErrBillingExpired) || errors.Is(err, core.ErrBillingUnpaid) {
+		return mcp.NewToolResultError("Подписка магазина на приложение не оплачена или период закончился. Данные недоступны до оплаты — продлите приложение в админке InSales.")
+	}
 	return mcp.NewToolResultError(cleanError(err).Error())
 }
 

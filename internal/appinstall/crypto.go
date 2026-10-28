@@ -25,3 +25,10 @@ func ValidateToken3(nonce, userEmail, userName, userID, emailConfirmed, password
 	want := hex.EncodeToString(sum[:])
 	return subtle.ConstantTimeCompare([]byte(strings.ToLower(token3)), []byte(want)) == 1
 }
+
+// NoncePasswordMD5 is the short vendor callback token (?token=MD5(nonce+password)).
+// It carries no user identity — only proof of the InSales round-trip.
+func NoncePasswordMD5(nonce, password string) string {
+	sum := md5.Sum([]byte(nonce + password))
+	return hex.EncodeToString(sum[:])
+}

@@ -38,6 +38,9 @@ type AppHandler struct {
 	domain         string
 	hmacSecret     string
 	billingMonthly int // 0 = free (default)
+
+	// chargeFn overrides the InSales charge fetch in tests (nil = real API).
+	chargeFn func(inst *storage.AppInstall, password string) (map[string]any, error)
 }
 
 func NewAppHandler(
@@ -102,14 +105,22 @@ func (h *AppHandler) Install(w http.ResponseWriter, r *http.Request) {
 		slog.Warn("app install: overwrite existing install", "insales_id", insalesID, "shop", shop)
 	}
 
-	if _, err := h.installs.UpsertInstall(insalesID, shop, enc); err != nil {
+	inst, err := h.installs.UpsertInstall(insalesID, shop, enc)
+	if err != nil {
 		slog.Error("app install: upsert", "error", err, "insales_id", insalesID)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	// reinstall may rotate the password — drop cached API clients
-	if prev != nil && prev.ShopID != "" {
-		h.manager.InvalidateShop(prev.ShopID)
+	// reinstall rotates the password — refresh the shops copy the API client reads,
+	// then drop the cached client. Order matters: write first, invalidate last,
+	// non-200 on failure so InSales retries instead of diverging rows.
+	if inst.ShopID != "" {
+		if err := h.shops.UpdateAPIPassword(inst.ShopID, enc); err != nil {
+			slog.Error("app install: refresh shop password", "error", err, "insales_id", insalesID, "shop_id", inst.ShopID)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		h.manager.InvalidateShop(inst.ShopID)
 	}
 
 	slog.Info("app installed", "insales_id", insalesID, "shop", shop)
@@ -180,13 +191,8 @@ func (h *AppHandler) AppLanding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Already linked → hand off to SPA onboarding (SPA will use stored JWT if any).
-	inst, err := h.installs.GetByInsalesID(insalesID)
-	if err == nil && inst.Status == "installed" && inst.ShopID != "" {
-		http.Redirect(w, r, "/onboarding", http.StatusFound)
-		return
-	}
-
+	// Always do the InSales round-trip: the SPA JWT lives in localStorage and is
+	// invisible to the server, so a shortcut would drop users on a clean browser.
 	nonce, err := randomHex(16)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -249,31 +255,79 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 	userEmail, userName, userID := q.Get("user_email"), q.Get("user_name"), q.Get("user_id")
 	token3 := q.Get("token3")
 
-	if !appinstall.ValidateToken3(nonce, userEmail, userName, userID, emailConfirmed, password, token3) {
-		slog.Warn("app autologin: bad token3", "insales_id", insalesID)
+	if token3 != "" {
+		if !appinstall.ValidateToken3(nonce, userEmail, userName, userID, emailConfirmed, password, token3) {
+			slog.Warn("app autologin: bad token3", "insales_id", insalesID)
+			appBadRequest(w)
+			return
+		}
+		if emailConfirmed != "true" {
+			slog.Warn("app autologin: email not confirmed", "insales_id", insalesID)
+			http.Error(w, "email not confirmed", http.StatusForbidden)
+			return
+		}
+	} else if token := q.Get("token"); token != "" {
+		// Short vendor format (?token=MD5(nonce+password)) carries no user identity —
+		// usable only for an install already bound to a user.
+		if inst.UserID == "" || subtle.ConstantTimeCompare([]byte(strings.ToLower(token)),
+			[]byte(appinstall.NoncePasswordMD5(nonce, password))) != 1 {
+			slog.Warn("app autologin: short token without user binding", "insales_id", insalesID)
+			appBadRequest(w)
+			return
+		}
+		userEmail, userName = "", ""
+	} else {
+		slog.Warn("app autologin: no token3/token", "insales_id", insalesID)
 		appBadRequest(w)
 		return
 	}
-	if emailConfirmed != "true" {
-		slog.Warn("app autologin: email not confirmed", "insales_id", insalesID)
-		http.Error(w, "email not confirmed", http.StatusForbidden)
-		return
-	}
 
-	// Expire the nonce — single use.
+	// Expire the nonce — single use (cookie-only; replay window 300s accepted by design).
 	http.SetCookie(w, &http.Cookie{Name: "autologin_nonce", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode})
 
 	existing, err := h.users.GetByEmail(userEmail)
 	if err == nil && existing != nil {
-		// Anti-takeover: never issue a session for a pre-existing account.
-		if err := h.installs.SetPendingLink(insalesID, existing.ID); err != nil {
-			slog.Error("app autologin: pending link", "error", err)
-			w.WriteHeader(http.StatusInternalServerError)
+		switch {
+		case inst.UserID == existing.ID:
+			// Install already bound to this user: no password prompt, no duplicate
+			// shop/key — provisionUserAndShop is idempotent (recreates shop after
+			// uninstall, reuses it otherwise; rawKey is "" when nothing is created).
+			user, rawKey, perr := h.provisionUserAndShop(inst, userEmail, userName)
+			if perr != nil {
+				slog.Error("app autologin: re-provision", "error", perr, "insales_id", insalesID)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			if h.billingMonthly > 0 {
+				if berr := h.syncBilling(inst, password); berr != nil {
+					slog.Warn("app autologin: billing check skipped", "error", berr, "insales_id", insalesID)
+				}
+			}
+			code, cerr := h.issueCode(user.ID, rawKey)
+			if cerr != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			slog.Info("app autologin: returning user", "insales_id", insalesID, "user_id", user.ID)
+			http.Redirect(w, r, "/onboarding?code="+code, http.StatusFound)
+			return
+		case inst.UserID != "" && inst.UserID != existing.ID:
+			// Email reassigned to another account — never rewrite ownership.
+			slog.Warn("app autologin: user conflict, refusing link", "insales_id", insalesID,
+				"inst_user_id", inst.UserID, "email_user_id", existing.ID)
+			http.Error(w, "account conflict", http.StatusConflict)
+			return
+		default:
+			// Anti-takeover: never issue a session for a pre-existing account.
+			if err := h.installs.SetPendingLink(insalesID, existing.ID); err != nil {
+				slog.Error("app autologin: pending link", "error", err)
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			slog.Info("app autologin: pending link to existing user", "insales_id", insalesID, "user_id", existing.ID)
+			http.Redirect(w, r, "/login?pending_install="+insalesID, http.StatusFound)
 			return
 		}
-		slog.Info("app autologin: pending link to existing user", "insales_id", insalesID, "user_id", existing.ID)
-		http.Redirect(w, r, "/login?pending_install="+insalesID, http.StatusFound)
-		return
 	}
 
 	user, rawKey, err := h.provisionUserAndShop(inst, userEmail, userName)
@@ -283,20 +337,11 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Billing never blocks login: the status feeds the UI banner and the MCP
+	// gate. Charge check failure only delays the check to the lazy TTL retry.
 	if h.billingMonthly > 0 {
-		if redirectURL, paid, berr := h.ensureRecurringCharge(inst, password); berr != nil {
-			slog.Error("app autologin: billing", "error", berr)
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		} else if !paid {
-			// unpaid: key is created but not delivered until charge is active
-			_ = h.installs.SetUser(insalesID, user.ID)
-			if redirectURL != "" {
-				http.Redirect(w, r, redirectURL, http.StatusFound)
-				return
-			}
-			http.Redirect(w, r, "/onboarding?billing=pending", http.StatusFound)
-			return
+		if berr := h.syncBilling(inst, password); berr != nil {
+			slog.Warn("app autologin: billing check skipped", "error", berr, "insales_id", insalesID)
 		}
 	}
 
@@ -372,22 +417,18 @@ func (h *AppHandler) LinkPending(w http.ResponseWriter, r *http.Request) {
 // email/userName are only used when creating a new user (empty on link-pending path).
 
 // ensureRecurringCharge creates or re-checks the singleton RecurringApplicationCharge.
-// Returns (confirmation_url, paid). paid=true when charge exists and is not blocked.
-func (h *AppHandler) ensureRecurringCharge(inst *storage.AppInstall, password string) (string, bool, error) {
+// Returns the raw charge map for core.MapCharge.
+func (h *AppHandler) ensureRecurringCharge(inst *storage.AppInstall, password string) (map[string]any, error) {
 	client, err := insales.NewClient(inst.ShopHost, h.appKey, password)
 	if err != nil {
-		return "", false, err
+		return nil, err
 	}
 	ctx := context.Background()
 
 	existing, err := client.GetRecurringApplicationCharge(ctx, "")
 	if err == nil && existing != nil {
 		if m, ok := existing.(map[string]any); ok {
-			if blocked, _ := m["blocked"].(bool); blocked {
-				return chargeConfirmationURL(m), false, nil
-			}
-			// active charge (trial or paid)
-			return "", true, nil
+			return m, nil
 		}
 	}
 
@@ -395,23 +436,39 @@ func (h *AppHandler) ensureRecurringCharge(inst *storage.AppInstall, password st
 		"monthly": h.billingMonthly,
 	})
 	if err != nil {
-		return "", false, fmt.Errorf("create recurring charge: %w", err)
+		return nil, fmt.Errorf("create recurring charge: %w", err)
 	}
 	m, _ := charge.(map[string]any)
-	if blocked, _ := m["blocked"].(bool); blocked {
-		return chargeConfirmationURL(m), false, nil
-	}
-	// newly created charge in trial is usable
-	return chargeConfirmationURL(m), true, nil
+	return m, nil
 }
 
-func chargeConfirmationURL(m map[string]any) string {
-	for _, k := range []string{"confirmation_url", "url"} {
-		if s, ok := m[k].(string); ok && strings.HasPrefix(s, "http") {
-			return s
-		}
+// syncBilling refreshes the charge state at login — at most once per TTL window.
+// Never blocks login: on failure the shop is marked unknown for a fast lazy retry.
+func (h *AppHandler) syncBilling(inst *storage.AppInstall, password string) error {
+	if h.billingMonthly <= 0 || inst.ShopID == "" {
+		return nil
 	}
-	return ""
+	shop, err := h.shops.GetByID(inst.ShopID)
+	if err != nil {
+		return err
+	}
+	if !core.NeedsBillingRefresh(shop, time.Now()) {
+		return nil
+	}
+	fetch := h.ensureRecurringCharge
+	if h.chargeFn != nil {
+		fetch = h.chargeFn
+	}
+	charge, err := fetch(inst, password)
+	if err != nil {
+		// keep the gate fail-open and retry lazily within the hour
+		if uerr := h.shops.UpdateBillingStatus(inst.ShopID, core.BillingUnknown, nil, ""); uerr != nil {
+			return uerr
+		}
+		return err
+	}
+	status, until, payURL := core.MapCharge(charge, time.Now())
+	return h.shops.UpdateBillingStatus(inst.ShopID, status, until, payURL)
 }
 
 func (h *AppHandler) provisionUserAndShop(inst *storage.AppInstall, email, userName string) (*storage.User, string, error) {
@@ -432,24 +489,35 @@ func (h *AppHandler) provisionUserAndShop(inst *storage.AppInstall, email, userN
 		userID = user.ID
 	}
 
-	shop, err := h.shops.Create(userID, inst.ShopHost, inst.ShopHost, h.appKey, inst.APIPasswordEncrypted, true, false, false)
-	if err != nil {
-		return nil, "", fmt.Errorf("create shop: %w", err)
-	}
-	rawKey, keyHash, err := auth.GenerateAPIKey()
-	if err != nil {
-		return nil, "", err
-	}
-	if _, err := h.aiKeys.CreateForShop(userID, shop.ID, keyHash, "InSales: "+inst.ShopHost); err != nil {
-		return nil, "", fmt.Errorf("create ai key: %w", err)
-	}
-	if err := h.installs.LinkShop(inst.InsalesID, userID, shop.ID); err != nil {
-		return nil, "", err
+	shop, rawKey := inst.ShopID, ""
+	if shop != "" {
+		// Returning user / already provisioned — reuse shop, don't mint another key.
+		if _, err := h.shops.GetByID(shop); err != nil {
+			return nil, "", fmt.Errorf("get shop: %w", err)
+		}
+	} else {
+		created, err := h.shops.Create(userID, inst.ShopHost, inst.ShopHost, h.appKey, inst.APIPasswordEncrypted, true, false, false)
+		if err != nil {
+			return nil, "", fmt.Errorf("create shop: %w", err)
+		}
+		shop = created.ID
+		key, keyHash, err := auth.GenerateAPIKey()
+		if err != nil {
+			return nil, "", err
+		}
+		if _, err := h.aiKeys.CreateForShop(userID, shop, keyHash, "InSales: "+inst.ShopHost); err != nil {
+			return nil, "", fmt.Errorf("create ai key: %w", err)
+		}
+		if err := h.installs.LinkShop(inst.InsalesID, userID, shop); err != nil {
+			return nil, "", err
+		}
+		rawKey = key
 	}
 	user, err := h.users.GetByID(userID)
 	if err != nil {
 		return nil, "", err
 	}
+	inst.ShopID = shop // LinkShop writes DB only — keep the in-memory install in sync
 	return user, rawKey, nil
 }
 

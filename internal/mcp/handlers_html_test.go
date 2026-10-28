@@ -2,8 +2,10 @@ package mcp
 
 import (
 	"fmt"
+	"strings"
 	"testing"
 
+	"github.com/chubuk/mcp-is/internal/core"
 	"github.com/mark3labs/mcp-go/mcp"
 )
 
@@ -79,4 +81,21 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func TestToolError_BillingSentinels(t *testing.T) {
+	wrapped := fmt.Errorf("shop s1: %w", core.ErrBillingUnpaid)
+	res := toolError(wrapped)
+	if !res.IsError {
+		t.Fatal("expected IsError result")
+	}
+	msg := res.Content[0].(mcp.TextContent).Text
+	if !strings.Contains(msg, "не оплачена") {
+		t.Errorf("billing error text = %q, want explanation about unpaid period", msg)
+	}
+	res = toolError(fmt.Errorf("shop s1: %w", core.ErrBillingExpired))
+	msg = res.Content[0].(mcp.TextContent).Text
+	if !strings.Contains(msg, "закончился") {
+		t.Errorf("expired error text = %q", msg)
+	}
 }

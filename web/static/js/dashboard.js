@@ -16,6 +16,7 @@ const Dashboard = {
                     <p class="desc">Добро пожаловать, ${nickname}!</p>
                 </div>
             </div>
+            ${App.billingBanner(shops)}
 
             <div class="stats-grid">
                 <div class="card">

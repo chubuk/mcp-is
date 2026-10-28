@@ -1,5 +1,7 @@
 package storage
 
+import "time"
+
 type UserRepositoryInterface interface {
 	Create(nickname, email, phone, firstName, lastName, passwordHash string) (*User, error)
 	CreateSuperAdmin(nickname, email, phone, firstName, lastName, passwordHash string) (*User, error)
@@ -28,6 +30,8 @@ type ShopRepositoryInterface interface {
 	ListByUserIDFiltered(userID string, page, perPage int) ([]Shop, int, error)
 	GetDefault(userID string) (*Shop, error)
 	Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) error
+	UpdateAPIPassword(id, apiPasswordEncrypted string) error
+	UpdateBillingStatus(id, status string, until *time.Time, payURL string) error
 	Delete(id string) error
 }
 

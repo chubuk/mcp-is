@@ -31,6 +31,10 @@ CREATE TABLE IF NOT EXISTS shops (
     is_read_only BOOLEAN DEFAULT FALSE,
     jurisdiction TEXT DEFAULT 'AUTO',
     pdn_enabled BOOLEAN DEFAULT FALSE,
+    billing_status TEXT NOT NULL DEFAULT 'active', -- active | unpaid | unknown
+    billing_until TIMESTAMPTZ,
+    billing_checked_at TIMESTAMPTZ,
+    billing_pay_url TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -107,6 +111,7 @@ CREATE TABLE IF NOT EXISTS app_installs (
 
 CREATE INDEX IF NOT EXISTS idx_app_installs_user ON app_installs(user_id);
 CREATE INDEX IF NOT EXISTS idx_app_installs_status ON app_installs(status);
+CREATE INDEX IF NOT EXISTS idx_app_installs_shop ON app_installs(shop_id);
 
 -- Email templates (runtime-editable, seeded from embed defaults)
 CREATE TABLE IF NOT EXISTS email_templates (

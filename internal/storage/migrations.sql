@@ -14,6 +14,13 @@ ALTER TABLE shops ADD COLUMN IF NOT EXISTS jurisdiction TEXT DEFAULT 'AUTO';
 -- Миграция v0.2.2 - PDN enabled for shops
 ALTER TABLE shops ADD COLUMN IF NOT EXISTS pdn_enabled BOOLEAN DEFAULT FALSE;
 
+-- Миграция v0.8.0 - Billing gate (login free, MCP data gated by payment)
+ALTER TABLE shops ADD COLUMN IF NOT EXISTS billing_status TEXT NOT NULL DEFAULT 'active';
+ALTER TABLE shops ADD COLUMN IF NOT EXISTS billing_until TIMESTAMPTZ;
+ALTER TABLE shops ADD COLUMN IF NOT EXISTS billing_checked_at TIMESTAMPTZ;
+ALTER TABLE shops ADD COLUMN IF NOT EXISTS billing_pay_url TEXT DEFAULT '';
+CREATE INDEX IF NOT EXISTS idx_app_installs_shop ON app_installs(shop_id);
+
 -- Миграция v0.3.0 (будущее)
 -- ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 

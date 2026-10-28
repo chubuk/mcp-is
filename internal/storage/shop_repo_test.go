@@ -4,6 +4,7 @@ package storage
 
 import (
 	"testing"
+	"time"
 )
 
 func TestShopRepo_Create(t *testing.T) {
@@ -104,6 +105,28 @@ func TestShopRepo_Update(t *testing.T) {
 	}
 }
 
+func TestShopRepo_UpdateAPIPassword(t *testing.T) {
+	pool := setupTestDB(t)
+	userRepo := NewUserRepository(pool)
+	shopRepo := NewShopRepository(pool)
+
+	user, _ := userRepo.Create("updpass", "", "", "", "", "hash")
+	shop, _ := shopRepo.Create(user.ID, "p.ru", "p.ru", "k", "old_enc", false, false, false)
+
+	if err := shopRepo.UpdateAPIPassword(shop.ID, "new_enc"); err != nil {
+		t.Fatalf("UpdateAPIPassword failed: %v", err)
+	}
+	updated, _ := shopRepo.GetByID(shop.ID)
+	if updated.APIPasswordEncrypted != "new_enc" {
+		t.Errorf("api_password_encrypted = %q, want 'new_enc'", updated.APIPasswordEncrypted)
+	}
+
+	// vanished shop → error, not a silent 0-row update
+	if err := shopRepo.UpdateAPIPassword("no-such-id", "x"); err == nil {
+		t.Error("expected error for unknown shop id")
+	}
+}
+
 func TestShopRepo_Delete(t *testing.T) {
 	pool := setupTestDB(t)
 	userRepo := NewUserRepository(pool)
@@ -164,5 +187,80 @@ func TestShopRepo_IsReadOnly(t *testing.T) {
 	found, _ := shopRepo.GetByID(shop.ID)
 	if !found.IsReadOnly {
 		t.Error("expected is_read_only=true")
+	}
+}
+
+func TestShopRepo_UpdateBillingStatus(t *testing.T) {
+	pool := setupTestDB(t)
+	userRepo := NewUserRepository(pool)
+	shopRepo := NewShopRepository(pool)
+
+	user, _ := userRepo.Create("billuser", "", "", "", "", "hash")
+	shop, _ := shopRepo.Create(user.ID, "bill.ru", "bill.ru", "k", "e", true, false, false)
+
+	// default: active, never checked
+	found, _ := shopRepo.GetByID(shop.ID)
+	if found.BillingStatus != "active" || found.BillingCheckedAt != nil {
+		t.Errorf("default billing = (%s, %v), want (active, nil)", found.BillingStatus, found.BillingCheckedAt)
+	}
+
+	until := time.Now().Add(24 * time.Hour)
+	if err := shopRepo.UpdateBillingStatus(shop.ID, "unpaid", &until, "https://pay/1"); err != nil {
+		t.Fatal(err)
+	}
+	found, _ = shopRepo.GetByID(shop.ID)
+	if found.BillingStatus != "unpaid" || found.BillingUntil == nil || found.BillingCheckedAt == nil || found.BillingPayURL != "https://pay/1" {
+		t.Errorf("after update = (%s, %v, %v, %q)", found.BillingStatus, found.BillingUntil, found.BillingCheckedAt, found.BillingPayURL)
+	}
+
+	// unknown shop id → error
+	if err := shopRepo.UpdateBillingStatus("00000000-0000-0000-0000-000000000000", "active", nil, ""); err == nil {
+		t.Error("expected error for missing shop")
+	}
+
+	// test 16: uninstall deletes the shop row — billing columns go with it
+	if err := shopRepo.Delete(shop.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := shopRepo.GetByID(shop.ID); err == nil {
+		t.Error("shop must be gone after delete")
+	}
+}
+
+func TestShopRepo_IsAppInstallFlag(t *testing.T) {
+	pool := setupTestDB(t)
+	userRepo := NewUserRepository(pool)
+	shopRepo := NewShopRepository(pool)
+	installRepo := NewAppInstallRepository(pool)
+
+	user, _ := userRepo.Create("appflag", "", "", "", "", "hash")
+
+	// personal shop: no app_installs row → IsAppInstall=false
+	shop, _ := shopRepo.Create(user.ID, "p.ru", "p.ru", "k", "e", true, false, false)
+	found, _ := shopRepo.GetByID(shop.ID)
+	if found.IsAppInstall {
+		t.Error("personal shop must have IsAppInstall=false")
+	}
+
+	// app-provisioned shop: installed app_installs row → true
+	inst, err := installRepo.UpsertInstall("ins-1", "a.myinsales.ru", "enc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := installRepo.LinkShop(inst.InsalesID, user.ID, shop.ID); err != nil {
+		t.Fatal(err)
+	}
+	found, _ = shopRepo.GetByID(shop.ID)
+	if !found.IsAppInstall {
+		t.Error("app-installed shop must have IsAppInstall=true")
+	}
+
+	// uninstalled → flag drops (refresh must stop)
+	if err := installRepo.MarkUninstalled("ins-1"); err != nil {
+		t.Fatal(err)
+	}
+	found, _ = shopRepo.GetByID(shop.ID)
+	if found.IsAppInstall {
+		t.Error("uninstalled app must have IsAppInstall=false")
 	}
 }

@@ -44,6 +44,27 @@ const App = {
         return el ? !!el.checked : false;
     },
 
+    // Баннер «период не оплачен/закончился» для app-магазинов. shops — items из /api/shops.
+    billingBanner(shops) {
+        const unpaid = (shops || []).find(s => {
+            if (s.billing_status === 'unpaid') return true;
+            return s.billing_until && new Date(s.billing_until) <= new Date();
+        });
+        if (!unpaid) return '';
+        const expired = unpaid.billing_until && new Date(unpaid.billing_until) <= new Date();
+        const text = expired
+            ? 'Оплаченный период закончился.'
+            : 'Текущий период не оплачен.';
+        const payUrl = unpaid.billing_pay_url
+            || (unpaid.shop_url ? `https://${unpaid.shop_url}/admin/applications` : '');
+        const btn = payUrl
+            ? `<a class="btn btn--primary btn--sm" href="${payUrl}" target="_blank" rel="noopener">Оплатить / Продлить</a>`
+            : '';
+        return `<div class="alert alert--error" style="margin:12px 0">
+            <strong>${text}</strong> Данные магазина ${unpaid.name || unpaid.shop_url} недоступны для ИИ до оплаты — продлите приложение в админке InSales. ${btn}
+        </div>`;
+    },
+
     init() {
         window.addEventListener('popstate', () => this.route());
         window.addEventListener('pageshow', (e) => {

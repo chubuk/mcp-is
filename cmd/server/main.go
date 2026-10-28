@@ -54,7 +54,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	manager := core.NewAccountManager(shopRepo, aesCipher, cfg.ReadOnly)
+	manager := core.NewAccountManager(shopRepo, aesCipher, cfg.ReadOnly, cfg.BillingMonthly)
 	svc := service.NewService(manager)
 	auditRepo := storage.NewAuditRepository(pool)
 	mcpServer := mcp.NewMCPServer(svc, cfg.ReadOnly, cfg.PDNAutoProtect, cfg.ServerCountry, auditRepo)

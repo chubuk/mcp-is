@@ -35,17 +35,20 @@ type ShopRequest struct {
 }
 
 type ShopResponse struct {
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	ShopURL      string `json:"shop_url"`
-	APIKeyID     string `json:"api_key_id"`
-	IsDefault    bool   `json:"is_default"`
-	IsReadOnly   bool   `json:"is_read_only"`
-	PDNEnabled   bool   `json:"pdn_enabled"`
-	HasPass      bool   `json:"has_password"`
-	Jurisdiction string `json:"jurisdiction,omitempty"`
-	CreatedAt    string `json:"created_at,omitempty"`
-	Error        string `json:"error,omitempty"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	ShopURL       string `json:"shop_url"`
+	APIKeyID      string `json:"api_key_id"`
+	IsDefault     bool   `json:"is_default"`
+	IsReadOnly    bool   `json:"is_read_only"`
+	PDNEnabled    bool   `json:"pdn_enabled"`
+	HasPass       bool   `json:"has_password"`
+	Jurisdiction  string `json:"jurisdiction,omitempty"`
+	BillingStatus string `json:"billing_status,omitempty"`
+	BillingUntil  string `json:"billing_until,omitempty"`
+	BillingPayURL string `json:"billing_pay_url,omitempty"`
+	CreatedAt     string `json:"created_at,omitempty"`
+	Error         string `json:"error,omitempty"`
 }
 
 func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -110,7 +113,12 @@ func (h *ShopHandler) List(w http.ResponseWriter, r *http.Request) {
 	for i, s := range shops {
 		resp := ShopResponse{
 			ID: s.ID, Name: s.Name, ShopURL: s.ShopURL, APIKeyID: s.APIKeyID, IsDefault: s.IsDefault, IsReadOnly: s.IsReadOnly, PDNEnabled: s.PDNEnabled, CreatedAt: s.CreatedAt,
-			HasPass: s.APIPasswordEncrypted != "",
+			HasPass:       s.APIPasswordEncrypted != "",
+			BillingStatus: s.BillingStatus,
+			BillingPayURL: s.BillingPayURL,
+		}
+		if s.BillingUntil != nil {
+			resp.BillingUntil = s.BillingUntil.Format(time.RFC3339)
 		}
 		if isAdmin {
 			resp.Jurisdiction = s.Jurisdiction

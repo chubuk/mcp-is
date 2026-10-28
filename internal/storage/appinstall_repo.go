@@ -79,8 +79,9 @@ func (r *AppInstallRepository) MarkUninstalled(insalesID string) error {
 
 // SetPendingLink records that autologin matched an existing user — link completes after login.
 func (r *AppInstallRepository) SetPendingLink(insalesID, userID string) error {
+	// Never rewrite ownership: an install already bound to a user keeps its binding.
 	_, err := r.db.Exec(context.Background(),
-		`UPDATE app_installs SET status = 'pending_link', user_id = $2, updated_at = NOW()
+		`UPDATE app_installs SET status = 'pending_link', user_id = COALESCE(user_id, $2::uuid), updated_at = NOW()
 		 WHERE insales_id = $1`, insalesID, userID)
 	if err != nil {
 		return fmt.Errorf("set pending link: %w", err)

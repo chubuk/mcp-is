@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/chubuk/mcp-is/internal/storage"
 )
@@ -324,6 +325,32 @@ func (m *mockShopRepo) Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted 
 	return fmt.Errorf("not found")
 }
 
+func (m *mockShopRepo) UpdateAPIPassword(id, apiPasswordEncrypted string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if s, ok := m.shops[id]; ok {
+		s.APIPasswordEncrypted = apiPasswordEncrypted
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
+
+func (m *mockShopRepo) UpdateBillingStatus(id, status string, until *time.Time, payURL string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if s, ok := m.shops[id]; ok {
+		s.BillingStatus = status
+		s.BillingUntil = until
+		s.BillingPayURL = payURL
+		now := time.Now()
+		s.BillingCheckedAt = &now
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
+
 func (m *mockShopRepo) Delete(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -530,7 +557,9 @@ func (m *mockAppInstallRepo) SetPendingLink(insalesID, userID string) error {
 	defer m.mu.Unlock()
 	if a, ok := m.installs[insalesID]; ok {
 		a.Status = "pending_link"
-		a.UserID = userID
+		if a.UserID == "" { // mirrors SQL COALESCE(NULLIF(user_id,''), $2)
+			a.UserID = userID
+		}
 		return nil
 	}
 	return fmt.Errorf("not found")

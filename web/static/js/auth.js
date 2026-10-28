@@ -157,6 +157,10 @@ const Auth = {
             return;
         }
         if (!code) {
+            if (params.get('billing') === 'pending') {
+                body.innerHTML = '<div class="alert alert--error"><strong>Текущий период не оплачен.</strong> Данные недоступны для ИИ до оплаты — продлите приложение в админке InSales.</div><p class="link"><a href="/dashboard">Перейти в панель</a></p>';
+                return;
+            }
             body.innerHTML = '<p>Нет кода подключения. Откройте приложение из бэк-офиса InSales.</p>';
             return;
         }
@@ -167,6 +171,11 @@ const Auth = {
                 localStorage.setItem('role', res.data.role);
                 localStorage.setItem('user_id', res.data.user_id);
                 showKey(res.data.api_key || '(ключ недоступен — создайте новый в разделе «Ключи»)');
+                API.get('/api/shops').then((r) => {
+                    if (r && r.ok && App.billingBanner(r.data.items)) {
+                        body.insertAdjacentHTML('afterbegin', App.billingBanner(r.data.items));
+                    }
+                });
             } else {
                 body.innerHTML = '<p>Код недействителен или истёк. Откройте приложение из InSales ещё раз.</p>';
             }

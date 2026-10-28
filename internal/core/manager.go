@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/integration/insales"
@@ -23,14 +24,16 @@ type AccountManager struct {
 	aes            *auth.AESCipher
 	clients        map[string]*insales.InSalesClient
 	globalReadOnly bool
+	billingMonthly int // 0 = billing gate off
 }
 
-func NewAccountManager(shopRepo *storage.ShopRepository, aes *auth.AESCipher, globalReadOnly bool) *AccountManager {
+func NewAccountManager(shopRepo *storage.ShopRepository, aes *auth.AESCipher, globalReadOnly bool, billingMonthly int) *AccountManager {
 	return &AccountManager{
 		shopRepo:       shopRepo,
 		aes:            aes,
 		clients:        make(map[string]*insales.InSalesClient),
 		globalReadOnly: globalReadOnly,
+		billingMonthly: billingMonthly,
 	}
 }
 
@@ -64,21 +67,37 @@ func (m *AccountManager) GetClient(ctx context.Context) (*insales.InSalesClient,
 	ctx = context.WithValue(ctx, ShopURLKey, shop.ShopURL)
 
 	cacheKey := shop.ID
-	if client, exists := m.clients[cacheKey]; exists {
-		return client, ctx, nil
+	client, exists := m.clients[cacheKey]
+	if !exists {
+		password, derr := m.aes.Decrypt(shop.APIPasswordEncrypted)
+		if derr != nil {
+			return nil, ctx, fmt.Errorf("decrypt password: %w", derr)
+		}
+		client, err = insales.NewClient(shop.ShopURL, shop.APIKeyID, password)
+		if err != nil {
+			return nil, ctx, fmt.Errorf("create client: %w", err)
+		}
+		m.clients[cacheKey] = client
 	}
 
-	password, err := m.aes.Decrypt(shop.APIPasswordEncrypted)
-	if err != nil {
-		return nil, ctx, fmt.Errorf("decrypt password: %w", err)
+	// Billing gate: login is free, MCP data access is not. Lazy TTL refresh —
+	// at most one InSales call per shop per TTL window. billingMonthly=0 = free.
+	if m.billingMonthly > 0 {
+		if berr := CheckBilling(shop, time.Now(),
+			func() (map[string]any, error) {
+				raw, ferr := client.GetRecurringApplicationCharge(context.Background(), "")
+				if ferr != nil {
+					return nil, ferr
+				}
+				charge, _ := raw.(map[string]any)
+				return charge, nil
+			},
+			m.shopRepo.UpdateBillingStatus,
+		); berr != nil {
+			return nil, ctx, berr
+		}
 	}
 
-	client, err := insales.NewClient(shop.ShopURL, shop.APIKeyID, password)
-	if err != nil {
-		return nil, ctx, fmt.Errorf("create client: %w", err)
-	}
-
-	m.clients[cacheKey] = client
 	return client, ctx, nil
 }
 

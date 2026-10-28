@@ -77,3 +77,43 @@ func TestAppInstallRepo_UninstallAndPendingLink(t *testing.T) {
 		t.Errorf("pending_link status = %s", got.Status)
 	}
 }
+
+// SetPendingLink must never rewrite ownership: COALESCE(NULLIF(user_id,”), $2).
+func TestAppInstallRepo_SetPendingLink_KeepsUser(t *testing.T) {
+	pool := setupTestDB(t)
+	repo := NewAppInstallRepository(pool)
+	userRepo := NewUserRepository(pool)
+
+	if _, err := repo.UpsertInstall("303", "shop3.myinsales.ru", "enc"); err != nil {
+		t.Fatal(err)
+	}
+	userA, _ := userRepo.Create("ownA", "", "", "", "", "hash")
+	userB, _ := userRepo.Create("ownB", "", "", "", "", "hash")
+
+	if err := repo.SetUser("303", userA.ID); err != nil {
+		t.Fatal(err)
+	}
+	// conflicting link attempt must not steal ownership
+	if err := repo.SetPendingLink("303", userB.ID); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := repo.GetByInsalesID("303")
+	if got.UserID != userA.ID {
+		t.Errorf("user_id rewritten to %s, want %s", got.UserID, userA.ID)
+	}
+	if got.Status != "pending_link" {
+		t.Errorf("status = %s, want pending_link", got.Status)
+	}
+
+	// empty user_id → set
+	if _, err := repo.UpsertInstall("404", "shop4.myinsales.ru", "enc"); err != nil {
+		t.Fatal(err)
+	}
+	if err := repo.SetPendingLink("404", userA.ID); err != nil {
+		t.Fatal(err)
+	}
+	got, _ = repo.GetByInsalesID("404")
+	if got.UserID != userA.ID {
+		t.Errorf("empty user_id not set: %+v", got)
+	}
+}
