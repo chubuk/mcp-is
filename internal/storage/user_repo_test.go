@@ -41,6 +41,23 @@ func TestUserRepo_GetByID(t *testing.T) {
 	if found.Nickname != "getbyid" {
 		t.Errorf("expected nickname 'getbyid', got '%s'", found.Nickname)
 	}
+
+	// Регрессия (2026-10-28): GetByID не выбирал email_verified — zero-value false
+	// включал seize при OTP-линке верифицированных аккаунтов (моки поле возвращают,
+	// SQL-омиссию ловит только integration-тест).
+	if !found.EmailVerified {
+		t.Error("expected EmailVerified=true (DB default) after Create")
+	}
+	if err := repo.UpdateEmailVerified(created.ID, false); err != nil {
+		t.Fatalf("UpdateEmailVerified failed: %v", err)
+	}
+	found, err = repo.GetByID(created.ID)
+	if err != nil {
+		t.Fatalf("GetByID after update failed: %v", err)
+	}
+	if found.EmailVerified {
+		t.Error("expected EmailVerified=false after UpdateEmailVerified(false)")
+	}
 }
 
 func TestUserRepo_GetByID_NotFound(t *testing.T) {
@@ -260,23 +277,6 @@ func TestUserRepo_UpdatePassword(t *testing.T) {
 	}
 }
 
-func TestUserRepo_UpdateEmail(t *testing.T) {
-	pool := setupTestDB(t)
-	repo := NewUserRepository(pool)
-
-	user, _ := repo.Create("emailupd", "", "", "", "", "h")
-
-	err := repo.UpdateEmail(user.ID, "newemail@test.com")
-	if err != nil {
-		t.Fatalf("UpdateEmail failed: %v", err)
-	}
-
-	found, _ := repo.GetByID(user.ID)
-	if found.Email != "newemail@test.com" {
-		t.Errorf("expected email 'newemail@test.com', got '%s'", found.Email)
-	}
-}
-
 func TestUserRepo_PasswordResetFlow(t *testing.T) {
 	pool := setupTestDB(t)
 	repo := NewUserRepository(pool)
@@ -311,7 +311,7 @@ func TestUserRepo_GetByEmail(t *testing.T) {
 	pool := setupTestDB(t)
 	repo := NewUserRepository(pool)
 
-	repo.Create("emailget", "findme@test.com", "", "", "", "h")
+	created, _ := repo.Create("emailget", "findme@test.com", "", "", "", "h")
 
 	user, err := repo.GetByEmail("findme@test.com")
 	if err != nil {
@@ -319,5 +319,19 @@ func TestUserRepo_GetByEmail(t *testing.T) {
 	}
 	if user.Nickname != "emailget" {
 		t.Errorf("expected nickname 'emailget', got '%s'", user.Nickname)
+	}
+	// Регрессия: GetByEmail тоже должен возвращать email_verified (см. TestUserRepo_GetByID).
+	if !user.EmailVerified {
+		t.Error("expected EmailVerified=true (DB default) from GetByEmail")
+	}
+	if err := repo.UpdateEmailVerified(created.ID, false); err != nil {
+		t.Fatalf("UpdateEmailVerified failed: %v", err)
+	}
+	user, err = repo.GetByEmail("findme@test.com")
+	if err != nil {
+		t.Fatalf("GetByEmail after update failed: %v", err)
+	}
+	if user.EmailVerified {
+		t.Error("expected EmailVerified=false after UpdateEmailVerified(false)")
 	}
 }

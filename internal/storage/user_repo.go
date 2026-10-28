@@ -52,9 +52,9 @@ func (r *UserRepository) GetByID(id string) (*User, error) {
 	var u User
 	err := r.db.QueryRow(context.Background(),
 		`SELECT id, nickname, COALESCE(email,''), COALESCE(phone,''),
-		        COALESCE(first_name,''), COALESCE(last_name,''), password_hash, role, is_active, require_password_change, created_at::text, updated_at::text
+		        COALESCE(first_name,''), COALESCE(last_name,''), password_hash, role, is_active, require_password_change, email_verified, created_at::text, updated_at::text
 		 FROM users WHERE id = $1`, id,
-	).Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.PasswordHash, &u.Role, &u.IsActive, &u.RequirePasswordChange, &u.CreatedAt, &u.UpdatedAt)
+	).Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.PasswordHash, &u.Role, &u.IsActive, &u.RequirePasswordChange, &u.EmailVerified, &u.CreatedAt, &u.UpdatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
@@ -188,9 +188,9 @@ func (r *UserRepository) UpdateEmailVerified(id string, verified bool) error {
 func (r *UserRepository) GetByEmail(email string) (*User, error) {
 	var u User
 	err := r.db.QueryRow(context.Background(),
-		`SELECT id, nickname, COALESCE(email,''), password_hash, role
+		`SELECT id, nickname, COALESCE(email,''), password_hash, role, email_verified
 		 FROM users WHERE LOWER(email) = LOWER($1)`, normalizeEmail(email),
-	).Scan(&u.ID, &u.Nickname, &u.Email, &u.PasswordHash, &u.Role)
+	).Scan(&u.ID, &u.Nickname, &u.Email, &u.PasswordHash, &u.Role, &u.EmailVerified)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
