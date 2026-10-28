@@ -554,7 +554,10 @@ SMTP_FROM=MCP IS <user@mail.ru>
 | GET | `/autologin` | Автологин из InSales | Нет |
 | POST | `/api/exchange-code` | Обмен one-time code на JWT | Нет |
 | POST | `/api/change-password` | Смена пароля | JWT |
-| POST | `/api/set-email` | Установка email | JWT |
+| POST | `/api/verify-email` | Подтверждение e-mail кодом | Нет |
+| POST | `/api/verify-email/resend` | Повторная отправка кода | Нет |
+| POST | `/api/link-code/send` | Код привязки магазина InSales | Нет |
+| POST | `/api/link-code/verify` | Проверка кода привязки | Нет |
 | POST | `/api/shops` | Добавить магазин | JWT |
 | POST | `/api/shops/link-pending` | Привязать магазин из InSales | JWT |
 | POST | `/api/shops/test-connection` | Проверить ключ InSales | JWT |

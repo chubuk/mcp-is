@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: -apple-system, sans-serif; background: #f5f5f5; padding: 20px; }
+        .container { max-width: 500px; margin: 0 auto; background: #fff; border-radius: 8px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        h1 { font-size: 20px; margin-bottom: 16px; color: #333; }
+        p { color: #666; line-height: 1.6; margin-bottom: 16px; }
+        .code { font-size: 28px; letter-spacing: 6px; font-weight: 700; color: #333; background: #f0f0f0; padding: 12px 20px; border-radius: 6px; display: inline-block; }
+        .footer { margin-top: 24px; font-size: 12px; color: #999; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Код подтверждения</h1>
+        <p>Здравствуйте, {{.Name}}!</p>
+        <p>Одноразовый код для подтверждения:</p>
+        <p><span class="code">{{.Code}}</span></p>
+        <div class="footer">Код действителен в течение 10 минут. Если вы не запрашивали код — просто проигнорируйте письмо.</div>
+    </div>
+</body>
+</html>

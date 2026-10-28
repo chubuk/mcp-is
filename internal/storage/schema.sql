@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS users (
     role TEXT DEFAULT 'user' CHECK (role IN ('user', 'admin', 'super_admin')),
     is_active BOOLEAN DEFAULT TRUE,
     require_password_change BOOLEAN DEFAULT FALSE,
+    email_verified BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -18,6 +19,7 @@ type User struct {
 	Role                  string
 	IsActive              bool
 	RequirePasswordChange bool
+	EmailVerified         bool
 	CreatedAt             string
 	UpdatedAt             string
 }
@@ -37,7 +39,7 @@ func (r *UserRepository) Create(nickname, email, phone, firstName, lastName, pas
 		 VALUES ($1, $2, $3, $4, $5, $6)
 		 RETURNING id, nickname, COALESCE(email,''), COALESCE(phone,''),
 		           COALESCE(first_name,''), COALESCE(last_name,''), role, is_active, require_password_change, created_at::text`,
-		nickname, nullStr(email), nullStr(phone), nullStr(firstName), nullStr(lastName), passwordHash,
+		nickname, nullStr(normalizeEmail(email)), nullStr(phone), nullStr(firstName), nullStr(lastName), passwordHash,
 	).Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.Role, &u.IsActive, &u.RequirePasswordChange, &u.CreatedAt)
 
 	if err != nil {
@@ -64,9 +66,9 @@ func (r *UserRepository) GetByLogin(login string) (*User, error) {
 	var u User
 	err := r.db.QueryRow(context.Background(),
 		`SELECT id, nickname, COALESCE(email,''), COALESCE(phone,''),
-		        COALESCE(first_name,''), COALESCE(last_name,''), password_hash, role, is_active, require_password_change, created_at::text, updated_at::text
-		 FROM users WHERE (email = $1 OR phone = $1 OR nickname = $1) AND is_active = TRUE`, login,
-	).Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.PasswordHash, &u.Role, &u.IsActive, &u.RequirePasswordChange, &u.CreatedAt, &u.UpdatedAt)
+		        COALESCE(first_name,''), COALESCE(last_name,''), password_hash, role, is_active, require_password_change, email_verified, created_at::text, updated_at::text
+		 FROM users WHERE (LOWER(email) = LOWER($1) OR phone = $1 OR nickname = $1) AND is_active = TRUE`, login,
+	).Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.PasswordHash, &u.Role, &u.IsActive, &u.RequirePasswordChange, &u.EmailVerified, &u.CreatedAt, &u.UpdatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
@@ -177,9 +179,9 @@ func (r *UserRepository) UpdateRequirePasswordChange(id string, value bool) erro
 	return err
 }
 
-func (r *UserRepository) UpdateEmail(id, email string) error {
+func (r *UserRepository) UpdateEmailVerified(id string, verified bool) error {
 	_, err := r.db.Exec(context.Background(),
-		`UPDATE users SET email=$1, updated_at=NOW() WHERE id=$2`, email, id)
+		`UPDATE users SET email_verified=$1, updated_at=NOW() WHERE id=$2`, verified, id)
 	return err
 }
 
@@ -187,12 +189,24 @@ func (r *UserRepository) GetByEmail(email string) (*User, error) {
 	var u User
 	err := r.db.QueryRow(context.Background(),
 		`SELECT id, nickname, COALESCE(email,''), password_hash, role
-		 FROM users WHERE email = $1`, email,
+		 FROM users WHERE LOWER(email) = LOWER($1)`, normalizeEmail(email),
 	).Scan(&u.ID, &u.Nickname, &u.Email, &u.PasswordHash, &u.Role)
 	if err != nil {
 		return nil, fmt.Errorf("user not found: %w", err)
 	}
 	return &u, nil
+}
+
+// PurgeUnverified deletes never-confirmed accounts older than olderThanSeconds
+// so open registration cannot bloat the users table.
+func (r *UserRepository) PurgeUnverified(olderThanSeconds int64) (int64, error) {
+	tag, err := r.db.Exec(context.Background(),
+		`DELETE FROM users WHERE email_verified = FALSE AND created_at < NOW() - ($1 * INTERVAL '1 second')`,
+		olderThanSeconds)
+	if err != nil {
+		return 0, fmt.Errorf("purge unverified users: %w", err)
+	}
+	return tag.RowsAffected(), nil
 }
 
 func (r *UserRepository) CreateResetToken(userID, token string, expiresAt string) error {
@@ -241,7 +255,7 @@ func (r *UserRepository) CreateSuperAdmin(nickname, email, phone, firstName, las
 		 VALUES ($1, $2, $3, $4, $5, $6)
 		 RETURNING id, nickname, COALESCE(email,''), COALESCE(phone,''),
 		           COALESCE(first_name,''), COALESCE(last_name,''), role, is_active, require_password_change, created_at::text`,
-		nickname, nullStr(email), nullStr(phone), nullStr(firstName), nullStr(lastName), passwordHash,
+		nickname, nullStr(normalizeEmail(email)), nullStr(phone), nullStr(firstName), nullStr(lastName), passwordHash,
 	).Scan(&u.ID, &u.Nickname, &u.Email, &u.Phone, &u.FirstName, &u.LastName, &u.Role, &u.IsActive, &u.RequirePasswordChange, &u.CreatedAt)
 
 	if err != nil {
@@ -268,4 +282,10 @@ func nullStr(s string) any {
 		return nil
 	}
 	return s
+}
+
+// normalizeEmail — единная нормализация e-mail для всех flows (OWASP:
+// registration/login/reset/linking обязаны использовать одну нормализацию).
+func normalizeEmail(email string) string {
+	return strings.ToLower(strings.TrimSpace(email))
 }

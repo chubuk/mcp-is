@@ -128,6 +128,15 @@ func builtinTemplates() []Template {
 			RequiredVars: []string{"Name", "VerifyURL"},
 		},
 		{
+			Key:          "login_code",
+			Name:         "Код подтверждения",
+			Subject:      "Код подтверждения — MCP IS",
+			HTMLBody:     html("login_code.html"),
+			TextBody:     txt("login_code.txt"),
+			Description:  "Одноразовый код: подтверждение email при регистрации и привязка магазина",
+			RequiredVars: []string{"Name", "Code"},
+		},
+		{
 			Key:          "welcome",
 			Name:         "Приветствие",
 			Subject:      "Добро пожаловать в MCP IS",

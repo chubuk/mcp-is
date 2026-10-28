@@ -24,6 +24,7 @@ func (m *mockUserRepo) Create(nickname, email, phone, firstName, lastName, passw
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	email = strings.ToLower(strings.TrimSpace(email)) // mirrors storage.normalizeEmail
 	for _, u := range m.users {
 		if u.Nickname == nickname || (email != "" && u.Email == email) || (phone != "" && u.Phone == phone) {
 			return nil, fmt.Errorf("duplicate")
@@ -32,14 +33,15 @@ func (m *mockUserRepo) Create(nickname, email, phone, firstName, lastName, passw
 
 	m.counter++
 	u := &storage.User{
-		ID:           fmt.Sprintf("user-%d", m.counter),
-		Nickname:     nickname,
-		Email:        email,
-		Phone:        phone,
-		FirstName:    firstName,
-		LastName:     lastName,
-		PasswordHash: passwordHash,
-		CreatedAt:    "2026-01-01T00:00:00Z",
+		ID:            fmt.Sprintf("user-%d", m.counter),
+		Nickname:      nickname,
+		Email:         email,
+		Phone:         phone,
+		FirstName:     firstName,
+		LastName:      lastName,
+		PasswordHash:  passwordHash,
+		EmailVerified: true,
+		CreatedAt:     "2026-01-01T00:00:00Z",
 	}
 	m.users[u.ID] = u
 	return u, nil
@@ -173,15 +175,29 @@ func (m *mockUserRepo) UpdateRequirePasswordChange(id string, value bool) error 
 	return fmt.Errorf("not found")
 }
 
-func (m *mockUserRepo) UpdateEmail(id, email string) error {
+func (m *mockUserRepo) UpdateEmailVerified(id string, verified bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if u, ok := m.users[id]; ok {
-		u.Email = email
+		u.EmailVerified = verified
 		return nil
 	}
 	return fmt.Errorf("not found")
+}
+
+func (m *mockUserRepo) PurgeUnverified(olderThanSeconds int64) (int64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	var n int64
+	for id, u := range m.users {
+		if !u.EmailVerified {
+			delete(m.users, id)
+			n++
+		}
+	}
+	return n, nil
 }
 
 func (m *mockUserRepo) Delete(id string) error {

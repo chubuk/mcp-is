@@ -26,6 +26,7 @@ CREATE INDEX IF NOT EXISTS idx_app_installs_shop ON app_installs(shop_id);
 
 -- Миграция v0.4.0 - Require password change flag
 ALTER TABLE users ADD COLUMN IF NOT EXISTS require_password_change BOOLEAN DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT TRUE;
 
 -- Миграция v0.5.0 - PDN enabled flag for AI keys
 ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS pdn_enabled BOOLEAN DEFAULT FALSE;

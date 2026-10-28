@@ -114,6 +114,7 @@ func main() {
 		cfg.InSalesAppKey, cfg.InSalesSecretKey, cfg.Domain, cfg.JWTSecret,
 		cfg.BillingMonthly,
 	)
+	appHandler.SetEmailService(emailSvc)
 	if cfg.AppModeEnabled() {
 		slog.Info("InSales app mode enabled", "app_key", cfg.InSalesAppKey)
 	} else {
@@ -124,13 +125,17 @@ func main() {
 	scheduler := certbot.NewScheduler(certbotSvc, settingsRepo)
 
 	authRateLimiter := auth.NewRateLimiter(10, 1*time.Minute)
+	// Флуд-защита почтовых операций (регистрация, коды, сброс пароля): 5/час на IP.
+	mailRateLimiter := auth.NewRateLimiter(5, 1*time.Hour)
 
 	mux := http.NewServeMux()
 
-	mux.Handle("POST /api/register", authRateLimiter.Middleware(authHandler.Register))
+	mux.Handle("POST /api/register", mailRateLimiter.Middleware(authHandler.Register))
 	mux.Handle("POST /api/login", authRateLimiter.Middleware(authHandler.Login))
-	mux.Handle("POST /api/forgot-password", authRateLimiter.Middleware(authHandler.ForgotPassword))
+	mux.Handle("POST /api/forgot-password", mailRateLimiter.Middleware(authHandler.ForgotPassword))
 	mux.Handle("POST /api/reset-password", authRateLimiter.Middleware(authHandler.ResetPassword))
+	mux.Handle("POST /api/verify-email", mailRateLimiter.Middleware(authHandler.VerifyEmail))
+	mux.Handle("POST /api/verify-email/resend", mailRateLimiter.Middleware(authHandler.ResendVerifyEmail))
 
 	// InSales external-app callbacks (public)
 	mux.Handle("GET /install", authRateLimiter.Middleware(appHandler.Install))
@@ -142,8 +147,9 @@ func main() {
 	jwtMW := auth.JWTMiddleware(jwtMgr)
 	mux.Handle("POST /api/change-password", jwtMW(http.HandlerFunc(authHandler.ChangePassword)))
 	mux.Handle("POST /api/force-change-password", jwtMW(http.HandlerFunc(authHandler.ForceChangePassword)))
-	mux.Handle("POST /api/set-email", jwtMW(http.HandlerFunc(authHandler.SetEmail)))
 	mux.Handle("POST /api/shops/link-pending", jwtMW(http.HandlerFunc(appHandler.LinkPending)))
+	mux.Handle("POST /api/link-code/send", mailRateLimiter.Middleware(appHandler.LinkCodeSend))
+	mux.Handle("POST /api/link-code/verify", mailRateLimiter.Middleware(appHandler.LinkCodeVerify))
 
 	mux.Handle("POST /api/shops", jwtMW(http.HandlerFunc(shopHandler.Create)))
 	mux.Handle("GET /api/shops", jwtMW(http.HandlerFunc(shopHandler.List)))

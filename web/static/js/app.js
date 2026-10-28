@@ -259,9 +259,9 @@ const Settings = {
                 </div>
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" id="settings-email" value="${email}" placeholder="your@email.com">
+                    <input type="email" value="${email}" disabled>
+                    <small style="color:#888">Смена e-mail — только через администратора</small>
                 </div>
-                <button class="btn btn--primary btn--sm" onclick="Settings.saveEmail()">💾 Сохранить email</button>
             </div>
             <div class="card">
                 <div class="card__title">Смена пароля</div>
@@ -280,18 +280,6 @@ const Settings = {
                 </div>
                 <button class="btn btn--primary btn--sm" onclick="Settings.changePassword()">🔑 Изменить пароль</button>
             </div>`;
-    },
-
-    async saveEmail() {
-        const email = document.getElementById('settings-email').value;
-        if (!email) return;
-        const res = await API.post('/api/set-email', { email });
-        if (res && res.ok) {
-            localStorage.setItem('email', email);
-            alert('Email сохранён');
-        } else {
-            alert('Ошибка: ' + (res ? res.data.error : 'Сервер недоступен'));
-        }
     },
 
     async changePassword() {

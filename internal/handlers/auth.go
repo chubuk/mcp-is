@@ -1,13 +1,13 @@
 package handlers
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
-	"net/mail"
 	"strings"
 	"time"
 
@@ -22,10 +22,11 @@ type AuthHandler struct {
 	jwtMgr              *auth.JWTManager
 	emailSvc            *email.Service
 	registrationEnabled bool
+	codes               *codeStore
 }
 
 func NewAuthHandler(userRepo storage.UserRepositoryInterface, jwtMgr *auth.JWTManager, emailSvc *email.Service, registrationEnabled bool) *AuthHandler {
-	return &AuthHandler{userRepo: userRepo, jwtMgr: jwtMgr, emailSvc: emailSvc, registrationEnabled: registrationEnabled}
+	return &AuthHandler{userRepo: userRepo, jwtMgr: jwtMgr, emailSvc: emailSvc, registrationEnabled: registrationEnabled, codes: newCodeStore()}
 }
 
 type RegisterRequest struct {
@@ -67,8 +68,10 @@ type ResetPasswordRequest struct {
 	NewPassword string `json:"new_password"`
 }
 
-type SetEmailRequest struct {
-	Email string `json:"email"`
+type VerifyEmailRequest struct {
+	UserID   string `json:"user_id"`
+	Code     string `json:"code"`
+	Password string `json:"password"`
 }
 
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
@@ -78,8 +81,8 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if msg := validateNewUser(req.Nickname, req.Password); msg != "" {
-		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: msg})
+	if req.Nickname == "" {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "укажите никнейм"})
 		return
 	}
 
@@ -95,32 +98,67 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
-	if err != nil {
-		slog.Error("hash password", "error", err)
-		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
-		return
+	// Анти-разбухание базы: неподтверждённые аккаунты старше 24ч удаляются.
+	if n, err := h.userRepo.PurgeUnverified(24 * 3600); err != nil {
+		slog.Warn("purge unverified users", "error", err)
+	} else if n > 0 {
+		slog.Info("purged unverified users", "count", n)
 	}
 
 	var user *storage.User
 	if count == 0 {
+		// Bootstrap: первый super_admin — пароль сразу (SMTP может быть не настроен).
+		if msg := validateNewUser(req.Nickname, req.Password); msg != "" {
+			writeJSON(w, http.StatusBadRequest, AuthResponse{Error: msg})
+			return
+		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+		if err != nil {
+			slog.Error("hash password", "error", err)
+			writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
+			return
+		}
 		user, err = h.userRepo.CreateSuperAdmin(req.Nickname, req.Email, req.Phone, req.FirstName, req.LastName, string(hash))
 		if err != nil {
 			slog.Error("create super_admin", "error", err)
 			writeJSON(w, http.StatusConflict, AuthResponse{Error: "user with this nickname, email or phone already exists"})
 			return
 		}
-	} else {
-		user, err = h.userRepo.Create(req.Nickname, req.Email, req.Phone, req.FirstName, req.LastName, string(hash))
-		if err != nil {
-			slog.Warn("register failed", "error", err)
-			writeJSON(w, http.StatusConflict, AuthResponse{Error: "user with this nickname, email or phone already exists"})
-			return
-		}
+		slog.Info("user registered", "id", user.ID, "nickname", user.Nickname, "role", user.Role)
+		writeJSON(w, http.StatusCreated, AuthResponse{UserID: user.ID, Nickname: user.Nickname})
+		return
 	}
 
-	slog.Info("user registered", "id", user.ID, "nickname", user.Nickname, "role", user.Role)
-	writeJSON(w, http.StatusCreated, AuthResponse{UserID: user.ID, Nickname: user.Nickname})
+	// Verify-before-use: пароль ставит подтвердивший почту (код + пароль в одной
+	// форме) — до верификации аккаунт с нерабочим паролем, вход закрыт.
+	if req.Email == "" {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "для регистрации нужен e-mail"})
+		return
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(randomPassword()), bcrypt.DefaultCost)
+	if err != nil {
+		slog.Error("hash password", "error", err)
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
+		return
+	}
+	user, err = h.userRepo.Create(req.Nickname, req.Email, req.Phone, req.FirstName, req.LastName, string(hash))
+	if err != nil {
+		slog.Warn("register failed", "error", err)
+		writeJSON(w, http.StatusConflict, AuthResponse{Error: "user with this nickname, email or phone already exists"})
+		return
+	}
+	if err := h.userRepo.UpdateEmailVerified(user.ID, false); err != nil {
+		slog.Error("set email unverified", "error", err)
+	}
+	user.EmailVerified = false
+	h.sendVerifyCode(user)
+	slog.Info("user registered, email pending", "id", user.ID, "nickname", user.Nickname)
+	writeJSON(w, http.StatusCreated, AuthResponse{
+		UserID:       user.ID,
+		Nickname:     user.Nickname,
+		RequireEmail: true,
+		Message:      "Подтвердите e-mail — код отправлен на почту. Пароль задаётся при подтверждении.",
+	})
 }
 
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
@@ -143,6 +181,18 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
 		writeJSON(w, http.StatusUnauthorized, AuthResponse{Error: "invalid credentials"})
+		return
+	}
+
+	// Verify-before-use: неподтверждённый e-mail не даёт доступа (анти pre-hijack).
+	if user.Email != "" && !user.EmailVerified {
+		h.sendVerifyCode(user)
+		writeJSON(w, http.StatusForbidden, AuthResponse{
+			RequireEmail: true,
+			UserID:       user.ID,
+			Nickname:     user.Nickname,
+			Message:      "e-mail не подтверждён. Код подтверждения отправлен на почту.",
+		})
 		return
 	}
 
@@ -401,36 +451,105 @@ func (h *AuthHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, AuthResponse{Message: "Password updated successfully"})
 }
 
-func (h *AuthHandler) SetEmail(w http.ResponseWriter, r *http.Request) {
-	userID, ok := r.Context().Value(auth.UserIDKey).(string)
-	if !ok || userID == "" {
-		writeJSON(w, http.StatusUnauthorized, AuthResponse{Error: "unauthorized"})
+// sendVerifyCode issues a one-time code and mails it (async, cooldown-safe).
+func (h *AuthHandler) sendVerifyCode(user *storage.User) {
+	if user.Email == "" {
 		return
 	}
-
-	var req SetEmailRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "invalid request body"})
+	code, err := h.codes.issue("register:" + user.ID)
+	if err != nil {
+		if err != ErrCodeCooldown {
+			slog.Error("issue verify code", "error", err, "user_id", user.ID)
+		}
 		return
 	}
-
-	if req.Email == "" {
-		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "email is required"})
+	if h.emailSvc == nil {
 		return
 	}
+	go func() {
+		if err := h.emailSvc.SendTemplate(context.Background(), "login_code", user.Email,
+			map[string]any{"Name": user.Nickname, "Code": code}); err != nil {
+			slog.Error("send verify code email", "error", err, "user_id", user.ID)
+		}
+	}()
+}
 
-	if !isValidEmail(req.Email) {
-		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "invalid email format"})
+// VerifyEmail handles POST /api/verify-email — подтверждение e-mail кодом и
+// установка пароля подтвердившим (инвариант: пароль ставит только владелец ящика).
+func (h *AuthHandler) VerifyEmail(w http.ResponseWriter, r *http.Request) {
+	var req VerifyEmailRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.UserID == "" || req.Code == "" {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "user_id и code обязательны"})
 		return
 	}
-
-	if err := h.userRepo.UpdateEmail(userID, req.Email); err != nil {
-		writeJSON(w, http.StatusConflict, AuthResponse{Error: "email already exists"})
+	// Пароль проверяем ДО сжигания кода, чтобы нестандартный пароль не отнимал попытку.
+	user, err := h.userRepo.GetByID(req.UserID)
+	if err != nil {
+		writeJSON(w, http.StatusNotFound, AuthResponse{Error: "пользователь не найден"})
 		return
 	}
+	if msg := validateNewUser(user.Nickname, req.Password); msg != "" {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: msg})
+		return
+	}
+	if err := h.codes.verify("register:"+req.UserID, req.Code); err != nil {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "неверный или истёкший код"})
+		return
+	}
+	hash, err := bcrypt.GenerateFromPassword([]byte(req.Password), bcrypt.DefaultCost)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
+		return
+	}
+	if err := h.userRepo.UpdatePassword(user.ID, string(hash)); err != nil {
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
+		return
+	}
+	if err := h.userRepo.UpdateRequirePasswordChange(user.ID, false); err != nil {
+		slog.Warn("clear require_password_change", "error", err, "user_id", user.ID)
+	}
+	if err := h.userRepo.UpdateEmailVerified(user.ID, true); err != nil {
+		slog.Error("set email verified", "error", err, "user_id", user.ID)
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
+		return
+	}
+	slog.Info("email verified", "user_id", user.ID)
+	writeJSON(w, http.StatusOK, AuthResponse{UserID: user.ID, Message: "e-mail подтверждён. Теперь можно войти."})
+}
 
-	slog.Info("email set", "user_id", userID, "email", maskEmail(req.Email))
-	writeJSON(w, http.StatusOK, AuthResponse{UserID: userID})
+// ResendVerifyEmail handles POST /api/verify-email/resend.
+func (h *AuthHandler) ResendVerifyEmail(w http.ResponseWriter, r *http.Request) {
+	var req VerifyEmailRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.UserID == "" {
+		writeJSON(w, http.StatusBadRequest, AuthResponse{Error: "user_id обязателен"})
+		return
+	}
+	user, err := h.userRepo.GetByID(req.UserID)
+	if err != nil {
+		// Не раскрываем существование аккаунта.
+		writeJSON(w, http.StatusOK, AuthResponse{Message: "Если аккаунт существует, код отправлен."})
+		return
+	}
+	if user.Email == "" || user.EmailVerified {
+		writeJSON(w, http.StatusOK, AuthResponse{Message: "Если аккаунт существует, код отправлен."})
+		return
+	}
+	code, err := h.codes.issue("register:" + user.ID)
+	if err != nil {
+		if err == ErrCodeCooldown {
+			writeJSON(w, http.StatusTooManyRequests, AuthResponse{Error: "Слишком часто. Попробуйте позже."})
+			return
+		}
+		writeJSON(w, http.StatusInternalServerError, AuthResponse{Error: "internal error"})
+		return
+	}
+	go func() {
+		if err := h.emailSvc.SendTemplate(context.Background(), "login_code", user.Email,
+			map[string]any{"Name": user.Nickname, "Code": code}); err != nil {
+			slog.Error("send verify code email", "error", err, "user_id", user.ID)
+		}
+	}()
+	writeJSON(w, http.StatusOK, AuthResponse{Message: "Если аккаунт существует, код отправлен."})
 }
 
 func generateResetToken() (string, error) {
@@ -470,11 +589,6 @@ func hasDigit(s string) bool {
 		}
 	}
 	return false
-}
-
-func isValidEmail(email string) bool {
-	_, err := mail.ParseAddress(email)
-	return err == nil && strings.Contains(email, "@")
 }
 
 func maskEmail(email string) string {

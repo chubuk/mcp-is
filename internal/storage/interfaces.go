@@ -14,7 +14,8 @@ type UserRepositoryInterface interface {
 	UpdateStatus(id string, isActive bool) error
 	UpdatePassword(id, passwordHash string) error
 	UpdateRequirePasswordChange(id string, value bool) error
-	UpdateEmail(id, email string) error
+	UpdateEmailVerified(id string, verified bool) error
+	PurgeUnverified(olderThanSeconds int64) (int64, error)
 	Delete(id string) error
 	Count() (int, error)
 	CreateResetToken(userID, token string, expiresAt string) error

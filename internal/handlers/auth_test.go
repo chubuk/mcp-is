@@ -129,7 +129,9 @@ func TestRegister_DuplicateNickname(t *testing.T) {
 		t.Fatalf("first register failed: %d", w.Code)
 	}
 
-	req2 := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
+	// повторная регистрация с тем же никнеймом (e-mail обязателен при count>0)
+	body2, _ := json.Marshal(RegisterRequest{Nickname: "user1", Email: "dup@test.com", Password: "Password123"})
+	req2 := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body2))
 	w2 := httptest.NewRecorder()
 	h.Register(w2, req2)
 
@@ -302,25 +304,6 @@ func TestForgotPassword_Success(t *testing.T) {
 	}
 }
 
-func TestSetEmail_Success(t *testing.T) {
-	h, _ := setupAuthHandler()
-
-	body, _ := json.Marshal(RegisterRequest{Nickname: "setemail", Password: "Pass1234"})
-	req := httptest.NewRequest(http.MethodPost, "/api/register", bytes.NewReader(body))
-	w := httptest.NewRecorder()
-	h.Register(w, req)
-
-	setBody, _ := json.Marshal(SetEmailRequest{Email: "new@test.com"})
-	setReq := httptest.NewRequest(http.MethodPost, "/api/set-email", bytes.NewReader(setBody))
-	setReq = setReq.WithContext(withUserID(setReq.Context(), "user-1"))
-	setW := httptest.NewRecorder()
-	h.SetEmail(setW, setReq)
-
-	if setW.Code != http.StatusOK {
-		t.Errorf("expected 200, got %d: %s", setW.Code, setW.Body.String())
-	}
-}
-
 func TestLogin_RequirePasswordChange(t *testing.T) {
 	h, repo := setupAuthHandler()
 
@@ -333,6 +316,7 @@ func TestLogin_RequirePasswordChange(t *testing.T) {
 		Role:                  "super_admin",
 		IsActive:              true,
 		RequirePasswordChange: true,
+		EmailVerified:         true,
 	}
 	repo.users[user.ID] = user
 

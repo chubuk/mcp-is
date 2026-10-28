@@ -17,6 +17,7 @@ import (
 	"github.com/chubuk/mcp-is/internal/appinstall"
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/core"
+	"github.com/chubuk/mcp-is/internal/email"
 	"github.com/chubuk/mcp-is/internal/integration/insales"
 	"github.com/chubuk/mcp-is/internal/storage"
 	"golang.org/x/crypto/bcrypt"
@@ -41,6 +42,9 @@ type AppHandler struct {
 
 	// chargeFn overrides the InSales charge fetch in tests (nil = real API).
 	chargeFn func(inst *storage.AppInstall, password string) (map[string]any, error)
+
+	emailSvc *email.Service
+	codes    *codeStore
 }
 
 func NewAppHandler(
@@ -59,7 +63,13 @@ func NewAppHandler(
 		aes: aes, jwt: jwt, manager: manager,
 		appKey: appKey, secretKey: secretKey, domain: domain, hmacSecret: hmacSecret,
 		billingMonthly: billingMonthly,
+		codes:          newCodeStore(),
 	}
+}
+
+// SetEmailService wires the mailer for link-code emails (tests may skip it).
+func (h *AppHandler) SetEmailService(svc *email.Service) {
+	h.emailSvc = svc
 }
 
 func (h *AppHandler) enabled() bool {
@@ -377,9 +387,9 @@ func (h *AppHandler) ExchangeCode(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]string{
+	writeJSON(w, http.StatusOK, map[string]any{
 		"token": token, "user_id": user.ID, "nickname": user.Nickname, "role": user.Role,
-		"api_key": rawKey,
+		"api_key": rawKey, "require_password_change": user.RequirePasswordChange,
 	})
 }
 
@@ -409,6 +419,117 @@ func (h *AppHandler) LinkPending(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "linked", "api_key": rawKey})
+}
+
+// LinkCodeSend handles POST /api/link-code/send — шлёт одноразовый код привязки
+// на e-mail существующего аккаунта (anti-takeover: proof-of-inbox вместо пароля).
+func (h *AppHandler) LinkCodeSend(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		InsalesID string `json:"insales_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.InsalesID == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
+		return
+	}
+	// Ответы generic — не раскрываем состояние установки/аккаунта.
+	generic := map[string]any{"message": "Если магазин ожидает привязки, код отправлен."}
+	inst, err := h.installs.GetByInsalesID(req.InsalesID)
+	if err != nil || inst.Status != "pending_link" || inst.UserID == "" {
+		writeJSON(w, http.StatusOK, generic)
+		return
+	}
+	user, err := h.users.GetByID(inst.UserID)
+	if err != nil || user.Email == "" {
+		writeJSON(w, http.StatusOK, generic)
+		return
+	}
+	code, err := h.codes.issue("link:" + req.InsalesID)
+	if err != nil {
+		if err == ErrCodeCooldown {
+			writeJSON(w, http.StatusTooManyRequests, map[string]string{"error": "Слишком часто. Попробуйте позже."})
+			return
+		}
+		slog.Error("link code: issue", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	if h.emailSvc != nil {
+		go func() {
+			if err := h.emailSvc.SendTemplate(context.Background(), "login_code", user.Email,
+				map[string]any{"Name": user.Nickname, "Code": code}); err != nil {
+				slog.Error("link code: send email", "error", err, "insales_id", req.InsalesID)
+			}
+		}()
+	}
+	generic["email"] = maskEmail(user.Email)
+	writeJSON(w, http.StatusOK, generic)
+}
+
+// LinkCodeVerify handles POST /api/link-code/verify — проверяет код, отзывает
+// прежние учётные данные аккаунта (seize) и провизионит магазин под ним.
+func (h *AppHandler) LinkCodeVerify(w http.ResponseWriter, r *http.Request) {
+	var req struct {
+		InsalesID string `json:"insales_id"`
+		Code      string `json:"code"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.InsalesID == "" || req.Code == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
+		return
+	}
+	if err := h.codes.verify("link:"+req.InsalesID, req.Code); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "неверный или истёкший код"})
+		return
+	}
+	inst, err := h.installs.GetByInsalesID(req.InsalesID)
+	if err != nil || inst.Status != "pending_link" || inst.UserID == "" {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "привязка недоступна"})
+		return
+	}
+	user, err := h.users.GetByID(inst.UserID)
+	if err != nil {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "привязка недоступна"})
+		return
+	}
+	// Инвариант (вариант B): пароль ставит только владелец ящика (при верификации),
+	// поэтому верифицированный аккаунт при привязке НЕ трогаем. «Мёртвый» аккаунт
+	// (неподтверждённая регистрация — пароля нет/он чужой) — отзываем и просим
+	// задать свой.
+	requireChange := !user.EmailVerified
+	if requireChange {
+		hash, err := bcrypt.GenerateFromPassword([]byte(randomPassword()), bcrypt.DefaultCost)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+			return
+		}
+		if err := h.users.UpdatePassword(user.ID, string(hash)); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+			return
+		}
+		if err := h.users.UpdateRequirePasswordChange(user.ID, true); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+			return
+		}
+		if err := h.users.ClearResetTokens(user.ID); err != nil {
+			slog.Warn("link code: clear reset tokens", "error", err, "user_id", user.ID)
+		}
+	}
+	// Код пришёл на ящик аккаунта — это и есть proof-of-inbox: снимаем гейт.
+	if err := h.users.UpdateEmailVerified(user.ID, true); err != nil {
+		slog.Error("link code: set email verified", "error", err, "user_id", user.ID)
+	}
+	_, rawKey, err := h.provisionUserAndShop(inst, "", "")
+	if err != nil {
+		slog.Error("link code: provision", "error", err)
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	code, err := h.issueCode(user.ID, rawKey)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
+		return
+	}
+	slog.Info("app link: verified by email code", "insales_id", req.InsalesID, "user_id", user.ID)
+	writeJSON(w, http.StatusOK, map[string]any{"code": code, "require_password_change": requireChange})
 }
 
 // --- provisioning helpers ---

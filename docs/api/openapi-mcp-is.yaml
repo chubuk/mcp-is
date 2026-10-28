@@ -167,28 +167,92 @@ paths:
         '401':
           $ref: '#/components/responses/Unauthorized'
 
-  /api/set-email:
+  /api/verify-email:
     post:
-      summary: Установка email
+      summary: Подтверждение e-mail кодом и установка пароля
       tags: [Auth]
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [email]
+              required: [user_id, code, password]
               properties:
-                email:
+                user_id:
                   type: string
-                  format: email
+                code:
+                  type: string
+                password:
+                  type: string
+                  minLength: 8
       responses:
         '200':
-          description: Email установлен
-        '409':
-          description: Email уже занят
+          description: E-mail подтверждён, пароль задан
+        '400':
+          description: Неверный/истёкший код или слабый пароль
+
+  /api/verify-email/resend:
+    post:
+      summary: Повторная отправка кода подтверждения
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id:
+                  type: string
+      responses:
+        '200':
+          description: Код отправлен (ответ generic)
+        '429':
+          description: Слишком часто
+
+  /api/link-code/send:
+    post:
+      summary: Код привязки магазина InSales на e-mail аккаунта
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [insales_id]
+              properties:
+                insales_id:
+                  type: string
+      responses:
+        '200':
+          description: Код отправлен (ответ generic, email маскирован)
+        '429':
+          description: Слишком часто
+
+  /api/link-code/verify:
+    post:
+      summary: Проверка кода привязки (seize + provision)
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [insales_id, code]
+              properties:
+                insales_id:
+                  type: string
+                code:
+                  type: string
+      responses:
+        '200':
+          description: Привязка завершена (one-time code; require_password_change только для неподтверждённых аккаунтов)
+        '400':
+          description: Неверный или истёкший код
 
   /api/shops:
     get:

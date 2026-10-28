@@ -51,10 +51,6 @@ const Auth = {
                             <label>Фамилия</label>
                             <input type="text" id="reg-lastname">
                         </div>
-                        <div class="form-group">
-                            <label>Пароль *</label>
-                            <input type="password" id="reg-password" required minlength="6" autocomplete="new-password">
-                        </div>
                         <button type="submit" class="btn btn--primary" style="width:100%">➕ Зарегистрироваться</button>
                     </form>
                     <p class="link">Уже есть аккаунт? <a href="/login">Войти</a></p>
@@ -67,7 +63,22 @@ const Auth = {
         if (pending) {
             const alert = document.getElementById('alert');
             if (alert) {
-                alert.innerHTML = '<div class="alert alert--info">Магазин InSales ожидает привязки. Войдите в существующий аккаунт, чтобы подключить его.</div>';
+                alert.innerHTML = '<div class="alert alert--info">Магазин InSales ожидает привязки. Войдите в существующий аккаунт или подтвердите привязку кодом с почты.</div>';
+                alert.insertAdjacentHTML('afterend', `
+                    <div id="link-code-block">
+                        <button class="btn btn--secondary" id="send-link-code" style="width:100%">📧 Отправить код на e-mail</button>
+                        <div id="link-code-wrap"></div>
+                    </div>`);
+                document.getElementById('send-link-code').addEventListener('click', async () => {
+                    const r = await API.post('/api/link-code/send', { insales_id: pending });
+                    if (r && r.ok) {
+                        const to = r.data.email ? ' на ' + r.data.email : '';
+                        Auth.showSuccess('Код отправлен' + to + '.');
+                        Auth.renderLinkCodeForm(pending);
+                    } else {
+                        Auth.showError(r ? r.data.error : 'Ошибка сервера');
+                    }
+                });
             }
         }
         document.getElementById('login-form').addEventListener('submit', async (e) => {
@@ -89,13 +100,75 @@ const Auth = {
                 }
                 if (res.data.require_password_change) {
                     App.navigate('/force-change-password');
-                } else if (res.data.require_email) {
-                    App.navigate('/settings');
                 } else {
                     App.navigate('/dashboard');
                 }
+            } else if (res && res.status === 403 && res.data.require_email) {
+                Auth.renderVerifyCodeForm(res.data.user_id);
             } else {
                 Auth.showError(res ? res.data.error : 'Ошибка сервера');
+            }
+        });
+    },
+
+    // Форма ввода кода подтверждения e-mail + пароль (verify-before-use).
+    renderVerifyCodeForm(userId) {
+        Auth.showError('e-mail не подтверждён. Введите код из письма и задайте пароль.');
+        const wrap = document.getElementById('alert');
+        if (!wrap || document.getElementById('verify-code-form')) return;
+        wrap.insertAdjacentHTML('beforeend', `
+            <form id="verify-code-form">
+                <div class="form-group">
+                    <label>Код подтверждения</label>
+                    <input type="text" id="verify-code" required inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+                </div>
+                <div class="form-group">
+                    <label>Пароль</label>
+                    <input type="password" id="verify-password" required minlength="8" autocomplete="new-password">
+                    <small style="color:#888">Минимум 8 символов, заглавная буква и цифра</small>
+                </div>
+                <button type="submit" class="btn btn--primary" style="width:100%">✅ Подтвердить и задать пароль</button>
+            </form>
+            <p class="link"><a href="#" id="resend-verify-code">Отправить код повторно</a></p>`);
+        document.getElementById('verify-code-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('verify-code').value.trim();
+            const password = document.getElementById('verify-password').value;
+            const r = await API.post('/api/verify-email', { user_id: userId, code, password });
+            if (r && r.ok) {
+                Auth.showSuccess('e-mail подтверждён и пароль задан! Теперь войдите.');
+            } else {
+                Auth.showError(r ? r.data.error : 'Ошибка сервера');
+            }
+        });
+        document.getElementById('resend-verify-code').addEventListener('click', async (e) => {
+            e.preventDefault();
+            const r = await API.post('/api/verify-email/resend', { user_id: userId });
+            if (r && r.ok) Auth.showSuccess('Код отправлен повторно.');
+            else Auth.showError(r ? r.data.error : 'Слишком часто. Попробуйте позже.');
+        });
+    },
+
+    // Форма кода привязки магазина InSales (pending_link).
+    renderLinkCodeForm(insalesId) {
+        const wrap = document.getElementById('link-code-wrap');
+        if (!wrap || document.getElementById('link-code-form')) return;
+        wrap.innerHTML = `
+            <form id="link-code-form">
+                <div class="form-group">
+                    <label>Код из письма</label>
+                    <input type="text" id="link-code" required inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+                </div>
+                <button type="submit" class="btn btn--primary" style="width:100%">🔗 Привязать магазин</button>
+            </form>`;
+        document.getElementById('link-code-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const code = document.getElementById('link-code').value.trim();
+            const r = await API.post('/api/link-code/verify', { insales_id: insalesId, code });
+            if (r && r.ok && r.data.code) {
+                App.navigate('/onboarding?code=' + encodeURIComponent(r.data.code));
+            } else {
+                Auth.showError(r ? r.data.error : 'Ошибка сервера');
             }
         });
     },
@@ -171,6 +244,10 @@ const Auth = {
                 localStorage.setItem('role', res.data.role);
                 localStorage.setItem('user_id', res.data.user_id);
                 showKey(res.data.api_key || '(ключ недоступен — создайте новый в разделе «Ключи»)');
+                if (res.data.require_password_change) {
+                    body.insertAdjacentHTML('beforeend',
+                        '<p class="link"><a href="/force-change-password">🔑 Задать новый пароль для входа (обязательно)</a></p>');
+                }
                 API.get('/api/shops').then((r) => {
                     if (r && r.ok && App.billingBanner(r.data.items)) {
                         body.insertAdjacentHTML('afterbegin', App.billingBanner(r.data.items));
@@ -191,13 +268,17 @@ const Auth = {
                 phone: document.getElementById('reg-phone').value,
                 first_name: document.getElementById('reg-firstname').value,
                 last_name: document.getElementById('reg-lastname').value,
-                password: document.getElementById('reg-password').value,
             };
 
             const res = await API.post('/api/register', body);
             if (res && res.ok) {
-                Auth.showSuccess('Регистрация успешна! Теперь войдите.');
-                setTimeout(() => App.navigate('/login'), 1500);
+                if (res.data.require_email) {
+                    Auth.showSuccess(res.data.message || 'Подтвердите e-mail — код отправлен на почту.');
+                    Auth.renderVerifyCodeForm(res.data.user_id);
+                } else {
+                    Auth.showSuccess('Регистрация успешна! Теперь войдите.');
+                    setTimeout(() => App.navigate('/login'), 1500);
+                }
             } else if (res && res.status === 403) {
                 Auth.showError('Регистрация закрыта. Обратитесь к администратору.');
             } else {
