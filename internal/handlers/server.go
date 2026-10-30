@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/storage"
@@ -12,10 +13,23 @@ import (
 
 type ServerHandler struct {
 	settingsRepo *storage.SettingsRepository
+	// envBillingMonthly is the BILLING_MONTHLY fallback shown/used when the
+	// billing_monthly setting has never been saved (admin override wins).
+	envBillingMonthly int
 }
 
-func NewServerHandler(settingsRepo *storage.SettingsRepository) *ServerHandler {
-	return &ServerHandler{settingsRepo: settingsRepo}
+func NewServerHandler(settingsRepo *storage.SettingsRepository, envBillingMonthly int) *ServerHandler {
+	return &ServerHandler{settingsRepo: settingsRepo, envBillingMonthly: envBillingMonthly}
+}
+
+// billingSetting returns the effective monthly price: saved setting or env default.
+func (h *ServerHandler) billingSetting() int {
+	v := h.settingsRepo.GetDefault("billing_monthly", strconv.Itoa(h.envBillingMonthly))
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 {
+		return h.envBillingMonthly
+	}
+	return n
 }
 
 type ServerSettingsResponse struct {
@@ -30,6 +44,7 @@ type ServerSettingsResponse struct {
 	RetryCount         int    `json:"retry_count"`
 	LastRetryAt        string `json:"last_retry_at"`
 	LetsencryptEmail   string `json:"letsencrypt_email"`
+	BillingMonthly     int    `json:"billing_monthly"`
 	Error              string `json:"error,omitempty"`
 }
 
@@ -39,6 +54,7 @@ type ServerSettingsRequest struct {
 	AutoRenew        *bool   `json:"auto_renew,omitempty"`
 	RenewDaysBefore  *int    `json:"renew_days_before,omitempty"`
 	LetsencryptEmail *string `json:"letsencrypt_email,omitempty"`
+	BillingMonthly   *int    `json:"billing_monthly,omitempty"`
 }
 
 func (h *ServerHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
@@ -66,6 +82,7 @@ func (h *ServerHandler) GetSettings(w http.ResponseWriter, r *http.Request) {
 		RetryCount:         0,
 		LastRetryAt:        settings["last_retry_at"],
 		LetsencryptEmail:   settings["letsencrypt_email"],
+		BillingMonthly:     h.billingSetting(),
 	}
 
 	if v, ok := settings["renew_days_before"]; ok && v != "" {
@@ -139,6 +156,18 @@ func (h *ServerHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusInternalServerError, ServerSettingsResponse{Error: "failed to save settings"})
 			return
 		}
+	}
+
+	if req.BillingMonthly != nil {
+		if *req.BillingMonthly < 0 {
+			writeJSON(w, http.StatusBadRequest, ServerSettingsResponse{Error: "стоимость не может быть отрицательной"})
+			return
+		}
+		if err := h.settingsRepo.Set("billing_monthly", strconv.Itoa(*req.BillingMonthly)); err != nil {
+			writeJSON(w, http.StatusInternalServerError, ServerSettingsResponse{Error: "failed to save settings"})
+			return
+		}
+		slog.Info("billing_monthly updated", "value", *req.BillingMonthly)
 	}
 
 	h.GetSettings(w, r)

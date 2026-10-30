@@ -29,7 +29,7 @@ func newTestAppHandler(t *testing.T) (*AppHandler, *mockAppInstallRepo, *mockUse
 	keys := newMockAIKeyRepo()
 	jwt := auth.NewJWTManager("test-jwt-secret", time.Hour)
 	h := NewAppHandler(installs, users, shops, keys, aes, jwt, nil,
-		"myapplogin", "mysecret", "mcp-is.ru", 0)
+		"myapplogin", "mysecret", "mcp-is.ru", 0, nil)
 	return h, installs, users, shops, keys
 }
 
@@ -835,5 +835,35 @@ func TestShopEventTemplates_Seeded(t *testing.T) {
 		if !found[key] {
 			t.Errorf("template %q missing from builtinTemplates", key)
 		}
+	}
+}
+
+// --- billing price: server_settings override wins over env fallback ---
+
+type mockSettings map[string]string
+
+func (m mockSettings) GetDefault(key, fallback string) string {
+	if v, ok := m[key]; ok {
+		return v
+	}
+	return fallback
+}
+
+func TestBillingPrice_SettingsOverrideEnv(t *testing.T) {
+	h, _, _, _, _ := newTestAppHandler(t) // env fallback = 0
+	if got := h.billingPrice(); got != 0 {
+		t.Fatalf("price without settings = %d, want 0 (env fallback)", got)
+	}
+	h.settings = mockSettings{"billing_monthly": "300"}
+	if got := h.billingPrice(); got != 300 {
+		t.Fatalf("price = %d, want 300 (settings override)", got)
+	}
+	h.settings = mockSettings{"billing_monthly": "0"}
+	if got := h.billingPrice(); got != 0 {
+		t.Fatalf("price = %d, want 0 (settings says free)", got)
+	}
+	h.settings = mockSettings{"billing_monthly": "garbage"}
+	if got := h.billingPrice(); got != 0 {
+		t.Fatalf("price = %d, want 0 (invalid setting falls back to env)", got)
 	}
 }

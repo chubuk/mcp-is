@@ -370,6 +370,11 @@ const Admin = {
                     <label>Обновлять за (дней до окончания)</label>
                     <input type="number" id="srv-renew-days" value="${s.renew_days_before || 30}" min="14" max="60" ${!isSuperAdmin ? 'disabled' : ''}>
                 </div>
+                <div class="form-group">
+                    <label>Стоимость подписки, ₽/мес (0 = бесплатно)</label>
+                    <input type="number" id="srv-billing-monthly" value="${s.billing_monthly != null ? s.billing_monthly : 0}" min="0" ${!isSuperAdmin ? 'disabled' : ''}>
+                    <small style="color:#888">Синхронизируйте с полем «Стоимость» в карточке приложения InSales. Меняет тариф для новых списаний — уже созданный RecurringApplicationCharge не пересоздаётся.</small>
+                </div>
                 ${isSuperAdmin ? '<button class="btn btn--primary" onclick="Admin.saveServer()">💾 Сохранить</button>' : ''}
             </div>
 
@@ -453,6 +458,7 @@ const Admin = {
             email: ['srv-email', 'trim'],
             auto_renew: ['srv-auto-renew', 'bool'],
             renew_days: ['srv-renew-days', 'int'],
+            billing_monthly: ['srv-billing-monthly', 'int'],
         });
         const https = document.querySelector('input[name="srv-https"]:checked').value === 'true';
 
@@ -462,6 +468,7 @@ const Admin = {
             letsencrypt_email: f.email,
             auto_renew: f.auto_renew,
             renew_days_before: f.renew_days || 30,
+            billing_monthly: f.billing_monthly || 0,
         });
 
         if (res && res.ok) {

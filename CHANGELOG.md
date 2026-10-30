@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased] — настраиваемая стоимость подписки
+
+### Добавлено
+- **«Стоимость подписки» в настройках сервера** (Админ → Сервер, super_admin): `billing_monthly` в `server_settings`, hot-reload без рестарта. `0` = бесплатно (гейт прозрачен), `>0` = сумма RecurringApplicationCharge. Env `BILLING_MONTHLY` = значение по умолчанию/фолбэк. Настройка не пересоздаёт уже созданный charge.
+
 ## [Unreleased] — favicon
 
 ### Добавлено

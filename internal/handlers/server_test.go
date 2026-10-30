@@ -27,7 +27,7 @@ func setupServerHandler(t *testing.T) (*ServerHandler, *pgxpool.Pool) {
 	t.Cleanup(func() { pool.Close() })
 
 	settingsRepo := storage.NewSettingsRepository(pool)
-	return NewServerHandler(settingsRepo), pool
+	return NewServerHandler(settingsRepo, 0), pool
 }
 
 func TestGetSettings_AccessDenied(t *testing.T) {

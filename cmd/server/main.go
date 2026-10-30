@@ -54,7 +54,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	manager := core.NewAccountManager(shopRepo, aesCipher, cfg.ReadOnly, cfg.BillingMonthly)
+	manager := core.NewAccountManager(shopRepo, aesCipher, cfg.ReadOnly, cfg.BillingMonthly, settingsRepo)
 	svc := service.NewService(manager)
 	auditRepo := storage.NewAuditRepository(pool)
 	mcpServer := mcp.NewMCPServer(svc, cfg.ReadOnly, cfg.PDNAutoProtect, cfg.ServerCountry, auditRepo)
@@ -104,7 +104,7 @@ func main() {
 	shopHandler := handlers.NewShopHandler(shopRepo, aiKeyRepo, aesCipher, mcpServer)
 	aiKeyHandler := handlers.NewAIKeyHandler(aiKeyRepo)
 	adminHandler := handlers.NewAdminHandler(userRepo, shopRepo, aiKeyRepo, jwtMgr, emailSvc)
-	serverHandler := handlers.NewServerHandler(settingsRepo)
+	serverHandler := handlers.NewServerHandler(settingsRepo, cfg.BillingMonthly)
 	pdnHandler := handlers.NewPDNHandler(pool, settingsRepo)
 
 	appInstallRepo := storage.NewAppInstallRepository(pool)
@@ -112,7 +112,7 @@ func main() {
 		appInstallRepo, userRepo, shopRepo, aiKeyRepo,
 		aesCipher, jwtMgr, manager,
 		cfg.InSalesAppKey, cfg.InSalesSecretKey, cfg.Domain,
-		cfg.BillingMonthly,
+		cfg.BillingMonthly, settingsRepo,
 	)
 	appHandler.SetEmailService(emailSvc)
 	if cfg.AppModeEnabled() {

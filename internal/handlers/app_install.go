@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,6 +21,12 @@ import (
 	"github.com/chubuk/mcp-is/internal/storage"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// SettingsGetter is the settings-repository slice the billing price needs
+// (defined at consumer; *storage.SettingsRepository satisfies it).
+type SettingsGetter interface {
+	GetDefault(key, fallback string) string
+}
 
 // AppHandler implements the InSales external-application callbacks:
 // install, uninstall, autologin and one-time code exchange for the SPA.
@@ -35,7 +42,8 @@ type AppHandler struct {
 	appKey         string
 	secretKey      string
 	domain         string
-	billingMonthly int // 0 = free (default)
+	billingMonthly int // env fallback; server_settings billing_monthly overrides (hot-reload)
+	settings       SettingsGetter
 
 	// chargeFn overrides the InSales charge fetch in tests (nil = real API).
 	chargeFn func(inst *storage.AppInstall, password string) (map[string]any, error)
@@ -55,15 +63,31 @@ func NewAppHandler(
 	manager *core.AccountManager,
 	appKey, secretKey, domain string,
 	billingMonthly int,
+	settings SettingsGetter,
 ) *AppHandler {
 	return &AppHandler{
 		installs: installs, users: users, shops: shops, aiKeys: aiKeys,
 		aes: aes, jwt: jwt, manager: manager,
 		appKey: appKey, secretKey: secretKey, domain: domain,
 		billingMonthly: billingMonthly,
+		settings:       settings,
 		codes:          newCodeStore(),
 		onboard:        newOnboardStore(),
 	}
+}
+
+// billingPrice is the effective monthly price: server_settings override,
+// env BILLING_MONTHLY as fallback. 0 = free (gate transparent).
+func (h *AppHandler) billingPrice() int {
+	if h.settings == nil {
+		return h.billingMonthly
+	}
+	v := h.settings.GetDefault("billing_monthly", strconv.Itoa(h.billingMonthly))
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 {
+		return h.billingMonthly
+	}
+	return n
 }
 
 // SetEmailService wires the mailer for link-code emails (tests may skip it).
@@ -311,7 +335,7 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			if h.billingMonthly > 0 {
+			if h.billingPrice() > 0 {
 				if berr := h.syncBilling(inst, password); berr != nil {
 					slog.Warn("app autologin: billing check skipped", "error", berr, "insales_id", insalesID)
 				}
@@ -352,7 +376,7 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 
 	// Billing never blocks login: the status feeds the UI banner and the MCP
 	// gate. Charge check failure only delays the check to the lazy TTL retry.
-	if h.billingMonthly > 0 {
+	if h.billingPrice() > 0 {
 		if berr := h.syncBilling(inst, password); berr != nil {
 			slog.Warn("app autologin: billing check skipped", "error", berr, "insales_id", insalesID)
 		}
@@ -586,7 +610,7 @@ func (h *AppHandler) ensureRecurringCharge(inst *storage.AppInstall, password st
 	}
 
 	charge, err := client.CreateRecurringApplicationCharge(ctx, map[string]any{
-		"monthly": h.billingMonthly,
+		"monthly": h.billingPrice(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("create recurring charge: %w", err)
@@ -598,7 +622,7 @@ func (h *AppHandler) ensureRecurringCharge(inst *storage.AppInstall, password st
 // syncBilling refreshes the charge state at login — at most once per TTL window.
 // Never blocks login: on failure the shop is marked unknown for a fast lazy retry.
 func (h *AppHandler) syncBilling(inst *storage.AppInstall, password string) error {
-	if h.billingMonthly <= 0 || inst.ShopID == "" {
+	if h.billingPrice() <= 0 || inst.ShopID == "" {
 		return nil
 	}
 	shop, err := h.shops.GetByID(inst.ShopID)

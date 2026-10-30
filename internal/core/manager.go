@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/chubuk/mcp-is/internal/auth"
@@ -19,22 +20,43 @@ const (
 	ShopURLKey      contextKey = "shop_url"
 )
 
+// SettingsGetter is the settings-repository slice the billing gate needs
+// (defined at consumer; *storage.SettingsRepository satisfies it).
+type SettingsGetter interface {
+	GetDefault(key, fallback string) string
+}
+
 type AccountManager struct {
 	shopRepo       *storage.ShopRepository
 	aes            *auth.AESCipher
 	clients        map[string]*insales.InSalesClient
 	globalReadOnly bool
-	billingMonthly int // 0 = billing gate off
+	billingMonthly int // env fallback; server_settings billing_monthly overrides
+	settings       SettingsGetter
 }
 
-func NewAccountManager(shopRepo *storage.ShopRepository, aes *auth.AESCipher, globalReadOnly bool, billingMonthly int) *AccountManager {
+func NewAccountManager(shopRepo *storage.ShopRepository, aes *auth.AESCipher, globalReadOnly bool, billingMonthly int, settings SettingsGetter) *AccountManager {
 	return &AccountManager{
 		shopRepo:       shopRepo,
 		aes:            aes,
 		clients:        make(map[string]*insales.InSalesClient),
 		globalReadOnly: globalReadOnly,
 		billingMonthly: billingMonthly,
+		settings:       settings,
 	}
+}
+
+// billingPrice mirrors AppHandler.billingPrice: settings override, env fallback.
+func (m *AccountManager) billingPrice() int {
+	if m.settings == nil {
+		return m.billingMonthly
+	}
+	v := m.settings.GetDefault("billing_monthly", strconv.Itoa(m.billingMonthly))
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 {
+		return m.billingMonthly
+	}
+	return n
 }
 
 func (m *AccountManager) GetClient(ctx context.Context) (*insales.InSalesClient, context.Context, error) {
@@ -82,7 +104,7 @@ func (m *AccountManager) GetClient(ctx context.Context) (*insales.InSalesClient,
 
 	// Billing gate: login is free, MCP data access is not. Lazy TTL refresh —
 	// at most one InSales call per shop per TTL window. billingMonthly=0 = free.
-	if m.billingMonthly > 0 {
+	if m.billingPrice() > 0 {
 		if berr := CheckBilling(shop, time.Now(),
 			func() (map[string]any, error) {
 				raw, ferr := client.GetRecurringApplicationCharge(context.Background(), "")
