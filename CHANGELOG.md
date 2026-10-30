@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased] — backup restore: UI + безопасный restore-скрипт
+
+### Добавлено
+- **Восстановление из бэкапа в админке** («Бэкапы», super_admin): список файлов на диске (дата/тип/размер/sha256), «Проверить» (целостность без изменений в БД), «Восстановить» (модалка с предупреждением о простое), «Копировать команду» (CLI-фолбэк), поллинг статуса, блок «Как это работает».
+- **Restore-скрипт переписан (steps 0–6)**: проверка целостности (sha256/gzip/tar/backup_label, обе раскладки тара) → страховочный дамп `pre_restore_*.sql.gz` (tripwire >1KB + users) → свап → верификация → **автоматический откат** при любом сбое (в т.ч. kill mid-swap). Статус-файл `restore_status.json`, `.sha256`-сайдкары на новых бэкапах.
+- API: `GET /api/admin/backup/files`, `POST …/files/{name}/verify`, `POST …/restore` (super_admin, single-flight 409, preflight образа), `GET …/restore/status`. Path-escape юнит-тесты.
+- `backup.sh --verify <file>` → `readable|corrupt`.
+- INSTALL.md: раздел «Если восстановление не удалось»; убрана ложь «дамп поверх работающей БД (без остановки)».
+
+### Исправлено
+- **Restore был сломан**: несовпадение раскладки тара (`pg_basebackup/` vs корень), `rm -rf` данных на работающей БД, sql-наложение без DROP SCHEMA, WAL распаковывался в корень PGDATA вместо `pg_wal/`.
+- Общий lock backup+restore в `$BACKUP_DIR/.backup.lock` (mkdir-атомарный, stale >2ч) — взаимное исключение восстановления и бэкапа.
+- `pre_restore_*` исключены из `find -size -1k`-чистки.
+
+### GATE
+- 13/13 сценариев на throwaway-compose (happy path tar+sql, битые архивы, отказ дампа, kill mid-swap, мусорный PGDATA, lock, 409, disk-full, обрыв sql) — см. план `1793355392246-quick-cactus`.
+
 ## [Unreleased] — настраиваемая стоимость подписки
 
 ### Добавлено

@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -384,4 +387,199 @@ func (h *BackupHandler) setSetting(key, value string) {
 
 func readFile(path string) ([]byte, error) {
 	return exec.Command("cat", path).Output()
+}
+
+// --- files / verify / restore (super_admin) ---
+
+// backupDir returns the backup directory (setting overrides the default).
+func (h *BackupHandler) backupDir() string {
+	return h.getSetting("backup_dir", "/opt/mcp-is/backups")
+}
+
+// safeBackupName validates a bare file name inside the backup dir: no path
+// separators, no "..", no symlink (Lstat) — path-escape is a hard reject.
+func safeBackupPath(dir, name string) (string, bool) {
+	if name == "" || name != filepath.Base(name) || name == "." || name == ".." ||
+		strings.Contains(name, "..") || strings.ContainsAny(name, `/\`) {
+		return "", false
+	}
+	p := filepath.Join(dir, name)
+	// Double-check the resolved path still lives under dir.
+	rel, err := filepath.Rel(dir, p)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		return "", false
+	}
+	fi, err := os.Lstat(p)
+	if err != nil || fi.Mode()&os.ModeSymlink != 0 {
+		return "", false
+	}
+	return p, true
+}
+
+type BackupFileEntry struct {
+	Name      string `json:"name"`
+	SizeBytes int64  `json:"size_bytes"`
+	ModTime   string `json:"mod_time"`
+	Kind      string `json:"kind"` // tar | sql
+	HasSHA256 bool   `json:"has_sha256"`
+}
+
+// ListFiles handles GET /api/admin/backup/files — disk scan (backup_log has no filename).
+func (h *BackupHandler) ListFiles(w http.ResponseWriter, r *http.Request) {
+	role := r.Context().Value(auth.RoleKey).(string)
+	if role != "super_admin" && role != "admin" {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied"})
+		return
+	}
+
+	dir := h.backupDir()
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		writeJSON(w, http.StatusOK, map[string]any{"files": []BackupFileEntry{}, "total": 0})
+		return
+	}
+
+	files := make([]BackupFileEntry, 0, len(entries))
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		var kind string
+		switch {
+		case strings.HasSuffix(name, ".tar.gz"):
+			kind = "tar"
+		case strings.HasSuffix(name, ".sql.gz"):
+			kind = "sql"
+		default:
+			continue // .sha256, .restore-tmp и пр. — не артефакты
+		}
+		fi, err := e.Info()
+		if err != nil {
+			continue
+		}
+		// Симлинки не отдаём
+		if fi.Mode()&os.ModeSymlink != 0 {
+			continue
+		}
+		_, shaErr := os.Lstat(filepath.Join(dir, name+".sha256"))
+		files = append(files, BackupFileEntry{
+			Name:      name,
+			SizeBytes: fi.Size(),
+			ModTime:   fi.ModTime().UTC().Format("2006-01-02T15:04:05Z"),
+			Kind:      kind,
+			HasSHA256: shaErr == nil,
+		})
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"files": files, "total": len(files)})
+}
+
+// VerifyFile handles POST /api/admin/backup/files/{name}/verify — step 0 only.
+func (h *BackupHandler) VerifyFile(w http.ResponseWriter, r *http.Request) {
+	role := r.Context().Value(auth.RoleKey).(string)
+	if role != "super_admin" && role != "admin" {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied"})
+		return
+	}
+
+	name := r.PathValue("name")
+	path, ok := safeBackupPath(h.backupDir(), name)
+	if !ok {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "недопустимое имя файла"})
+		return
+	}
+
+	cmd := exec.Command("/opt/mcp-is/scripts/backup.sh", "--verify", path)
+	out, err := cmd.CombinedOutput()
+	result := strings.TrimSpace(string(out))
+	if err != nil || result != "readable" {
+		slog.Warn("backup verify failed", "file", name, "output", result)
+		writeJSON(w, http.StatusOK, map[string]string{"result": "corrupt"})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]string{"result": "readable"})
+}
+
+// Restore handles POST /api/admin/backup/restore — starts a detached restore
+// executor container. super_admin only; single-flight via container name.
+func (h *BackupHandler) Restore(w http.ResponseWriter, r *http.Request) {
+	role := r.Context().Value(auth.RoleKey).(string)
+	if role != "super_admin" {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "only super_admin can restore"})
+		return
+	}
+
+	var req struct {
+		File string `json:"file"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request body"})
+		return
+	}
+	path, ok := safeBackupPath(h.backupDir(), req.File)
+	if !ok {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "недопустимое имя файла"})
+		return
+	}
+
+	// Single-flight: running restore must NOT be killed (rm -f mid-swap = broken DB).
+	inspect := exec.Command("docker", "inspect", "-f", "{{.State.Running}}", "mcp-is-restore")
+	if out, err := inspect.Output(); err == nil {
+		if strings.TrimSpace(string(out)) == "true" {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "восстановление уже выполняется"})
+			return
+		}
+		// Exited — убираем перед новым запуском.
+		_ = exec.Command("docker", "rm", "mcp-is-restore").Run()
+	}
+
+	// Preflight: executor image must exist (409, не 500 — UI показывает причину).
+	img := exec.Command("docker", "image", "inspect", "ghcr.io/chubuk/mcp-is:latest")
+	if err := img.Run(); err != nil {
+		writeJSON(w, http.StatusConflict, map[string]string{"error": "образ ghcr.io/chubuk/mcp-is:latest не найден — выполните деплой"})
+		return
+	}
+
+	dir := h.backupDir()
+	gid := os.Getenv("DOCKER_GID")
+	if gid == "" {
+		gid = "110"
+	}
+	cmd := exec.Command("docker", "run", "-d",
+		"--name", "mcp-is-restore",
+		"--group_add", gid,
+		"-v", "/var/run/docker.sock:/var/run/docker.sock",
+		"-v", "/opt/mcp-is/scripts:/opt/mcp-is/scripts:ro",
+		"-v", dir+":"+dir,
+		"ghcr.io/chubuk/mcp-is:latest",
+		"/opt/mcp-is/scripts/backup.sh", "--restore", path,
+	)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		slog.Error("restore start failed", "error", err, "output", string(out))
+		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "не удалось запустить восстановление"})
+		return
+	}
+
+	slog.Warn("restore started", "file", req.File, "super_admin_role", role)
+	writeJSON(w, http.StatusAccepted, map[string]string{"status": "started", "file": req.File})
+}
+
+// GetRestoreStatus handles GET /api/admin/backup/restore/status.
+func (h *BackupHandler) GetRestoreStatus(w http.ResponseWriter, r *http.Request) {
+	role := r.Context().Value(auth.RoleKey).(string)
+	if role != "super_admin" && role != "admin" {
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "access denied"})
+		return
+	}
+
+	// os.ReadFile, не shell-out cat (house pattern).
+	data, err := os.ReadFile(filepath.Join(h.backupDir(), "restore_status.json"))
+	if err != nil {
+		writeJSON(w, http.StatusOK, map[string]string{"state": "idle"})
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(data)
 }

@@ -6,6 +6,9 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/chubuk/mcp-is/internal/auth"
@@ -329,5 +332,68 @@ func TestBackupGetSettings_InvalidJSON(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected 400 for invalid JSON, got %d", w.Code)
+	}
+}
+
+// --- path-escape (обязательные по плану restore) ---
+
+func TestSafeBackupPath_RejectsEscapes(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "db_ok.tar.gz"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("/etc/passwd", filepath.Join(dir, "evil.tar.gz")); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, name := range []string{
+		"../etc/passwd",
+		"..",
+		".",
+		"",
+		"a/b.tar.gz",
+		`a\b.tar.gz`,
+		"..%2f..%2fetc/passwd",
+		"/etc/passwd",
+	} {
+		if _, ok := safeBackupPath(dir, name); ok {
+			t.Errorf("safeBackupPath(%q) accepted a hostile name", name)
+		}
+	}
+	// symlink reject
+	if _, ok := safeBackupPath(dir, "evil.tar.gz"); ok {
+		t.Error("safeBackupPath accepted a symlink")
+	}
+	// missing file reject
+	if _, ok := safeBackupPath(dir, "missing.tar.gz"); ok {
+		t.Error("safeBackupPath accepted a missing file")
+	}
+	// legit name passes
+	if p, ok := safeBackupPath(dir, "db_ok.tar.gz"); !ok || p == "" {
+		t.Error("safeBackupPath rejected a valid file")
+	}
+}
+
+func TestRestore_RBAC(t *testing.T) {
+	h, _ := setupBackupHandler(t)
+	for _, role := range []string{"user", "admin"} {
+		req := httptest.NewRequest(http.MethodPost, "/api/admin/backup/restore", strings.NewReader(`{"file":"db_x.tar.gz"}`))
+		req = req.WithContext(context.WithValue(req.Context(), auth.RoleKey, role))
+		w := httptest.NewRecorder()
+		h.Restore(w, req)
+		if w.Code != http.StatusForbidden {
+			t.Errorf("role %s: status = %d, want 403", role, w.Code)
+		}
+	}
+}
+
+func TestRestoreStatus_RBAC(t *testing.T) {
+	h, _ := setupBackupHandler(t)
+	req := httptest.NewRequest(http.MethodGet, "/api/admin/backup/restore/status", nil)
+	req = req.WithContext(context.WithValue(req.Context(), auth.RoleKey, "user"))
+	w := httptest.NewRecorder()
+	h.GetRestoreStatus(w, req)
+	if w.Code != http.StatusForbidden {
+		t.Errorf("status = %d, want 403", w.Code)
 	}
 }

@@ -663,17 +663,19 @@ const Admin = {
         incPage = incPage || Admin._incidentsPage || 1;
         const perPage = getPerPage();
 
-        const [statusRes, logRes, incidentsRes, settingsRes] = await Promise.all([
+        const [statusRes, logRes, incidentsRes, settingsRes, filesRes] = await Promise.all([
             API.get('/api/admin/backup/status'),
             API.get(`/api/admin/backup/log?page=${logPage}&per_page=${perPage}`),
             API.get(`/api/admin/backup/incidents?page=${incPage}&per_page=${perPage}`),
             API.get('/api/admin/backup'),
+            API.get('/api/admin/backup/files'),
         ]);
 
         const status = (statusRes && statusRes.ok) ? statusRes.data : {};
         const log = (logRes && logRes.ok) ? logRes.data : { entries: [], total: 0, page: 1, per_page: perPage };
         const incidents = (incidentsRes && incidentsRes.ok) ? incidentsRes.data : { incidents: [], total: 0, page: 1, per_page: perPage };
         const settings = (settingsRes && settingsRes.ok) ? settingsRes.data : {};
+        const filesData = (filesRes && filesRes.ok) ? filesRes.data : { files: [], total: 0 };
 
         // Stats
         const lastBackup = status.last_backup;
@@ -745,6 +747,45 @@ const Admin = {
                 <div class="card">
                     <div class="card__title">Нагрузка (5min)</div>
                     <div style="font-size:32px;font-weight:700">${load}</div>
+                </div>
+                <div class="card">
+                    <div class="card__title">Файлов на диске</div>
+                    <div style="font-size:32px;font-weight:700">${filesData.total || 0}</div>
+                </div>
+            </div>
+
+            <details class="card" style="margin-top:24px">
+                <summary style="cursor:pointer;font-weight:600;padding:16px">❓ Как это работает</summary>
+                <div style="padding:0 16px 16px;color:#555;line-height:1.7">
+                    <p><strong>Бэкап</strong> — снэпшот PostgreSQL (pg_basebackup или pg_dump) в файлы на диске сервера. Каждый файл снабжён контрольной суммой <code>.sha256</code>.</p>
+                    <p><strong>Проверить</strong> — целостность архива (gzip/tar/контрольная сумма) без каких-либо изменений в базе.</p>
+                    <p><strong>Восстановить</strong> — заменяет ТЕКУЩУЮ базу данных содержимым выбранного файла. Перед восстановлением автоматически создаётся страховочный дамп текущей базы (<code>pre_restore_*.sql.gz</code>): если что-то пойдёт не так, система откатится к нему. Примерное время простоя — 2–5 минут: сайт и MCP-сервер будут недоступны.</p>
+                    <p><strong>Копировать команду</strong> — CLI-фолбэк для восстановления с хоста: <code>/opt/mcp-is/scripts/backup.sh --restore &lt;файл&gt;</code> (запускать от имени root на сервере, не из контейнера).</p>
+                </div>
+            </details>
+
+            <div class="card" style="margin-top:24px">
+                <div class="card__title">Файлы бэкапов на диске</div>
+                <div id="restore-alert"></div>
+                <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Файл</th><th>Дата</th><th>Тип</th><th>Размер</th><th>Контрольная сумма</th><th></th></tr></thead>
+                    <tbody>
+                    ${(!filesData.files || filesData.files.length === 0) ? '<tr><td colspan="6" class="empty">Файлов нет</td></tr>' : filesData.files.map(f => `
+                        <tr data-file="${f.name}">
+                            <td data-label="Файл"><code>${f.name}</code></td>
+                            <td data-label="Дата">${new Date(f.mod_time).toLocaleString('ru-RU')}</td>
+                            <td data-label="Тип">${f.kind === 'tar' ? 'снэпшот' : 'SQL-дамп'}</td>
+                            <td data-label="Размер">${(f.size_bytes / 1024 / 1024).toFixed(1)} MB</td>
+                            <td data-label="Контрольная сумма">${f.has_sha256 ? '<span style="color:#27ae60">✓ есть</span>' : '<span style="color:#999">—</span>'}</td>
+                            <td data-label="">
+                                <button class="btn btn--ghost btn--sm" onclick="Admin.verifyBackupFile('${f.name}')">🔍 Проверить</button>
+                                ${Admin.RESTORE_UI_ENABLED ? `<button class="btn btn--ghost btn--sm" style="color:#e74c3c" onclick="Admin.confirmRestore('${f.name}')">⚠️ Восстановить</button>` : ''}
+                                <button class="btn btn--ghost btn--sm" onclick="Admin.copyRestoreCommand('${f.name}')">📋 Копировать команду</button>
+                            </td>
+                        </tr>`).join('')}
+                    </tbody>
+                </table>
                 </div>
             </div>
 
@@ -868,5 +909,76 @@ const Admin = {
             document.getElementById('backup-alert').innerHTML =
                 '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
         }
+    },
+
+    // Флаг GATE: кнопка «Восстановить» скрыта, пока restore-скрипт не пройдёт
+    // 9 сценариев GATE на throwaway-среде (план 1792935551187-eager-canyon).
+    // GATE пройден 2026-10-30 — см. план 1793355392246-quick-cactus, §GATE evidence.
+    RESTORE_UI_ENABLED: true,
+
+    async verifyBackupFile(name) {
+        const alert = document.getElementById('restore-alert');
+        alert.innerHTML = '<div class="alert alert--info">Проверка «' + name + '»…</div>';
+        const res = await API.post('/api/admin/backup/files/' + encodeURIComponent(name) + '/verify');
+        if (res && res.ok && res.data.result === 'readable') {
+            alert.innerHTML = '<div class="alert alert--success">✅ «' + name + '» — архив целый</div>';
+        } else {
+            alert.innerHTML = '<div class="alert alert--error">❌ «' + name + '» — архив повреждён или нечитаем</div>';
+        }
+    },
+
+    copyRestoreCommand(name) {
+        const cmd = 'sudo /opt/mcp-is/scripts/backup.sh --restore /opt/mcp-is/backups/' + name;
+        navigator.clipboard.writeText(cmd).then(() => {
+            document.getElementById('restore-alert').innerHTML =
+                '<div class="alert alert--success">Команда скопирована: <code>' + cmd + '</code></div>';
+        });
+    },
+
+    confirmRestore(name) {
+        document.getElementById('restore-alert').innerHTML = `
+            <div class="alert alert--error">
+                <strong>⚠️ ВНИМАНИЕ!</strong>
+                Восстановление из «<code>${name}</code>» <strong>заменит текущую базу данных</strong>.
+                Сайт и MCP-сервер будут недоступны 2–5 минут.<br>
+                Перед восстановлением автоматически будет создан страховочный дамп текущей базы.
+                <div style="margin-top:12px;display:flex;gap:8px">
+                    <button class="btn btn--primary" style="background:#e74c3c" onclick="Admin.doRestore('${name}')">ВОССТАНОВИТЬ</button>
+                    <button class="btn btn--ghost" onclick="Admin.renderBackup()">Отмена</button>
+                </div>
+            </div>`;
+    },
+
+    async doRestore(name) {
+        const alert = document.getElementById('restore-alert');
+        alert.innerHTML = '<div class="alert alert--info">Запуск восстановления…</div>';
+        const res = await API.post('/api/admin/backup/restore', { file: name });
+        if (res && res.status === 202) {
+            alert.innerHTML = '<div class="alert alert--info">🔄 Восстановление запущено. Статус обновляется автоматически.</div>';
+            Admin.pollRestoreStatus();
+        } else {
+            alert.innerHTML = '<div class="alert alert--error">' + (res ? res.data.error : 'Не удалось запустить восстановление') + '</div>';
+        }
+    },
+
+    async pollRestoreStatus() {
+        const alert = document.getElementById('restore-alert');
+        const tick = async () => {
+            const res = await API.get('/api/admin/backup/restore/status');
+            const s = (res && res.ok) ? res.data : { state: 'idle' };
+            const labels = {
+                running: '🔄 Выполняется (' + (s.phase || '') + ')…',
+                restored: '✅ Восстановление завершено успешно',
+                'restored-previous': '⚠️ Был сбой — выполнен откат к предыдущему состоянию',
+                corrupt: '❌ Архив повреждён — восстановление отменено',
+                failed: '❌ Ошибка: ' + (s.error || ''),
+                FATAL: '❌ КРИТИЧНО: ' + (s.error || '') + ' — см. INSTALL «Если восстановление не удалось»',
+            };
+            if (alert && labels[s.state]) {
+                alert.innerHTML = '<div class="alert ' + (s.state === 'restored' ? 'alert--success' : s.state === 'running' ? 'alert--info' : 'alert--error') + '">' + labels[s.state] + '</div>';
+            }
+            if (s.state === 'running') setTimeout(tick, 5000);
+        };
+        tick();
     }
 };

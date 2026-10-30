@@ -208,6 +208,10 @@ func main() {
 	mux.Handle("GET /api/admin/backup/incidents", jwtMW(adminMW(http.HandlerFunc(backupHandler.GetIncidents))))
 	mux.Handle("GET /api/admin/backup/status", jwtMW(adminMW(http.HandlerFunc(backupHandler.GetStatus))))
 	mux.Handle("POST /api/admin/backup/run", jwtMW(adminMW(http.HandlerFunc(backupHandler.RunBackup))))
+	mux.Handle("GET /api/admin/backup/files", jwtMW(adminMW(http.HandlerFunc(backupHandler.ListFiles))))
+	mux.Handle("POST /api/admin/backup/files/{name}/verify", jwtMW(adminMW(http.HandlerFunc(backupHandler.VerifyFile))))
+	mux.Handle("POST /api/admin/backup/restore", jwtMW(superAdminMW(http.HandlerFunc(backupHandler.Restore))))
+	mux.Handle("GET /api/admin/backup/restore/status", jwtMW(adminMW(http.HandlerFunc(backupHandler.GetRestoreStatus))))
 
 	mux.HandleFunc("GET /api/mcp-client-types", mcpClientTypeHandler.List)
 

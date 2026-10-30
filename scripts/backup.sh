@@ -7,7 +7,8 @@
 # Usage:
 #   ./scripts/backup.sh                   # ручной бэкап
 #   ./scripts/backup.sh --scheduled       # запуск по расписанию (cron)
-#   ./scripts/backup.sh --restore <file>  # восстановление из бэкапа
+#   ./scripts/backup.sh --restore <file>  # восстановление из бэкапа (см. план GATE!)
+#   ./scripts/backup.sh --verify <file>   # проверка целостности (readable|corrupt)
 #   ./scripts/backup.sh --status          # проверка статуса
 #
 # Environment:
@@ -59,10 +60,17 @@ readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 readonly PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 readonly BACKUP_DIR="${BACKUP_DIR:-/opt/mcp-is/backups}"
 readonly BACKUP_PID_FILE="/tmp/mcp-is-backup.pid"
-readonly BACKUP_LOCK_FILE="/tmp/mcp-is-backup.lock"
-readonly DB_CONTAINER="mcp_is_db"
-readonly DB_NAME="mcp_is"
-readonly DB_USER="admin"
+# Общий lock backup+restore живёт в BACKUP_DIR (общий том), НЕ в /tmp:
+# PID-неймспейсы контейнеров ломают kill -0, а mkdir атомарен через хост-ФС.
+readonly BACKUP_LOCK_FILE="${BACKUP_DIR}/.backup.lock"
+readonly DB_CONTAINER="${DB_CONTAINER:-mcp_is_db}"
+readonly APP_CONTAINER="${APP_CONTAINER:-mcp_is_app}"
+readonly NGINX_CONTAINER="${NGINX_CONTAINER:-mcp_is_nginx}"
+readonly DB_NAME="${DB_NAME:-mcp_is}"
+readonly DB_USER="${DB_USER:-admin}"
+readonly RESTORE_TMP="${BACKUP_DIR}/.restore-tmp"
+readonly RESTORE_STATUS_FILE="${BACKUP_DIR}/restore_status.json"
+readonly ONESHOT_PG_IMAGE="postgres:16-alpine"
 
 # Значения по умолчанию
 BACKUP_METHOD="${BACKUP_METHOD:-pg_basebackup}"
@@ -248,7 +256,8 @@ check_stuck_backup() {
         log_incident "stuck_backup" "Застрявший бэкап PID=$old_pid остановлен. Частичные данные удалены." "warning"
         
         ok "Застрявший бэкап остановлен, частичные данные очищены"
-        rm -f "$BACKUP_PID_FILE" "$BACKUP_LOCK_FILE"
+        rm -f "$BACKUP_PID_FILE"
+        rm -rf "$BACKUP_LOCK_FILE"
     fi
     
     return 0
@@ -256,34 +265,51 @@ check_stuck_backup() {
 
 cleanup_partial_backup() {
     # Удалить неполные .tar.gz файлы (меньше 1KB и старше 5 минут)
-    find "$BACKUP_DIR" -name "*.tar.gz" -size -1k -mmin +5 -delete 2>/dev/null || true
-    find "$BACKUP_DIR" -name "*.sql.gz" -size -1k -mmin +5 -delete 2>/dev/null || true
-    rm -f "$BACKUP_LOCK_FILE"
+    # pre_restore_* исключены: это страховочные дампы, они могут быть мелкими
+    find "$BACKUP_DIR" -name "*.tar.gz" -size -1k -mmin +5 ! -name "pre_restore_*" -delete 2>/dev/null || true
+    find "$BACKUP_DIR" -name "*.sql.gz" -size -1k -mmin +5 ! -name "pre_restore_*" -delete 2>/dev/null || true
+    rm -rf "$BACKUP_LOCK_FILE"
 }
 
 # ============================================================================
-# Блокировка запуска нового бэкапа
+# Блокировка запуска нового бэкапа / восстановления (общая)
 # ============================================================================
 
-acquire_backup_lock() {
-    if [ -f "$BACKUP_LOCK_FILE" ]; then
-        local lock_pid
-        lock_pid=$(cat "$BACKUP_LOCK_FILE")
-        if kill -0 "$lock_pid" 2>/dev/null; then
-            warn "Бэкап уже выполняется (PID=$lock_pid)"
+# acquire_shared_lock: mkdir-атомарный lock в общем томе BACKUP_DIR.
+# Используется и бэкапом, и restore — взаимное исключение обязательно.
+acquire_shared_lock() {
+    if ! mkdir "$BACKUP_LOCK_FILE" 2>/dev/null; then
+        # Lock существует: stale старше 2 часов — снимаем, иначе отказ
+        local lock_age
+        lock_age=$(( $(date +%s) - $(stat -c %Y "$BACKUP_LOCK_FILE" 2>/dev/null || echo 0) ))
+        if [ "$lock_age" -gt 7200 ]; then
+            warn "Снимаю stale-lock (возраст ${lock_age}с)"
+            rm -rf "$BACKUP_LOCK_FILE"
+            mkdir "$BACKUP_LOCK_FILE" 2>/dev/null || { warn "Бэкап/восстановление уже выполняется"; return 1; }
+        else
+            warn "Бэкап или восстановление уже выполняется (lock возраст ${lock_age}с)"
             return 1
         fi
-        rm -f "$BACKUP_LOCK_FILE"
     fi
-    
-    echo $$ > "$BACKUP_LOCK_FILE"
+    echo "$(hostname) $$ $(date +%s)" > "$BACKUP_LOCK_FILE/owner"
+    trap 'rm -rf "$BACKUP_LOCK_FILE" "$BACKUP_PID_FILE"' EXIT
+}
+
+acquire_backup_lock() {
+    acquire_shared_lock || return 1
     echo $$ > "$BACKUP_PID_FILE"
-    trap 'rm -f "$BACKUP_LOCK_FILE" "$BACKUP_PID_FILE"' EXIT
 }
 
 # ============================================================================
 # Бэкап pg_basebackup
 # ============================================================================
+
+write_sha256() {
+    local file="$1"
+    if command -v sha256sum >/dev/null 2>&1; then
+        (cd "$(dirname "$file")" && sha256sum "$(basename "$file")" > "$(basename "$file").sha256") 2>/dev/null || true
+    fi
+}
 
 do_backup_pg_basebackup() {
     local timestamp
@@ -302,10 +328,11 @@ do_backup_pg_basebackup() {
         pg_basebackup -U "$DB_USER" -Ft -z -Xs -D /tmp/pgbackup 2>&1; then
         
         # Скопировать из контейнера
-        docker cp "mcp_is_db:/tmp/pgbackup/" "/tmp/pgbackup/"
+        docker cp "$DB_CONTAINER:/tmp/pgbackup/" "/tmp/pgbackup/"
         tar -czf "$backup_file" -C /tmp/pgbackup .
         rm -rf /tmp/pgbackup/
         docker exec -i "$DB_CONTAINER" rm -rf /tmp/pgbackup
+        write_sha256 "$backup_file"
         
         local end_time
         end_time=$(date +%s)
@@ -349,6 +376,7 @@ do_backup_pg_dump() {
     
     if docker exec -i "$DB_CONTAINER" \
         pg_dump -U "$DB_USER" "$DB_NAME" 2>/dev/null | gzip > "$backup_file"; then
+        write_sha256 "$backup_file"
         
         local end_time
         end_time=$(date +%s)
@@ -480,6 +508,8 @@ cleanup_old_backups() {
     
     find "$BACKUP_DIR" -name "db_*.tar.gz" -mtime +$BACKUP_RETENTION_DAYS -delete 2>/dev/null || true
     find "$BACKUP_DIR" -name "db_*.sql.gz" -mtime +$BACKUP_RETENTION_DAYS -delete 2>/dev/null || true
+    # sha256-сайдкары сиротеют без своих архивов — чистим по той же ретенции
+    find "$BACKUP_DIR" -name "db_*.sha256" -mtime +$BACKUP_RETENTION_DAYS -delete 2>/dev/null || true
     
     local count_after
     count_after=$(find "$BACKUP_DIR" -name "db_*" -type f | wc -l)
@@ -529,8 +559,175 @@ check_missed_backups() {
 }
 
 # ============================================================================
-# Восстановление из бэкапа
+# Восстановление из бэкапа (steps 0-6, план eager-canyon rev.4)
 # ============================================================================
+
+# restore_status пишет машиночитаемый статус для UI-поллинга.
+restore_status() {
+    local state="$1" phase="$2" error="${3:-}"
+    local tmp="${RESTORE_STATUS_FILE}.tmp"
+    cat > "$tmp" <<EOF
+{"state":"$state","file":"$(basename "${RESTORE_FILE:-}")","phase":"$phase","started_at":"${RESTORE_STARTED_AT:-}","finished_at":"$(date -u +%Y-%m-%dT%H:%M:%SZ)","error":"$error"}
+EOF
+    mv "$tmp" "$RESTORE_STATUS_FILE"
+}
+
+# step0_verify: проверка целостности БЕЗ побочек в БД.
+# 0 = ok; 1 = повреждён/нечитаем. Поддерживает обе раскладки тара
+# (корневая `tar -C dir .` и вложенная `pg_basebackup/`) — формат писался
+# разными версиями скрипта, старые бэкапы уже лежат на диске.
+step0_verify() {
+    local backup_file="$1"
+
+    [ -f "$backup_file" ] || { fail "Файл не найден: $backup_file"; return 1; }
+
+    # sha256-сайдкар (если есть) — быстрый признак порчи
+    if [ -f "$backup_file.sha256" ]; then
+        if ! (cd "$(dirname "$backup_file")" && sha256sum -c "$(basename "$backup_file").sha256" >/dev/null 2>&1); then
+            fail "sha256 не совпал — файл повреждён"
+            return 1
+        fi
+        ok "sha256 совпал"
+    fi
+
+    # Свободное место ≥ 2× файла (распаковка + страховочный дамп)
+    local need_kb avail_kb
+    need_kb=$(( $(stat -c %s "$backup_file") / 1024 * 2 ))
+    avail_kb=$(df -P "$BACKUP_DIR" | awk 'NR==2{print $4}')
+    if [ "$avail_kb" -lt "$need_kb" ]; then
+        fail "Недостаточно места: нужно ~${need_kb}KB, доступно ${avail_kb}KB"
+        return 1
+    fi
+
+    gzip -t "$backup_file" 2>/dev/null || { fail "gzip -t: архив повреждён"; return 1; }
+
+    case "$backup_file" in
+        *.tar.gz)
+            tar -tzf "$backup_file" >/dev/null 2>&1 || { fail "tar -tzf: архив повреждён"; return 1; }
+            rm -rf "$RESTORE_TMP"; mkdir -p "$RESTORE_TMP"
+            tar -xzf "$backup_file" -C "$RESTORE_TMP" 2>/dev/null || { fail "распаковка внешнего архива"; rm -rf "$RESTORE_TMP"; return 1; }
+
+            # Обе раскладки: base.tar.gz в корне или в pg_basebackup/
+            local base_dir=""
+            if [ -f "$RESTORE_TMP/base.tar.gz" ]; then
+                base_dir="$RESTORE_TMP"
+            elif [ -f "$RESTORE_TMP/pg_basebackup/base.tar.gz" ]; then
+                base_dir="$RESTORE_TMP/pg_basebackup"
+            else
+                fail "base.tar.gz не найден в архиве (ни в корне, ни в pg_basebackup/)"
+                rm -rf "$RESTORE_TMP"; return 1
+            fi
+            gzip -t "$base_dir/base.tar.gz" 2>/dev/null || { fail "inner base.tar.gz повреждён"; rm -rf "$RESTORE_TMP"; return 1; }
+            # grep -c (не -q): при pipefail grep -q даёт SIGPIPE на tar → ложный fail
+            [ "$(tar -tzf "$base_dir/base.tar.gz" 2>/dev/null | grep -c "backup_label")" -gt 0 ] || {
+                fail "в base.tar.gz нет backup_label — это не снэпшот PostgreSQL"
+                rm -rf "$RESTORE_TMP"; return 1
+            }
+            echo "$base_dir" > "$RESTORE_TMP/.base_dir"
+            ok "Целостность подтверждена (раскладка: $(basename "$base_dir"))"
+            ;;
+        *.sql.gz)
+            gunzip -t "$backup_file" 2>/dev/null || { fail "gunzip -t: дамп повреждён"; return 1; }
+            ok "Целостность подтверждена (sql.gz)"
+            ;;
+        *)
+            fail "Неизвестный формат бэкапа"
+            return 1
+            ;;
+    esac
+    return 0
+}
+
+# verify_only — режим --verify: только шаг 0, ответ для API (readable|corrupt).
+verify_only() {
+    if step0_verify "$1"; then
+        echo "readable"
+        rm -rf "$RESTORE_TMP"
+        return 0
+    fi
+    echo "corrupt"
+    rm -rf "$RESTORE_TMP"
+    return 1
+}
+
+# pre_restore_dump: страховочный дамп текущей БД перед свапом.
+# Tripwire: >1KB и в нём есть строки users — иначе дамп бессмысленен.
+# Путь дампа → глобальная PRE_RESTORE_DUMP (не stdout: пайпы ломают exit code).
+PRE_RESTORE_DUMP=""
+pre_restore_dump() {
+    local ts dump
+    ts=$(date +%Y%m%d_%H%M%S)
+    dump="${BACKUP_DIR}/pre_restore_${ts}.sql.gz"
+    info "Страховочный дамп текущей БД → $(basename "$dump")"
+    if ! docker exec -i "$DB_CONTAINER" pg_dump -U "$DB_USER" "$DB_NAME" 2>/dev/null | gzip > "$dump"; then
+        rm -f "$dump"
+        fail "pg_dump не прошёл — восстановление отменено"
+        return 1
+    fi
+    if ! gunzip -t "$dump" 2>/dev/null || [ "$(stat -c %s "$dump")" -lt 1024 ]; then
+        rm -f "$dump"
+        fail "страховочный дамп пустой/битый — восстановление отменено"
+        return 1
+    fi
+    # grep -c (не -q): при pipefail grep -q даёт SIGPIPE на gunzip → ложный fail
+    if [ "$(gunzip -c "$dump" | grep -c "COPY public.users\|INSERT INTO public.users\|COPY users\|INSERT INTO users")" -eq 0 ]; then
+        fail "в страховочном дампе нет таблицы users — восстановление отменено"
+        return 1
+    fi
+    # Храним только 3 последних
+    ls -1t "${BACKUP_DIR}"/pre_restore_*.sql.gz 2>/dev/null | tail -n +4 | xargs -r rm -f
+    PRE_RESTORE_DUMP="$dump"
+    return 0
+}
+
+# rollback_previous: откат на pre_restore дамп (шаг 6).
+# mode=tar  — PGDATA заменён снэпшотом и не стартует: отодвигаем данные,
+#             initdb через mount schema.sql, применяем дамп.
+# mode=sql  — БД жива, схема public сломана применением дампа: только
+#             пересоздание схемы + дамп, PGDATA не трогаем!
+ROLLBACK_DONE=0
+rollback_previous() {
+    local dump="$1" mode="${2:-tar}"
+    ROLLBACK_DONE=1
+    warn "ОТКАТ ($mode): восстанавливаю предыдущее состояние из $(basename "$dump")"
+
+    if [ "$mode" = "tar" ]; then
+        # PGDATA — точка монтирования volume: её НЕЛЬЗЯ переименовать (EBUSY).
+        # Выносим СОДЕРЖИМОЕ в evidence-каталог на постоянном томе BACKUP_DIR.
+        local bad="${BACKUP_DIR}/pgdata.bad-$(date +%Y%m%d_%H%M%S)"
+        docker run --rm --volumes-from "$DB_CONTAINER" -v "$BACKUP_DIR":"$BACKUP_DIR" "$ONESHOT_PG_IMAGE" \
+            sh -c "mkdir -p '$bad' && find /var/lib/postgresql/data -mindepth 1 -maxdepth 1 -exec mv {} '$bad/' \; && chown -R postgres:postgres /var/lib/postgresql/data" \
+            || { restore_status "FATAL" "rollback" "не удалось отодвинуть PGDATA"; return 1; }
+
+        # initdb применит schema.sql из mount /docker-entrypoint-initdb.d
+        docker start "$DB_CONTAINER" >/dev/null 2>&1 || true
+        local i
+        for i in $(seq 1 30); do
+            docker exec "$DB_CONTAINER" pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1 && break
+            sleep 2
+        done
+    fi
+
+    # Общая часть: чистая схема + дамп (в дампе свои CREATE — схема не должна
+    # мешать; pgcrypto пересоздаём явно — DROP SCHEMA ломает его функции).
+    docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -q <<'SQL' || true
+DROP EXTENSION IF EXISTS pgcrypto CASCADE;
+DROP SCHEMA IF EXISTS public CASCADE;
+CREATE SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+GRANT ALL ON SCHEMA public TO public;
+SQL
+
+    if gunzip -c "$dump" | docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -q; then
+        restore_status "restored-previous" "rollback"
+        ok "Откат завершён: БД = состояние до восстановления"
+        docker start "$APP_CONTAINER" "$NGINX_CONTAINER" >/dev/null 2>&1 || true
+        return 0
+    fi
+    restore_status "FATAL" "rollback" "psql pre_restore завершился с ошибкой — см. INSTALL «Если восстановление не удалось»"
+    fail "ОТКАТ НЕ УДАЛСЯ. Инструкция: docs/setup/INSTALL.md, раздел «Если восстановление не удалось»"
+    return 1
+}
 
 do_restore() {
     local backup_file="$1"
@@ -539,47 +736,165 @@ do_restore() {
         fail "Файл бэкапа не найден: $backup_file"
         return 1
     fi
-    
+    # Файл обязан лежать внутри BACKUP_DIR (защита от path traversal и сюрпризов)
+    case "$(realpath "$backup_file" 2>/dev/null || echo "$backup_file")" in
+        "$(realpath "$BACKUP_DIR" 2>/dev/null || echo "$BACKUP_DIR")"/*) ;;
+        *) fail "Файл вне $BACKUP_DIR — отказ"; return 1 ;;
+    esac
+
+    RESTORE_FILE="$backup_file"
+    RESTORE_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
     step "Восстановление из: $(basename "$backup_file")"
-    
-    # shortcut: restore останавливает собственный контейнер app, если скрипт
-    # запущен внутри него — восстанавливать с хоста: /opt/mcp-is/scripts/backup.sh --restore <file>
-    info "Остановка контейнеров..."
-    docker stop mcp_is_app mcp_is_nginx
-    
-    # Распаковать бэкап
-    if [[ "$backup_file" == *.tar.gz ]]; then
-        info "Распаковка tar.gz бэкапа..."
-        docker exec -i "$DB_CONTAINER" sh -c "rm -rf /var/lib/postgresql/data/*"
-        tar -xzf "$backup_file" -C /tmp/
-        docker cp /tmp/pg_basebackup/. "${DB_CONTAINER}:/var/lib/postgresql/data/"
-        rm -rf /tmp/pg_basebackup/
-        
-        # Настроить восстановление
-        docker exec -i "$DB_CONTAINER" \
-            sh -c "touch /var/lib/postgresql/data/recovery.signal"
-    elif [[ "$backup_file" == *.sql.gz ]]; then
-        info "Восстановление из SQL-дампа..."
-        gunzip -c "$backup_file" | docker exec -i "$DB_CONTAINER" \
-            psql -U "$DB_USER" -d "$DB_NAME" -q
-    else
-        fail "Неизвестный формат бэкапа"
+
+    # Lock: restore и backup взаимно исключаемы (shared lock в общем томе)
+    if ! acquire_shared_lock; then
+        restore_status "failed" "lock" "бэкап или восстановление уже выполняется"
         return 1
     fi
-    
-    # Запустить контейнеры
-    info "Запуск контейнеров..."
-    docker start "$DB_CONTAINER"
-    sleep 10
-    docker start mcp_is_app mcp_is_nginx
-    
-    # Проверка здоровья
-    sleep 10
-    if curl -sf http://localhost:8080/health >/dev/null 2>&1; then
-        ok "Восстановление завершено успешно"
-    else
-        warn "Восстановление завершено, но healthcheck не проходит"
+
+    # ── Шаг 0: целостность (без побочек в БД) ──
+    restore_status "running" "verify"
+    if ! step0_verify "$backup_file"; then
+        restore_status "corrupt" "verify" "архив не прошёл проверку целостности"
+        rm -rf "$RESTORE_TMP"
+        return 1
     fi
+
+    # ── Шаг 2: страховочный дамп (до любых разрушений) ──
+    restore_status "running" "pre_restore_dump"
+    if ! pre_restore_dump; then
+        restore_status "failed" "pre_restore_dump" "страховочный дамп не создан"
+        rm -rf "$RESTORE_TMP"
+        return 1
+    fi
+    local safety_dump="$PRE_RESTORE_DUMP"
+
+    # trap: при обрыве ПОСЛЕ начала свапа (SIGTERM/EXIT) — автоматический откат
+    # к страховочному дампу; иначе просто вернуть контейнеры и снять lock.
+    # Используем PRE_RESTORE_DUMP (глобальная): local-scope do_restore к моменту
+    # срабатывания EXIT-трапа уже распакован (set -e внутри функции → shell exit).
+    SWAP_STARTED=0
+    RESTORE_DONE=0
+    RESTORE_MODE="tar"
+    on_restore_exit() {
+        if [ "$SWAP_STARTED" = "1" ] && [ "$RESTORE_DONE" != "1" ] && [ "$ROLLBACK_DONE" != "1" ]; then
+            warn "Восстановление прервано во время свапа — автоматический откат"
+            rollback_previous "$PRE_RESTORE_DUMP" "$RESTORE_MODE" || true
+        else
+            docker start "$DB_CONTAINER" "$APP_CONTAINER" "$NGINX_CONTAINER" >/dev/null 2>&1 || true
+        fi
+        rm -rf "$BACKUP_LOCK_FILE" "$RESTORE_TMP"
+    }
+    trap on_restore_exit EXIT
+    # bash не выполняет EXIT-трап при «голом» SIGTERM/SIGINT — переводим их в exit
+    trap 'exit 143' TERM INT
+
+    case "$backup_file" in
+        *.tar.gz)
+            local base_dir
+            base_dir=$(cat "$RESTORE_TMP/.base_dir")
+
+            # ── Шаг 3+4: подготовка и переключение ──
+            restore_status "running" "swap"
+            SWAP_STARTED=1
+            info "Остановка контейнеров (app → nginx → db)..."
+            docker stop "$APP_CONTAINER" "$NGINX_CONTAINER" "$DB_CONTAINER" >/dev/null 2>&1 || true
+
+            info "Установка снэпшота в volume db_data (one-shot контейнер)..."
+            # Раскладка тара зависит от версии бэкапа — приводим к единой в RESTORE_TMP
+            # pg_wal.tar.gz содержит содержимое pg_wal/ БЕЗ префикса — распаковывать
+            # внутрь $PGDATA/pg_wal/ (не в корень: иначе WAL не находит postgres).
+            local wal_arg="" wal_src=""
+            if [ -f "$base_dir/pg_wal.tar.gz" ]; then
+                wal_src="$base_dir/pg_wal.tar.gz"
+            elif [ -f "$RESTORE_TMP/pg_wal.tar.gz" ]; then
+                wal_src="$RESTORE_TMP/pg_wal.tar.gz"
+            fi
+            if [ -n "$wal_src" ]; then
+                [ "$wal_src" = "$RESTORE_TMP/pg_wal.tar.gz" ] || cp "$wal_src" "$RESTORE_TMP/pg_wal.tar.gz"
+                wal_arg="mkdir -p /var/lib/postgresql/data/pg_wal && tar -xzf $RESTORE_TMP/pg_wal.tar.gz -C /var/lib/postgresql/data/pg_wal &&"
+            fi
+            if ! docker run --rm --volumes-from "$DB_CONTAINER" -v "$RESTORE_TMP":"$RESTORE_TMP" "$ONESHOT_PG_IMAGE" \
+                sh -c "rm -rf /var/lib/postgresql/data/* &&
+                       tar -xzf $base_dir/base.tar.gz -C /var/lib/postgresql/data &&
+                       $wal_arg
+                       chown -R postgres:postgres /var/lib/postgresql/data"; then
+                warn "Установка снэпшота не удалась — откат"
+                rollback_previous "$safety_dump"
+                return 1
+            fi
+
+            # ── Шаг 5: старт + проверка ──
+            restore_status "running" "start"
+            info "Запуск базы..."
+            docker start "$DB_CONTAINER" >/dev/null 2>&1
+            local up=0
+            for i in $(seq 1 30); do
+                if docker exec "$DB_CONTAINER" pg_isready -U "$DB_USER" -d "$DB_NAME" >/dev/null 2>&1; then up=1; break; fi
+                sleep 2
+            done
+            if [ "$up" != "1" ] || \
+               ! docker exec "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -t -A -c "SELECT count(*) FROM users" >/dev/null 2>&1; then
+                warn "БД не стартовала или users недоступна — откат"
+                rollback_previous "$safety_dump"
+                return 1
+            fi
+            info "Запуск app и nginx..."
+            docker start "$APP_CONTAINER" "$NGINX_CONTAINER" >/dev/null 2>&1 || true
+            sleep 5
+            if docker exec "$APP_CONTAINER" wget -qO- http://localhost:8080/health >/dev/null 2>&1; then
+                ok "Healthcheck прошёл"
+            else
+                warn "Healthcheck не прошёл (app поднимается дольше) — проверьте вручную"
+            fi
+            ;;
+
+        *.sql.gz)
+            # sql.gz-путь: останавливаем только app, БД живая.
+            # DROP SCHEMA обязателен: иначе наложение дампа на живую схему коллизит.
+            restore_status "running" "sql_restore"
+            RESTORE_MODE="sql"
+            SWAP_STARTED=1
+            info "Восстановление из SQL-дампа (остановка app)..."
+            docker stop "$APP_CONTAINER" >/dev/null 2>&1 || true
+
+            if ! docker exec -i "$DB_CONTAINER" psql -U "$DB_USER" -d "$DB_NAME" -q <<'SQL'
+DROP EXTENSION IF EXISTS pgcrypto CASCADE;
+DROP SCHEMA IF EXISTS public CASCADE;
+CREATE SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+GRANT ALL ON SCHEMA public TO public;
+SQL
+            then
+                warn "DROP SCHEMA не прошёл — откат"
+                rollback_previous "$safety_dump" "sql"
+                return 1
+            fi
+
+            if gunzip -c "$backup_file" | docker exec -i "$DB_CONTAINER" \
+                psql -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -q; then
+                ok "SQL-дамп применён"
+            else
+                warn "psql завершился с ошибкой (ON_ERROR_STOP) — откат"
+                rollback_previous "$safety_dump" "sql"
+                return 1
+            fi
+
+            restore_status "running" "start"
+            docker start "$APP_CONTAINER" >/dev/null 2>&1 || true
+            sleep 5
+            if docker exec "$APP_CONTAINER" wget -qO- http://localhost:8080/health >/dev/null 2>&1; then
+                ok "Healthcheck прошёл"
+            else
+                warn "Healthcheck не прошёл — проверьте вручную"
+            fi
+            ;;
+    esac
+
+    rm -rf "$RESTORE_TMP"
+    RESTORE_DONE=1
+    restore_status "restored" "done"
+    ok "Восстановление завершено успешно"
 }
 
 # ============================================================================
@@ -668,6 +983,10 @@ main() {
             do_restore "${2:-}"
             ;;
             
+        --verify)
+            verify_only "${2:-}"
+            ;;
+            
         --status)
             show_status
             ;;
@@ -691,7 +1010,7 @@ main() {
             ;;
             
         *)
-            echo "Usage: $0 [--scheduled|--restore <file>|--status]"
+            echo "Usage: $0 [--scheduled|--restore <file>|--verify <file>|--status]"
             return 1
             ;;
     esac

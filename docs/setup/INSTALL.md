@@ -187,21 +187,63 @@ docker compose up -d --build
 > **Мажорные версии PostgreSQL.** Снэпшот `pg_basebackup` восстанавливается только в ту же мажорную версию PG (например 16 → 16). При обновлении PG (15 → 16 и т.п.) переносите данные **SQL-дампом** `pg_dump` — он переносим между мажорными версиями.
 
 Выполняйте команды **на хосте от root** (не из app-контейнера — restore останавливает контейнеры).
+Восстановление также доступно в админке (раздел «Бэкапы») — super_admin, с предупреждением
+и автоматическим страховочным дампом.
 
 ### Восстановление из снэпшота (tar.gz)
 
 ```bash
-# Скрипт остановит app/nginx, распакует снэпшот в БД, запустит всё обратно
+# Скрипт проверит архив, сделает страховочный дамп текущей БД,
+# остановит app/nginx/db, распакует снэпшот, запустит всё обратно
 sudo /opt/mcp-is/scripts/backup.sh --restore /opt/mcp-is/backups/db_YYYYMMDD_HHMMSS.tar.gz
 ```
+
+Порядок действий скрипта: проверка целостности (sha256/gzip/tar/backup_label) →
+страховочный дамп `pre_restore_*.sql.gz` → остановка контейнеров → установка снэпшота →
+старт и проверка. При сбое — автоматический откат к страховочному дампу.
 
 ### Восстановление из SQL-дампа (sql.gz)
 
 ```bash
-# Дамп применяется поверх работающей БД (без остановки)
-gunzip -c /opt/mcp-is/backups/db_YYYYMMDD_HHMMSS.sql.gz | \
-  docker exec -i mcp_is_db psql -U admin -d mcp_is
+# Скрипт остановит app, очистит схему public (DROP SCHEMA — иначе наложение
+# дампа на живую схему даёт коллизии), применит дамп с ON_ERROR_STOP
+sudo /opt/mcp-is/scripts/backup.sh --restore /opt/mcp-is/backups/db_YYYYMMDD_HHMMSS.sql.gz
 ```
+
+### Проверка целостности без восстановления
+
+```bash
+sudo /opt/mcp-is/scripts/backup.sh --verify /opt/mcp-is/backups/db_YYYYMMDD_HHMMSS.tar.gz
+# → readable | corrupt
+```
+
+### Если восстановление не удалось
+
+1. **Смотрим статус:** `cat /opt/mcp-is/backups/restore_status.json` — поля `state`, `phase`, `error`.
+2. **Автоматический откат** (`state: restored-previous`): скрипт уже вернул БД к состоянию
+   до восстановления из `pre_restore_*.sql.gz`. Проверьте сайт и при необходимости
+   повторите восстановление другим файлом.
+3. **`state: FATAL`** — откат не удался. Действия на хосте:
+   ```bash
+   # a) битый PGDATA отодвинут в сторону (доказательства сохранены):
+   docker ps -a | grep mcp_is_db
+   docker run --rm --volumes-from mcp_is_db -v /opt/mcp-is/backups:/b alpine \
+     ls -la /var/lib/postgresql/data.bad-*   # или /b — ищите каталог .bad-<timestamp>
+
+   # b) чистая инициализация: PGDATA пуст → entrypoint выполнит initdb + schema.sql
+   docker start mcp_is_db
+   sleep 10 && docker exec mcp_is_db pg_isready -U admin -d mcp_is
+
+   # c) применяем последний страховочный дамп:
+   gunzip -c /opt/mcp-is/backups/pre_restore_ГОД_МЕС_ДД_ЧЧ_ММ_СС.sql.gz | \
+     docker exec -i mcp_is_db psql -U admin -d mcp_is -v ON_ERROR_STOP=1
+
+   # d) запускаем остальное:
+   docker start mcp_is_app mcp_is_nginx
+   ```
+4. Если и это не помогло — восстановитесь SQL-дампом на чистую базу (раздел выше) и
+   обратитесь к администратору. **Прод-БД не трогайте без необходимости** —
+   сначала воспроизводите проблему на throwaway-копии.
 
 ### Файлы проекта
 
