@@ -1,53 +1,43 @@
 # Changelog
 
-## [Unreleased] — backup restore: UI + безопасный restore-скрипт
+## [0.7.6] — 2026-10-30 (billing gate, безопасность аккаунтов, restore из бэкапа, настраиваемая цена)
 
 ### Добавлено
+- **Биллинг-гейт MCP-данных**: вход в приложение всегда бесплатный; при неоплаченном периоде вызовы MCP-инструментов магазина возвращают мягкое пояснение (ИИ сообщает о периоде вместо данных). Статус проверяется лениво (TTL `active` 24ч / `unpaid` 1ч), `billing_until` — локально на каждом вызове (отсечение в середине дня). Баннер «Оплатить/Продлить» (`billing_pay_url`).
+- **«Стоимость подписки» в настройках сервера** (Админ → Сервер, super_admin): `billing_monthly` в `server_settings`, hot-reload без рестарта. `0` = бесплатно (гейт прозрачен), `>0` = сумма RecurringApplicationCharge. Env `BILLING_MONTHLY` = значение по умолчанию/фолбэк. Настройка не пересоздаёт уже созданный charge.
 - **Восстановление из бэкапа в админке** («Бэкапы», super_admin): список файлов на диске (дата/тип/размер/sha256), «Проверить» (целостность без изменений в БД), «Восстановить» (модалка с предупреждением о простое), «Копировать команду» (CLI-фолбэк), поллинг статуса, блок «Как это работает».
 - **Restore-скрипт переписан (steps 0–6)**: проверка целостности (sha256/gzip/tar/backup_label, обе раскладки тара) → страховочный дамп `pre_restore_*.sql.gz` (tripwire >1KB + users) → свап → верификация → **автоматический откат** при любом сбое (в т.ч. kill mid-swap). Статус-файл `restore_status.json`, `.sha256`-сайдкары на новых бэкапах.
 - API: `GET /api/admin/backup/files`, `POST …/files/{name}/verify`, `POST …/restore` (super_admin, single-flight 409, preflight образа), `GET …/restore/status`. Path-escape юнит-тесты.
 - `backup.sh --verify <file>` → `readable|corrupt`.
-- INSTALL.md: раздел «Если восстановление не удалось»; убрана ложь «дамп поверх работающей БД (без остановки)».
-
-### Исправлено
-- **Restore был сломан**: несовпадение раскладки тара (`pg_basebackup/` vs корень), `rm -rf` данных на работающей БД, sql-наложение без DROP SCHEMA, WAL распаковывался в корень PGDATA вместо `pg_wal/`.
-- Общий lock backup+restore в `$BACKUP_DIR/.backup.lock` (mkdir-атомарный, stale >2ч) — взаимное исключение восстановления и бэкапа.
-- `pre_restore_*` исключены из `find -size -1k`-чистки.
-
-### GATE
-- 13/13 сценариев на throwaway-compose (happy path tar+sql, битые архивы, отказ дампа, kill mid-swap, мусорный PGDATA, lock, 409, disk-full, обрыв sql) — см. план `1793355392246-quick-cactus`.
-
-## [Unreleased] — настраиваемая стоимость подписки
-
-### Добавлено
-- **«Стоимость подписки» в настройках сервера** (Админ → Сервер, super_admin): `billing_monthly` в `server_settings`, hot-reload без рестарта. `0` = бесплатно (гейт прозрачен), `>0` = сумма RecurringApplicationCharge. Env `BILLING_MONTHLY` = значение по умолчанию/фолбэк. Настройка не пересоздаёт уже созданный charge.
-
-## [Unreleased] — favicon
-
-### Добавлено
+- **Привязка магазина к существующему аккаунту через OTP-код** (`/api/link-code/send|verify`): 6 цифр, TTL 10 мин, одноразовый, ≤5 попыток → инвалидация, cooldown ресенда ~90с. Верифицированный аккаунт линкуется без смены пароля (вариант B); «мёртвый» (неподтверждённая регистрация) — пароль отзывается + `require_password_change`.
 - `favicon.ico` (16/32/48) + `favicon.svg` (метка «M» в цветах интерфейса), `<link rel="icon">` в `index.html`. nginx/deb не менялись — `.ico` уже отдаётся статикой.
-
-## [Unreleased] — безопасность autologin: one-time код без URL, хвосты OTP
+- Шаблоны писем `login_code`, `shop_linked` / `shop_unlinked`.
+- INSTALL.md: раздел «Если восстановление не удалось»; убрана ложь «дамп поверх работающей БД (без остановки)». TROUBLESHOOTING.md: «Битый бэкап / нет доступа в админку».
+- Тесты: race exchange (один победитель), CSRF-негатив, e2e cookie-handoff, anti-takeover TTL, порядок burn OTP, path-escape backup API, сид шаблонов.
 
 ### Безопасность
 - **Утечка MCP-ключа в URL устранена**: one-time код autologin больше не содержит сырой ключ (был внутри HMAC payload) и не передаётся через URL (`/onboarding?code=…` утекал в историю/логи/Referer). Теперь серверный одноразовый стор (TTL 2 мин, атомарное сжигание — replay невозможен), передача через HttpOnly-cookie `mcp_onboarding`.
+- **Verify-before-use для публичной регистрации** (инвариант «пароль = владелец ящика»): `users.email_verified` — Register создаёт аккаунт с нерабочим паролем, пароль ставит подтвердивший (форма «код + пароль»); login-gate 403 `require_email`; lazy-чистка неподтверждённых регистраций (24ч).
+- **Смена e-mail пользователем удалена** (anti pre-hijack, USENIX Classic-Federated Merge) — только вручную администратором; e-mail нормализуется lower+trim при записи/поиске.
 - **Порядок сжигания OTP** (`link-code/verify`): код сгорает только после проверки установки/аккаунта — сбой lookup больше не уничтожает валидный код пользователя.
 - **TTL `pending_link` (48 ч)**: протухшая заявка на привязку сбрасывается (включая `user_id`) — anti-takeover: autologin не выдаёт сессию без логина по старой привязке.
 - **409 «account conflict»** — редирект на SPA-экран с пояснением вместо голого текста.
 - **Уведомления NIST**: письма «Магазин привязан» / «Магазин отвязан» при привязке и удалении приложения (best-effort).
+- **Флуд-защита почтовых операций**: отдельный rate limit (5/ч) на register/forgot-password/verify/link-code.
 
 ### Изменено
 - `POST /api/exchange-code`: код из cookie или body (fallback), одноразовый.
 - `NewAppHandler`: убран параметр `hmacSecret` (HMAC-коды заменены серверным стором).
 
-### Добавлено
-- Шаблоны писем `shop_linked` / `shop_unlinked`.
-- Тесты: race exchange (один победитель), CSRF-негатив, e2e cookie-handoff, anti-takeover TTL, порядок burn OTP, сид шаблонов.
-
-## [Unreleased] — nginx config cleanup
-
 ### Исправлено
+- **Restore был сломан**: несовпадение раскладки тара (`pg_basebackup/` vs корень), `rm -rf` данных на работающей БД, sql-наложение без DROP SCHEMA, WAL распаковывался в корень PGDATA вместо `pg_wal/`.
+- **`email_verified` не выбирался в `GetByID`/`GetByEmail`** — zero-value false запускал условный seize верифицированных пользователей при OTP-линке.
+- Общий lock backup+restore в `$BACKUP_DIR/.backup.lock` (mkdir-атомарный, stale >2ч) — взаимное исключение восстановления и бэкапа.
+- `pre_restore_*` исключены из `find -size -1k`-чистки.
 - **nginx warn'ы**: `listen … http2` (deprecated) → `http2 on;`; убран `ssl_stapling`/`ssl_stapling_verify` (Let's Encrypt серт без OCSP responder URL — stapling игнорировался). `nginx -t` без предупреждений.
+
+### GATE
+- 13/13 сценариев restore на throwaway-compose (happy path tar+sql, битые архивы, отказ дампа, kill mid-swap, мусорный PGDATA, lock, 409, disk-full, обрыв sql) — см. план `1793355392246-quick-cactus`.
 
 ## [0.7.5] — 2026-10-25 (expired-login cache leak)
 

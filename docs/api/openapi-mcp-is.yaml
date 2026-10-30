@@ -10,7 +10,7 @@ info:
     
     ## Формат ответов
     Все ответы в формате JSON.
-  version: 0.7.5
+  version: 0.7.6
   contact:
     name: MCP IS
     url: https://github.com/chubuk/mcp-is
