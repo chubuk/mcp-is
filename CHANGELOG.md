@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased] — favicon
+
+### Добавлено
+- `favicon.ico` (16/32/48) + `favicon.svg` (метка «M» в цветах интерфейса), `<link rel="icon">` в `index.html`. nginx/deb не менялись — `.ico` уже отдаётся статикой.
+
 ## [Unreleased] — безопасность autologin: one-time код без URL, хвосты OTP
 
 ### Безопасность
