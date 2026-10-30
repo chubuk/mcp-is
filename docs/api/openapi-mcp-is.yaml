@@ -250,8 +250,33 @@ paths:
                   type: string
       responses:
         '200':
-          description: Привязка завершена (one-time code; require_password_change только для неподтверждённых аккаунтов)
+          description: Привязка завершена (one-time code для /api/exchange-code; require_password_change только для неподтверждённых аккаунтов)
         '400':
+          description: Неверный или истёкший код
+
+  /api/exchange-code:
+    post:
+      summary: Обмен one-time кода на JWT + MCP-ключ (autologin / link-code)
+      tags: [Auth]
+      description: >
+        Код приходит в HttpOnly-cookie mcp_onboarding (autologin) или в теле
+        запроса (fallback). В URL код не передаётся. Одноразовый: повтор → 401.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: Код из тела (если cookie отсутствует)
+      responses:
+        '200':
+          description: token, user_id, nickname, role, api_key
+        '400':
+          description: Код не передан
+        '401':
           description: Неверный или истёкший код
 
   /api/shops:

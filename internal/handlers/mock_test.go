@@ -576,9 +576,31 @@ func (m *mockAppInstallRepo) SetPendingLink(insalesID, userID string) error {
 		if a.UserID == "" { // mirrors SQL COALESCE(NULLIF(user_id,''), $2)
 			a.UserID = userID
 		}
+		a.UpdatedAt = time.Now().UTC().Format(time.RFC3339)
 		return nil
 	}
 	return fmt.Errorf("not found")
+}
+
+// PurgeStalePendingLink mirrors the SQL: reset abandoned pending_link rows to
+// the unbound installed state, clearing user_id (anti-takeover).
+func (m *mockAppInstallRepo) PurgeStalePendingLink(olderThanSeconds int64) (int64, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	cutoff := time.Now().UTC().Add(-time.Duration(olderThanSeconds) * time.Second)
+	var n int64
+	for _, a := range m.installs {
+		if a.Status != "pending_link" {
+			continue
+		}
+		updated, err := time.Parse(time.RFC3339, a.UpdatedAt)
+		if err != nil || updated.Before(cutoff) {
+			a.Status = "installed"
+			a.UserID = ""
+			n++
+		}
+	}
+	return n, nil
 }
 
 func (m *mockAppInstallRepo) LinkShop(insalesID, userID, shopID string) error {

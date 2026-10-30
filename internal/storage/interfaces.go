@@ -56,6 +56,7 @@ type AppInstallRepositoryInterface interface {
 	GetByInsalesID(insalesID string) (*AppInstall, error)
 	MarkUninstalled(insalesID string) error
 	SetPendingLink(insalesID, userID string) error
+	PurgeStalePendingLink(olderThanSeconds int64) (int64, error)
 	LinkShop(insalesID, userID, shopID string) error
 	SetUser(insalesID, userID string) error
 }

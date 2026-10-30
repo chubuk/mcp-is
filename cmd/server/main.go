@@ -111,7 +111,7 @@ func main() {
 	appHandler := handlers.NewAppHandler(
 		appInstallRepo, userRepo, shopRepo, aiKeyRepo,
 		aesCipher, jwtMgr, manager,
-		cfg.InSalesAppKey, cfg.InSalesSecretKey, cfg.Domain, cfg.JWTSecret,
+		cfg.InSalesAppKey, cfg.InSalesSecretKey, cfg.Domain,
 		cfg.BillingMonthly,
 	)
 	appHandler.SetEmailService(emailSvc)

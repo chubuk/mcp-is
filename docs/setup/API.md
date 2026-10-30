@@ -162,9 +162,11 @@
 
 #### POST /api/exchange-code
 
-Обмен one-time code (после autologin) на JWT и MCP-ключ.
+Обмен one-time code (после autologin) на JWT и MCP-ключ. Код приходит в
+HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле запроса (fallback);
+в URL код не передаётся. Одноразовый: повторный обмен тем же кодом → 401.
 
-**Тело:** `{ "code": "..." }` → `{ "token", "user_id", "nickname", "role", "api_key" }`
+**Тело:** `{ "code": "..." }` (опционально при cookie) → `{ "token", "user_id", "nickname", "role", "api_key" }`
 
 #### POST /api/shops/link-pending
 
@@ -181,7 +183,7 @@
 
 #### GET/PUT `/api/admin/email/templates/{key}`
 
-Шаблоны: `reset_password`, `verify_email`, `welcome`, `test`.  
+Шаблоны: `reset_password`, `verify_email`, `welcome`, `login_code`, `shop_linked`, `shop_unlinked`, `test`.  
 Поля: `subject`, `html_body`, `text_body`, `required_vars`. PUT валидирует шаблон (400 при ошибке парсинга).
 
 #### POST `/api/admin/email/templates/{key}/reset` — сброс к умолчанию  

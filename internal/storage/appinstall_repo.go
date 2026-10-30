@@ -100,6 +100,21 @@ func (r *AppInstallRepository) LinkShop(insalesID, userID, shopID string) error 
 	return nil
 }
 
+// PurgeStalePendingLink resets abandoned pending_link rows to the unbound
+// installed state. user_id MUST be cleared too: SetPendingLink writes it, and a
+// leftover binding would send autologin down the returning-user branch and issue
+// a session without login (anti-takeover hole).
+func (r *AppInstallRepository) PurgeStalePendingLink(olderThanSeconds int64) (int64, error) {
+	tag, err := r.db.Exec(context.Background(),
+		`UPDATE app_installs SET status = 'installed', user_id = NULL, updated_at = NOW()
+		 WHERE status = 'pending_link' AND updated_at < NOW() - make_interval(secs => $1)`,
+		olderThanSeconds)
+	if err != nil {
+		return 0, fmt.Errorf("purge stale pending links: %w", err)
+	}
+	return tag.RowsAffected(), nil
+}
+
 // SetUser sets the owning user without touching shop binding.
 func (r *AppInstallRepository) SetUser(insalesID, userID string) error {
 	_, err := r.db.Exec(context.Background(),

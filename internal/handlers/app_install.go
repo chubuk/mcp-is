@@ -2,9 +2,7 @@ package handlers
 
 import (
 	"context"
-	"crypto/hmac"
 	"crypto/rand"
-	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/hex"
 	"encoding/json"
@@ -37,7 +35,6 @@ type AppHandler struct {
 	appKey         string
 	secretKey      string
 	domain         string
-	hmacSecret     string
 	billingMonthly int // 0 = free (default)
 
 	// chargeFn overrides the InSales charge fetch in tests (nil = real API).
@@ -45,6 +42,7 @@ type AppHandler struct {
 
 	emailSvc *email.Service
 	codes    *codeStore
+	onboard  *onboardStore
 }
 
 func NewAppHandler(
@@ -55,15 +53,16 @@ func NewAppHandler(
 	aes *auth.AESCipher,
 	jwt *auth.JWTManager,
 	manager *core.AccountManager,
-	appKey, secretKey, domain, hmacSecret string,
+	appKey, secretKey, domain string,
 	billingMonthly int,
 ) *AppHandler {
 	return &AppHandler{
 		installs: installs, users: users, shops: shops, aiKeys: aiKeys,
 		aes: aes, jwt: jwt, manager: manager,
-		appKey: appKey, secretKey: secretKey, domain: domain, hmacSecret: hmacSecret,
+		appKey: appKey, secretKey: secretKey, domain: domain,
 		billingMonthly: billingMonthly,
 		codes:          newCodeStore(),
+		onboard:        newOnboardStore(),
 	}
 }
 
@@ -181,6 +180,7 @@ func (h *AppHandler) Uninstall(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
+	h.notifyShopEvent("shop_unlinked", inst.UserID, normalizeShopHost(shop))
 
 	slog.Info("app uninstalled", "insales_id", insalesID, "shop", normalizeShopHost(shop))
 	w.Header().Set("Cache-Control", "no-store")
@@ -243,6 +243,9 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Lazy TTL sweep BEFORE reading the install — a stale pending_link must be
+	// gone before the branches below see user_id (anti-takeover, critic #1).
+	h.purgeStalePendingLinks()
 	inst, err := h.installs.GetByInsalesID(insalesID)
 	if err != nil {
 		slog.Warn("app autologin: unknown install", "insales_id", insalesID)
@@ -313,19 +316,19 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 					slog.Warn("app autologin: billing check skipped", "error", berr, "insales_id", insalesID)
 				}
 			}
-			code, cerr := h.issueCode(user.ID, rawKey)
+			code, cerr := h.onboard.issue(user.ID, rawKey)
 			if cerr != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			slog.Info("app autologin: returning user", "insales_id", insalesID, "user_id", user.ID)
-			http.Redirect(w, r, "/onboarding?code="+code, http.StatusFound)
+			redirectOnboarding(w, r, code)
 			return
 		case inst.UserID != "" && inst.UserID != existing.ID:
 			// Email reassigned to another account — never rewrite ownership.
 			slog.Warn("app autologin: user conflict, refusing link", "insales_id", insalesID,
 				"inst_user_id", inst.UserID, "email_user_id", existing.ID)
-			http.Error(w, "account conflict", http.StatusConflict)
+			http.Redirect(w, r, "/onboarding?conflict=1", http.StatusFound)
 			return
 		default:
 			// Anti-takeover: never issue a session for a pre-existing account.
@@ -355,28 +358,54 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	code, err := h.issueCode(user.ID, rawKey)
+	code, err := h.onboard.issue(user.ID, rawKey)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	http.Redirect(w, r, "/onboarding?code="+code, http.StatusFound)
+	redirectOnboarding(w, r, code)
+}
+
+// redirectOnboarding hands the one-time code to the SPA via HttpOnly cookie —
+// never in the URL (browser history / proxy logs / Referer must not see it).
+func redirectOnboarding(w http.ResponseWriter, r *http.Request, code string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "mcp_onboarding",
+		Value:    code,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   true,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   120,
+	})
+	http.Redirect(w, r, "/onboarding", http.StatusFound)
 }
 
 // ExchangeCode handles POST /api/exchange-code — swaps the one-time code for a JWT (+ fresh MCP key).
+// The code arrives in the mcp_onboarding cookie (SPA autologin handoff) or in the
+// request body (fallback for cached SPA builds); it is never carried in a URL.
 func (h *AppHandler) ExchangeCode(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Code string `json:"code"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Code == "" {
+	_ = json.NewDecoder(r.Body).Decode(&req) // body is optional
+	code := req.Code
+	if code == "" {
+		if c, err := r.Cookie("mcp_onboarding"); err == nil {
+			code = c.Value
+		}
+	}
+	if code == "" {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
 		return
 	}
-	userID, rawKey, ok := h.consumeCode(req.Code)
+	userID, rawKey, ok := h.onboard.take(code)
 	if !ok {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid or expired code"})
 		return
 	}
+	// Consume the handoff cookie even on later failures — the code is already burned.
+	http.SetCookie(w, &http.Cookie{Name: "mcp_onboarding", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode})
 	user, err := h.users.GetByID(userID)
 	if err != nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid code"})
@@ -433,6 +462,7 @@ func (h *AppHandler) LinkCodeSend(w http.ResponseWriter, r *http.Request) {
 	}
 	// Ответы generic — не раскрываем состояние установки/аккаунта.
 	generic := map[string]any{"message": "Если магазин ожидает привязки, код отправлен."}
+	h.purgeStalePendingLinks()
 	inst, err := h.installs.GetByInsalesID(req.InsalesID)
 	if err != nil || inst.Status != "pending_link" || inst.UserID == "" {
 		writeJSON(w, http.StatusOK, generic)
@@ -476,10 +506,8 @@ func (h *AppHandler) LinkCodeVerify(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
 		return
 	}
-	if err := h.codes.verify("link:"+req.InsalesID, req.Code); err != nil {
-		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "неверный или истёкший код"})
-		return
-	}
+	// Burn the code only after the rest of the request validates — a failed
+	// lookup must not destroy a user's valid code.
 	inst, err := h.installs.GetByInsalesID(req.InsalesID)
 	if err != nil || inst.Status != "pending_link" || inst.UserID == "" {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "привязка недоступна"})
@@ -488,6 +516,10 @@ func (h *AppHandler) LinkCodeVerify(w http.ResponseWriter, r *http.Request) {
 	user, err := h.users.GetByID(inst.UserID)
 	if err != nil {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "привязка недоступна"})
+		return
+	}
+	if err := h.codes.verify("link:"+req.InsalesID, req.Code); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "неверный или истёкший код"})
 		return
 	}
 	// Инвариант (вариант B): пароль ставит только владелец ящика (при верификации),
@@ -523,7 +555,7 @@ func (h *AppHandler) LinkCodeVerify(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		return
 	}
-	code, err := h.issueCode(user.ID, rawKey)
+	code, err := h.onboard.issue(user.ID, rawKey)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		return
@@ -639,39 +671,38 @@ func (h *AppHandler) provisionUserAndShop(inst *storage.AppInstall, email, userN
 		return nil, "", err
 	}
 	inst.ShopID = shop // LinkShop writes DB only — keep the in-memory install in sync
+	if rawKey != "" {  // a new shop+key was created — a real link event, not a plain login
+		h.notifyShopEvent("shop_linked", userID, inst.ShopHost)
+	}
 	return user, rawKey, nil
 }
 
-// --- one-time codes (HMAC, short TTL). Payload: userID:exp:rawKey ---
-
-func (h *AppHandler) issueCode(userID, rawKey string) (string, error) {
-	exp := time.Now().Add(2 * time.Minute).Unix()
-	payload := fmt.Sprintf("%s:%d:%s", userID, exp, rawKey)
-	mac := hmac.New(sha256.New, []byte(h.hmacSecret))
-	mac.Write([]byte(payload))
-	return hex.EncodeToString(mac.Sum(nil)) + "." + payload, nil
+// notifyShopEvent sends a best-effort shop link/unlink notification (NIST):
+// a mail failure must never break the install/uninstall flow.
+func (h *AppHandler) notifyShopEvent(tmpl, userID, shopHost string) {
+	if h.emailSvc == nil || userID == "" {
+		return
+	}
+	user, err := h.users.GetByID(userID)
+	if err != nil || user.Email == "" {
+		return
+	}
+	go func() {
+		data := map[string]any{"Name": user.Nickname, "Shop": shopHost, "Date": time.Now().Format("02.01.2006 15:04")}
+		if err := h.emailSvc.SendTemplate(context.Background(), tmpl, user.Email, data); err != nil {
+			slog.Warn("shop event email", "template", tmpl, "error", err, "user_id", userID)
+		}
+	}()
 }
 
-func (h *AppHandler) consumeCode(code string) (string, string, bool) {
-	sig, payload, ok := strings.Cut(code, ".")
-	if !ok {
-		return "", "", false
+// --- helpers ---
+
+func (h *AppHandler) purgeStalePendingLinks() {
+	if n, err := h.installs.PurgeStalePendingLink(48 * 3600); err != nil {
+		slog.Warn("purge stale pending links", "error", err)
+	} else if n > 0 {
+		slog.Info("purge stale pending links", "count", n)
 	}
-	mac := hmac.New(sha256.New, []byte(h.hmacSecret))
-	mac.Write([]byte(payload))
-	want := hex.EncodeToString(mac.Sum(nil))
-	if subtle.ConstantTimeCompare([]byte(sig), []byte(want)) != 1 {
-		return "", "", false
-	}
-	parts := strings.SplitN(payload, ":", 3)
-	if len(parts) != 3 {
-		return "", "", false
-	}
-	var exp int64
-	if _, err := fmt.Sscanf(parts[1], "%d", &exp); err != nil || time.Now().Unix() > exp {
-		return "", "", false
-	}
-	return parts[0], parts[2], true
 }
 
 func normalizeShopHost(shop string) string {

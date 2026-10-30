@@ -166,7 +166,18 @@ const Auth = {
             const code = document.getElementById('link-code').value.trim();
             const r = await API.post('/api/link-code/verify', { insales_id: insalesId, code });
             if (r && r.ok && r.data.code) {
-                App.navigate('/onboarding?code=' + encodeURIComponent(r.data.code));
+                // Код меняем на JWT сразу в JS — без попадания в URL/историю.
+                const ex = await API.post('/api/exchange-code', { code: r.data.code });
+                if (ex && ex.ok) {
+                    API.setToken(ex.data.token);
+                    localStorage.setItem('nickname', ex.data.nickname);
+                    localStorage.setItem('role', ex.data.role);
+                    localStorage.setItem('user_id', ex.data.user_id);
+                    if (ex.data.api_key) localStorage.setItem('fresh_api_key', ex.data.api_key);
+                    App.navigate('/onboarding');
+                } else {
+                    Auth.showError('Не удалось обменять код. Откройте приложение из InSales ещё раз.');
+                }
             } else {
                 Auth.showError(r ? r.data.error : 'Ошибка сервера');
             }
@@ -180,8 +191,10 @@ const Auth = {
                 localStorage.setItem('fresh_api_key', res.data.api_key);
             }
             App.navigate('/onboarding');
+        } else if (res && res.status === 403) {
+            Auth.showError('Привязка недоступна: магазин уже привязан или ожидает подтверждения кодом с почты.');
         } else {
-            Auth.showError(res ? res.data.error : 'Не удалось привязать магазин');
+            Auth.showError(res && res.data && res.data.error ? res.data.error : 'Не удалось привязать магазин. Попробуйте войти заново.');
             App.navigate('/dashboard');
         }
     },
@@ -203,8 +216,16 @@ const Auth = {
 
     bindOnboarding() {
         const params = new URLSearchParams(location.search);
-        const code = params.get('code');
         const body = document.getElementById('onboarding-body');
+
+        // 409 «account conflict» — магазин привязан к другому аккаунту.
+        if (params.get('conflict') === '1') {
+            body.innerHTML = `
+                <div class="alert alert--error"><strong>Магазин уже привязан к другому аккаунту.</strong>
+                Смена владельца автоматически невозможна. Войдите в аккаунт-владелец или обратитесь к администратору.</div>
+                <p class="link"><a href="/login">🔑 Войти с паролем</a></p>`;
+            return;
+        }
 
         const showKey = (apiKey, mcpUrl) => {
             const url = mcpUrl || (location.origin + '/mcp');
@@ -224,20 +245,19 @@ const Auth = {
         };
 
         const stored = localStorage.getItem('fresh_api_key');
-        if (!code && stored) {
+        if (stored) {
             showKey(stored, location.origin + '/mcp');
             localStorage.removeItem('fresh_api_key');
             return;
         }
-        if (!code) {
-            if (params.get('billing') === 'pending') {
-                body.innerHTML = '<div class="alert alert--error"><strong>Текущий период не оплачен.</strong> Данные недоступны для ИИ до оплаты — продлите приложение в админке InSales.</div><p class="link"><a href="/dashboard">Перейти в панель</a></p>';
-                return;
-            }
-            body.innerHTML = '<p>Нет кода подключения. Откройте приложение из бэк-офиса InSales.</p>';
+        if (params.get('billing') === 'pending') {
+            body.innerHTML = '<div class="alert alert--error"><strong>Текущий период не оплачен.</strong> Данные недоступны для ИИ до оплаты — продлите приложение в админке InSales.</div><p class="link"><a href="/dashboard">Перейти в панель</a></p>';
             return;
         }
-        API.post('/api/exchange-code', { code }).then((res) => {
+        // Обмен кода: одноразовый код приходит в HttpOnly-куке (autologin) или
+        // в body (fallback для старых ссылок/кэша JS). В URL кода нет.
+        const legacyCode = params.get('code');
+        API.post('/api/exchange-code', legacyCode ? { code: legacyCode } : {}).then((res) => {
             if (res && res.ok) {
                 API.setToken(res.data.token);
                 localStorage.setItem('nickname', res.data.nickname);
@@ -254,7 +274,7 @@ const Auth = {
                     }
                 });
             } else {
-                body.innerHTML = '<p>Код недействителен или истёк. Откройте приложение из InSales ещё раз.</p>';
+                body.innerHTML = '<p>Код недействителен или истёк. Откройте приложение из InSales ещё раз.</p><p class="subtitle">Если сервер перезапускался — просто откройте приложение заново: код действует 2 минуты.</p>';
             }
         });
     },

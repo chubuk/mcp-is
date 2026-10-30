@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased] — безопасность autologin: one-time код без URL, хвосты OTP
+
+### Безопасность
+- **Утечка MCP-ключа в URL устранена**: one-time код autologin больше не содержит сырой ключ (был внутри HMAC payload) и не передаётся через URL (`/onboarding?code=…` утекал в историю/логи/Referer). Теперь серверный одноразовый стор (TTL 2 мин, атомарное сжигание — replay невозможен), передача через HttpOnly-cookie `mcp_onboarding`.
+- **Порядок сжигания OTP** (`link-code/verify`): код сгорает только после проверки установки/аккаунта — сбой lookup больше не уничтожает валидный код пользователя.
+- **TTL `pending_link` (48 ч)**: протухшая заявка на привязку сбрасывается (включая `user_id`) — anti-takeover: autologin не выдаёт сессию без логина по старой привязке.
+- **409 «account conflict»** — редирект на SPA-экран с пояснением вместо голого текста.
+- **Уведомления NIST**: письма «Магазин привязан» / «Магазин отвязан» при привязке и удалении приложения (best-effort).
+
+### Изменено
+- `POST /api/exchange-code`: код из cookie или body (fallback), одноразовый.
+- `NewAppHandler`: убран параметр `hmacSecret` (HMAC-коды заменены серверным стором).
+
+### Добавлено
+- Шаблоны писем `shop_linked` / `shop_unlinked`.
+- Тесты: race exchange (один победитель), CSRF-негатив, e2e cookie-handoff, anti-takeover TTL, порядок burn OTP, сид шаблонов.
+
 ## [Unreleased] — nginx config cleanup
 
 ### Исправлено

@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"crypto/rand"
+	"encoding/hex"
 	"errors"
 	"math/big"
 	"sync"
@@ -87,4 +88,52 @@ func pad6(n int64) string {
 		i--
 	}
 	return string(s[:])
+}
+
+// --- onboarding one-time exchange codes (SPA autologin handoff) ---
+
+const onboardTTL = 2 * time.Minute
+
+type onboardEntry struct {
+	userID  string
+	rawKey  string
+	expires time.Time
+}
+
+// onboardStore holds single-use onboarding payloads keyed by the code itself
+// (inverted vs codeStore: code → payload, not key → code). Single-VPS process:
+// codes lost on restart are simply re-requested via a fresh autologin.
+type onboardStore struct {
+	mu sync.Mutex
+	m  map[string]*onboardEntry
+}
+
+func newOnboardStore() *onboardStore {
+	return &onboardStore{m: make(map[string]*onboardEntry)}
+}
+
+// issue stores the payload under a fresh random code (TTL 2 min).
+func (s *onboardStore) issue(userID, rawKey string) (string, error) {
+	b := make([]byte, 16)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	code := hex.EncodeToString(b)
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.m[code] = &onboardEntry{userID: userID, rawKey: rawKey, expires: time.Now().Add(onboardTTL)}
+	return code, nil
+}
+
+// take atomically consumes the code: concurrent takes yield exactly one winner.
+func (s *onboardStore) take(code string) (string, string, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	e, ok := s.m[code]
+	if !ok || time.Now().After(e.expires) {
+		delete(s.m, code)
+		return "", "", false
+	}
+	delete(s.m, code)
+	return e.userID, e.rawKey, true
 }
