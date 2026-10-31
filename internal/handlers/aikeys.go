@@ -17,10 +17,11 @@ import (
 type AIKeyHandler struct {
 	keyRepo  storage.AIKeyRepositoryInterface
 	shopRepo storage.ShopRepositoryInterface
+	maxKeys  int // manual creation quota (0 = unlimited)
 }
 
-func NewAIKeyHandler(keyRepo storage.AIKeyRepositoryInterface, shopRepo storage.ShopRepositoryInterface) *AIKeyHandler {
-	return &AIKeyHandler{keyRepo: keyRepo, shopRepo: shopRepo}
+func NewAIKeyHandler(keyRepo storage.AIKeyRepositoryInterface, shopRepo storage.ShopRepositoryInterface, maxKeys int) *AIKeyHandler {
+	return &AIKeyHandler{keyRepo: keyRepo, shopRepo: shopRepo, maxKeys: maxKeys}
 }
 
 // AIKeyRequest is a merge-patch: nil fields are left unchanged.
@@ -99,6 +100,13 @@ func (h *AIKeyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, AIKeyResponse{Error: "invalid request body"})
 		return
+	}
+
+	if h.maxKeys > 0 {
+		if _, total, err := h.keyRepo.ListByUserIDFiltered(userID, 1, 1); err == nil && total >= h.maxKeys {
+			writeJSON(w, http.StatusForbidden, AIKeyResponse{Error: fmt.Sprintf("Достигнут лимит ИИ-ключей (%d)", h.maxKeys)})
+			return
+		}
 	}
 
 	shopID := ""

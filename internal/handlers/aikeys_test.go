@@ -12,7 +12,7 @@ import (
 func setupAIKeyHandler() (*AIKeyHandler, *mockAIKeyRepo, *mockShopRepo) {
 	keys := newMockAIKeyRepo()
 	shops := newMockShopRepo()
-	return NewAIKeyHandler(keys, shops), keys, shops
+	return NewAIKeyHandler(keys, shops, 20), keys, shops
 }
 
 func ptr(s string) *string { return &s }
@@ -279,5 +279,29 @@ func TestAIKeyDelete_ForeignUser(t *testing.T) {
 	}
 	if _, err := keys.GetByID(key.ID); err != nil {
 		t.Error("key must survive foreign delete attempt")
+	}
+}
+
+func TestAIKeyCreate_Limit(t *testing.T) {
+	keys := newMockAIKeyRepo()
+	shops := newMockShopRepo()
+	h := NewAIKeyHandler(keys, shops, 2)
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+
+	for i := 0; i < 2; i++ {
+		createAIKey(t, h, "user-1", shop.ID)
+	}
+
+	body, _ := json.Marshal(AIKeyRequest{Name: ptr("k3"), ShopID: ptr(shop.ID)})
+	req := httptest.NewRequest(http.MethodPost, "/api/ai-keys", bytes.NewReader(body))
+	req = req.WithContext(withUserID(req.Context(), "user-1"))
+	w := httptest.NewRecorder()
+	h.Create(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("third create at limit=2: got %d, want 403", w.Code)
+	}
+	if !strings.Contains(w.Body.String(), "лимит") {
+		t.Errorf("403 body should mention the limit: %s", w.Body.String())
 	}
 }

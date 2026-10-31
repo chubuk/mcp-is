@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -18,10 +19,11 @@ type ShopHandler struct {
 	aiKeyRepo storage.AIKeyRepositoryInterface
 	aes       *auth.AESCipher
 	mcpServer *mcp.MCPServer
+	maxShops  int // manual creation quota (0 = unlimited)
 }
 
-func NewShopHandler(shopRepo storage.ShopRepositoryInterface, aiKeyRepo storage.AIKeyRepositoryInterface, aes *auth.AESCipher, mcpServer *mcp.MCPServer) *ShopHandler {
-	return &ShopHandler{shopRepo: shopRepo, aiKeyRepo: aiKeyRepo, aes: aes, mcpServer: mcpServer}
+func NewShopHandler(shopRepo storage.ShopRepositoryInterface, aiKeyRepo storage.AIKeyRepositoryInterface, aes *auth.AESCipher, mcpServer *mcp.MCPServer, maxShops int) *ShopHandler {
+	return &ShopHandler{shopRepo: shopRepo, aiKeyRepo: aiKeyRepo, aes: aes, mcpServer: mcpServer, maxShops: maxShops}
 }
 
 type ShopRequest struct {
@@ -67,6 +69,13 @@ func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if req.ShopURL == "" || req.APIKeyID == "" || req.APIPassword == nil || *req.APIPassword == "" {
 		writeJSON(w, http.StatusBadRequest, ShopResponse{Error: "shop_url, api_key_id and api_password are required"})
 		return
+	}
+
+	if h.maxShops > 0 {
+		if _, total, err := h.shopRepo.ListByUserIDFiltered(userID, 1, 1); err == nil && total >= h.maxShops {
+			writeJSON(w, http.StatusForbidden, ShopResponse{Error: fmt.Sprintf("Достигнут лимит магазинов (%d)", h.maxShops)})
+			return
+		}
 	}
 
 	encrypted, err := h.aes.Encrypt(*req.APIPassword)

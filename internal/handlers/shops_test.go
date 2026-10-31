@@ -15,7 +15,7 @@ func setupShopHandler() (*ShopHandler, *mockShopRepo) {
 	repo := newMockShopRepo()
 	aiKeyRepo := newMockAIKeyRepo()
 	aes, _ := auth.NewAESCipher("12345678901234567890123456789012")
-	return NewShopHandler(repo, aiKeyRepo, aes, nil), repo
+	return NewShopHandler(repo, aiKeyRepo, aes, nil, 20), repo
 }
 
 func withUserID(ctx context.Context, userID string) context.Context {
@@ -384,5 +384,37 @@ func TestShopCreate_NameRequired(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected 400 for missing name, got %d", w.Code)
+	}
+}
+
+func TestShopCreate_Limit(t *testing.T) {
+	repo := newMockShopRepo()
+	aiKeyRepo := newMockAIKeyRepo()
+	aes, _ := auth.NewAESCipher("12345678901234567890123456789012")
+	h := NewShopHandler(repo, aiKeyRepo, aes, nil, 2)
+
+	for i := 0; i < 2; i++ {
+		body, _ := json.Marshal(ShopRequest{
+			Name: "Shop", ShopURL: "s.myinsales.ru", APIKeyID: "k", APIPassword: strPtr("p"),
+		})
+		req := httptest.NewRequest(http.MethodPost, "/api/shops", bytes.NewReader(body))
+		req = req.WithContext(withUserID(req.Context(), "user-1"))
+		w := httptest.NewRecorder()
+		h.Create(w, req)
+		if w.Code != http.StatusCreated {
+			t.Fatalf("create %d: got %d", i, w.Code)
+		}
+	}
+
+	body, _ := json.Marshal(ShopRequest{
+		Name: "Shop3", ShopURL: "s3.myinsales.ru", APIKeyID: "k", APIPassword: strPtr("p"),
+	})
+	req := httptest.NewRequest(http.MethodPost, "/api/shops", bytes.NewReader(body))
+	req = req.WithContext(withUserID(req.Context(), "user-1"))
+	w := httptest.NewRecorder()
+	h.Create(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Errorf("third create at limit=2: got %d, want 403", w.Code)
 	}
 }

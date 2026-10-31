@@ -33,6 +33,8 @@ type Config struct {
 	ServerCountry       string
 	RegistrationEnabled bool
 	BillingMonthly      int // RUB/month for InSales app; 0 = free
+	MaxShopsPerUser     int // manual creation quota; app-install provisioning exempt
+	MaxAIKeysPerUser    int // manual creation quota; app-install provisioning exempt
 }
 
 func Load() *Config {
@@ -61,6 +63,8 @@ func Load() *Config {
 		// Default false: registration is admin-only unless explicitly enabled (see .env.example).
 		RegistrationEnabled: getEnv("REGISTRATION_ENABLED", "false") == "true",
 		BillingMonthly:      getEnvInt("BILLING_MONTHLY", 0),
+		MaxShopsPerUser:     getEnvInt("MAX_SHOPS_PER_USER", 20),
+		MaxAIKeysPerUser:    getEnvInt("MAX_AI_KEYS_PER_USER", 20),
 	}
 
 	// Security warnings

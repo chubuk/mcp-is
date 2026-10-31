@@ -101,8 +101,8 @@ func main() {
 	emailAdmin := handlers.NewEmailAdminHandler(tplRepo, settingsRepo, emailSvc, aesCipher)
 
 	authHandler := handlers.NewAuthHandler(userRepo, jwtMgr, emailSvc, cfg.RegistrationEnabled)
-	shopHandler := handlers.NewShopHandler(shopRepo, aiKeyRepo, aesCipher, mcpServer)
-	aiKeyHandler := handlers.NewAIKeyHandler(aiKeyRepo, shopRepo)
+	shopHandler := handlers.NewShopHandler(shopRepo, aiKeyRepo, aesCipher, mcpServer, cfg.MaxShopsPerUser)
+	aiKeyHandler := handlers.NewAIKeyHandler(aiKeyRepo, shopRepo, cfg.MaxAIKeysPerUser)
 	adminHandler := handlers.NewAdminHandler(userRepo, shopRepo, aiKeyRepo, jwtMgr, emailSvc)
 	serverHandler := handlers.NewServerHandler(settingsRepo, cfg.BillingMonthly)
 	pdnHandler := handlers.NewPDNHandler(pool, settingsRepo)
