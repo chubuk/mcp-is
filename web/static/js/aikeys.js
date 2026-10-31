@@ -173,7 +173,7 @@ const AIKeys = {
                         </div>
                         <div class="form-group">
                             <label>Имя соединения (алиас для конфига AI-клиента) *</label>
-                            <input type="text" id="aikey-conn" placeholder="romashka" pattern="[a-z0-9\-]{1,64}" required>
+                            <input type="text" id="aikey-conn" placeholder="romashka" pattern="[a-z0-9\\-]{1,64}" required>
                             <span class="form-check-hint">Только латиница в нижнем регистре, цифры и дефис. Подставляется в пример конфига.</span>
                         </div>
                         <div class="form-group">
@@ -208,7 +208,7 @@ const AIKeys = {
                         </div>
                         <div class="form-group">
                             <label>Имя соединения (алиас) *</label>
-                            <input type="text" id="edit-aikey-conn" pattern="[a-z0-9\-]{1,64}" required>
+                            <input type="text" id="edit-aikey-conn" pattern="[a-z0-9\\-]{1,64}" required>
                         </div>
                         <div class="form-group">
                             <label>Название ключа</label>
