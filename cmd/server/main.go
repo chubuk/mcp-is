@@ -102,7 +102,7 @@ func main() {
 
 	authHandler := handlers.NewAuthHandler(userRepo, jwtMgr, emailSvc, cfg.RegistrationEnabled)
 	shopHandler := handlers.NewShopHandler(shopRepo, aiKeyRepo, aesCipher, mcpServer)
-	aiKeyHandler := handlers.NewAIKeyHandler(aiKeyRepo)
+	aiKeyHandler := handlers.NewAIKeyHandler(aiKeyRepo, shopRepo)
 	adminHandler := handlers.NewAdminHandler(userRepo, shopRepo, aiKeyRepo, jwtMgr, emailSvc)
 	serverHandler := handlers.NewServerHandler(settingsRepo, cfg.BillingMonthly)
 	pdnHandler := handlers.NewPDNHandler(pool, settingsRepo)
