@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/core"
 	"github.com/chubuk/mcp-is/internal/service"
 	"github.com/chubuk/mcp-is/internal/storage"
@@ -51,6 +52,7 @@ var coreToolNames = map[string]bool{
 	// discovery meta-tools
 	"search_insales_tools": true,
 	"call_insales_tool":    true,
+	"store_info":           true,
 }
 
 const (
@@ -121,6 +123,39 @@ func RegisterDiscoveryTools(s *server.MCPServer, _ *service.Service, auditRepo *
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), callInSalesToolHandler(s, auditRepo))
+
+	s.AddTool(mcp.NewTool("store_info",
+		mcp.WithDescription("Identify the store this connection is bound to. Returns connection alias, store name, domain and binding state — the ground truth before any write. All other tools operate on this store only."),
+		mcp.WithToolTitle("Магазин этого соединения"),
+		mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithIdempotentHintAnnotation(true),
+		mcp.WithOpenWorldHintAnnotation(false),
+	), storeInfoHandler())
+}
+
+// storeInfoHandler reports the connection identity from auth context — no InSales call.
+func storeInfoHandler() server.ToolHandlerFunc {
+	return func(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		shopID, _ := ctx.Value(auth.ShopIDKey).(string)
+		info := map[string]any{
+			"connection_name": ctx.Value(auth.ConnectionNameKey),
+			"key_name":        ctx.Value(auth.KeyNameKey),
+			"bound":           shopID != "",
+			"store": map[string]any{
+				"id":       shopID,
+				"name":     ctx.Value(auth.ShopNameKey),
+				"shop_url": ctx.Value(auth.ShopURLKey),
+			},
+			"read_only": false,
+		}
+		if v, ok := ctx.Value(mcpReadOnlyKey).(bool); ok {
+			info["read_only"] = v
+		}
+		if shopID == "" {
+			info["message"] = "AI-ключ не привязан к магазину. Попросите владельца привязать ключ к магазину в личном кабинете (раздел «AI-ключи») и повторите запрос."
+		}
+		return toolResult(info), nil
+	}
 }
 
 func searchInSalesToolsHandler(s *server.MCPServer) server.ToolHandlerFunc {

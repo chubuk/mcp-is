@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/chubuk/mcp-is/internal/pdn"
 	"github.com/chubuk/mcp-is/internal/service"
 	"github.com/chubuk/mcp-is/internal/storage"
+	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
 
@@ -31,14 +33,7 @@ const (
 	mcpAIKeyPDNKey mcpContextKey = "ai_key_pdn_enabled"
 )
 
-func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry string, auditRepo *storage.AuditRepository) *MCPServer {
-	s := server.NewMCPServer(
-		"mcp-is",
-		"0.7.6",
-		server.WithToolCapabilities(true),
-		server.WithToolFilter(toolFilter(readOnly)),
-		server.WithRecovery(),
-		server.WithInstructions(`MCP-сервер для магазина InSales (mcp-is).
+const baseInstructions = `MCP-сервер для магазина InSales (mcp-is).
 
 ## Discovery
 Default tools/list is a core surface (~30 tools): products, orders, clients, categories, collections, product fields, pipelines, export.
@@ -54,7 +49,48 @@ Set MCP_TOOLS_MODE=all to list every tool at once (more tokens, lower selection 
 In read-only sessions write tools are hidden and call_insales_tool rejects them.
 
 ## Pipelines
-search_product_details, order_full_details, client_full_profile, product_catalog_search, collection_products — multi-step reads in one call.`),
+search_product_details, order_full_details, client_full_profile, product_catalog_search, collection_products — multi-step reads in one call.`
+
+// buildInstructions prepends the per-connection identity block (first ~512 chars
+// are self-contained) to the static server guide.
+func buildInstructions(ctx context.Context, base string) string {
+	connName, _ := ctx.Value(auth.ConnectionNameKey).(string)
+	shopName, _ := ctx.Value(auth.ShopNameKey).(string)
+	shopURL, _ := ctx.Value(auth.ShopURLKey).(string)
+	shopID, _ := ctx.Value(auth.ShopIDKey).(string)
+
+	var header string
+	if shopID == "" {
+		header = "ВНИМАНИЕ: AI-ключ не привязан к магазину — запросы к данным отклоняются. " +
+			"Попросите владельца привязать ключ к магазину в личном кабинете (раздел «AI-ключи»).\n\n"
+	} else {
+		if connName == "" {
+			connName = "mcp-is"
+		}
+		header = fmt.Sprintf("Connection: %s\nStore: %q (%s)\nScope: read + write for this store only.\n"+
+			"All tools operate exclusively on this store; no store parameter exists.\n"+
+			"When the user names this store or %q, use this connection.\n"+
+			"If the user names a different store, say so — do not guess and do not write.\n"+
+			"Call store_info to confirm the target store before any write.\n\n",
+			connName, shopName, shopURL, connName)
+	}
+	return header + base
+}
+
+func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry string, auditRepo *storage.AuditRepository) *MCPServer {
+	hooks := &server.Hooks{}
+	hooks.AddAfterInitialize(func(ctx context.Context, _ any, _ *mcp.InitializeRequest, result *mcp.InitializeResult) {
+		result.Instructions = buildInstructions(ctx, baseInstructions)
+	})
+
+	s := server.NewMCPServer(
+		"mcp-is",
+		"0.7.6",
+		server.WithToolCapabilities(true),
+		server.WithToolFilter(toolFilter(readOnly)),
+		server.WithRecovery(),
+		server.WithHooks(hooks),
+		server.WithInstructions(baseInstructions),
 	)
 
 	RegisterTools(s, svc)

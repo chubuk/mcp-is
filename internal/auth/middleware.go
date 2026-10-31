@@ -25,6 +25,9 @@ const (
 	KeyPDNKey         contextKey = "ai_key_pdn_enabled"
 	RequestIDKey      contextKey = "request_id"
 	ImpersonatorIDKey contextKey = "impersonator_id"
+	ConnectionNameKey contextKey = "connection_name"
+	ShopNameKey       contextKey = "ai_shop_name"
+	ShopURLKey        contextKey = "ai_shop_url"
 )
 
 var (
@@ -199,11 +202,14 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 
 			keyHash := HashAPIKey(apiKey)
 
-			var userID, keyID, keyName, shopID string
+			var userID, keyID, keyName, shopID, connName, shopName, shopURL string
 			var aiKeyPDN bool
 			err := db.QueryRow(r.Context(),
-				`SELECT id, user_id, COALESCE(name,''), pdn_enabled, COALESCE(shop_id::text,'') FROM ai_keys WHERE key_hash = $1`, keyHash,
-			).Scan(&keyID, &userID, &keyName, &aiKeyPDN, &shopID)
+				`SELECT k.id, k.user_id, COALESCE(k.name,''), k.pdn_enabled, COALESCE(k.shop_id::text,''),
+				        COALESCE(k.connection_name,''), COALESCE(s.name,''), COALESCE(s.shop_url,'')
+				 FROM ai_keys k LEFT JOIN shops s ON s.id = k.shop_id
+				 WHERE k.key_hash = $1`, keyHash,
+			).Scan(&keyID, &userID, &keyName, &aiKeyPDN, &shopID, &connName, &shopName, &shopURL)
 
 			if err != nil {
 				slog.Warn("invalid api key", "hash", keyHash[:8]+"...")
@@ -223,7 +229,10 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 			ctx = context.WithValue(ctx, KeyNameKey, keyName)
 			ctx = context.WithValue(ctx, KeyIDKey, keyID)
 			ctx = context.WithValue(ctx, KeyPDNKey, aiKeyPDN)
-			// App-installed keys are bound to a shop; personal keys fall back to the default shop.
+			ctx = context.WithValue(ctx, ConnectionNameKey, connName)
+			ctx = context.WithValue(ctx, ShopNameKey, shopName)
+			ctx = context.WithValue(ctx, ShopURLKey, shopURL)
+			// App-installed keys are bound to a shop; unbound legacy keys fail closed (ErrKeyNotBound).
 			if shopID != "" {
 				ctx = context.WithValue(ctx, ShopIDKey, shopID)
 			}

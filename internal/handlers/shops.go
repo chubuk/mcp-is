@@ -389,6 +389,7 @@ var readCommands = []string{
 	"export_orders",
 	"export_clients",
 	"search_insales_tools",
+	"store_info",
 }
 
 var allCommandNames = []string{
@@ -676,6 +677,7 @@ var allCommandNames = []string{
 	"export_clients",
 	"search_insales_tools",
 	"call_insales_tool",
+	"store_info",
 }
 
 var commandDescriptions = map[string]string{
@@ -963,6 +965,7 @@ var commandDescriptions = map[string]string{
 	"export_clients":                      "Экспорт клиентов в CSV. Возвращает CSV-файл с колонками: id, name, surname, email, phone, created_at",
 	"search_insales_tools":                "Поиск инструментов InSales",
 	"call_insales_tool":                   "Вызов инструмента InSales",
+	"store_info":                          "Магазин этого соединения: алиас, название, домен, привязка. Проверять перед записью.",
 }
 
 func (h *ShopHandler) CheckCommands(w http.ResponseWriter, r *http.Request) {
