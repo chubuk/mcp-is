@@ -305,3 +305,52 @@ func TestAIKeyCreate_Limit(t *testing.T) {
 		t.Errorf("403 body should mention the limit: %s", w.Body.String())
 	}
 }
+
+func TestAIKeyRotate_NewSecretOldDies(t *testing.T) {
+	h, keys, shops := setupAIKeyHandler()
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	key := createAIKey(t, h, "user-1", shop.ID)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/ai-keys/"+key.ID+"/rotate", nil)
+	req.SetPathValue("id", key.ID)
+	req = req.WithContext(withUserID(req.Context(), "user-1"))
+	w := httptest.NewRecorder()
+	h.Rotate(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("rotate: got %d: %s", w.Code, w.Body.String())
+	}
+	var resp AIKeyResponse
+	json.NewDecoder(w.Body).Decode(&resp)
+	if resp.Key == "" || resp.Key == key.Key {
+		t.Errorf("rotate must return a fresh raw key, got %q", resp.Key)
+	}
+	if resp.Name != key.Name || resp.ShopID != key.ShopID || resp.ConnectionName != key.ConnectionName {
+		t.Errorf("name/binding must survive rotation: %+v", resp)
+	}
+
+	// old hash must stop authenticating
+	if _, err := keys.GetByHash(key.KeyHash); err == nil {
+		t.Error("old key hash must not resolve after rotation")
+	}
+	// new hash resolves
+	if _, err := keys.GetByHash(resp.KeyHash); err != nil {
+		t.Errorf("new key hash must resolve: %v", err)
+	}
+}
+
+func TestAIKeyRotate_ForeignUser(t *testing.T) {
+	h, _, shops := setupAIKeyHandler()
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	key := createAIKey(t, h, "user-1", shop.ID)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/ai-keys/"+key.ID+"/rotate", nil)
+	req.SetPathValue("id", key.ID)
+	req = req.WithContext(withUserID(req.Context(), "user-2"))
+	w := httptest.NewRecorder()
+	h.Rotate(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Errorf("foreign rotate: got %d, want 404", w.Code)
+	}
+}

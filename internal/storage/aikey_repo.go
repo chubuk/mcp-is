@@ -165,6 +165,17 @@ func (r *AIKeyRepository) UpdateName(id, name string) error {
 	return err
 }
 
+// UpdateKeyHash replaces the secret hash (key rotation); the old secret stops authenticating.
+func (r *AIKeyRepository) UpdateKeyHash(id, keyHash string) error {
+	_, err := r.db.Exec(context.Background(),
+		`UPDATE ai_keys SET key_hash = $1 WHERE id = $2`, keyHash, id,
+	)
+	if err != nil {
+		return fmt.Errorf("update ai key hash: %w", err)
+	}
+	return nil
+}
+
 // UpdateConnectionName sets the connection alias; empty string stores NULL (legacy state).
 func (r *AIKeyRepository) UpdateConnectionName(id, connectionName string) error {
 	_, err := r.db.Exec(context.Background(),

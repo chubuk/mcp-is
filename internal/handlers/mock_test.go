@@ -522,6 +522,17 @@ func (m *mockAIKeyRepo) UpdateName(id, name string) error {
 	return fmt.Errorf("not found")
 }
 
+func (m *mockAIKeyRepo) UpdateKeyHash(id, keyHash string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if k, ok := m.keys[id]; ok {
+		k.KeyHash = keyHash
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
+
 func (m *mockAIKeyRepo) UpdateConnectionName(id, connectionName string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

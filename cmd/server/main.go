@@ -161,6 +161,7 @@ func main() {
 	mux.Handle("POST /api/ai-keys", jwtMW(http.HandlerFunc(aiKeyHandler.Create)))
 	mux.Handle("GET /api/ai-keys", jwtMW(http.HandlerFunc(aiKeyHandler.List)))
 	mux.Handle("PUT /api/ai-keys/{id}", jwtMW(http.HandlerFunc(aiKeyHandler.Update)))
+	mux.Handle("POST /api/ai-keys/{id}/rotate", jwtMW(http.HandlerFunc(aiKeyHandler.Rotate)))
 	mux.Handle("DELETE /api/ai-keys/{id}", jwtMW(http.HandlerFunc(aiKeyHandler.Delete)))
 
 	adminMW := auth.RequireRole("admin", "super_admin")

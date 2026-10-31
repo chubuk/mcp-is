@@ -276,6 +276,37 @@ func (h *AIKeyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// Rotate issues a fresh secret for an existing key; the old secret stops
+// authenticating immediately. Name, binding and connection_name are preserved.
+func (h *AIKeyHandler) Rotate(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(auth.UserIDKey).(string)
+	keyID := r.PathValue("id")
+
+	key, err := h.keyRepo.GetByID(keyID)
+	if err != nil || key.UserID != userID {
+		writeJSON(w, http.StatusNotFound, AIKeyResponse{Error: "ключ не найден"})
+		return
+	}
+
+	rawKey, keyHash, err := auth.GenerateAPIKey()
+	if err != nil {
+		slog.Error("rotate key", "error", err)
+		writeJSON(w, http.StatusInternalServerError, AIKeyResponse{Error: "internal error"})
+		return
+	}
+	if err := h.keyRepo.UpdateKeyHash(keyID, keyHash); err != nil {
+		writeJSON(w, http.StatusInternalServerError, AIKeyResponse{Error: "failed to rotate key"})
+		return
+	}
+
+	slog.Info("ai key rotated", "id", keyID)
+	writeJSON(w, http.StatusOK, AIKeyResponse{
+		ID: key.ID, Name: key.Name, Key: rawKey, KeyHash: keyHash, MCPUrl: buildMCPURL(r),
+		ShopID: key.ShopID, ShopName: key.ShopName, ConnectionName: key.ConnectionName,
+		PDNEnabled: key.PDNEnabled,
+	})
+}
+
 func (h *AIKeyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(auth.UserIDKey).(string)
 	keyID := r.PathValue("id")
