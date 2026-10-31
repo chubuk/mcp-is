@@ -20,6 +20,10 @@ const (
 	ShopURLKey      contextKey = "shop_url"
 )
 
+// ErrKeyNotBound: the AI key has no store binding (or its shop was deleted) —
+// fail closed instead of guessing the user's default shop.
+var ErrKeyNotBound = errors.New("ai key is not bound to a store")
+
 // SettingsGetter is the settings-repository slice the billing gate needs
 // (defined at consumer; *storage.SettingsRepository satisfies it).
 type SettingsGetter interface {
@@ -70,13 +74,12 @@ func (m *AccountManager) GetClient(ctx context.Context) (*insales.InSalesClient,
 	var shop *storage.Shop
 	var err error
 
-	if shopID != "" {
-		shop, err = m.shopRepo.GetByID(shopID)
-		if err == nil && shop.UserID != userID {
-			return nil, ctx, fmt.Errorf("shop %s does not belong to user", shopID)
-		}
-	} else {
-		shop, err = m.shopRepo.GetDefault(userID)
+	if shopID == "" {
+		return nil, ctx, ErrKeyNotBound
+	}
+	shop, err = m.shopRepo.GetByID(shopID)
+	if err == nil && shop.UserID != userID {
+		return nil, ctx, fmt.Errorf("shop %s does not belong to user", shopID)
 	}
 
 	if err != nil {

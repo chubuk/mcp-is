@@ -67,6 +67,9 @@ func toolError(err error) *mcp.CallToolResult {
 	if errors.Is(err, core.ErrBillingExpired) || errors.Is(err, core.ErrBillingUnpaid) {
 		return mcp.NewToolResultError("Подписка магазина на приложение не оплачена или период закончился. Данные недоступны до оплаты — продлите приложение в админке InSales.")
 	}
+	if errors.Is(err, core.ErrKeyNotBound) {
+		return mcp.NewToolResultError("AI-ключ не привязан к магазину. Попросите владельца привязать ключ к магазину в личном кабинете (раздел «AI-ключи») и повторите запрос.")
+	}
 	return mcp.NewToolResultError(cleanError(err).Error())
 }
 
