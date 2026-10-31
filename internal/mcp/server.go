@@ -51,6 +51,18 @@ In read-only sessions write tools are hidden and call_insales_tool rejects them.
 ## Pipelines
 search_product_details, order_full_details, client_full_profile, product_catalog_search, collection_products — multi-step reads in one call.`
 
+// effectiveAlias implements the read-side default chain (S2.3):
+// stored connection_name → slug(shop name) → "mcp-is".
+func effectiveAlias(connName, shopName string) string {
+	if connName != "" {
+		return connName
+	}
+	if shopName != "" {
+		return core.Slugify(shopName)
+	}
+	return "mcp-is"
+}
+
 // buildInstructions prepends the per-connection identity block (first ~512 chars
 // are self-contained) to the static server guide.
 func buildInstructions(ctx context.Context, base string) string {
@@ -64,9 +76,7 @@ func buildInstructions(ctx context.Context, base string) string {
 		header = "ВНИМАНИЕ: AI-ключ не привязан к магазину — запросы к данным отклоняются. " +
 			"Попросите владельца привязать ключ к магазину в личном кабинете (раздел «AI-ключи»).\n\n"
 	} else {
-		if connName == "" {
-			connName = "mcp-is"
-		}
+		connName = effectiveAlias(connName, shopName)
 		header = fmt.Sprintf("Connection: %s\nStore: %q (%s)\nScope: read + write for this store only.\n"+
 			"All tools operate exclusively on this store; no store parameter exists.\n"+
 			"When the user names this store or %q, use this connection.\n"+

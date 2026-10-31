@@ -295,3 +295,32 @@ func TestAIKeyRepo_ShopNameJoin(t *testing.T) {
 		t.Errorf("unbound ShopName = %q, want %q", got, want)
 	}
 }
+
+// connection_name is unique per user at the DB level (partial unique index).
+func TestAIKeyRepo_ConnectionNameUniquePerUser(t *testing.T) {
+	pool := setupTestDB(t)
+	userRepo := NewUserRepository(pool)
+	keyRepo := NewAIKeyRepository(pool)
+
+	u1, err := userRepo.Create("uniq1", "", "", "", "", "hash")
+	if err != nil {
+		t.Fatal(err)
+	}
+	u2, err := userRepo.Create("uniq2", "", "", "", "", "hash")
+	if err != nil {
+		t.Fatal(err)
+	}
+	k1, _ := keyRepo.Create(u1.ID, "uhash1", "k1")
+	k2, _ := keyRepo.Create(u1.ID, "uhash2", "k2")
+	k3, _ := keyRepo.Create(u2.ID, "uhash3", "k3")
+
+	if err := keyRepo.UpdateConnectionName(k1.ID, "alias"); err != nil {
+		t.Fatalf("first store: %v", err)
+	}
+	if err := keyRepo.UpdateConnectionName(k2.ID, "alias"); err == nil {
+		t.Error("duplicate connection_name within one user must fail at DB level")
+	}
+	if err := keyRepo.UpdateConnectionName(k3.ID, "alias"); err != nil {
+		t.Errorf("same alias for another user must be allowed: %v", err)
+	}
+}

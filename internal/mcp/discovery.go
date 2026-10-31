@@ -137,13 +137,15 @@ func RegisterDiscoveryTools(s *server.MCPServer, _ *service.Service, auditRepo *
 func storeInfoHandler() server.ToolHandlerFunc {
 	return func(ctx context.Context, _ mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		shopID, _ := ctx.Value(auth.ShopIDKey).(string)
+		shopName, _ := ctx.Value(auth.ShopNameKey).(string)
+		connName, _ := ctx.Value(auth.ConnectionNameKey).(string)
 		info := map[string]any{
-			"connection_name": ctx.Value(auth.ConnectionNameKey),
+			"connection_name": effectiveAlias(connName, shopName),
 			"key_name":        ctx.Value(auth.KeyNameKey),
 			"bound":           shopID != "",
 			"store": map[string]any{
 				"id":       shopID,
-				"name":     ctx.Value(auth.ShopNameKey),
+				"name":     shopName,
 				"shop_url": ctx.Value(auth.ShopURLKey),
 			},
 			"read_only": false,

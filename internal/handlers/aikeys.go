@@ -64,7 +64,12 @@ func uniqueKeyConnectionName(repo storage.AIKeyRepositoryInterface, userID, base
 		return base
 	}
 	for i := 2; ; i++ {
-		cand := fmt.Sprintf("%s-%d", base, i)
+		suffix := fmt.Sprintf("-%d", i)
+		b := base
+		if max := 64 - len(suffix); len(b) > max {
+			b = b[:max]
+		}
+		cand := b + suffix
 		if !taken[cand] {
 			return cand
 		}
@@ -82,6 +87,9 @@ func (h *AIKeyHandler) resolveConnectionName(userID, requested, shopName, curren
 	}
 	if name == "" {
 		name = core.Slugify(shopName)
+		if len(name) > 64 {
+			name = name[:64]
+		}
 	}
 	if !connectionNameRe.MatchString(name) {
 		return "", fmt.Errorf("connection_name: допустимы только латинские буквы в нижнем регистре, цифры и дефис (1–64 символов)")

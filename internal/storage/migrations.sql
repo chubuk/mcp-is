@@ -78,6 +78,7 @@ ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS shop_id UUID REFERENCES shops(id) O
 
 -- Миграция - AI key connection_name (алиас соединения; NULL = легаси, без backfill)
 ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS connection_name TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_keys_user_connection ON ai_keys(user_id, connection_name) WHERE connection_name IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS app_installs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

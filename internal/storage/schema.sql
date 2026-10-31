@@ -98,6 +98,7 @@ ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS shop_id UUID REFERENCES shops(id) O
 
 -- Connection alias shown in client configs. NULL = legacy/unset (no backfill).
 ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS connection_name TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_keys_user_connection ON ai_keys(user_id, connection_name) WHERE connection_name IS NOT NULL;
 
 -- InSales external-app installs (protocol: password = MD5(token + secret_key))
 CREATE TABLE IF NOT EXISTS app_installs (
