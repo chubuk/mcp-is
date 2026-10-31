@@ -248,7 +248,7 @@ func TestAutologin_ReturningUser_ReuseShop(t *testing.T) {
 	if loc != "/onboarding" {
 		t.Fatalf("Location = %q, want /onboarding (code must not be in URL)", loc)
 	}
-	uid, raw, ok := h.onboard.take(onboardingCode(t, rec))
+	uid, raw, _, ok := h.onboard.take(onboardingCode(t, rec))
 	if !ok || uid != user.ID {
 		t.Fatalf("onboard.take = (%q,%v)", uid, ok)
 	}
@@ -289,7 +289,7 @@ func TestAutologin_ReinstallLeftover_Reprovision(t *testing.T) {
 	if loc != "/onboarding" {
 		t.Fatalf("Location = %q, want /onboarding", loc)
 	}
-	_, raw, ok := h.onboard.take(onboardingCode(t, rec))
+	_, raw, _, ok := h.onboard.take(onboardingCode(t, rec))
 	if !ok || raw == "" {
 		t.Errorf("api_key empty, want fresh key after re-provision")
 	}
@@ -515,18 +515,18 @@ func TestUninstall_OK(t *testing.T) {
 
 func TestExchangeCode_Invalid(t *testing.T) {
 	h, _, _, _, _ := newTestAppHandler(t)
-	code, err := h.onboard.issue("user-1", "rawkey")
+	code, err := h.onboard.issue("user-1", "rawkey", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	uid, raw, ok := h.onboard.take(code)
+	uid, raw, _, ok := h.onboard.take(code)
 	if !ok || uid != "user-1" || raw != "rawkey" {
 		t.Fatalf("onboard.take = (%q,%q,%v)", uid, raw, ok)
 	}
-	if _, _, ok := h.onboard.take(code); ok {
+	if _, _, _, ok := h.onboard.take(code); ok {
 		t.Error("code replayed after take")
 	}
-	if _, _, ok := h.onboard.take("deadbeef"); ok {
+	if _, _, _, ok := h.onboard.take("deadbeef"); ok {
 		t.Error("onboard.take accepted garbage code")
 	}
 }
@@ -669,7 +669,7 @@ func TestExchangeCode_Race_SingleWinner(t *testing.T) {
 	installFor(t, h, "123", "token123")
 	user, _ := users.Create("u1", "user@test.ru", "", "", "", "hash")
 	_ = installs.SetUser("123", user.ID)
-	code, err := h.onboard.issue(user.ID, "rawkey")
+	code, err := h.onboard.issue(user.ID, "rawkey", "")
 	if err != nil {
 		t.Fatal(err)
 	}

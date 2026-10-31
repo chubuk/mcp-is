@@ -2,7 +2,11 @@ const AIKeys = {
     newKey: null,
     newKeyName: null,
     newMCPUrl: null,
+    newConnName: null,
     _mcpTypes: [],
+    _shops: [],
+    _lastKeys: [],
+    _configAlias: '',
 
     slugify(str) {
         if (!str || !str.trim()) return 'mcp-is';
@@ -17,23 +21,56 @@ const AIKeys = {
         return result || 'mcp-is';
     },
 
+    // Shared with the onboarding page (auth.js): fill a client config template.
+    fillTemplate(template, alias, url, apiKey) {
+        return template
+            .replace(/\{\{KEY_NAME\}\}/g, alias)
+            .replace(/\{\{URL\}\}/g, url)
+            .replace(/\{\{API_KEY\}\}/g, apiKey);
+    },
+
+    downloadText(fileName, text) {
+        const blob = new Blob([text], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(a.href);
+    },
+
+    async loadShops() {
+        const res = await API.get('/api/shops?per_page=100');
+        AIKeys._shops = (res && res.ok && res.data.items) ? res.data.items : [];
+    },
+
+    shopOptions(selectedId) {
+        return AIKeys._shops.map(s =>
+            `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.name || s.shop_url}</option>`
+        ).join('');
+    },
+
     async render(page, perPage) {
         page = page || 1;
         perPage = perPage || getPerPage();
 
+        await AIKeys.loadShops();
+
         const res = await API.get(`/api/ai-keys?page=${page}&per_page=${perPage}`);
         const data = (res && res.ok) ? res.data : { items: [], total: 0, page: 1, per_page: perPage };
         const keys = data.items || [];
+        AIKeys._lastKeys = keys;
         const total = data.total || 0;
 
         let keyAlert = '';
         if (this.newKey) {
             const keyToShow = this.newKey;
+            const alias = this.newConnName || 'mcp-is';
             const mcpUrl = this.newMCPUrl || (location.origin + '/mcp');
+            AIKeys._configAlias = alias;
             keyAlert = `
                 <div class="card" style="border:2px solid #27ae60">
                     <div class="card__title" style="color:#27ae60">Ключ создан!</div>
-                    <div class="card__desc">Скопируйте данные СЕЙЧАС. Ключ больше не будет отображаться.</div>
+                    <div class="card__desc">Скопируйте данные СЕЙЧАС. Ключ больше не будет отображаться. Потеряли — перевыпустите в редакторе ключа.</div>
                     <div style="margin-bottom:12px">
                         <label style="font-weight:600;font-size:13px;color:#555">🔑 API Key</label>
                         <div class="key-display">${keyToShow}</div>
@@ -41,6 +78,10 @@ const AIKeys = {
                     <div style="margin-bottom:12px">
                         <label style="font-weight:600;font-size:13px;color:#555">🌐 MCP Server URL</label>
                         <div class="key-display">${mcpUrl}</div>
+                    </div>
+                    <div style="margin-bottom:12px">
+                        <label style="font-weight:600;font-size:13px;color:#555">📛 Имя соединения (алиас)</label>
+                        <div class="key-display">${alias}</div>
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
                         <button class="btn btn--primary btn--sm" onclick="AIKeys.copyKey()">📋 Копировать ключ</button>
@@ -68,26 +109,35 @@ const AIKeys = {
             this.newKey = null;
             this.newKeyName = null;
             this.newMCPUrl = null;
+            this.newConnName = null;
         }
+
+        const noShops = AIKeys._shops.length === 0;
+        const shopsNotice = noShops
+            ? '<div class="alert alert--error">Сначала добавьте магазин — ИИ-ключ привязывается к магазину. <a href="/shops">Перейти к магазинам</a></div>'
+            : '';
 
         let rows = '';
         if (keys.length === 0) {
-            rows = '<tr><td colspan="5" class="empty">Ключи не созданы</td></tr>';
+            rows = '<tr><td colspan="6" class="empty">Ключи не созданы</td></tr>';
         } else {
             keys.forEach(k => {
                 const pdnBtn = k.pdn_enabled
                     ? '<button class="btn btn--ghost btn--sm" style="color:#27ae60;border-color:#27ae60" onclick="AIKeys.togglePDN(\'' + k.id + '\', false)">✅ ПДн</button>'
                     : '<button class="btn btn--ghost btn--sm" onclick="AIKeys.togglePDN(\'' + k.id + '\', true)">☐ ПДн</button>';
+                const shopCell = k.shop_id
+                    ? `${k.shop_name || k.shop_id}<br><code style="font-size:11px;color:#888">${k.connection_name || ''}</code>`
+                    : '<span style="color:#c0392b;font-weight:600">не привязан</span>';
                 rows += `
                     <tr>
                         <td data-label="Название">${k.name || 'Без названия'}</td>
+                        <td data-label="Магазин">${shopCell}</td>
                         <td data-label="Хэш"><code>${k.key_hash.substring(0, 16)}...</code></td>
                         <td data-label="ПДн">${pdnBtn}</td>
                         <td data-label="Создан">${k.created_at ? k.created_at.split('T')[0] : '—'}</td>
-                        <td data-label="Использован">${k.last_used_at ? k.last_used_at.split('T')[0] : '—'}</td>
                         <td data-label="">
                             <div style="display:flex;gap:4px;flex-wrap:nowrap">
-                                <button class="btn btn--ghost btn--sm" onclick="AIKeys.edit('${k.id}', '${k.name}', ${k.pdn_enabled})">✏️ Ред.</button>
+                                <button class="btn btn--ghost btn--sm" onclick="AIKeys.edit('${k.id}')">✏️ Ред.</button>
                                 <button class="btn btn--danger btn--sm" onclick="AIKeys.delete('${k.id}')">🗑️ Отозвать</button>
                             </div>
                         </td>
@@ -101,18 +151,31 @@ const AIKeys = {
             <div class="page-header">
                 <div>
                     <h1>AI-ключи</h1>
-                    <p class="desc">API-ключи для подключения AI-агентов к магазину</p>
+                    <p class="desc">API-ключи для подключения AI-агентов к магазину. Каждый ключ привязан к одному магазину.</p>
                 </div>
-                <button class="btn btn--primary" onclick="AIKeys.showForm()">➕ Создать ключ</button>
+                <button class="btn btn--primary" onclick="AIKeys.showForm()" ${noShops ? 'disabled' : ''}>➕ Создать ключ</button>
             </div>
 
             ${keyAlert}
+            ${shopsNotice}
 
             <div id="aikey-form" style="display:none">
                 <div class="card">
                     <div class="card__title">Новый AI-ключ</div>
                     <div id="aikey-alert"></div>
                     <form id="add-aikey-form">
+                        <div class="form-group">
+                            <label>Магазин *</label>
+                            <select id="aikey-shop" required onchange="AIKeys.onShopChange('aikey')">
+                                <option value="">— Выберите магазин —</option>
+                                ${AIKeys.shopOptions('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Имя соединения (алиас для конфига AI-клиента) *</label>
+                            <input type="text" id="aikey-conn" placeholder="romashka" pattern="[a-z0-9\-]{1,64}" required>
+                            <span class="form-check-hint">Только латиница в нижнем регистре, цифры и дефис. Подставляется в пример конфига.</span>
+                        </div>
                         <div class="form-group">
                             <label>Название ключа *</label>
                             <input type="text" id="aikey-name" placeholder="Cursor MCP" required>
@@ -136,6 +199,18 @@ const AIKeys = {
                     <form id="edit-aikey-form">
                         <input type="hidden" id="edit-aikey-id">
                         <div class="form-group">
+                            <label>Магазин *</label>
+                            <select id="edit-aikey-shop" required onchange="AIKeys.onShopChange('edit-aikey')">
+                                <option value="">— Выберите магазин —</option>
+                                ${AIKeys.shopOptions('')}
+                            </select>
+                            <span class="form-check-hint">Ключ без привязки не работает — сохранение требует магазин.</span>
+                        </div>
+                        <div class="form-group">
+                            <label>Имя соединения (алиас) *</label>
+                            <input type="text" id="edit-aikey-conn" pattern="[a-z0-9\-]{1,64}" required>
+                        </div>
+                        <div class="form-group">
                             <label>Название ключа</label>
                             <input type="text" id="edit-aikey-name" required>
                         </div>
@@ -151,6 +226,7 @@ const AIKeys = {
                             </div>
                         </div>
                         <button type="submit" class="btn btn--primary">💾 Сохранить</button>
+                        <button type="button" class="btn btn--secondary" onclick="AIKeys.rotate(document.getElementById('edit-aikey-id').value)">🔄 Перевыпустить ключ</button>
                         <button type="button" class="btn btn--ghost" onclick="AIKeys.hideEditForm()">✖️ Отмена</button>
                     </form>
                 </div>
@@ -162,10 +238,10 @@ const AIKeys = {
                     <thead>
                         <tr>
                             <th>Название</th>
+                            <th>Магазин</th>
                             <th>Хэш ключа</th>
                             <th>ПДн</th>
                             <th>Создан</th>
-                            <th>Использован</th>
                             <th></th>
                         </tr>
                     </thead>
@@ -176,6 +252,16 @@ const AIKeys = {
             </div>`;
     },
 
+    onShopChange(prefix) {
+        const sel = document.getElementById(prefix + '-shop');
+        const conn = document.getElementById(prefix + '-conn');
+        if (!sel || !conn) return;
+        const shop = AIKeys._shops.find(s => s.id === sel.value);
+        if (shop && !conn.value) {
+            conn.value = AIKeys.slugify(shop.name || shop.shop_url);
+        }
+    },
+
     showForm() {
         document.getElementById('aikey-form').style.display = 'block';
     },
@@ -184,10 +270,16 @@ const AIKeys = {
         document.getElementById('aikey-form').style.display = 'none';
     },
 
-    edit(id, name, pdnEnabled) {
+    edit(id) {
+        const k = AIKeys._lastKeys.find(x => x.id === id);
+        if (!k) return;
         document.getElementById('edit-aikey-id').value = id;
-        document.getElementById('edit-aikey-name').value = name;
-        document.getElementById('edit-aikey-pdn').checked = pdnEnabled;
+        document.getElementById('edit-aikey-name').value = k.name || '';
+        document.getElementById('edit-aikey-pdn').checked = !!k.pdn_enabled;
+        document.getElementById('edit-aikey-shop').innerHTML =
+            '<option value="">— Выберите магазин —</option>' + AIKeys.shopOptions(k.shop_id || '');
+        document.getElementById('edit-aikey-conn').value = k.connection_name || '';
+        AIKeys._configAlias = k.connection_name || '';
 
         const scheme = location.protocol === 'https:' ? 'https' : 'http';
         const host = location.hostname + (location.port ? ':' + location.port : (scheme === 'https' ? ':443' : ':8080'));
@@ -211,13 +303,23 @@ const AIKeys = {
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const f = App.readFields({
-                name: ['aikey-name', 'trim'],
-                pdn_enabled: ['aikey-pdn', 'bool'],
-            });
+            const f = {
+                name: document.getElementById('aikey-name').value.trim(),
+                shop_id: document.getElementById('aikey-shop').value,
+                connection_name: document.getElementById('aikey-conn').value.trim(),
+                pdn_enabled: document.getElementById('aikey-pdn').checked,
+            };
+            const alertEl = document.getElementById('aikey-alert');
+            if (!f.shop_id) {
+                alertEl.innerHTML = '<div class="alert alert--error">Выберите магазин — ИИ-ключ привязывается к магазину</div>';
+                return;
+            }
             if (!f.name) {
-                document.getElementById('aikey-alert').innerHTML =
-                    '<div class="alert alert--error">Название ключа обязательно</div>';
+                alertEl.innerHTML = '<div class="alert alert--error">Название ключа обязательно</div>';
+                return;
+            }
+            if (!/^[a-z0-9-]{1,64}$/.test(f.connection_name)) {
+                alertEl.innerHTML = '<div class="alert alert--error">Имя соединения: только латиница в нижнем регистре, цифры и дефис (1–64 символов)</div>';
                 return;
             }
 
@@ -226,9 +328,10 @@ const AIKeys = {
                 this.newKey = res.data.key;
                 this.newKeyName = f.name;
                 this.newMCPUrl = res.data.mcp_url;
+                this.newConnName = res.data.connection_name;
                 App.navigate('/ai-keys');
             } else {
-                document.getElementById('aikey-alert').innerHTML =
+                alertEl.innerHTML =
                     '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
             }
         });
@@ -239,23 +342,47 @@ const AIKeys = {
             editForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const id = document.getElementById('edit-aikey-id').value;
-                const f = App.readFields({
-                    name: ['edit-aikey-name', 'trim'],
-                    pdn_enabled: ['edit-aikey-pdn', 'bool'],
-                });
+                const f = {
+                    name: document.getElementById('edit-aikey-name').value.trim(),
+                    shop_id: document.getElementById('edit-aikey-shop').value,
+                    connection_name: document.getElementById('edit-aikey-conn').value.trim(),
+                    pdn_enabled: document.getElementById('edit-aikey-pdn').checked,
+                };
+                const alertEl = document.getElementById('aikey-edit-alert');
+                if (!f.shop_id) {
+                    alertEl.innerHTML = '<div class="alert alert--error">Выберите магазин — без привязки ключ не работает</div>';
+                    return;
+                }
                 if (!f.name) {
-                    document.getElementById('aikey-edit-alert').innerHTML =
-                        '<div class="alert alert--error">Название обязательно</div>';
+                    alertEl.innerHTML = '<div class="alert alert--error">Название обязательно</div>';
+                    return;
+                }
+                if (!/^[a-z0-9-]{1,64}$/.test(f.connection_name)) {
+                    alertEl.innerHTML = '<div class="alert alert--error">Имя соединения: только латиница в нижнем регистре, цифры и дефис (1–64 символов)</div>';
                     return;
                 }
                 const res = await API.put('/api/ai-keys/' + id, f);
                 if (res && res.ok) {
                     App.navigate('/ai-keys');
                 } else {
-                    document.getElementById('aikey-edit-alert').innerHTML =
+                    alertEl.innerHTML =
                         '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
                 }
             });
+        }
+    },
+
+    async rotate(id) {
+        if (!confirm('Перевыпустить ключ? Старый секрет перестанет работать у AI-агентов.')) return;
+        const res = await API.post('/api/ai-keys/' + id + '/rotate', {});
+        if (res && res.ok && res.data.key) {
+            this.newKey = res.data.key;
+            this.newKeyName = res.data.name;
+            this.newMCPUrl = res.data.mcp_url;
+            this.newConnName = res.data.connection_name;
+            App.navigate('/ai-keys');
+        } else {
+            showToast(res && res.data && res.data.error ? res.data.error : 'Не удалось перевыпустить ключ');
         }
     },
 
@@ -301,26 +428,8 @@ const AIKeys = {
         const res = await API.put('/api/ai-keys/' + id, { pdn_enabled: enable });
         if (res && res.ok) {
             App.navigate('/ai-keys');
-        }
-    },
-
-    copyConfig(client) {
-        const keyEl = document.querySelectorAll('.key-display')[0];
-        const urlEl = document.querySelectorAll('.key-display')[1];
-        if (!keyEl || !urlEl) return;
-        const key = keyEl.textContent.trim();
-        const url = urlEl.textContent.trim();
-        const keyName = AIKeys.slugify(AIKeys.newKeyName || '');
-        let config;
-        if (client === 'claude') {
-            config = JSON.stringify({mcpServers:{[keyName]:{url:url,headers:{"Authorization":"Bearer "+key}}}}, null, 2);
-        } else if (client === 'vscode') {
-            config = JSON.stringify({servers:{[keyName]:{type:"http",url:url,headers:{"Authorization":"Bearer "+key}}}}, null, 2);
-        }
-        if (config) {
-            navigator.clipboard.writeText(config).then(() => {
-                showToast('Конфигурация скопирована!');
-            }).catch(() => {});
+        } else {
+            showToast(res && res.data && res.data.error ? res.data.error : 'Не удалось изменить ПДн');
         }
     },
 
@@ -361,11 +470,7 @@ const AIKeys = {
 
         const url = urlEl.textContent.trim();
         const apiKey = keyEl.textContent.trim();
-        const keyName = AIKeys.slugify(AIKeys.newKeyName || '');
-        const config = type.config_template
-            .replace(/\{\{KEY_NAME\}\}/g, keyName)
-            .replace(/\{\{URL\}\}/g, url)
-            .replace(/\{\{API_KEY\}\}/g, apiKey);
+        const config = AIKeys.fillTemplate(type.config_template, AIKeys._configAlias || 'mcp-is', url, apiKey);
 
         document.getElementById('mcp-config-code').textContent = config;
         document.getElementById('mcp-file-hint').textContent =
@@ -388,13 +493,7 @@ const AIKeys = {
         if (!code || !select) return;
         const type = AIKeys._mcpTypes.find(t => t.id === select.value);
         if (!type || !type.file_name) return;
-
-        const blob = new Blob([code.textContent], { type: 'text/plain' });
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = type.file_name;
-        a.click();
-        URL.revokeObjectURL(a.href);
+        AIKeys.downloadText(type.file_name, code.textContent);
     },
 
     async delete(id) {

@@ -49,11 +49,11 @@ type AIKeyResponse struct {
 
 var connectionNameRe = regexp.MustCompile(`^[a-z0-9-]{1,64}$`)
 
-// uniqueConnectionName returns base or base-2/-3... free of collisions among
+// uniqueKeyConnectionName returns base or base-2/-3... free of collisions among
 // the user's stored connection names (excluding excludeID).
-func (h *AIKeyHandler) uniqueConnectionName(userID, base, excludeID string) string {
+func uniqueKeyConnectionName(repo storage.AIKeyRepositoryInterface, userID, base, excludeID string) string {
 	taken := map[string]bool{}
-	if keys, err := h.keyRepo.ListByUserID(userID); err == nil {
+	if keys, err := repo.ListByUserID(userID); err == nil {
 		for _, k := range keys {
 			if k.ID != excludeID && k.ConnectionName != "" {
 				taken[k.ConnectionName] = true
@@ -69,6 +69,10 @@ func (h *AIKeyHandler) uniqueConnectionName(userID, base, excludeID string) stri
 			return cand
 		}
 	}
+}
+
+func (h *AIKeyHandler) uniqueConnectionName(userID, base, excludeID string) string {
+	return uniqueKeyConnectionName(h.keyRepo, userID, base, excludeID)
 }
 
 func (h *AIKeyHandler) resolveConnectionName(userID, requested, shopName, current, excludeID string) (string, error) {

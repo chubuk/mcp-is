@@ -173,7 +173,10 @@ const Auth = {
                     localStorage.setItem('nickname', ex.data.nickname);
                     localStorage.setItem('role', ex.data.role);
                     localStorage.setItem('user_id', ex.data.user_id);
-                    if (ex.data.api_key) localStorage.setItem('fresh_api_key', ex.data.api_key);
+                    if (ex.data.api_key) {
+                        localStorage.setItem('fresh_api_key', ex.data.api_key);
+                        localStorage.setItem('fresh_connection_name', ex.data.connection_name || '');
+                    }
                     App.navigate('/onboarding');
                 } else {
                     Auth.showError('Не удалось обменять код. Откройте приложение из InSales ещё раз.');
@@ -189,6 +192,7 @@ const Auth = {
         if (res && res.ok) {
             if (res.data.api_key) {
                 localStorage.setItem('fresh_api_key', res.data.api_key);
+                localStorage.setItem('fresh_connection_name', res.data.connection_name || '');
             }
             App.navigate('/onboarding');
         } else if (res && res.status === 403) {
@@ -197,6 +201,42 @@ const Auth = {
             Auth.showError(res && res.data && res.data.error ? res.data.error : 'Не удалось привязать магазин. Попробуйте войти заново.');
             App.navigate('/dashboard');
         }
+    },
+
+    renderOnboardConfig() {
+        const sel = document.getElementById('onboard-client-type');
+        const out = document.getElementById('onboard-config-output');
+        if (!sel || !out) return;
+        const type = (Auth._onboardTypes || []).find(t => t.id === sel.value);
+        if (!type) {
+            out.style.display = 'none';
+            localStorage.removeItem('mcp_client_type');
+            return;
+        }
+        localStorage.setItem('mcp_client_type', type.id);
+        const config = AIKeys.fillTemplate(type.config_template, Auth._onboardAlias || 'mcp-is', Auth._onboardUrl, Auth._onboardKey);
+        document.getElementById('onboard-config-code').textContent = config;
+        document.getElementById('onboard-file-hint').textContent =
+            type.file_description ? 'Файл: ' + (type.file_name || '—') + ' → ' + type.file_description : '';
+        document.getElementById('onboard-download-btn').style.display = type.file_name ? 'inline-block' : 'none';
+        out.style.display = 'block';
+    },
+
+    copyOnboardConfig() {
+        const code = document.getElementById('onboard-config-code');
+        if (!code) return;
+        navigator.clipboard.writeText(code.textContent).then(() => {
+            Auth.showSuccess('Конфигурация скопирована');
+        }).catch(() => {});
+    },
+
+    downloadOnboardConfig() {
+        const code = document.getElementById('onboard-config-code');
+        const sel = document.getElementById('onboard-client-type');
+        if (!code || !sel) return;
+        const type = (Auth._onboardTypes || []).find(t => t.id === sel.value);
+        if (!type || !type.file_name) return;
+        AIKeys.downloadText(type.file_name, code.textContent);
     },
 
     renderOnboarding() {
@@ -227,27 +267,66 @@ const Auth = {
             return;
         }
 
-        const showKey = (apiKey, mcpUrl) => {
+        const showKey = (apiKey, mcpUrl, connName) => {
             const url = mcpUrl || (location.origin + '/mcp');
+            const alias = connName || 'mcp-is';
             body.innerHTML = `
-                <p><strong>MCP-ключ</strong> (сохраните — показывается один раз):</p>
+                <p><strong>MCP-ключ</strong> (сохраните — показывается один раз; потеряли — перевыпустите в разделе «AI-ключи»):</p>
                 <div class="form-group">
                     <input type="text" id="shown-key" readonly value="${apiKey}">
                 </div>
                 <p><strong>URL сервера:</strong> <code>${url}</code></p>
-                <p class="subtitle">Добавьте ключ в свой MCP-клиент (Claude Desktop, Cursor, MiMoCode и др.).</p>
-                <button class="btn btn--primary" id="copy-key">📋 Скопировать ключ</button>`;
+                <p><strong>Имя соединения (алиас):</strong> <code>${alias}</code></p>
+                <button class="btn btn--primary" id="copy-key">📋 Скопировать ключ</button>
+                <div style="margin-top:16px">
+                    <div class="form-group" style="margin-bottom:8px">
+                        <label><strong>Пример конфига для MCP-клиента</strong></label>
+                        <select id="onboard-client-type" onchange="Auth.renderOnboardConfig()">
+                            <option value="">— Выберите систему —</option>
+                        </select>
+                    </div>
+                    <div id="onboard-config-output" style="display:none">
+                        <p id="onboard-file-hint" style="color:#888;font-size:13px;margin-bottom:8px"></p>
+                        <pre style="background:#f8f9fa;padding:12px;border-radius:6px;font-size:12px;overflow-x:auto;white-space:pre-wrap"><code id="onboard-config-code"></code></pre>
+                        <div style="display:flex;gap:8px;margin-top:8px">
+                            <button class="btn btn--ghost btn--sm" onclick="Auth.copyOnboardConfig()">📋 Копировать конфиг</button>
+                            <button class="btn btn--ghost btn--sm" id="onboard-download-btn" style="display:none" onclick="Auth.downloadOnboardConfig()">💾 Скачать файл</button>
+                        </div>
+                    </div>
+                </div>`;
             const btn = document.getElementById('copy-key');
             if (btn) btn.addEventListener('click', () => {
                 navigator.clipboard.writeText(apiKey);
                 Auth.showSuccess('Ключ скопирован');
             });
+            Auth._onboardKey = apiKey;
+            Auth._onboardUrl = url;
+            Auth._onboardAlias = alias;
+            Auth._onboardTypes = [];
+            API.get('/api/mcp-client-types').then((r) => {
+                if (r && r.ok) {
+                    Auth._onboardTypes = r.data || [];
+                    const sel = document.getElementById('onboard-client-type');
+                    if (sel) {
+                        Auth._onboardTypes.forEach(t => {
+                            sel.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+                        });
+                        const saved = localStorage.getItem('mcp_client_type');
+                        if (saved) {
+                            sel.value = saved;
+                            Auth.renderOnboardConfig();
+                        }
+                    }
+                }
+            });
         };
 
         const stored = localStorage.getItem('fresh_api_key');
         if (stored) {
-            showKey(stored, location.origin + '/mcp');
+            const storedAlias = localStorage.getItem('fresh_connection_name') || '';
+            showKey(stored, location.origin + '/mcp', storedAlias);
             localStorage.removeItem('fresh_api_key');
+            localStorage.removeItem('fresh_connection_name');
             return;
         }
         if (params.get('billing') === 'pending') {
@@ -263,7 +342,7 @@ const Auth = {
                 localStorage.setItem('nickname', res.data.nickname);
                 localStorage.setItem('role', res.data.role);
                 localStorage.setItem('user_id', res.data.user_id);
-                showKey(res.data.api_key || '(ключ недоступен — создайте новый в разделе «Ключи»)');
+                showKey(res.data.api_key || '(ключ недоступен — создайте новый в разделе «Ключи»)', location.origin + '/mcp', res.data.connection_name || '');
                 if (res.data.require_password_change) {
                     body.insertAdjacentHTML('beforeend',
                         '<p class="link"><a href="/force-change-password">🔑 Задать новый пароль для входа (обязательно)</a></p>');

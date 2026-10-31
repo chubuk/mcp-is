@@ -95,9 +95,10 @@ func pad6(n int64) string {
 const onboardTTL = 2 * time.Minute
 
 type onboardEntry struct {
-	userID  string
-	rawKey  string
-	expires time.Time
+	userID   string
+	rawKey   string
+	connName string
+	expires  time.Time
 }
 
 // onboardStore holds single-use onboarding payloads keyed by the code itself
@@ -113,7 +114,7 @@ func newOnboardStore() *onboardStore {
 }
 
 // issue stores the payload under a fresh random code (TTL 2 min).
-func (s *onboardStore) issue(userID, rawKey string) (string, error) {
+func (s *onboardStore) issue(userID, rawKey, connName string) (string, error) {
 	b := make([]byte, 16)
 	if _, err := rand.Read(b); err != nil {
 		return "", err
@@ -121,19 +122,19 @@ func (s *onboardStore) issue(userID, rawKey string) (string, error) {
 	code := hex.EncodeToString(b)
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	s.m[code] = &onboardEntry{userID: userID, rawKey: rawKey, expires: time.Now().Add(onboardTTL)}
+	s.m[code] = &onboardEntry{userID: userID, rawKey: rawKey, connName: connName, expires: time.Now().Add(onboardTTL)}
 	return code, nil
 }
 
 // take atomically consumes the code: concurrent takes yield exactly one winner.
-func (s *onboardStore) take(code string) (string, string, bool) {
+func (s *onboardStore) take(code string) (string, string, string, bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	e, ok := s.m[code]
 	if !ok || time.Now().After(e.expires) {
 		delete(s.m, code)
-		return "", "", false
+		return "", "", "", false
 	}
 	delete(s.m, code)
-	return e.userID, e.rawKey, true
+	return e.userID, e.rawKey, e.connName, true
 }

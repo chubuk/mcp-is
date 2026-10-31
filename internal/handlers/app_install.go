@@ -329,7 +329,7 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 			// Install already bound to this user: no password prompt, no duplicate
 			// shop/key — provisionUserAndShop is idempotent (recreates shop after
 			// uninstall, reuses it otherwise; rawKey is "" when nothing is created).
-			user, rawKey, perr := h.provisionUserAndShop(inst, userEmail, userName)
+			user, rawKey, connName, perr := h.provisionUserAndShop(inst, userEmail, userName)
 			if perr != nil {
 				slog.Error("app autologin: re-provision", "error", perr, "insales_id", insalesID)
 				w.WriteHeader(http.StatusInternalServerError)
@@ -340,7 +340,7 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 					slog.Warn("app autologin: billing check skipped", "error", berr, "insales_id", insalesID)
 				}
 			}
-			code, cerr := h.onboard.issue(user.ID, rawKey)
+			code, cerr := h.onboard.issue(user.ID, rawKey, connName)
 			if cerr != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
@@ -367,7 +367,7 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	user, rawKey, err := h.provisionUserAndShop(inst, userEmail, userName)
+	user, rawKey, connName, err := h.provisionUserAndShop(inst, userEmail, userName)
 	if err != nil {
 		slog.Error("app autologin: provision", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -382,7 +382,7 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	code, err := h.onboard.issue(user.ID, rawKey)
+	code, err := h.onboard.issue(user.ID, rawKey, connName)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
@@ -423,7 +423,7 @@ func (h *AppHandler) ExchangeCode(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid request"})
 		return
 	}
-	userID, rawKey, ok := h.onboard.take(code)
+	userID, rawKey, connName, ok := h.onboard.take(code)
 	if !ok {
 		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid or expired code"})
 		return
@@ -442,7 +442,7 @@ func (h *AppHandler) ExchangeCode(w http.ResponseWriter, r *http.Request) {
 	}
 	writeJSON(w, http.StatusOK, map[string]any{
 		"token": token, "user_id": user.ID, "nickname": user.Nickname, "role": user.Role,
-		"api_key": rawKey, "require_password_change": user.RequirePasswordChange,
+		"api_key": rawKey, "connection_name": connName, "require_password_change": user.RequirePasswordChange,
 	})
 }
 
@@ -465,13 +465,13 @@ func (h *AppHandler) LinkPending(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusForbidden, map[string]string{"error": "привязка недоступна"})
 		return
 	}
-	_, rawKey, err := h.provisionUserAndShop(inst, "", "")
+	_, rawKey, connName, err := h.provisionUserAndShop(inst, "", "")
 	if err != nil {
 		slog.Error("link pending: provision", "error", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"status": "linked", "api_key": rawKey})
+	writeJSON(w, http.StatusOK, map[string]any{"status": "linked", "api_key": rawKey, "connection_name": connName})
 }
 
 // LinkCodeSend handles POST /api/link-code/send — шлёт одноразовый код привязки
@@ -573,13 +573,13 @@ func (h *AppHandler) LinkCodeVerify(w http.ResponseWriter, r *http.Request) {
 	if err := h.users.UpdateEmailVerified(user.ID, true); err != nil {
 		slog.Error("link code: set email verified", "error", err, "user_id", user.ID)
 	}
-	_, rawKey, err := h.provisionUserAndShop(inst, "", "")
+	_, rawKey, connName, err := h.provisionUserAndShop(inst, "", "")
 	if err != nil {
 		slog.Error("link code: provision", "error", err)
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		return
 	}
-	code, err := h.onboard.issue(user.ID, rawKey)
+	code, err := h.onboard.issue(user.ID, rawKey, connName)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]string{"error": "internal error"})
 		return
@@ -648,17 +648,17 @@ func (h *AppHandler) syncBilling(inst *storage.AppInstall, password string) erro
 	return h.shops.UpdateBillingStatus(inst.ShopID, status, until, payURL)
 }
 
-func (h *AppHandler) provisionUserAndShop(inst *storage.AppInstall, email, userName string) (*storage.User, string, error) {
+func (h *AppHandler) provisionUserAndShop(inst *storage.AppInstall, email, userName string) (*storage.User, string, string, error) {
 	userID := inst.UserID
 	if userID == "" {
 		nickname := uniqueNickname(userName, email)
 		hash, err := bcrypt.GenerateFromPassword([]byte(randomPassword()), bcrypt.DefaultCost)
 		if err != nil {
-			return nil, "", err
+			return nil, "", "", err
 		}
 		user, err := h.users.Create(nickname, email, "", "", "", string(hash))
 		if err != nil {
-			return nil, "", fmt.Errorf("create user: %w", err)
+			return nil, "", "", fmt.Errorf("create user: %w", err)
 		}
 		if err := h.users.UpdateRequirePasswordChange(user.ID, true); err != nil {
 			slog.Warn("require_password_change", "error", err)
@@ -666,39 +666,44 @@ func (h *AppHandler) provisionUserAndShop(inst *storage.AppInstall, email, userN
 		userID = user.ID
 	}
 
-	shop, rawKey := inst.ShopID, ""
+	shop, rawKey, connName := inst.ShopID, "", ""
 	if shop != "" {
 		// Returning user / already provisioned — reuse shop, don't mint another key.
 		if _, err := h.shops.GetByID(shop); err != nil {
-			return nil, "", fmt.Errorf("get shop: %w", err)
+			return nil, "", "", fmt.Errorf("get shop: %w", err)
 		}
 	} else {
 		created, err := h.shops.Create(userID, inst.ShopHost, inst.ShopHost, h.appKey, inst.APIPasswordEncrypted, true, false, false)
 		if err != nil {
-			return nil, "", fmt.Errorf("create shop: %w", err)
+			return nil, "", "", fmt.Errorf("create shop: %w", err)
 		}
 		shop = created.ID
 		key, keyHash, err := auth.GenerateAPIKey()
 		if err != nil {
-			return nil, "", err
+			return nil, "", "", err
 		}
-		if _, err := h.aiKeys.CreateForShop(userID, shop, keyHash, "InSales: "+inst.ShopHost); err != nil {
-			return nil, "", fmt.Errorf("create ai key: %w", err)
+		minted, err := h.aiKeys.CreateForShop(userID, shop, keyHash, "InSales: "+inst.ShopHost)
+		if err != nil {
+			return nil, "", "", fmt.Errorf("create ai key: %w", err)
+		}
+		connName = uniqueKeyConnectionName(h.aiKeys, userID, core.Slugify(inst.ShopHost), "")
+		if err := h.aiKeys.UpdateConnectionName(minted.ID, connName); err != nil {
+			return nil, "", "", fmt.Errorf("set connection name: %w", err)
 		}
 		if err := h.installs.LinkShop(inst.InsalesID, userID, shop); err != nil {
-			return nil, "", err
+			return nil, "", "", err
 		}
 		rawKey = key
 	}
 	user, err := h.users.GetByID(userID)
 	if err != nil {
-		return nil, "", err
+		return nil, "", "", err
 	}
 	inst.ShopID = shop // LinkShop writes DB only — keep the in-memory install in sync
 	if rawKey != "" {  // a new shop+key was created — a real link event, not a plain login
 		h.notifyShopEvent("shop_linked", userID, inst.ShopHost)
 	}
-	return user, rawKey, nil
+	return user, rawKey, connName, nil
 }
 
 // notifyShopEvent sends a best-effort shop link/unlink notification (NIST):
