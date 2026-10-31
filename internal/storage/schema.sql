@@ -96,6 +96,9 @@ CREATE INDEX IF NOT EXISTS idx_pdn_ts ON pdn_access_log(ts);
 -- AI keys bound to a specific shop (app installs). NULL = user's default shop (personal mode).
 ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS shop_id UUID REFERENCES shops(id) ON DELETE SET NULL;
 
+-- Connection alias shown in client configs. NULL = legacy/unset (no backfill).
+ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS connection_name TEXT;
+
 -- InSales external-app installs (protocol: password = MD5(token + secret_key))
 CREATE TABLE IF NOT EXISTS app_installs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

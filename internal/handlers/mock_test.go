@@ -522,6 +522,29 @@ func (m *mockAIKeyRepo) UpdateName(id, name string) error {
 	return fmt.Errorf("not found")
 }
 
+func (m *mockAIKeyRepo) UpdateConnectionName(id, connectionName string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if k, ok := m.keys[id]; ok {
+		k.ConnectionName = connectionName
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
+
+func (m *mockAIKeyRepo) UpdateShopBinding(id, shopID, connectionName string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if k, ok := m.keys[id]; ok {
+		k.ShopID = shopID
+		k.ConnectionName = connectionName
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
+
 type mockAppInstallRepo struct {
 	mu       sync.RWMutex
 	installs map[string]*storage.AppInstall

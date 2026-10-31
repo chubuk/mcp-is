@@ -11,6 +11,8 @@ type AIKey struct {
 	ID                string
 	UserID            string
 	ShopID            string
+	ShopName          string
+	ConnectionName    string
 	KeyHash           string
 	Name              string
 	AvailableCommands string
@@ -51,9 +53,10 @@ func (r *AIKeyRepository) CreateForShop(userID, shopID, keyHash, name string) (*
 func (r *AIKeyRepository) GetByHash(keyHash string) (*AIKey, error) {
 	var k AIKey
 	err := r.db.QueryRow(context.Background(),
-		`SELECT id, user_id, COALESCE(shop_id::text,''), key_hash, COALESCE(name,''), COALESCE(last_used_at::text,''), created_at::text
-		 FROM ai_keys WHERE key_hash = $1`, keyHash,
-	).Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.LastUsedAt, &k.CreatedAt)
+		`SELECT k.id, k.user_id, COALESCE(k.shop_id::text,''), k.key_hash, COALESCE(k.name,''), COALESCE(k.connection_name,''), COALESCE(s.name,''), COALESCE(k.last_used_at::text,''), k.created_at::text
+		 FROM ai_keys k LEFT JOIN shops s ON s.id = k.shop_id
+		 WHERE k.key_hash = $1`, keyHash,
+	).Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.ConnectionName, &k.ShopName, &k.LastUsedAt, &k.CreatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("ai key not found: %w", err)
@@ -63,8 +66,9 @@ func (r *AIKeyRepository) GetByHash(keyHash string) (*AIKey, error) {
 
 func (r *AIKeyRepository) ListByUserID(userID string) ([]AIKey, error) {
 	rows, err := r.db.Query(context.Background(),
-		`SELECT id, user_id, key_hash, COALESCE(name,''), COALESCE(last_used_at::text,''), created_at::text
-		 FROM ai_keys WHERE user_id = $1 ORDER BY created_at DESC`, userID,
+		`SELECT k.id, k.user_id, COALESCE(k.shop_id::text,''), k.key_hash, COALESCE(k.name,''), COALESCE(k.connection_name,''), COALESCE(s.name,''), COALESCE(k.last_used_at::text,''), k.created_at::text
+		 FROM ai_keys k LEFT JOIN shops s ON s.id = k.shop_id
+		 WHERE k.user_id = $1 ORDER BY k.created_at DESC`, userID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("list ai keys: %w", err)
@@ -74,7 +78,7 @@ func (r *AIKeyRepository) ListByUserID(userID string) ([]AIKey, error) {
 	var keys []AIKey
 	for rows.Next() {
 		var k AIKey
-		if err := rows.Scan(&k.ID, &k.UserID, &k.KeyHash, &k.Name, &k.LastUsedAt, &k.CreatedAt); err != nil {
+		if err := rows.Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.ConnectionName, &k.ShopName, &k.LastUsedAt, &k.CreatedAt); err != nil {
 			return nil, fmt.Errorf("scan ai key: %w", err)
 		}
 		keys = append(keys, k)
@@ -97,8 +101,9 @@ func (r *AIKeyRepository) ListByUserIDFiltered(userID string, page, perPage int)
 	}
 
 	rows, err := r.db.Query(context.Background(),
-		`SELECT id, user_id, key_hash, COALESCE(name,''), pdn_enabled, COALESCE(last_used_at::text,''), created_at::text
-		 FROM ai_keys WHERE user_id = $1 ORDER BY created_at DESC LIMIT $2 OFFSET $3`,
+		`SELECT k.id, k.user_id, COALESCE(k.shop_id::text,''), k.key_hash, COALESCE(k.name,''), COALESCE(k.connection_name,''), COALESCE(s.name,''), k.pdn_enabled, COALESCE(k.last_used_at::text,''), k.created_at::text
+		 FROM ai_keys k LEFT JOIN shops s ON s.id = k.shop_id
+		 WHERE k.user_id = $1 ORDER BY k.created_at DESC LIMIT $2 OFFSET $3`,
 		userID, perPage, offset,
 	)
 	if err != nil {
@@ -109,7 +114,7 @@ func (r *AIKeyRepository) ListByUserIDFiltered(userID string, page, perPage int)
 	var keys []AIKey
 	for rows.Next() {
 		var k AIKey
-		if err := rows.Scan(&k.ID, &k.UserID, &k.KeyHash, &k.Name, &k.PDNEnabled, &k.LastUsedAt, &k.CreatedAt); err != nil {
+		if err := rows.Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.ConnectionName, &k.ShopName, &k.PDNEnabled, &k.LastUsedAt, &k.CreatedAt); err != nil {
 			return nil, 0, fmt.Errorf("scan ai key: %w", err)
 		}
 		keys = append(keys, k)
@@ -160,12 +165,36 @@ func (r *AIKeyRepository) UpdateName(id, name string) error {
 	return err
 }
 
+// UpdateConnectionName sets the connection alias; empty string stores NULL (legacy state).
+func (r *AIKeyRepository) UpdateConnectionName(id, connectionName string) error {
+	_, err := r.db.Exec(context.Background(),
+		`UPDATE ai_keys SET connection_name = NULLIF($1,'') WHERE id = $2`, connectionName, id,
+	)
+	if err != nil {
+		return fmt.Errorf("update ai key connection name: %w", err)
+	}
+	return nil
+}
+
+// UpdateShopBinding sets shop_id and connection_name together; empty values store NULL.
+func (r *AIKeyRepository) UpdateShopBinding(id, shopID, connectionName string) error {
+	_, err := r.db.Exec(context.Background(),
+		`UPDATE ai_keys SET shop_id = NULLIF($1,'')::uuid, connection_name = NULLIF($2,'') WHERE id = $3`,
+		shopID, connectionName, id,
+	)
+	if err != nil {
+		return fmt.Errorf("update ai key shop binding: %w", err)
+	}
+	return nil
+}
+
 func (r *AIKeyRepository) GetByID(id string) (*AIKey, error) {
 	var k AIKey
 	err := r.db.QueryRow(context.Background(),
-		`SELECT id, user_id, key_hash, COALESCE(name,''), COALESCE(available_commands,''), pdn_enabled, COALESCE(last_used_at::text,''), created_at::text
-		 FROM ai_keys WHERE id = $1`, id,
-	).Scan(&k.ID, &k.UserID, &k.KeyHash, &k.Name, &k.AvailableCommands, &k.PDNEnabled, &k.LastUsedAt, &k.CreatedAt)
+		`SELECT k.id, k.user_id, COALESCE(k.shop_id::text,''), k.key_hash, COALESCE(k.name,''), COALESCE(k.connection_name,''), COALESCE(s.name,''), COALESCE(k.available_commands,''), k.pdn_enabled, COALESCE(k.last_used_at::text,''), k.created_at::text
+		 FROM ai_keys k LEFT JOIN shops s ON s.id = k.shop_id
+		 WHERE k.id = $1`, id,
+	).Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.ConnectionName, &k.ShopName, &k.AvailableCommands, &k.PDNEnabled, &k.LastUsedAt, &k.CreatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("ai key not found: %w", err)

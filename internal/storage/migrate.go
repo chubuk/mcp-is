@@ -22,6 +22,7 @@ func RunMigrations(pool *pgxpool.Pool) {
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT TRUE`,
 		`ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS pdn_enabled BOOLEAN DEFAULT FALSE`,
 		`ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS shop_id UUID REFERENCES shops(id) ON DELETE SET NULL`,
+		`ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS connection_name TEXT`,
 		`CREATE TABLE IF NOT EXISTS app_installs (
 			id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 			insales_id TEXT UNIQUE NOT NULL,

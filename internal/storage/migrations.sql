@@ -76,6 +76,9 @@ CREATE TABLE IF NOT EXISTS mcp_client_types (
 -- Миграция v0.8.0 - InSales app installs (external application mode)
 ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS shop_id UUID REFERENCES shops(id) ON DELETE SET NULL;
 
+-- Миграция - AI key connection_name (алиас соединения; NULL = легаси, без backfill)
+ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS connection_name TEXT;
+
 CREATE TABLE IF NOT EXISTS app_installs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     insales_id TEXT UNIQUE NOT NULL,
