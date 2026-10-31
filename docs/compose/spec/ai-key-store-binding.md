@@ -1,14 +1,20 @@
 ---
 feature: ai-key-store-binding
-status: in-progress
+status: delivered
 updated: 2026-10-31
 branch: feat/ai-key-store-binding
-commits:
+commits: 152171d..71ecad3
 ---
 
 # AI Key → Store Binding & Connection Naming
 
 ## Report
+
+**What was built** — Каждый ИИ-ключ теперь жёстко привязан к одному магазину InSales: создание без `shop_id` (и без магазинов в аккаунте) отклоняется, редактор не сохранит легаси-ключ без привязки, владение проверяется на всех операциях. Непривязанные ключи fail-closed: data-инструменты возвращают модели actionable-ошибку с инструкцией привязки вместо молчаливого фолбэка на дефолт-магазин. Идентификация соединения: атрибут `connection_name` (алиас, `a-z0-9-`, уникален в аккаунте, авто-суффикс при коллизии, partial unique index в БД), персональные instructions через `OnAfterInitialize` (алиас + магазин + правило «не угадывай»), инструмент `store_info` как ground truth, конфиг-сниппеты с алиасом в кабинете и на странице установки (с рабочей кнопкой «Скачать файл»). Плюс квоты `MAX_SHOPS_PER_USER`/`MAX_AI_KEYS_PER_USER` (дефолт 20, app-install вне квот) и перевыпуск ключа (`POST /api/ai-keys/{id}/rotate`) как штатный способ восстановления потерянного секрета.
+
+**Verification** — `make lint` PASS (0 issues); `go vet ./...` PASS; `go test ./...` PASS (12 пакетов); `go test -tags integration ./internal/storage/` PASS (локальный Postgres, включая новые тесты unique index / NULL-handling / collision suffix); ручной браузерный прогон (Playwright + локальный стек: Postgres + сервер + nginx-прокси) PASS: блокировка создания без магазинов, форма с выбором магазина и предзаполненным алиасом, карточка выдачи (ключ один раз + алиас + сниппет + скачивание), бейдж «не привязан», принудительная привязка при сохранении легаси-ключа (коллизия → `romashka-2`), кнопка перевыпуска, страница onboarding с сниппетом/алиасом/скачиванием. Независимое ревью: REQUEST-CHANGES (1 major — unique index) → фикс → APPROVE.
+
+**Journey log** — 1) Critic-ревью плана до кода поймало 2 major (merge-patch PUT ломал togglePDN; инвариант уникальности недостижим для легаси-строк) — правки в спеке избавили от багов в коде. 2) Субагентная реализация T1 застряла на двусмысленной сигнатуре — переход на гибрид (спека + прямая реализация + одно ревью) ускорил остальные 10 задач. 3) HTML `pattern="[a-z0-9-]"` невалиден в v-flag regex-движках, а в JS-строке `\-` схлопывается в `-` — нашёлось только живым браузером. 4) Приложенный авто-суффикс не заменяет DB unique index — ревью поймало TOCTOU. 5) `schema.sql` в проде применяет init БД, а не миграционный раннер — для локального теста БД его нужно накатывать вручную.
 
 ## [S1] Problem
 
@@ -72,14 +78,14 @@ commits:
 
 ## Tasks
 
-- [ ] T1: storage: колонка `connection_name` (во всех трёх точках синхронизации: `schema.sql`, inline-список `migrate.go`, `migrations.sql`; легаси-NULL остаётся NULL без backfill), `UpdateShopBinding` (shop_id + connection_name), List/Get возвращают shop_id/connection_name/имя магазина — acceptance: юнит/интеграционные тесты репозиториев зелёные, тест NULL-handling (covers: S2.1, S2.3)
-- [ ] T2: API create: обязательный `shop_id` (владение + ненулевое число магазинов), ответ с shop_id/connection_name — acceptance: тесты — 400 без shop_id / чужой shop / при нуле магазинов, 201 с привязкой (covers: S2.1)
-- [ ] T3: API update/delete: merge-patch PUT; для непривязанного ключа `shop_id` обязателен; проверка владельца — acceptance: тесты — PUT непривязанного без shop_id → 400; PUT привязанного только с pdn_enabled (togglePDN) → 200; чужой ключ → 403/404 (covers: S2.1; depends: T1)
-- [ ] T4: fail-closed для непривязанных ключей: `ErrKeyNotBound` вместо фолбэка на дефолт-магазин, tool error с remediation-текстом — acceptance: тест GetClient (пустой shop_id → ошибка), тест MCP-хендлера на текст ошибки (covers: S2.2; depends: T1)
-- [ ] T5: `connection_name`: дефолт из Slugify(shop.Name), валидация `^[a-z0-9-]{1,64}$`, уникальность среди сохранённых значений с авто-суффиксом `-2` при коллизии — acceptance: тесты — коллизия получает суффикс; чтение легаси-NULL строки без сохранённого имени не падает (covers: S2.3; depends: T1)
-- [ ] T6: инструмент `store_info` — acceptance: тест — bound-ключ возвращает имя магазина/алиас, unbound возвращает bound:false и remediation (covers: S2.3; depends: T4, T5)
-- [ ] T7: per-connection instructions через `Hooks.OnAfterInitialize`; middleware кладёт `connection_name` в контекст; имя/домен магазина резолвятся при initialize по shop_id — acceptance: тест initialize — в instructions имя магазина и connection_name; для unbound — информационное уведомление (covers: S2.3; depends: T5)
-- [ ] T8: UI: формы создания/редактирования с выбором магазина и connection_name, блокировка без магазинов, колонка «Магазин», сниппеты с алиасом connection_name — acceptance (ручная проверка в браузере, JS-тестов в репо нет): в сниппете алиас = connection_name; сохранение легаси-ключа без магазина невозможно (covers: S2.1, S2.3, S2.4; depends: T2, T3, T5)
-- [ ] T9: лимиты: `MAX_SHOPS_PER_USER`/`MAX_AI_KEYS_PER_USER` в config (дефолт 20), проверка в create-хендлерах shops и ai-keys — acceptance: тесты — при лимите=2 третий POST возвращает 403 с текстом лимита; без переменных в env — дефолт 20 (covers: S2.5; depends: T2)
-- [ ] T10: перевыпуск ключа: `POST /api/ai-keys/{id}/rotate` (владелец), замена hash, показ raw один раз; кнопка «Перевыпустить ключ» в редакторе — acceptance: тесты — после ротации старый hash не аутентифицирует, новый raw возвращается, имя/привязка сохранены; чужой ключ → отказ (covers: S2.6; depends: T3)
-- [ ] T11: onboarding установки: автоключ создаётся с `connection_name`; страница показывает ключ, примеры конфига (алиас = connection_name) и кнопку «Скачать файл» (Blob/a.download) — acceptance (ручная проверка в браузере): на странице установки сниппет содержит алиас connection_name; кнопка скачивает файл с именем из mcp_client_types (covers: S2.3, S2.6; depends: T5)
+- [x] T1: storage: колонка `connection_name` (во всех трёх точках синхронизации: `schema.sql`, inline-список `migrate.go`, `migrations.sql`; легаси-NULL остаётся NULL без backfill), `UpdateShopBinding` (shop_id + connection_name), List/Get возвращают shop_id/connection_name/имя магазина — acceptance: юнит/интеграционные тесты репозиториев зелёные, тест NULL-handling (covers: S2.1, S2.3)
+- [x] T2: API create: обязательный `shop_id` (владение + ненулевое число магазинов), ответ с shop_id/connection_name — acceptance: тесты — 400 без shop_id / чужой shop / при нуле магазинов, 201 с привязкой (covers: S2.1)
+- [x] T3: API update/delete: merge-patch PUT; для непривязанного ключа `shop_id` обязателен; проверка владельца — acceptance: тесты — PUT непривязанного без shop_id → 400; PUT привязанного только с pdn_enabled (togglePDN) → 200; чужой ключ → 403/404 (covers: S2.1; depends: T1)
+- [x] T4: fail-closed для непривязанных ключей: `ErrKeyNotBound` вместо фолбэка на дефолт-магазин, tool error с remediation-текстом — acceptance: тест GetClient (пустой shop_id → ошибка), тест MCP-хендлера на текст ошибки (covers: S2.2; depends: T1)
+- [x] T5: `connection_name`: дефолт из Slugify(shop.Name), валидация `^[a-z0-9-]{1,64}$`, уникальность среди сохранённых значений с авто-суффиксом `-2` при коллизии — acceptance: тесты — коллизия получает суффикс; чтение легаси-NULL строки без сохранённого имени не падает (covers: S2.3; depends: T1)
+- [x] T6: инструмент `store_info` — acceptance: тест — bound-ключ возвращает имя магазина/алиас, unbound возвращает bound:false и remediation (covers: S2.3; depends: T4, T5)
+- [x] T7: per-connection instructions через `Hooks.OnAfterInitialize`; middleware кладёт `connection_name` в контекст; имя/домен магазина резолвятся при initialize по shop_id — acceptance: тест initialize — в instructions имя магазина и connection_name; для unbound — информационное уведомление (covers: S2.3; depends: T5)
+- [x] T8: UI: формы создания/редактирования с выбором магазина и connection_name, блокировка без магазинов, колонка «Магазин», сниппеты с алиасом connection_name — acceptance (ручная проверка в браузере, JS-тестов в репо нет): в сниппете алиас = connection_name; сохранение легаси-ключа без магазина невозможно (covers: S2.1, S2.3, S2.4; depends: T2, T3, T5)
+- [x] T9: лимиты: `MAX_SHOPS_PER_USER`/`MAX_AI_KEYS_PER_USER` в config (дефолт 20), проверка в create-хендлерах shops и ai-keys — acceptance: тесты — при лимите=2 третий POST возвращает 403 с текстом лимита; без переменных в env — дефолт 20 (covers: S2.5; depends: T2)
+- [x] T10: перевыпуск ключа: `POST /api/ai-keys/{id}/rotate` (владелец), замена hash, показ raw один раз; кнопка «Перевыпустить ключ» в редакторе — acceptance: тесты — после ротации старый hash не аутентифицирует, новый raw возвращается, имя/привязка сохранены; чужой ключ → отказ (covers: S2.6; depends: T3)
+- [x] T11: onboarding установки: автоключ создаётся с `connection_name`; страница показывает ключ, примеры конфига (алиас = connection_name) и кнопку «Скачать файл» (Blob/a.download) — acceptance (ручная проверка в браузере): на странице установки сниппет содержит алиас connection_name; кнопка скачивает файл с именем из mcp_client_types (covers: S2.3, S2.6; depends: T5)
