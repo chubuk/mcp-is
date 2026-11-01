@@ -48,6 +48,9 @@ Set MCP_TOOLS_MODE=all to list every tool at once (more tokens, lower selection 
 ## Read-only
 In read-only sessions write tools are hidden and call_insales_tool rejects them.
 
+## Rate limits
+300 requests/min per API key. Near the limit responses slow down instead of failing; on HTTP 429 wait for Retry-After seconds and retry, then pace requests.
+
 ## Pipelines
 search_product_details, order_full_details, client_full_profile, product_catalog_search, collection_products — multi-step reads in one call.`
 
@@ -95,7 +98,7 @@ func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry st
 
 	s := server.NewMCPServer(
 		"mcp-is",
-		"0.9.3",
+		"0.9.4",
 		server.WithToolCapabilities(true),
 		server.WithToolFilter(toolFilter(readOnly)),
 		server.WithRecovery(),

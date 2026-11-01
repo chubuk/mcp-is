@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.9.4] — 2026-11-02 (429 = JSON-RPC error + Retry-After, лимиты в initialize.instructions)
+
+### Исправлено
+- **HTTP 429 при переполнении очереди лимита теперь понятен агентам**: вместо nginx-HTML возвращается JSON-RPC error (`code:-32000`, `message` с инструкцией подождать и повторить, `data.retry_after`) + заголовок `Retry-After: 30` (спека MCP разрешает JSON-RPC error body в HTTP-ошибках; текст actionable для LLM self-correction).
+- **Лимиты объявлены в `initialize.instructions`** (раздел Rate limits, EN): агенты знают про 300 req/min per key, замедление при приближении к лимиту и поведение при 429 — до первого вызова.
+
 ## [0.9.3] — 2026-11-02 (rate limiting per-API-key, замедление вместо 503)
 
 ### Исправлено

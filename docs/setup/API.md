@@ -826,7 +826,7 @@ Authorization: Bearer <AI_KEY>
     "capabilities": {"tools": {"listChanged": true}},
     "serverInfo": {
       "name": "mcp-is",
-      "version": "0.9.3"
+      "version": "0.9.4"
     },
     "instructions": "Discovery: default tools/list is a core surface; use search_insales_tools → call_insales_tool for the full catalog. MCP_TOOLS_MODE=all lists everything."
   }
@@ -1736,7 +1736,13 @@ Authorization: Bearer <AI_KEY>
 | Скорость на ключ | 300 запросов/мин |
 | Burst (мгновенно сверх нормы) | 60 запросов |
 | Очередь (плавное замедление) | до 200 запросов |
-| Отказ | HTTP 429 (только за пределами очереди) |
+| Отказ | HTTP 429 с JSON-RPC телом и `Retry-After` (только за пределами очереди) |
 | Потолок на IP (щит от флуда) | 100 запросов/сек |
 
-Пока запросы укладываются в burst — отдаются мгновенно. Между burst и верхней границей очереди nginx **плавно замедляет** выдачу до скорости лимита (агенты не получают ошибок, а работают медленнее). HTTP 429 возвращается только при полном переполнении очереди.
+Пока запросы укладываются в burst — отдаются мгновенно. Между burst и верхней границей очереди nginx **плавно замедляет** выдачу до скорости лимита (агенты не получают ошибок, а работают медленнее). HTTP 429 возвращается только при полном переполнении очереди:
+
+```json
+{"jsonrpc":"2.0","id":null,"error":{"code":-32000,"message":"Rate limit exceeded: 300 req/min per API key. Wait and retry after 30 seconds; slow down if this repeats.","data":{"retry_after":30}}}
+```
+
+Лимиты также объявлены в `initialize.instructions` — агенты знают их до первого вызова.
