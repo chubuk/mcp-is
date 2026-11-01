@@ -190,7 +190,7 @@ const Shops = {
         const passInput = document.getElementById('edit-shop-apipass');
         passInput.dataset.hasPass = shop.has_password ? '1' : '0';
         document.getElementById('edit-shop-apipass-hint').textContent =
-            shop.has_password ? '(сохранён ✓ — пустое поле сотрёт его)' : '(не задан)';
+            shop.has_password ? '(сохранён ✓ — оставьте пустым, чтобы не менять)' : '(не задан)';
         document.getElementById('edit-shop-default').checked = shop.is_default;
         document.getElementById('edit-shop-readonly').checked = shop.is_read_only;
         document.getElementById('edit-shop-pdn').checked = shop.pdn_enabled;
@@ -318,11 +318,7 @@ const Shops = {
                         '<div class="alert alert--error">Название магазина обязательно</div>';
                     return;
                 }
-                if (body.api_password === '' && document.getElementById('edit-shop-apipass')?.dataset.hasPass === '1') {
-                    if (!confirm('Поле пароля пустое — стереть сохранённый пароль API магазина?')) {
-                        delete body.api_password;
-                    }
-                }
+                if (body.api_password === '') delete body.api_password;
 
                 const res = await API.put('/api/shops/' + id, body);
                 if (res && res.ok) {

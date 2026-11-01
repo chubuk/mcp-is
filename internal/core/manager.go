@@ -94,6 +94,9 @@ func (m *AccountManager) GetClient(ctx context.Context) (*insales.InSalesClient,
 	cacheKey := shop.ID
 	client, exists := m.clients[cacheKey]
 	if !exists {
+		if shop.APIPasswordEncrypted == "" {
+			return nil, ctx, fmt.Errorf("для магазина не сохранён пароль API — введите его в настройках магазина или войдите в приложение через админку InSales")
+		}
 		password, derr := m.aes.Decrypt(shop.APIPasswordEncrypted)
 		if derr != nil {
 			return nil, ctx, fmt.Errorf("decrypt password: %w", derr)

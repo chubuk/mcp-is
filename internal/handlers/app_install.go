@@ -669,8 +669,16 @@ func (h *AppHandler) provisionUserAndShop(inst *storage.AppInstall, email, userN
 	shop, rawKey, connName := inst.ShopID, "", ""
 	if shop != "" {
 		// Returning user / already provisioned — reuse shop, don't mint another key.
-		if _, err := h.shops.GetByID(shop); err != nil {
+		existing, err := h.shops.GetByID(shop)
+		if err != nil {
 			return nil, "", "", fmt.Errorf("get shop: %w", err)
+		}
+		// Self-heal: a wiped shop password can be restored from the install copy.
+		if existing.APIPasswordEncrypted == "" && inst.APIPasswordEncrypted != "" {
+			if err := h.shops.UpdateAPIPassword(shop, inst.APIPasswordEncrypted); err != nil {
+				return nil, "", "", fmt.Errorf("restore shop password: %w", err)
+			}
+			h.manager.InvalidateShop(shop)
 		}
 	} else {
 		created, err := h.shops.Create(userID, inst.ShopHost, inst.ShopHost, h.appKey, inst.APIPasswordEncrypted, true, false, false)

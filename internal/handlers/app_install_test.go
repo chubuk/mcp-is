@@ -168,6 +168,47 @@ func TestInstall_Reinstall_ShopUpdateError_500(t *testing.T) {
 	}
 }
 
+// Returning user with a wiped shop password — self-heal restores it from the install copy.
+func TestProvisionUserAndShop_RestoresEmptyShopPassword(t *testing.T) {
+	h, installs, users, shops, _ := newTestAppHandler(t)
+	installFor(t, h, "123", "token123")
+
+	user, err := users.Create("u1", "u@example.com", "", "", "", "hash")
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	shop, err := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", "", true, false, false)
+	if err != nil {
+		t.Fatalf("create shop: %v", err)
+	}
+	if err := installs.LinkShop("123", user.ID, shop.ID); err != nil {
+		t.Fatalf("link shop: %v", err)
+	}
+
+	inst, err := installs.GetByInsalesID("123")
+	if err != nil {
+		t.Fatalf("get install: %v", err)
+	}
+	if _, _, _, err := h.provisionUserAndShop(inst, "u@example.com", "User"); err != nil {
+		t.Fatalf("provision: %v", err)
+	}
+
+	got, err := shops.GetByID(shop.ID)
+	if err != nil {
+		t.Fatalf("get shop: %v", err)
+	}
+	if got.APIPasswordEncrypted == "" {
+		t.Fatal("shop password not restored from install")
+	}
+	gotPassword, err := h.aes.Decrypt(got.APIPasswordEncrypted)
+	if err != nil {
+		t.Fatalf("decrypt: %v", err)
+	}
+	if want := appinstall.InstallPassword("token123", "mysecret"); gotPassword != want {
+		t.Errorf("restored password = %q, want %q", gotPassword, want)
+	}
+}
+
 // --- autologin: link helpers ---
 
 func installFor(t *testing.T, h *AppHandler, insalesID, token string) *mockAppInstallRepo {
