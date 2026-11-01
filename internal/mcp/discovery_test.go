@@ -209,6 +209,26 @@ func TestCoreToolsHaveOutputSchema(t *testing.T) {
 	}
 }
 
+// Спека MCP: outputSchema/properties — объекты; bool-схемы (true из полей any)
+// ломают строгие типизированные клиенты. addTool обязан чистить их у ВСЕХ инструментов.
+func TestNoBoolSchemasAfterRegistration(t *testing.T) {
+	s := server.NewMCPServer("test", "1.0")
+	RegisterTools(s, nil)
+	RegisterDiscoveryTools(s, nil, nil)
+	for name, st := range s.ListTools() {
+		b, err := json.Marshal(st.Tool.OutputSchema)
+		if err != nil {
+			t.Fatalf("%s: marshal schema: %v", name, err)
+		}
+		if len(b) < 4 { // no outputSchema — ok
+			continue
+		}
+		if strings.Contains(string(b), `"items":true`) || strings.Contains(string(b), `"additionalProperties":true`) {
+			t.Errorf("%s: boolean schema nodes present: %.300s", name, b)
+		}
+	}
+}
+
 func TestListProductsEnvelope(t *testing.T) {
 	got := ProductsPage{Items: nil, Total: 0, Page: 2, PerPage: 10}
 	b, err := json.Marshal(got)

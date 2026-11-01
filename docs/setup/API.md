@@ -255,14 +255,14 @@ HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле 
     {"name": "list_products", "description": "Получить список товаров"},
     {"name": "get_product", "description": "Получить товар по ID"}
   ],
-  "count": 284,
+  "count": 285,
   "updated_at": "02.07.2026 14:30"
 }
 ```
 
 **Логика:**
 - `is_read_only=true` → read-команды (list_*, get_*, system)
-- `is_read_only=false` → все 284 команды (полный каталог; default tools/list — core surface)
+- `is_read_only=false` → все 285 команд (полный каталог; default tools/list — core surface)
 ```
 
 #### GET /api/shops
@@ -826,7 +826,7 @@ Authorization: Bearer <AI_KEY>
     "capabilities": {"tools": {"listChanged": true}},
     "serverInfo": {
       "name": "mcp-is",
-      "version": "0.7.6"
+      "version": "0.9.2"
     },
     "instructions": "Discovery: default tools/list is a core surface; use search_insales_tools → call_insales_tool for the full catalog. MCP_TOOLS_MODE=all lists everything."
   }
@@ -837,7 +837,7 @@ Authorization: Bearer <AI_KEY>
 
 Получить список доступных инструментов.
 
-По умолчанию возвращается **core surface** (~30 tools: products/orders/clients/categories/collections/product fields/pipelines/export + `search_insales_tools`/`call_insales_tool`). Полный каталог (~280) — через catalog meta-tools или env `MCP_TOOLS_MODE=all`. Результат каждого tool: JSON text + `structuredContent`.
+По умолчанию возвращается **core surface** (~30 tools: products/orders/clients/categories/collections/product fields/pipelines/export + `search_insales_tools`/`call_insales_tool`). Полный каталог (~285) — через catalog meta-tools или env `MCP_TOOLS_MODE=all`. Результат каждого tool: JSON text + `structuredContent`; `structuredContent` всегда JSON-**объект** (MCP-спека), списки — конверт `{items, total[, page, per_page]}`; у core-инструментов объявлен `outputSchema` (runtime-валидация включена).
 
 ```json
 {

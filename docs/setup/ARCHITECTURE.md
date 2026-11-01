@@ -23,7 +23,7 @@
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
 │  │ Auth Layer  │  │ MCP Server  │  │ Web API (REST)      │ │
 │  │ JWT/API Key │  │ mcp-go SDK  │  │ handlers/shops/...  │ │
-│  │ Rate Limit  │  │ 284 tools   │  │ admin/auth/server   │ │
+│  │ Rate Limit  │  │ 285 tools   │  │ admin/auth/server   │ │
 │  └─────────────┘  └──────┬──────┘  └──────────┬──────────┘ │
 │                          │                     │            │
 │  ┌───────────────────────┴─────────────────────┴──────────┐ │
@@ -67,12 +67,12 @@
 - **Role-based access** — super_admin, admin, user
 
 ### 3. MCP Server (mcp-go SDK)
-- **284 инструмента** для работы с InSales (120 read-only / 164 write)
+- **285 инструментов** для работы с InSales (120 read-only / 164 write)
 - **Progressive discovery** — default `tools/list` ≈ core surface (~30) + `search_insales_tools` / `call_insales_tool`; полный каталог через catalog или `MCP_TOOLS_MODE=all`
 - **Tool annotations** — readOnlyHint, destructiveHint, idempotentHint, openWorldHint
 - **Tool filtering** — read-only режим скрывает write-команды; nil ReadOnlyHint трактуется как write
 - **Server instructions** — discovery, envelope, language-invariant args, pipelines
-- **Результаты** — JSON text + structuredContent (двойная форма)
+- **Результаты** — JSON text + structuredContent (двойная форма); structuredContent — всегда объект, списки в конверте `{items, total}`
 
 ### 4. Service Layer
 - **Service** — бизнес-логика, вызов InSales API
@@ -146,14 +146,14 @@ Tool filtering (tools/list возвращает только read-команды
 
 ```bash
 # Установка
-sudo dpkg -i mcp-is_0.7.6_amd64.deb
+sudo dpkg -i mcp-is_0.9.2_amd64.deb
 sudo nano /etc/mcp-is/.env
 sudo systemctl start mcp-is
 ```
 
 ### 6. Покрытие InSales API → MCP tools (op→tool)
 
-Сгенерировано из `docs/api/Insales-api-docs.md` vs `internal/mcp/tools.go`. Ресурсов: 57, операций API: 327, MCP tools: 284.
+Сгенерировано из `docs/api/Insales-api-docs.md` vs `internal/mcp/tools.go`. Ресурсов: 57, операций API: 327, MCP tools: 285.
 
 Статусы: **OK** — есть list/get/create/update/delete (или API не даёт большего); **частично** — нет отдельных вербов (часто в API их и нет); **out-of-scope** — ресурс не нужен / сломан на стороне InSales.
 
