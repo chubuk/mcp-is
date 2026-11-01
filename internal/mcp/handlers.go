@@ -100,29 +100,36 @@ func getFloat(args map[string]any, key string, def float64) float64 {
 	return def
 }
 
+// applyPDNToResult маскирует ПДн в результате инструмента при включённом режиме.
+// Значение целиком JSON round-trip-ится (typed-структуры → generic-дерево → маска →
+// обратно в исходный Go-тип), чтобы вызывающие хендлеры и типизированные конверты
+// продолжали работать (masked.([]insales.Order) и т.п.).
 func applyPDNToResult(ctx context.Context, result any, toolName string) any {
 	shopPDN, _ := ctx.Value(mcpShopPDNKey).(bool)
 	aiKeyPDN, _ := ctx.Value(mcpAIKeyPDNKey).(bool)
 
-	if !shopPDN && !aiKeyPDN {
+	if (!shopPDN && !aiKeyPDN) || result == nil {
 		return result
 	}
 
-	if dataMap, ok := result.(map[string]any); ok {
-		return pdn.MaskClientData(dataMap)
+	b, err := json.Marshal(result)
+	if err != nil {
+		return result
 	}
-	if dataArray, ok := result.([]any); ok {
-		masked := make([]any, len(dataArray))
-		for i, item := range dataArray {
-			if dataMap, ok := item.(map[string]any); ok {
-				masked[i] = pdn.MaskClientData(dataMap)
-			} else {
-				masked[i] = item
-			}
-		}
+	var generic any
+	if err := json.Unmarshal(b, &generic); err != nil {
+		return result
+	}
+	masked := pdn.MaskAny(generic)
+	mb, err := json.Marshal(masked)
+	if err != nil {
 		return masked
 	}
-	return result
+	out := reflect.New(reflect.TypeOf(result))
+	if err := json.Unmarshal(mb, out.Interface()); err != nil {
+		return masked
+	}
+	return out.Elem().Interface()
 }
 
 // === ТОВАРЫ ===
@@ -255,7 +262,7 @@ func updateOrderHandler(svc *service.Service) func(ctx context.Context, req mcp.
 		if err != nil {
 			return toolError(err), nil
 		}
-		return toolResult(result), nil
+		return toolResult(applyPDNToResult(ctx, result, "update_order")), nil
 	}
 }
 
@@ -277,7 +284,7 @@ func createOrderHandler(svc *service.Service) func(ctx context.Context, req mcp.
 		if err != nil {
 			return toolError(err), nil
 		}
-		return toolResult(result), nil
+		return toolResult(applyPDNToResult(ctx, result, "create_order")), nil
 	}
 }
 
@@ -1946,7 +1953,7 @@ func orderSubHandler(svc *service.Service, build func(req mcp.CallToolRequest) (
 		if err != nil {
 			return toolError(err), nil
 		}
-		return toolResult(result), nil
+		return toolResult(applyPDNToResult(ctx, result, "update_order")), nil
 	}
 }
 
@@ -2412,7 +2419,7 @@ func orderFullDetailsHandler(svc *service.Service) func(ctx context.Context, req
 		if err != nil {
 			return toolError(err), nil
 		}
-		return toolResult(result), nil
+		return toolResult(applyPDNToResult(ctx, result, "order_full_details")), nil
 	}
 }
 
@@ -2426,7 +2433,7 @@ func clientFullProfileHandler(svc *service.Service) func(ctx context.Context, re
 		if err != nil {
 			return toolError(err), nil
 		}
-		return toolResult(result), nil
+		return toolResult(applyPDNToResult(ctx, result, "client_full_profile")), nil
 	}
 }
 
@@ -2458,6 +2465,13 @@ func collectionProductsHandler(svc *service.Service) func(ctx context.Context, r
 
 // === EXPORT handlers ===
 
+// pdnActive — включён ли режим маскирования ПДн для этой сессии.
+func pdnActive(ctx context.Context) bool {
+	shopPDN, _ := ctx.Value(mcpShopPDNKey).(bool)
+	aiKeyPDN, _ := ctx.Value(mcpAIKeyPDNKey).(bool)
+	return shopPDN || aiKeyPDN
+}
+
 func exportProductsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		csv, err := svc.ExportProducts(ctx)
@@ -2474,6 +2488,9 @@ func exportOrdersHandler(svc *service.Service) func(ctx context.Context, req mcp
 		if err != nil {
 			return toolError(err), nil
 		}
+		if pdnActive(ctx) {
+			csv = pdn.MaskCSV(csv)
+		}
 		return mcp.NewToolResultText(csv), nil
 	}
 }
@@ -2483,6 +2500,9 @@ func exportClientsHandler(svc *service.Service) func(ctx context.Context, req mc
 		csv, err := svc.ExportClients(ctx)
 		if err != nil {
 			return toolError(err), nil
+		}
+		if pdnActive(ctx) {
+			csv = pdn.MaskCSV(csv)
 		}
 		return mcp.NewToolResultText(csv), nil
 	}

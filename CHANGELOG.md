@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.1] — 2026-11-01 (outputSchema-комплаенс, рантайм-валидация, ремонт маскирования ПДн)
+
+### Исправлено
+- **Маскирование ПДн (152-ФЗ) реально работает на всех путях**: раньше типизированные результаты (list_orders, get_order) и часть инструментов (create/update_order, order_sub_ops, order_full_details, client_full_profile) отдавали ИИ реальные email/телефоны/ФИО при включённом режиме. Теперь маска рекурсивна (вложенные client/shipping_address/элементы списков), покрывает name/surname/middlename/full_name/formatted_phone/client_name, не теряет не-строковые значения, применяется во всех order-клиентских путях и в CSV-экспортах (export_orders/export_clients).
+- **outputSchema без boolean-схем**: свойства `true` (генерировались для полей `any`) заменены на `{}` — строгие типизированные MCP-клиенты больше не отваливаются на discovery.
+- **Рантайм-валидация structuredContent против outputSchema** (opt-in mcp-go): расхождения теперь видны как isError вместо молчаливой рассинхронизации.
+
 ## [0.9.0] — 2026-11-01 (MCP-compliance: structuredContent всегда объект)
 
 ### Исправлено

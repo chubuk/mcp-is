@@ -91,3 +91,66 @@ func TestMaskClientData(t *testing.T) {
 		t.Errorf("non-PII field should not be masked: %v", result["order_id"])
 	}
 }
+
+func TestMaskClientData_Recursive(t *testing.T) {
+	input := map[string]any{
+		"id": "100",
+		"client": map[string]any{
+			"full_name": "Иванов Иван",
+			"email":     "ivan@example.com",
+		},
+		"shipping_address": map[string]any{
+			"phone": "+79991234567",
+			"name":  "Иванов",
+		},
+		"items": []any{
+			map[string]any{"client_name": "Петров Пётр"},
+		},
+	}
+	out := MaskClientData(input)
+
+	client := out["client"].(map[string]any)
+	if client["full_name"] != "И***" || client["email"] != "i***@example.com" {
+		t.Errorf("nested client not masked: %v", client)
+	}
+	addr := out["shipping_address"].(map[string]any)
+	if addr["phone"] != "+7 (***) ***-**-**" || addr["name"] != "И***" {
+		t.Errorf("nested address not masked: %v", addr)
+	}
+	items := out["items"].([]any)
+	if items[0].(map[string]any)["client_name"] != "П***" {
+		t.Errorf("item client_name not masked: %v", items[0])
+	}
+	if out["id"] != "100" {
+		t.Errorf("id modified: %v", out["id"])
+	}
+}
+
+func TestMaskClientData_NonStringValuesKept(t *testing.T) {
+	input := map[string]any{
+		"client_name": nil,
+		"email":       12345, // не строка — значение не теряем
+		"nested":      map[string]any{"full_name": "Петров"},
+	}
+	out := MaskClientData(input)
+	if v, ok := out["client_name"]; !ok || v != nil {
+		t.Errorf("nil client_name must stay present, got %v (ok=%v)", v, ok)
+	}
+	if out["email"] != 12345 {
+		t.Errorf("non-string email must be kept, got %v", out["email"])
+	}
+	if out["nested"].(map[string]any)["full_name"] != "П***" {
+		t.Errorf("nested under non-PII key not masked: %v", out["nested"])
+	}
+}
+
+func TestMaskAny_SliceTree(t *testing.T) {
+	in := []any{map[string]any{"name": "Иван"}, "plain"}
+	out := MaskAny(in).([]any)
+	if out[0].(map[string]any)["name"] != "И***" {
+		t.Errorf("map in slice not masked: %v", out[0])
+	}
+	if out[1] != "plain" {
+		t.Errorf("plain value modified: %v", out[1])
+	}
+}

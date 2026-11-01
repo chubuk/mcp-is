@@ -39,8 +39,38 @@ func GetAllToolInfos() []ToolInfo {
 	return infos
 }
 
+// fixSchemaNodes заменяет boolean-схемы `true` на `{}` — по MCP-спеке outputSchema
+// и его properties — объекты; строгие типизированные клиенты не принимают bool-схемы.
+// `true` генерирует google/jsonschema-go для полей типа `any`.
+func fixSchemaNodes(v any) any {
+	switch t := v.(type) {
+	case bool:
+		if t {
+			return map[string]any{}
+		}
+		return v
+	case map[string]any:
+		for k, val := range t {
+			t[k] = fixSchemaNodes(val)
+		}
+		return t
+	case []any:
+		for i, val := range t {
+			t[i] = fixSchemaNodes(val)
+		}
+		return t
+	}
+	return v
+}
+
 func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	registerTool := func(name, desc string, tool mcp.Tool, handler func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error)) {
+		if tool.OutputSchema.Properties != nil {
+			tool.OutputSchema.Properties = fixSchemaNodes(tool.OutputSchema.Properties).(map[string]any)
+		}
+		if tool.OutputSchema.Defs != nil {
+			tool.OutputSchema.Defs = fixSchemaNodes(tool.OutputSchema.Defs).(map[string]any)
+		}
 		s.AddTool(tool, handler)
 		toolRegistry[name] = ToolInfo{Name: name, Description: desc}
 	}
