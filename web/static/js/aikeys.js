@@ -8,8 +8,8 @@ const AIKeys = {
     _lastKeys: [],
     _configAlias: '',
 
-    slugify(str) {
-        if (!str || !str.trim()) return 'mcp-is';
+    slugify(str, fallback = 'mcp-is') {
+        if (!str || !str.trim()) return fallback;
         // Cyrillic transliteration map
         const cyr = {'а':'a','б':'b','в':'v','г':'g','д':'d','е':'e','ё':'e','ж':'zh','з':'z','и':'i','й':'y','к':'k','л':'l','м':'m','н':'n','о':'o','п':'p','р':'r','с':'s','т':'t','у':'u','ф':'f','х':'kh','ц':'ts','ч':'ch','ш':'sh','щ':'shch','ъ':'','ы':'y','ь':'','э':'e','ю':'yu','я':'ya'};
         let s = str.toLowerCase();
@@ -18,7 +18,7 @@ const AIKeys = {
         for (const ch of s) { result += cyr[ch] !== undefined ? cyr[ch] : ch; }
         // Keep only latin, digits, hyphens
         result = result.replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-        return result || 'mcp-is';
+        return result || fallback;
     },
 
     // Shared with the onboarding page (auth.js): fill a client config template.
@@ -173,8 +173,8 @@ const AIKeys = {
                         </div>
                         <div class="form-group">
                             <label>Имя соединения (алиас для конфига AI-клиента) *</label>
-                            <input type="text" id="aikey-conn" placeholder="romashka" pattern="[a-z0-9\\-]{1,64}" required>
-                            <span class="form-check-hint">Только латиница в нижнем регистре, цифры и дефис. Подставляется в пример конфига.</span>
+                            <input type="text" id="aikey-conn" placeholder="romashka" required>
+                            <span class="form-check-hint">Только строчная латиница, цифры и дефис (1–64), например testshop-2. Заглавные и пробелы преобразуются автоматически. Подставляется в пример конфига.</span>
                         </div>
                         <div class="form-group">
                             <label>Название ключа *</label>
@@ -208,7 +208,8 @@ const AIKeys = {
                         </div>
                         <div class="form-group">
                             <label>Имя соединения (алиас) *</label>
-                            <input type="text" id="edit-aikey-conn" pattern="[a-z0-9\\-]{1,64}" required>
+                            <input type="text" id="edit-aikey-conn" required>
+                            <span class="form-check-hint">Только строчная латиница, цифры и дефис (1–64), например testshop-2. Заглавные и пробелы преобразуются автоматически.</span>
                         </div>
                         <div class="form-group">
                             <label>Название ключа</label>
@@ -301,6 +302,14 @@ const AIKeys = {
         const form = document.getElementById('add-aikey-form');
         if (!form) return;
 
+        for (const id of ['aikey-conn', 'edit-aikey-conn']) {
+            const inp = document.getElementById(id);
+            if (inp) inp.addEventListener('blur', () => {
+                const v = inp.value.trim();
+                if (v) inp.value = AIKeys.slugify(v, '');
+            });
+        }
+
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             const f = {
@@ -318,6 +327,7 @@ const AIKeys = {
                 alertEl.innerHTML = '<div class="alert alert--error">Название ключа обязательно</div>';
                 return;
             }
+            if (f.connection_name) f.connection_name = AIKeys.slugify(f.connection_name, '');
             if (!/^[a-z0-9-]{1,64}$/.test(f.connection_name)) {
                 alertEl.innerHTML = '<div class="alert alert--error">Имя соединения: только латиница в нижнем регистре, цифры и дефис (1–64 символов)</div>';
                 return;
@@ -357,6 +367,7 @@ const AIKeys = {
                     alertEl.innerHTML = '<div class="alert alert--error">Название обязательно</div>';
                     return;
                 }
+                if (f.connection_name) f.connection_name = AIKeys.slugify(f.connection_name, '');
                 if (!/^[a-z0-9-]{1,64}$/.test(f.connection_name)) {
                     alertEl.innerHTML = '<div class="alert alert--error">Имя соединения: только латиница в нижнем регистре, цифры и дефис (1–64 символов)</div>';
                     return;
