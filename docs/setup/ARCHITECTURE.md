@@ -63,7 +63,7 @@
 ### 2. Auth Layer
 - **JWT** — для веб-интерфейса (срок 24 часа)
 - **API Keys** — для MCP-клиентов (SHA-256 хэши)
-- **Rate Limiting** — 10 запросов/мин на login/register/forgot-password
+- **Rate Limiting** — per-IP: 10/сек API, 5/мин login, 3/мин reset; per-API-ключ: 300/мин MCP (nginx)
 - **Role-based access** — super_admin, admin, user
 
 ### 3. MCP Server (mcp-go SDK)
@@ -117,7 +117,7 @@ Web UI → HTTP POST /api/shops → Shop Handler → AES encrypt → PostgreSQL
 | Пароли InSales | AES-GCM (ENCRYPTION_KEY) |
 | AI-ключи | SHA-256 хэши (сами ключи не хранятся) |
 | JWT | HMAC-SHA256 (срок 24 часа) |
-| Rate limiting | In-memory sliding window, 10 req/min |
+| Rate limiting | nginx: MCP per-API-ключ 300/мин (burst 60, замедление до 200, 429), щит 100/с на IP; login/API — in-memory sliding window |
 | CORS | Разрешённые origins |
 | DNS rebinding | Автоматическая защита (mcp-go) |
 | HTTPS | Let's Encrypt или self-signed |

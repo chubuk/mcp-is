@@ -768,7 +768,7 @@ CI на push в main: lint → test → integration → сборка Docker-об
 | **Пароли** | Генерируются автоматически deploy.sh, сохраняются в `/root/.mcp-is-credentials` |
 | **Docker-сеть** | PostgreSQL доступен только из контейнера app (internal сеть) |
 | **Порт 5432** | НЕ экспортирован на хост |
-| **Rate limiting** | login: 5/min, API: 10/s, reset-password: 3/min, MCP: 30/min |
+| **Rate limiting** | login: 5/min, API: 10/s, reset-password: 3/min, MCP: 300/min **на API-ключ** (burst 60, плавное замедление до 200, 429 при переполнении); щит от флуда 100/с на IP |
 | **Блокировка файлов** | .env, .git, .sql, .log — 403 Forbidden |
 | **Security headers** | HSTS, CSP, X-Frame-Options, Permissions-Policy |
 | **Аутентификация** | JWT для API, API-ключи для MCP |
