@@ -73,6 +73,7 @@ make lint-fix
 │   ├── auth/         # JWT, middleware, rate limiter
 │   ├── handlers/     # HTTP handlers
 │   ├── mcp/          # MCP server and tools
+│   ├── pdn/          # 152-ФЗ personal data masking
 │   ├── storage/      # Database layer
 │   └── ...
 ├── docs/             # Documentation
@@ -95,7 +96,7 @@ make lint-fix
 
 - Use [Conventional Commits](https://www.conventionalcommits.org/)
 - Format: `type(scope): description`
-- Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`
+- Types: `feat`, `fix`, `docs`, `style`, `refactor`, `test`, `chore`, `release`, `infra`
 - Examples:
   - `feat(auth): add JWT token refresh`
   - `fix(api): handle nil response from upstream`
@@ -119,6 +120,7 @@ A change is **done** only when all applicable checks are green:
 - [ ] `go test ./...`
 - [ ] `scripts/check-schema.sh` — **required** if Go structs or SQL/migrations changed
 - [ ] `./scripts/ui-smoke.sh` — **required** if UI changed (local docker on `https://127.0.0.1:8443`)
+- [ ] `nginx -t` — **required** if `web/nginx/nginx.conf` changed (run in `nginx:alpine` container with the config mounted)
 - [ ] Code follows project style guidelines
 - [ ] Tests added/updated and passing
 - [ ] Documentation updated (if behavior changes)
@@ -143,8 +145,11 @@ go test ./internal/handlers/ -v -run TestLogin
 # Run with coverage
 go test -cover ./...
 
-# Integration tests (needs PostgreSQL; never point at production data)
-TEST_DB_URL='postgres://admin:password@127.0.0.1:55432/mcp_is?sslmode=disable' \
+# Integration tests (needs PostgreSQL; never point at production data).
+# Throwaway DB:
+#   docker run --rm -d --name mcp_is_test_pg -e POSTGRES_USER=admin -e POSTGRES_PASSWORD=password \
+#     -e POSTGRES_DB=mcp_is -p 5433:5432 postgres:16-alpine
+TEST_DB_URL='postgres://admin:password@localhost:5433/mcp_is?sslmode=disable' \
   go test -tags integration ./internal/storage/... -count=1
 ```
 
