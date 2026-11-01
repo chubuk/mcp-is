@@ -1,5 +1,5 @@
 Package: mcp-is
-Version: 0.8.0
+Version: 0.9.0
 Section: net
 Priority: optional
 Architecture: amd64

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/chubuk/mcp-is/internal/core"
@@ -25,9 +26,28 @@ func formatResult(v any) string {
 	return string(b)
 }
 
+// wrapEnvelope гарантирует, что payload сериализуется в JSON-объект:
+// structuredContent по MCP-спеке (CallToolResult, 2025-06-18) — только объект,
+// никогда массив/скаляр. total = len(items) — семантика домашнего конверта
+// (ProductsPage.Total = len(result)).
+func wrapEnvelope(v any) any {
+	if v == nil {
+		return v // omitempty: поле отсутствует — спека это разрешает
+	}
+	rv := reflect.ValueOf(v)
+	if rv.Kind() == reflect.Slice && rv.Type().Elem().Kind() != reflect.Uint8 {
+		return map[string]any{"items": v, "total": rv.Len()}
+	}
+	if b, err := json.Marshal(v); err == nil && len(b) > 0 && b[0] != '{' {
+		return map[string]any{"value": v} // скаляры, *[]T, json.RawMessage с массивом и пр.
+	}
+	return v
+}
+
 // toolResult returns the same payload as pretty JSON text and as structuredContent
 // (MCP dual form; clients may use either).
 func toolResult(v any) *mcp.CallToolResult {
+	v = wrapEnvelope(v)
 	return mcp.NewToolResultStructured(v, formatResult(v))
 }
 

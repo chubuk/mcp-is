@@ -31,6 +31,65 @@ func TestFormatResult(t *testing.T) {
 	}
 }
 
+// structuredContent по MCP-спеке обязан сериализоваться в JSON-объект.
+func TestWrapEnvelope(t *testing.T) {
+	tests := []struct {
+		name string
+		in   any
+	}{
+		{"slice", []any{map[string]any{"id": "1"}}},
+		{"dynamic slice in any", any([]any{map[string]any{"id": "1"}})},
+		{"typed nil slice", []map[string]any(nil)},
+		{"string", "hello"},
+		{"int", 42},
+		{"byte slice", []byte("raw")},
+		{"raw message array", json.RawMessage(`[1,2]`)},
+		{"raw message object", json.RawMessage(`{"a":1}`)},
+		{"map", map[string]any{"a": 1}},
+		{"ptr to slice", &[]int{1, 2}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := wrapEnvelope(tt.in)
+			b, err := json.Marshal(out)
+			if err != nil {
+				t.Fatalf("marshal: %v", err)
+			}
+			if b[0] != '{' {
+				t.Errorf("marshals to %s, want JSON object", b)
+			}
+		})
+	}
+	// nil остаётся nil — поле omitempty, спека разрешает отсутствие.
+	if got := wrapEnvelope(nil); got != nil {
+		t.Errorf("wrapEnvelope(nil) = %v, want nil", got)
+	}
+	// слайс → домашний конверт {items,total}
+	out := wrapEnvelope([]any{"a", "b"}).(map[string]any)
+	if out["total"] != 2 {
+		t.Errorf("total = %v, want 2", out["total"])
+	}
+	if items, ok := out["items"].([]any); !ok || len(items) != 2 {
+		t.Errorf("items = %v, want 2-element slice", out["items"])
+	}
+	// объект не модифицируется
+	obj := map[string]any{"a": 1}
+	if wrapEnvelope(obj).(map[string]any)["a"] != 1 {
+		t.Error("map payload modified")
+	}
+}
+
+func TestToolResult_ObjectStructuredContent(t *testing.T) {
+	res := toolResult([]any{map[string]any{"id": "1"}})
+	if res.StructuredContent == nil {
+		t.Fatal("structuredContent missing")
+	}
+	b, err := json.Marshal(res.StructuredContent)
+	if err != nil || b[0] != '{' {
+		t.Errorf("structuredContent = %s (%v), want JSON object", b, err)
+	}
+}
+
 func TestGetFloat(t *testing.T) {
 	args := map[string]any{
 		"page":     float64(5),
