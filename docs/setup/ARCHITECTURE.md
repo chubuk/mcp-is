@@ -67,7 +67,7 @@
 - **Role-based access** — super_admin, admin, user
 
 ### 3. MCP Server (mcp-go SDK)
-- **285 инструментов** для работы с InSales (120 read-only / 164 write)
+- **285 инструментов** для работы с InSales (121 read-only / 164 write)
 - **Progressive discovery** — default `tools/list` ≈ core surface (~30) + `search_insales_tools` / `call_insales_tool`; полный каталог через catalog или `MCP_TOOLS_MODE=all`
 - **Tool annotations** — readOnlyHint, destructiveHint, idempotentHint, openWorldHint
 - **Tool filtering** — read-only режим скрывает write-команды; nil ReadOnlyHint трактуется как write

@@ -107,7 +107,7 @@ curl http://localhost:8080/health
 
 ## MCP Инструменты
 
-Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **285 инструментов** (120 read-only). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent` (structuredContent всегда JSON-объект, списки — конверт `{items, total}`; у core-инструментов есть `outputSchema`).
+Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **285 инструментов** (121 read-only). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent` (structuredContent всегда JSON-объект, списки — конверт `{items, total}`; у core-инструментов есть `outputSchema`).
 
 По умолчанию `tools/list` возвращает **core surface** (~30 tools) + discovery meta-tools. Полный каталог — `search_insales_tools` → `call_insales_tool` или `MCP_TOOLS_MODE=all`.
 
@@ -587,8 +587,9 @@ SMTP_FROM=MCP IS <user@mail.ru>
 - **Пароли пользователей** — хранятся в bcrypt
 - **Пароли InSales** — зашифрованы AES-GCM (ключ из `ENCRYPTION_KEY`)
 - **AI-ключи** — хранятся как SHA-256 хэши (сами ключи не хранятся)
-- **JWT-токены** —用于 управления магазинами (срок 24 часа)
+- **JWT-токены** — используются для управления магазинами (срок 24 часа)
 - **MCP-эндпоинты** — защищены API-ключами
+- **ПДн (152-ФЗ)** — опциональное маскирование персональных данных (email, телефоны, ФИО) в ответах инструментов и CSV-выгрузках
 
 ## MCP контекст
 
@@ -614,7 +615,7 @@ SMTP_FROM=MCP IS <user@mail.ru>
 | Режим | Команд | Описание |
 |-------|--------|----------|
 | core (default tools/list) | ~30 | products/orders/clients/categories/collections/fields/pipelines/export + discovery meta-tools |
-| read-only catalog | 120 | все read-команды (list_*, get_*, export, pipeline) |
+| read-only catalog | 121 | все read-команды (list_*, get_*, export, pipeline) |
 | read/write catalog | 285 | все команды включая create/update/delete + пайплайны |
 
 ## Пайплайн-инструменты
