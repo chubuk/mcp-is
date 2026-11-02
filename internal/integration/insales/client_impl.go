@@ -123,6 +123,9 @@ func (c *InSalesClient) doRequestRaw(ctx context.Context, method, path string, b
 	}
 
 	req.Header.Set("Content-Type", "application/json")
+	// Live data only: no intermediary (CDN/proxy) may serve or store a copy.
+	req.Header.Set("Cache-Control", "no-cache, no-store")
+	req.Header.Set("Pragma", "no-cache")
 	req.SetBasicAuth(c.APIKey, c.Password)
 
 	resp, err := c.HTTPClient.Do(req)
@@ -255,35 +258,37 @@ func parseTitleFromHTML(html string) string {
 }
 
 func (c *InSalesClient) ListProducts(ctx context.Context, page, perPage int, filters map[string]any) ([]Product, error) {
-	path := fmt.Sprintf("/products.json?page=%d&per_page=%d", page, perPage)
+	extra := ""
 	if v, ok := filters["category_id"].(string); ok && v != "" {
-		path += "&category_id=" + url.QueryEscape(v)
+		extra += "&category_id=" + url.QueryEscape(v)
 	}
 	if v, ok := filters["collection_id"].(string); ok && v != "" {
-		path += "&collection_id=" + url.QueryEscape(v)
+		extra += "&collection_id=" + url.QueryEscape(v)
 	}
 	if v, ok := filters["q"].(string); ok && v != "" {
-		path += "&q=" + url.QueryEscape(v)
+		extra += "&q=" + url.QueryEscape(v)
 	}
 	if v, ok := filters["updated_since"].(string); ok && v != "" {
-		path += "&updated_since=" + url.QueryEscape(v)
+		extra += "&updated_since=" + url.QueryEscape(v)
 	}
 	if v, ok := filters["from_id"].(float64); ok && v > 0 {
-		path += fmt.Sprintf("&from_id=%d", int(v))
+		extra += fmt.Sprintf("&from_id=%d", int(v))
 	}
 	if v, ok := filters["with_deleted"].(bool); ok && v {
-		path += "&with_deleted=true"
+		extra += "&with_deleted=true"
 	}
 	if v, ok := filters["deleted"].(bool); ok && v {
-		path += "&deleted=true"
+		extra += "&deleted=true"
 	}
-	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	items, err := fetchPaged(ctx, c, withQuery("/products.json", extra), page, perPage, func(b []byte) ([]InSalesProductResponse, error) {
+		var v []InSalesProductResponse
+		if err := json.Unmarshal(b, &v); err != nil {
+			return nil, fmt.Errorf("decode products: %w", err)
+		}
+		return v, nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	var items []InSalesProductResponse
-	if err := json.Unmarshal(body, &items); err != nil {
-		return nil, fmt.Errorf("decode products: %w", err)
 	}
 	result := make([]Product, len(items))
 	for i, item := range items {
@@ -304,18 +309,127 @@ func (c *InSalesClient) GetProduct(ctx context.Context, productID string) (*Prod
 	return MapProduct(&resp), nil
 }
 
-func (c *InSalesClient) CreateProduct(ctx context.Context, title, price string, args map[string]any) (*Product, error) {
-	payload := map[string]any{
-		"product": map[string]any{
-			"title":       title,
-			"price":       price,
-			"description": args["description"],
-			"vendor":      args["vendor"],
-			"sku":         args["sku"],
-			"quantity":    args["quantity"],
-		},
+// withQuery joins a base path with a "&k=v..." filter fragment.
+func withQuery(base, extra string) string {
+	if extra == "" {
+		return base
 	}
-	body, _, err := c.doRequest(ctx, http.MethodPost, "/products.json", payload)
+	return base + "?" + strings.TrimPrefix(extra, "&")
+}
+
+// fetchPaged returns one page of perPage items from an InSales list endpoint.
+// InSales floors per_page at 10 (values 1-9 come back as 10 items), so small
+// pages are windowed out of 250-item pages and sliced; filters must be part of
+// base so every window request sees them. A window never spans more than two
+// 250-pages, fetched back-to-back (InSales has no stable sort param).
+func fetchPaged[T any](ctx context.Context, c *InSalesClient, base string, page, perPage int, decode func([]byte) ([]T, error)) ([]T, error) {
+	sep := "?"
+	if strings.Contains(base, "?") {
+		sep = "&"
+	}
+	if perPage >= 10 {
+		body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("%s%spage=%d&per_page=%d", base, sep, page, perPage), nil)
+		if err != nil {
+			return nil, err
+		}
+		return decode(body)
+	}
+	offset := (page - 1) * perPage
+	bigPage := offset/250 + 1
+	pageStart := (bigPage - 1) * 250
+	var buf []T
+	for p := bigPage; p <= bigPage+1; p++ {
+		if len(buf) >= (offset-pageStart)+perPage {
+			break
+		}
+		body, _, err := c.doRequest(ctx, http.MethodGet, fmt.Sprintf("%s%spage=%d&per_page=250", base, sep, p), nil)
+		if err != nil {
+			return nil, err
+		}
+		items, err := decode(body)
+		if err != nil {
+			return nil, err
+		}
+		buf = append(buf, items...)
+		if len(items) < 250 {
+			break
+		}
+	}
+	start := offset - pageStart
+	if start >= len(buf) {
+		return []T{}, nil
+	}
+	end := start + perPage
+	if end > len(buf) {
+		end = len(buf)
+	}
+	return buf[start:end], nil
+}
+
+// cleanArgs drops nil and "" values from an outgoing entity payload: an echoed
+// object must not clear fields by accident. Zeros and false are kept (quantity: 0
+// is a legitimate write); explicit clearing goes through clear_fields.
+func cleanArgs(args map[string]any) map[string]any {
+	out := make(map[string]any, len(args))
+	for k, v := range args {
+		if v == nil {
+			continue
+		}
+		if s, ok := v.(string); ok && s == "" {
+			continue
+		}
+		out[k] = v
+	}
+	return out
+}
+
+// productUpdateFields is the update_product whitelist. Everything else (ids,
+// timestamps, variants, images, visibility flags) must never reach InSales.
+var productUpdateFields = map[string]bool{
+	"title": true, "description": true, "short_description": true,
+	"vendor": true, "sku": true,
+	"html_title": true, "meta_keywords": true, "meta_description": true,
+	"category_id": true,
+}
+
+// applyClearFields writes explicit "" for fields listed in clear_fields. Names are
+// validated against the whitelist; applied after cleanArgs so the empties survive.
+func applyClearFields(payload map[string]any, allowed map[string]bool, clearFields any) error {
+	list, ok := clearFields.([]any)
+	if !ok {
+		return fmt.Errorf("clear_fields must be an array of field names")
+	}
+	for _, item := range list {
+		name, ok := item.(string)
+		if !ok {
+			return fmt.Errorf("clear_fields entries must be strings")
+		}
+		if name == "category_id" {
+			return fmt.Errorf("clear_fields: category_id cannot be cleared")
+		}
+		if !allowed[name] {
+			return fmt.Errorf("clear_fields: unknown field %q", name)
+		}
+		payload[name] = ""
+	}
+	return nil
+}
+
+func (c *InSalesClient) CreateProduct(ctx context.Context, title, price string, args map[string]any) (*Product, error) {
+	// Only provided fields go out — absent optionals stay absent, not null.
+	// Price/sku/stock live on the variant; InSales rejects creates without variants_attributes.
+	variant := cleanArgs(map[string]any{
+		"price":    price,
+		"sku":      args["sku"],
+		"quantity": args["quantity"],
+	})
+	product := cleanArgs(map[string]any{
+		"title":       title,
+		"description": args["description"],
+		"vendor":      args["vendor"],
+	})
+	product["variants_attributes"] = []any{variant}
+	body, _, err := c.doRequest(ctx, http.MethodPost, "/products.json", map[string]any{"product": product})
 	if err != nil {
 		return nil, err
 	}
@@ -327,10 +441,36 @@ func (c *InSalesClient) CreateProduct(ctx context.Context, title, price string, 
 }
 
 func (c *InSalesClient) UpdateProduct(ctx context.Context, productID string, args map[string]any) (*Product, error) {
-	payload := map[string]any{
-		"product": args,
+	product := make(map[string]any)
+	for k, v := range cleanArgs(args) {
+		if !productUpdateFields[k] {
+			continue
+		}
+		if k == "category_id" {
+			switch t := v.(type) {
+			case float64:
+				product[k] = int(t)
+			case int:
+				product[k] = t
+			case string:
+				n, err := strconv.Atoi(t)
+				if err != nil {
+					return nil, fmt.Errorf("category_id must be a number, got %q", t)
+				}
+				product[k] = n
+			default:
+				return nil, fmt.Errorf("category_id must be a number")
+			}
+			continue
+		}
+		product[k] = v
 	}
-	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/products/%s.json", productID), payload)
+	if cf, ok := args["clear_fields"]; ok {
+		if err := applyClearFields(product, productUpdateFields, cf); err != nil {
+			return nil, err
+		}
+	}
+	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/products/%s.json", productID), map[string]any{"product": product})
 	if err != nil {
 		return nil, err
 	}
@@ -347,23 +487,25 @@ func (c *InSalesClient) DeleteProduct(ctx context.Context, productID string) err
 }
 
 func (c *InSalesClient) ListOrders(ctx context.Context, page, perPage int, filters map[string]any) ([]Order, error) {
-	path := fmt.Sprintf("/orders.json?page=%d&per_page=%d", page, perPage)
+	extra := ""
 	if v, ok := filters["fulfillment_status"].(string); ok && v != "" {
-		path += "&fulfillment_status[]=" + url.QueryEscape(v)
+		extra += "&fulfillment_status[]=" + url.QueryEscape(v)
 	}
 	if v, ok := filters["updated_since"].(string); ok && v != "" {
-		path += "&updated_since=" + url.QueryEscape(v)
+		extra += "&updated_since=" + url.QueryEscape(v)
 	}
 	if v, ok := filters["from_id"].(int); ok && v > 0 {
-		path += fmt.Sprintf("&from_id=%d", v)
+		extra += fmt.Sprintf("&from_id=%d", v)
 	}
-	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	items, err := fetchPaged(ctx, c, withQuery("/orders.json", extra), page, perPage, func(b []byte) ([]InSalesOrderResponse, error) {
+		var v []InSalesOrderResponse
+		if err := json.Unmarshal(b, &v); err != nil {
+			return nil, fmt.Errorf("decode orders: %w", err)
+		}
+		return v, nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	var items []InSalesOrderResponse
-	if err := json.Unmarshal(body, &items); err != nil {
-		return nil, fmt.Errorf("decode orders: %w", err)
 	}
 	result := make([]Order, len(items))
 	for i, item := range items {
@@ -386,7 +528,7 @@ func (c *InSalesClient) GetOrder(ctx context.Context, orderID string) (*Order, e
 
 func (c *InSalesClient) UpdateOrder(ctx context.Context, orderID string, args map[string]any) (*Order, error) {
 	payload := map[string]any{
-		"order": BuildOrderBody(args),
+		"order": BuildOrderBody(cleanArgs(args)),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/orders/%s.json", orderID), payload)
 	if err != nil {
@@ -417,14 +559,15 @@ func (c *InSalesClient) CreateOrder(ctx context.Context, clientID int, args map[
 }
 
 func (c *InSalesClient) ListClients(ctx context.Context, page, perPage int) ([]any, error) {
-	path := fmt.Sprintf("/clients.json?page=%d&per_page=%d", page, perPage)
-	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	items, err := fetchPaged(ctx, c, "/clients.json", page, perPage, func(b []byte) ([]InSalesClientResponse, error) {
+		var v []InSalesClientResponse
+		if err := json.Unmarshal(b, &v); err != nil {
+			return nil, fmt.Errorf("decode clients: %w", err)
+		}
+		return v, nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	var items []InSalesClientResponse
-	if err := json.Unmarshal(body, &items); err != nil {
-		return nil, fmt.Errorf("decode clients: %w", err)
 	}
 	result := make([]any, len(items))
 	for i, item := range items {
@@ -447,7 +590,7 @@ func (c *InSalesClient) GetClient(ctx context.Context, clientID string) (any, er
 
 func (c *InSalesClient) CreateClient(ctx context.Context, args map[string]any) (any, error) {
 	payload := map[string]any{
-		"client": map[string]any{
+		"client": cleanArgs(map[string]any{
 			"name":       args["name"],
 			"surname":    args["surname"],
 			"middlename": args["middlename"],
@@ -455,7 +598,7 @@ func (c *InSalesClient) CreateClient(ctx context.Context, args map[string]any) (
 			"phone":      args["phone"],
 			"password":   args["password"],
 			"registered": args["registered"],
-		},
+		}),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/clients.json", payload)
 	if err != nil {
@@ -470,7 +613,7 @@ func (c *InSalesClient) CreateClient(ctx context.Context, args map[string]any) (
 
 func (c *InSalesClient) UpdateClient(ctx context.Context, clientID string, args map[string]any) (any, error) {
 	payload := map[string]any{
-		"client": args,
+		"client": cleanArgs(args),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/clients/%s.json", clientID), payload)
 	if err != nil {
@@ -489,14 +632,15 @@ func (c *InSalesClient) DeleteClient(ctx context.Context, clientID string) error
 }
 
 func (c *InSalesClient) ListCategories(ctx context.Context, page, perPage int) ([]any, error) {
-	path := fmt.Sprintf("/categories.json?page=%d&per_page=%d", page, perPage)
-	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	items, err := fetchPaged(ctx, c, "/categories.json", page, perPage, func(b []byte) ([]InSalesCategoryResponse, error) {
+		var v []InSalesCategoryResponse
+		if err := json.Unmarshal(b, &v); err != nil {
+			return nil, fmt.Errorf("decode categories: %w", err)
+		}
+		return v, nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	var items []InSalesCategoryResponse
-	if err := json.Unmarshal(body, &items); err != nil {
-		return nil, fmt.Errorf("decode categories: %w", err)
 	}
 	result := make([]any, len(items))
 	for i, item := range items {
@@ -519,10 +663,10 @@ func (c *InSalesClient) GetCategory(ctx context.Context, categoryID string) (any
 
 func (c *InSalesClient) CreateCategory(ctx context.Context, title string, args map[string]any) (any, error) {
 	payload := map[string]any{
-		"category": map[string]any{
+		"category": cleanArgs(map[string]any{
 			"title":     title,
 			"parent_id": args["parent_id"],
-		},
+		}),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/categories.json", payload)
 	if err != nil {
@@ -537,7 +681,7 @@ func (c *InSalesClient) CreateCategory(ctx context.Context, title string, args m
 
 func (c *InSalesClient) UpdateCategory(ctx context.Context, categoryID string, args map[string]any) (any, error) {
 	payload := map[string]any{
-		"category": args,
+		"category": cleanArgs(args),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/categories/%s.json", categoryID), payload)
 	if err != nil {
@@ -556,14 +700,15 @@ func (c *InSalesClient) DeleteCategory(ctx context.Context, categoryID string) e
 }
 
 func (c *InSalesClient) ListCollections(ctx context.Context, page, perPage int) ([]any, error) {
-	path := fmt.Sprintf("/collections.json?page=%d&per_page=%d", page, perPage)
-	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	items, err := fetchPaged(ctx, c, "/collections.json", page, perPage, func(b []byte) ([]InSalesCollectionResponse, error) {
+		var v []InSalesCollectionResponse
+		if err := json.Unmarshal(b, &v); err != nil {
+			return nil, fmt.Errorf("decode collections: %w", err)
+		}
+		return v, nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	var items []InSalesCollectionResponse
-	if err := json.Unmarshal(body, &items); err != nil {
-		return nil, fmt.Errorf("decode collections: %w", err)
 	}
 	result := make([]any, len(items))
 	for i, item := range items {
@@ -584,11 +729,12 @@ func (c *InSalesClient) GetCollection(ctx context.Context, collectionID string) 
 	return MapCollection(&resp), nil
 }
 
-func (c *InSalesClient) CreateCollection(ctx context.Context, title string) (any, error) {
+func (c *InSalesClient) CreateCollection(ctx context.Context, title string, args map[string]any) (any, error) {
 	payload := map[string]any{
-		"collection": map[string]any{
-			"title": title,
-		},
+		"collection": cleanArgs(map[string]any{
+			"title":     title,
+			"parent_id": args["parent_id"],
+		}),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/collections.json", payload)
 	if err != nil {
@@ -641,11 +787,11 @@ func (c *InSalesClient) ListImages(ctx context.Context, productID string) ([]any
 
 func (c *InSalesClient) AddImage(ctx context.Context, productID, url string, args map[string]any) (any, error) {
 	payload := map[string]any{
-		"image": map[string]any{
-			"url":      url,
+		"image": cleanArgs(map[string]any{
+			"src":      url,
 			"filename": args["filename"],
 			"position": args["position"],
-		},
+		}),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/products/%s/images.json", productID), payload)
 	if err != nil {
@@ -694,7 +840,7 @@ func (c *InSalesClient) ListMetaFields(ctx context.Context, args map[string]any)
 
 func (c *InSalesClient) CreateMetaField(ctx context.Context, args map[string]any) (any, error) {
 	payload := map[string]any{
-		"meta_field": args,
+		"meta_field": cleanArgs(args),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/meta_fields.json", payload)
 	if err != nil {
@@ -709,7 +855,7 @@ func (c *InSalesClient) CreateMetaField(ctx context.Context, args map[string]any
 
 func (c *InSalesClient) UpdateMetaField(ctx context.Context, metaFieldID string, args map[string]any) (any, error) {
 	payload := map[string]any{
-		"meta_field": args,
+		"meta_field": cleanArgs(args),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/meta_fields/%s.json", metaFieldID), payload)
 	if err != nil {
@@ -768,7 +914,7 @@ func (c *InSalesClient) CreateWebhook(ctx context.Context, event, url string, ar
 
 func (c *InSalesClient) UpdateWebhook(ctx context.Context, webhookID string, args map[string]any) (any, error) {
 	payload := map[string]any{
-		"webhook": args,
+		"webhook": cleanArgs(args),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/webhooks/%s.json", webhookID), payload)
 	if err != nil {
@@ -867,14 +1013,15 @@ func (c *InSalesClient) DeleteMenuItem(ctx context.Context, menuID, itemID strin
 }
 
 func (c *InSalesClient) ListPages(ctx context.Context, page, perPage int) ([]Page, error) {
-	path := fmt.Sprintf("/pages.json?page=%d&per_page=%d", page, perPage)
-	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	raw, err := fetchPaged(ctx, c, "/pages.json", page, perPage, func(b []byte) ([]InSalesPageResponse, error) {
+		var v []InSalesPageResponse
+		if err := json.Unmarshal(b, &v); err != nil {
+			return nil, fmt.Errorf("decode pages: %w", err)
+		}
+		return v, nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	var raw []InSalesPageResponse
-	if err := json.Unmarshal(body, &raw); err != nil {
-		return nil, fmt.Errorf("decode pages: %w", err)
 	}
 	result := make([]Page, len(raw))
 	for i, p := range raw {
@@ -915,7 +1062,7 @@ func (c *InSalesClient) CreatePage(ctx context.Context, title, content, handle s
 }
 
 func (c *InSalesClient) UpdatePage(ctx context.Context, pageID string, args map[string]any) (*Page, error) {
-	payload := map[string]any{"page": args}
+	payload := map[string]any{"page": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/pages/%s.json", pageID), payload)
 	if err != nil {
 		return nil, err
@@ -933,14 +1080,15 @@ func (c *InSalesClient) DeletePage(ctx context.Context, pageID string) error {
 }
 
 func (c *InSalesClient) ListAccessories(ctx context.Context, page, perPage int) ([]Accessory, error) {
-	path := fmt.Sprintf("/accessories.json?page=%d&per_page=%d", page, perPage)
-	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	raw, err := fetchPaged(ctx, c, "/accessories.json", page, perPage, func(b []byte) ([]InSalesAccessoryResponse, error) {
+		var v []InSalesAccessoryResponse
+		if err := json.Unmarshal(b, &v); err != nil {
+			return nil, fmt.Errorf("decode accessories: %w", err)
+		}
+		return v, nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	var raw []InSalesAccessoryResponse
-	if err := json.Unmarshal(body, &raw); err != nil {
-		return nil, fmt.Errorf("decode accessories: %w", err)
 	}
 	result := make([]Accessory, len(raw))
 	for i, a := range raw {
@@ -963,12 +1111,12 @@ func (c *InSalesClient) GetAccessory(ctx context.Context, accessoryID string) (*
 
 func (c *InSalesClient) CreateAccessory(ctx context.Context, title string, args map[string]any) (*Accessory, error) {
 	payload := map[string]any{
-		"accessory": map[string]any{
+		"accessory": cleanArgs(map[string]any{
 			"name":      title,
 			"max_count": args["max_count"],
 			"min_count": args["min_count"],
 			"permalink": args["permalink"],
-		},
+		}),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/accessories.json", payload)
 	if err != nil {
@@ -982,7 +1130,7 @@ func (c *InSalesClient) CreateAccessory(ctx context.Context, title string, args 
 }
 
 func (c *InSalesClient) UpdateAccessory(ctx context.Context, accessoryID string, args map[string]any) (*Accessory, error) {
-	payload := map[string]any{"accessory": args}
+	payload := map[string]any{"accessory": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/accessories/%s.json", accessoryID), payload)
 	if err != nil {
 		return nil, err
@@ -1027,7 +1175,7 @@ func (c *InSalesClient) GetVariant(ctx context.Context, productID, variantID str
 }
 
 func (c *InSalesClient) UpdateVariant(ctx context.Context, productID, variantID string, args map[string]any) (*Variant, error) {
-	payload := map[string]any{"variant": args}
+	payload := map[string]any{"variant": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/products/%s/variants/%s.json", productID, variantID), payload)
 	if err != nil {
 		return nil, err
@@ -1082,7 +1230,7 @@ func (c *InSalesClient) CreatePropertyValue(ctx context.Context, accessoryID, ti
 }
 
 func (c *InSalesClient) UpdatePropertyValue(ctx context.Context, accessoryID, propertyValueID string, args map[string]any) (*PropertyValue, error) {
-	payload := map[string]any{"accessory_value": args}
+	payload := map[string]any{"accessory_value": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/accessories/%s/values/%s.json", accessoryID, propertyValueID), payload)
 	if err != nil {
 		return nil, err
@@ -1148,7 +1296,7 @@ func (c *InSalesClient) CreateMenu(ctx context.Context, title, handle string) (*
 }
 
 func (c *InSalesClient) UpdateMenu(ctx context.Context, menuID string, args map[string]any) (*Menu, error) {
-	payload := map[string]any{"menu": args}
+	payload := map[string]any{"menu": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/menus/%s.json", menuID), payload)
 	if err != nil {
 		return nil, err
@@ -1260,7 +1408,7 @@ func (c *InSalesClient) DeleteBlog(ctx context.Context, blogID string) error {
 }
 
 func (c *InSalesClient) UpdateBlog(ctx context.Context, blogID string, args map[string]any) (*Blog, error) {
-	payload := map[string]any{"blog": args}
+	payload := map[string]any{"blog": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/blogs/%s.json", blogID), payload)
 	if err != nil {
 		return nil, err
@@ -1321,7 +1469,7 @@ func (c *InSalesClient) CreateBlogPost(ctx context.Context, blogID, title, bodyH
 }
 
 func (c *InSalesClient) UpdateBlogPost(ctx context.Context, blogID, postID string, args map[string]any) (*BlogPost, error) {
-	payload := map[string]any{"article": args}
+	payload := map[string]any{"article": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/blogs/%s/articles/%s.json", blogID, postID), payload)
 	if err != nil {
 		return nil, err
@@ -1341,14 +1489,15 @@ func (c *InSalesClient) DeleteBlogPost(ctx context.Context, blogID, postID strin
 // === DISCOUNT CODES ===
 
 func (c *InSalesClient) ListDiscountCodes(ctx context.Context, page, perPage int) ([]any, error) {
-	path := fmt.Sprintf("/discount_codes.json?page=%d&per_page=%d", page, perPage)
-	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	items, err := fetchPaged(ctx, c, "/discount_codes.json", page, perPage, func(b []byte) ([]InSalesDiscountCodeResponse, error) {
+		var v []InSalesDiscountCodeResponse
+		if err := json.Unmarshal(b, &v); err != nil {
+			return nil, fmt.Errorf("decode discount codes: %w", err)
+		}
+		return v, nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	var items []InSalesDiscountCodeResponse
-	if err := json.Unmarshal(body, &items); err != nil {
-		return nil, fmt.Errorf("decode discount codes: %w", err)
 	}
 	result := make([]any, len(items))
 	for i := range items {
@@ -1370,7 +1519,7 @@ func (c *InSalesClient) GetDiscountCode(ctx context.Context, codeID string) (any
 }
 
 func (c *InSalesClient) CreateDiscountCode(ctx context.Context, args map[string]any) (any, error) {
-	payload := map[string]any{"discount_code": args}
+	payload := map[string]any{"discount_code": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/discount_codes.json", payload)
 	if err != nil {
 		return nil, err
@@ -1383,7 +1532,7 @@ func (c *InSalesClient) CreateDiscountCode(ctx context.Context, args map[string]
 }
 
 func (c *InSalesClient) UpdateDiscountCode(ctx context.Context, codeID string, args map[string]any) (any, error) {
-	payload := map[string]any{"discount_code": args}
+	payload := map[string]any{"discount_code": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/discount_codes/%s.json", codeID), payload)
 	if err != nil {
 		return nil, err
@@ -1403,14 +1552,15 @@ func (c *InSalesClient) DeleteDiscountCode(ctx context.Context, codeID string) e
 // === COLLECTS ===
 
 func (c *InSalesClient) ListCollects(ctx context.Context, page, perPage int) ([]any, error) {
-	path := fmt.Sprintf("/collects.json?page=%d&per_page=%d", page, perPage)
-	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	items, err := fetchPaged(ctx, c, "/collects.json", page, perPage, func(b []byte) ([]InSalesCollectResponse, error) {
+		var v []InSalesCollectResponse
+		if err := json.Unmarshal(b, &v); err != nil {
+			return nil, fmt.Errorf("decode collects: %w", err)
+		}
+		return v, nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	var items []InSalesCollectResponse
-	if err := json.Unmarshal(body, &items); err != nil {
-		return nil, fmt.Errorf("decode collects: %w", err)
 	}
 	result := make([]any, len(items))
 	for i := range items {
@@ -1454,7 +1604,7 @@ func (c *InSalesClient) CreateCollect(ctx context.Context, collectionID, product
 }
 
 func (c *InSalesClient) UpdateCollect(ctx context.Context, collectID string, args map[string]any) (any, error) {
-	payload := map[string]any{"collect": args}
+	payload := map[string]any{"collect": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/collects/%s.json", collectID), payload)
 	if err != nil {
 		return nil, err
@@ -1502,7 +1652,7 @@ func (c *InSalesClient) GetProperty(ctx context.Context, propertyID string) (any
 }
 
 func (c *InSalesClient) CreateProperty(ctx context.Context, args map[string]any) (any, error) {
-	payload := map[string]any{"property": args}
+	payload := map[string]any{"property": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/properties.json", payload)
 	if err != nil {
 		return nil, err
@@ -1515,7 +1665,7 @@ func (c *InSalesClient) CreateProperty(ctx context.Context, args map[string]any)
 }
 
 func (c *InSalesClient) UpdateProperty(ctx context.Context, propertyID string, args map[string]any) (any, error) {
-	payload := map[string]any{"property": args}
+	payload := map[string]any{"property": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/properties/%s.json", propertyID), payload)
 	if err != nil {
 		return nil, err
@@ -1563,7 +1713,7 @@ func (c *InSalesClient) GetCharacteristic(ctx context.Context, propertyID, chara
 }
 
 func (c *InSalesClient) CreateCharacteristic(ctx context.Context, propertyID string, args map[string]any) (any, error) {
-	payload := map[string]any{"characteristic": args}
+	payload := map[string]any{"characteristic": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/properties/%s/characteristics.json", propertyID), payload)
 	if err != nil {
 		return nil, err
@@ -1576,7 +1726,7 @@ func (c *InSalesClient) CreateCharacteristic(ctx context.Context, propertyID str
 }
 
 func (c *InSalesClient) UpdateCharacteristic(ctx context.Context, propertyID, characteristicID string, args map[string]any) (any, error) {
-	payload := map[string]any{"characteristic": args}
+	payload := map[string]any{"characteristic": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/properties/%s/characteristics/%s.json", propertyID, characteristicID), payload)
 	if err != nil {
 		return nil, err
@@ -1596,14 +1746,15 @@ func (c *InSalesClient) DeleteCharacteristic(ctx context.Context, propertyID, ch
 // === REVIEWS ===
 
 func (c *InSalesClient) ListReviews(ctx context.Context, page, perPage int) ([]any, error) {
-	path := fmt.Sprintf("/reviews.json?page=%d&per_page=%d", page, perPage)
-	body, _, err := c.doRequest(ctx, http.MethodGet, path, nil)
+	items, err := fetchPaged(ctx, c, "/reviews.json", page, perPage, func(b []byte) ([]InSalesReviewResponse, error) {
+		var v []InSalesReviewResponse
+		if err := json.Unmarshal(b, &v); err != nil {
+			return nil, fmt.Errorf("decode reviews: %w", err)
+		}
+		return v, nil
+	})
 	if err != nil {
 		return nil, err
-	}
-	var items []InSalesReviewResponse
-	if err := json.Unmarshal(body, &items); err != nil {
-		return nil, fmt.Errorf("decode reviews: %w", err)
 	}
 	result := make([]any, len(items))
 	for i := range items {
@@ -1625,7 +1776,7 @@ func (c *InSalesClient) GetReview(ctx context.Context, reviewID string) (any, er
 }
 
 func (c *InSalesClient) CreateReview(ctx context.Context, args map[string]any) (any, error) {
-	payload := map[string]any{"review": args}
+	payload := map[string]any{"review": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/reviews.json", payload)
 	if err != nil {
 		return nil, err
@@ -1638,7 +1789,7 @@ func (c *InSalesClient) CreateReview(ctx context.Context, args map[string]any) (
 }
 
 func (c *InSalesClient) UpdateReview(ctx context.Context, reviewID string, args map[string]any) (any, error) {
-	payload := map[string]any{"review": args}
+	payload := map[string]any{"review": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/reviews/%s.json", reviewID), payload)
 	if err != nil {
 		return nil, err
@@ -1686,7 +1837,7 @@ func (c *InSalesClient) GetFile(ctx context.Context, fileID string) (any, error)
 }
 
 func (c *InSalesClient) CreateFile(ctx context.Context, args map[string]any) (any, error) {
-	payload := map[string]any{"file": args}
+	payload := map[string]any{"file": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/files.json", payload)
 	if err != nil {
 		return nil, err
@@ -1734,7 +1885,7 @@ func (c *InSalesClient) GetDomain(ctx context.Context, domainID string) (any, er
 }
 
 func (c *InSalesClient) CreateDomain(ctx context.Context, args map[string]any) (any, error) {
-	payload := map[string]any{"domain": args}
+	payload := map[string]any{"domain": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/domains.json", payload)
 	if err != nil {
 		return nil, err
@@ -1747,7 +1898,7 @@ func (c *InSalesClient) CreateDomain(ctx context.Context, args map[string]any) (
 }
 
 func (c *InSalesClient) UpdateDomain(ctx context.Context, domainID string, args map[string]any) (any, error) {
-	payload := map[string]any{"domain": args}
+	payload := map[string]any{"domain": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/domains/%s.json", domainID), payload)
 	if err != nil {
 		return nil, err
@@ -1795,7 +1946,7 @@ func (c *InSalesClient) GetClientGroup(ctx context.Context, groupID string) (any
 }
 
 func (c *InSalesClient) CreateClientGroup(ctx context.Context, args map[string]any) (any, error) {
-	payload := map[string]any{"client_group": args}
+	payload := map[string]any{"client_group": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/client_groups.json", payload)
 	if err != nil {
 		return nil, err
@@ -1808,7 +1959,7 @@ func (c *InSalesClient) CreateClientGroup(ctx context.Context, args map[string]a
 }
 
 func (c *InSalesClient) UpdateClientGroup(ctx context.Context, groupID string, args map[string]any) (any, error) {
-	payload := map[string]any{"client_group": args}
+	payload := map[string]any{"client_group": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/client_groups/%s.json", groupID), payload)
 	if err != nil {
 		return nil, err
@@ -1856,7 +2007,7 @@ func (c *InSalesClient) GetCustomStatus(ctx context.Context, statusID string) (a
 }
 
 func (c *InSalesClient) CreateCustomStatus(ctx context.Context, args map[string]any) (any, error) {
-	payload := map[string]any{"custom_status": args}
+	payload := map[string]any{"custom_status": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/custom_statuses.json", payload)
 	if err != nil {
 		return nil, err
@@ -1869,7 +2020,7 @@ func (c *InSalesClient) CreateCustomStatus(ctx context.Context, args map[string]
 }
 
 func (c *InSalesClient) UpdateCustomStatus(ctx context.Context, statusID string, args map[string]any) (any, error) {
-	payload := map[string]any{"custom_status": args}
+	payload := map[string]any{"custom_status": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/custom_statuses/%s.json", statusID), payload)
 	if err != nil {
 		return nil, err
@@ -1921,7 +2072,7 @@ func (c *InSalesClient) crudGet(ctx context.Context, path string) (any, error) {
 }
 
 func (c *InSalesClient) crudCreate(ctx context.Context, path string, key string, args map[string]any) (any, error) {
-	payload := map[string]any{key: args}
+	payload := map[string]any{key: cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, path, payload)
 	if err != nil {
 		return nil, err
@@ -1934,7 +2085,7 @@ func (c *InSalesClient) crudCreate(ctx context.Context, path string, key string,
 }
 
 func (c *InSalesClient) crudUpdate(ctx context.Context, path string, key string, args map[string]any) (any, error) {
-	payload := map[string]any{key: args}
+	payload := map[string]any{key: cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, path, payload)
 	if err != nil {
 		return nil, err
@@ -2334,7 +2485,7 @@ func (c *InSalesClient) GetBonusSystemTransaction(ctx context.Context, id string
 	return c.crudGet(ctx, fmt.Sprintf("/bonus_system_transactions/%s.json", id))
 }
 func (c *InSalesClient) CreateBonusSystemTransaction(ctx context.Context, clientID int, args map[string]any) (any, error) {
-	payload := map[string]any{"bonus_system_transaction": args}
+	payload := map[string]any{"bonus_system_transaction": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/clients/%d/bonus_system_transactions.json", clientID), payload)
 	if err != nil {
 		return nil, err
@@ -2472,7 +2623,7 @@ func (c *InSalesClient) CreateProviderToken(ctx context.Context, messengerType s
 // === ACCOUNT ===
 
 func (c *InSalesClient) UpdateAccount(ctx context.Context, args map[string]any) (any, error) {
-	payload := map[string]any{"account": args}
+	payload := map[string]any{"account": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, "/account.json", payload)
 	if err != nil {
 		return nil, err

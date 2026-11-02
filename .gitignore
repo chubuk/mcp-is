@@ -25,5 +25,8 @@ research/**/_cache/
 research/**/tmp/
 output/
 
+# user's temporary files (screenshots etc.)
+tmp/
+
 # rollback backups (see project rules: create rollback point before edits)
 *.bak-*

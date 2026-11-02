@@ -27,7 +27,7 @@ type Client interface {
 	DeleteCategory(ctx context.Context, categoryID string) error
 	ListCollections(ctx context.Context, page, perPage int) ([]any, error)
 	GetCollection(ctx context.Context, collectionID string) (any, error)
-	CreateCollection(ctx context.Context, title string) (any, error)
+	CreateCollection(ctx context.Context, title string, args map[string]any) (any, error)
 	UpdateCollection(ctx context.Context, collectionID, title string) (any, error)
 	DeleteCollection(ctx context.Context, collectionID string) error
 	ListImages(ctx context.Context, productID string) ([]any, error)
@@ -380,12 +380,16 @@ type Product struct {
 	Description      string    `json:"description,omitempty"`
 	ShortDescription string    `json:"short_description,omitempty"`
 	Permalink        string    `json:"permalink,omitempty"`
-	IsHidden         bool      `json:"is_hidden,omitempty"`
-	Available        bool      `json:"available,omitempty"`
-	SKU              string    `json:"sku"`
-	Price            string    `json:"price"`
-	Quantity         int       `json:"quantity"`
-	Vendor           string    `json:"vendor"`
+	IsHidden         bool      `json:"is_hidden"`
+	Archived         bool      `json:"archived"`
+	Available        *bool     `json:"available"`
+	SKU              *string   `json:"sku"`
+	Price            *string   `json:"price"`
+	Quantity         *int      `json:"quantity"`
+	Vendor           *string   `json:"vendor"`
+	HTMLTitle        *string   `json:"html_title"`
+	MetaKeywords     *string   `json:"meta_keywords"`
+	MetaDescription  *string   `json:"meta_description"`
 	CategoryID       *int      `json:"category_id"`
 	CreatedAt        string    `json:"created_at"`
 	UpdatedAt        string    `json:"updated_at"`

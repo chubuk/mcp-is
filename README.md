@@ -107,9 +107,25 @@ curl http://localhost:8080/health
 
 ## MCP Инструменты
 
-Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **285 инструментов** (121 read-only). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent` (structuredContent всегда JSON-объект, списки — конверт `{items, total}`; у core-инструментов есть `outputSchema`).
+Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **287 инструментов** (122 read-only). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent` (structuredContent всегда JSON-объект, списки — конверт `{items, total}`; у core-инструментов есть `outputSchema`).
 
-По умолчанию `tools/list` возвращает **core surface** (~30 tools) + discovery meta-tools. Полный каталог — `search_insales_tools` → `call_insales_tool` или `MCP_TOOLS_MODE=all`.
+По умолчанию `tools/list` возвращает **core surface** (32 tools) + discovery meta-tools. Полный каталог — `search_insales_tools` → `call_insales_tool` или `MCP_TOOLS_MODE=all`.
+
+### Живые данные и безопасная запись
+
+- **Никакого кеширования**: каждый вызов — свежий запрос в InSales; ответы `/mcp` идут с `Cache-Control: no-store`.
+- **Пагинация честная**: InSales клампит `per_page` снизу до 10, поэтому значения 1–9 эмулируются окном из 250-страниц; `total` в конверте — число элементов **в этом ответе**, не размер каталога (для подсчёта — `get_products_count`).
+- **Пустые значения не затирают поля**: в запрос обновления уходят только непустые значения (пустая строка/`null` отбрасываются; числа `0` и `false` остаются — иначе не записать нулевой остаток). Явная очистка поля — только `clear_fields: ["field"]`.
+- **`update_product` по whitelist**: лишние ключи не отправляются в InSales и возвращаются в ответе как `ignored_keys`; устаревший алиас `keywords` → `meta_keywords`. Цена и остатки (`price`/`quantity`) живут в вариантах и обновляются через `update_variant` — в `update_product` эти поля не принимаются.
+
+### SEO (товары, страницы, блог, коллекции)
+
+| Инструмент | Описание | Параметры |
+|------------|----------|-----------|
+| `get_seo` | Просмотр SEO-полей | `resource_type` (product/page/article/blog/collection), `resource_id`, `blog_id?` (для article) |
+| `update_seo` | Правка SEO-полей | те же + `html_title`, `meta_keywords`, `meta_description`, `seo_description` (только collection), `clear_fields` |
+
+Оба инструмента входят в core surface. **SEO главной страницы через API не настраивается** — он живёт в настройках админки/темы InSales. Учтите: не все темы рендерят `meta_keywords` (например, ShopBerry) — запись проверяйте через `get_seo`.
 
 ### Discovery
 
@@ -125,7 +141,7 @@ curl http://localhost:8080/health
 | `list_products` | Список товаров | `page`, `per_page`, `category_id`, `collection_id`, `q` |
 | `get_product` | Детали товара (field_values c handle/title) | `product_id` |
 | `create_product` | Создать товар | `title`, `price`, `description`, `vendor`, `sku`, `quantity` |
-| `update_product` | Обновить товар | `product_id`, `title`, `price`, `quantity` |
+| `update_product` | Обновить товар (только изменяемые поля) | `product_id`, `title`, `description`, `short_description`, `vendor`, `sku`, `html_title`, `meta_keywords`, `meta_description`, `category_id`, `clear_fields` |
 | `delete_product` | Удалить товар | `product_id` |
 
 ### Пользовательские поля товаров
@@ -606,7 +622,7 @@ SMTP_FROM=MCP IS <user@mail.ru>
 }
 ```
 
-При `tools/list` с read-only write-инструменты скрыты. По умолчанию возвращается core surface (~30 tools) + `search_insales_tools` / `call_insales_tool`; полный каталог — через catalog или `MCP_TOOLS_MODE=all`.
+При `tools/list` с read-only write-инструменты скрыты. По умолчанию возвращается core surface (32 tools) + `search_insales_tools` / `call_insales_tool`; полный каталог — через catalog или `MCP_TOOLS_MODE=all`.
 
 ## Доступные команды
 

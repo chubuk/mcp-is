@@ -28,6 +28,8 @@ var coreToolNames = map[string]bool{
 	// catalog / core entities
 	"list_products":          true,
 	"get_product":            true,
+	"get_seo":                true,
+	"update_seo":             true,
 	"list_orders":            true,
 	"get_order":              true,
 	"get_orders_count":       true,

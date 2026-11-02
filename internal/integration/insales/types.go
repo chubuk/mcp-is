@@ -13,16 +13,19 @@ type InSalesProductResponse struct {
 	Title                 string                   `json:"title"`
 	Description           string                   `json:"description"`
 	ShortDescription      string                   `json:"short_description"`
-	Price                 string                   `json:"price"`
+	Price                 *string                  `json:"price"`
 	CategoryID            *int                     `json:"category_id"`
-	Vendor                string                   `json:"vendor"`
-	SKU                   string                   `json:"sku"`
-	Quantity              int                      `json:"quantity"`
+	Vendor                *string                  `json:"vendor"`
+	SKU                   *string                  `json:"sku"`
+	Quantity              *int                     `json:"quantity"`
 	Weight                string                   `json:"weight"`
 	Permalink             string                   `json:"permalink"`
 	IsHidden              bool                     `json:"is_hidden"`
 	Available             *bool                    `json:"available"`
 	Archived              bool                     `json:"archived"`
+	HTMLTitle             *string                  `json:"html_title"`
+	MetaKeywords          *string                  `json:"meta_keywords"`
+	MetaDescription       *string                  `json:"meta_description"`
 	CreatedAt             string                   `json:"created_at"`
 	UpdatedAt             string                   `json:"updated_at"`
 	Variants              []InSalesVariant         `json:"variants"`

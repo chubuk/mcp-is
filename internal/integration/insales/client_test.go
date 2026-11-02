@@ -116,7 +116,7 @@ func TestListProducts_URL_EncodesQuery(t *testing.T) {
 	}
 
 	// URL must contain encoded query, not raw cyrillic
-	if receivedURL != "/products.json?page=1&per_page=5&q=%D0%9E%D0%B4%D1%83%D0%B2%D0%B0%D0%BD%D1%87%D0%B8%D0%BA+%D0%9F+100" {
+	if receivedURL != "/products.json?q=%D0%9E%D0%B4%D1%83%D0%B2%D0%B0%D0%BD%D1%87%D0%B8%D0%BA+%D0%9F+100&page=1&per_page=250" {
 		t.Errorf("URL not properly encoded: %s", receivedURL)
 	}
 }
@@ -138,7 +138,7 @@ func TestListProducts_URL_EncodesCyrillic(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	if receivedURL != "/products.json?page=1&per_page=25&q=%D0%9A%D1%80%D0%B0%D1%81%D0%BD%D0%B0%D1%8F+%D1%84%D1%83%D1%82%D0%B1%D0%BE%D0%BB%D0%BA%D0%B0" {
+	if receivedURL != "/products.json?q=%D0%9A%D1%80%D0%B0%D1%81%D0%BD%D0%B0%D1%8F+%D1%84%D1%83%D1%82%D0%B1%D0%BE%D0%BB%D0%BA%D0%B0&page=1&per_page=25" {
 		t.Errorf("URL not properly encoded: %s", receivedURL)
 	}
 }
@@ -163,7 +163,7 @@ func TestListOrders_URL_EncodesFilters(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	expected := "/orders.json?page=1&per_page=25&fulfillment_status[]=new&updated_since=2026-01-01T00%3A00%3A00Z"
+	expected := "/orders.json?fulfillment_status[]=new&updated_since=2026-01-01T00%3A00%3A00Z&page=1&per_page=25"
 	if receivedURL != expected {
 		t.Errorf("URL not properly encoded:\n  got:  %s\n  want: %s", receivedURL, expected)
 	}

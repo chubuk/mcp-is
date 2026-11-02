@@ -93,6 +93,27 @@ func (s *Service) DeleteProduct(ctx context.Context, productID string) error {
 	return client.DeleteProduct(ctx, productID)
 }
 
+// === SEO ===
+
+func (s *Service) GetSEO(ctx context.Context, resourceType, id, blogID string) (*insales.SEOFields, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return client.GetSEO(ctx, resourceType, id, blogID)
+}
+
+func (s *Service) UpdateSEO(ctx context.Context, resourceType, id, blogID string, args map[string]any) (*insales.SEOFields, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.checkReadOnly(ctx); err != nil {
+		return nil, err
+	}
+	return client.UpdateSEO(ctx, resourceType, id, blogID, args)
+}
+
 // === ЗАКАЗЫ ===
 
 func (s *Service) GetOrders(ctx context.Context, page, perPage int, filters map[string]any) ([]insales.Order, error) {
@@ -253,7 +274,7 @@ func (s *Service) GetCollection(ctx context.Context, collectionID string) (any, 
 	return client.GetCollection(ctx, collectionID)
 }
 
-func (s *Service) CreateCollection(ctx context.Context, title string) (any, error) {
+func (s *Service) CreateCollection(ctx context.Context, title string, args map[string]any) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -261,7 +282,7 @@ func (s *Service) CreateCollection(ctx context.Context, title string) (any, erro
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
-	return client.CreateCollection(ctx, title)
+	return client.CreateCollection(ctx, title, args)
 }
 
 func (s *Service) UpdateCollection(ctx context.Context, collectionID, title string) (any, error) {
@@ -2768,6 +2789,15 @@ func (s *Service) CollectionProducts(ctx context.Context, collectionID string) (
 
 // === DATA EXPORT (CSV) ===
 
+// derefStr renders a nullable string field (null and "" stay distinguishable in
+// JSON outputs; CSV gets "" for both).
+func derefStr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
 func (s *Service) ExportProducts(ctx context.Context) (string, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
@@ -2787,9 +2817,13 @@ func (s *Service) ExportProducts(ctx context.Context) (string, error) {
 			break
 		}
 		for _, p := range products {
+			qty := ""
+			if p.Quantity != nil {
+				qty = fmt.Sprintf("%d", *p.Quantity)
+			}
 			rows = append(rows, []string{
-				p.ID, p.Title, p.Price, p.SKU, p.Vendor,
-				fmt.Sprintf("%d", p.Quantity), p.CreatedAt,
+				p.ID, p.Title, derefStr(p.Price), derefStr(p.SKU), derefStr(p.Vendor),
+				qty, p.CreatedAt,
 			})
 		}
 		if len(products) < 250 {

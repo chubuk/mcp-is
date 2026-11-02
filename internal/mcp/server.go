@@ -41,7 +41,7 @@ For anything else use search_insales_tools(query) then call_insales_tool(name, a
 Set MCP_TOOLS_MODE=all to list every tool at once (more tokens, lower selection accuracy).
 
 ## Data conventions
-- List results: {items, total, page, per_page}.
+- List results: {items, total, page, per_page}. total = items in this response, NOT the catalog size (catalog size: get_products_count / export_products).
 - IDs are strings. Field values include handle/title when available.
 - Argument values must be language-invariant: pass API ids/handles/enum codes as-is (do not translate).
 
@@ -98,7 +98,7 @@ func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry st
 
 	s := server.NewMCPServer(
 		"mcp-is",
-		"0.9.4",
+		"0.9.5",
 		server.WithToolCapabilities(true),
 		server.WithToolFilter(toolFilter(readOnly)),
 		server.WithRecovery(),

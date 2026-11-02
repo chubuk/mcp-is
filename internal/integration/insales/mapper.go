@@ -13,10 +13,6 @@ func MapShop(resp *InSalesShopResponse) *StoreInfo {
 }
 
 func MapProduct(resp *InSalesProductResponse) *Product {
-	available := false
-	if resp.Available != nil {
-		available = *resp.Available
-	}
 	return &Product{
 		ID:               fmt.Sprintf("%d", resp.ID),
 		Title:            resp.Title,
@@ -24,11 +20,15 @@ func MapProduct(resp *InSalesProductResponse) *Product {
 		ShortDescription: resp.ShortDescription,
 		Permalink:        resp.Permalink,
 		IsHidden:         resp.IsHidden,
-		Available:        available,
+		Archived:         resp.Archived,
+		Available:        resp.Available,
 		SKU:              resp.SKU,
 		Price:            resp.Price,
 		Quantity:         resp.Quantity,
 		Vendor:           resp.Vendor,
+		HTMLTitle:        resp.HTMLTitle,
+		MetaKeywords:     resp.MetaKeywords,
+		MetaDescription:  resp.MetaDescription,
 		CategoryID:       resp.CategoryID,
 		CreatedAt:        resp.CreatedAt,
 		UpdatedAt:        resp.UpdatedAt,

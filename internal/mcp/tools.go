@@ -84,7 +84,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	// === ТОВАРЫ ===
 	registerTool("list_products", "Получить список товаров магазина с пагинацией и фильтрацией",
 		mcp.NewTool("list_products",
-			mcp.WithDescription("List product from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
+			mcp.WithDescription("List product from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
 			mcp.WithToolTitle("Список товаров"),
 			mcp.WithNumber("page", mcp.Description("Номер страницы"), mcp.DefaultNumber(1)),
 			mcp.WithNumber("per_page", mcp.Description("Товаров на странице (макс 250)"), mcp.DefaultNumber(25)),
@@ -125,12 +125,18 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), createProductHandler(svc))
 
 	addTool(s, mcp.NewTool("update_product",
-		mcp.WithDescription("Update an existing product by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить данные товара"),
+		mcp.WithDescription("Update an existing product by id. Only send fields that should change; empty values do not change a field (use clear_fields to clear). Price and stock live in variants — change them via update_variant (price/quantity are not accepted here). Returns the updated object as JSON."), mcp.WithToolTitle("Обновить данные товара"),
 		mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
 		mcp.WithString("title", mcp.Description("Название")),
-		mcp.WithString("description", mcp.Description("Описание")),
-		mcp.WithString("price", mcp.Description("Цена")),
-		mcp.WithNumber("quantity", mcp.Description("Количество")),
+		mcp.WithString("description", mcp.Description("Описание (HTML)")),
+		mcp.WithString("short_description", mcp.Description("Краткое описание (HTML)")),
+		mcp.WithString("vendor", mcp.Description("Производитель")),
+		mcp.WithString("sku", mcp.Description("Артикул")),
+		mcp.WithString("html_title", mcp.Description("SEO: html title")),
+		mcp.WithString("meta_keywords", mcp.Description("SEO: meta keywords (алиас keywords устарел)")),
+		mcp.WithString("meta_description", mcp.Description("SEO: meta description")),
+		mcp.WithNumber("category_id", mcp.Description("ID категории (перемещение товара)")),
+		mcp.WithArray("clear_fields", mcp.WithStringItems(), mcp.Description("Очистить перечисленные поля (записать пустое значение)")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
@@ -145,9 +151,35 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithOpenWorldHintAnnotation(false),
 	), deleteProductHandler(svc))
 
+	addTool(s, mcp.NewTool("get_seo",
+		mcp.WithDescription("Get SEO fields (html_title, meta_keywords, meta_description, and seo_description for collections) of a product, page, blog article, blog or collection."), mcp.WithToolTitle("SEO-поля объекта"),
+		mcp.WithString("resource_type", mcp.Required(), mcp.Description("product | page | article | blog | collection")),
+		mcp.WithString("resource_id", mcp.Required(), mcp.Description("ID объекта")),
+		mcp.WithString("blog_id", mcp.Description("ID блога (обязателен для resource_type=article)")),
+		mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithIdempotentHintAnnotation(true),
+		mcp.WithOpenWorldHintAnnotation(false),
+	), getSeoHandler(svc))
+
+	addTool(s, mcp.NewTool("update_seo",
+		mcp.WithDescription("Update SEO fields of a product, page, blog article, blog or collection. Only send fields that should change; empty values do not change a field (use clear_fields to clear)."), mcp.WithToolTitle("Изменить SEO объекта"),
+		mcp.WithString("resource_type", mcp.Required(), mcp.Description("product | page | article | blog | collection")),
+		mcp.WithString("resource_id", mcp.Required(), mcp.Description("ID объекта")),
+		mcp.WithString("blog_id", mcp.Description("ID блога (обязателен для resource_type=article)")),
+		mcp.WithString("html_title", mcp.Description("SEO: html title")),
+		mcp.WithString("meta_keywords", mcp.Description("SEO: meta keywords (алиас keywords устарел)")),
+		mcp.WithString("meta_description", mcp.Description("SEO: meta description")),
+		mcp.WithString("seo_description", mcp.Description("SEO-описание (только resource_type=collection)")),
+		mcp.WithArray("clear_fields", mcp.WithStringItems(), mcp.Description("Очистить перечисленные SEO-поля")),
+		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(true),
+		mcp.WithDestructiveHintAnnotation(false),
+		mcp.WithOpenWorldHintAnnotation(false),
+	), updateSeoHandler(svc))
+
 	// === ЗАКАЗЫ ===
 	addTool(s, mcp.NewTool("list_orders",
-		mcp.WithDescription("List order from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список заказов с фильтрацией"),
+		mcp.WithDescription("List order from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список заказов с фильтрацией"),
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
 		mcp.WithString("status", mcp.Description("Статус: open, closed, canceled")),
@@ -331,7 +363,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === КЛИЕНТЫ ===
 	addTool(s, mcp.NewTool("list_clients",
-		mcp.WithDescription("List client from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список клиентов с поиском"),
+		mcp.WithDescription("List client from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список клиентов с поиском"),
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
 		mcp.WithString("q", mcp.Description("Поиск по имени/email/телефону")),
@@ -384,7 +416,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === КАТЕГОРИИ ===
 	addTool(s, mcp.NewTool("list_categories",
-		mcp.WithDescription("List category from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список категорий товаров"),
+		mcp.WithDescription("List category from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список категорий товаров"),
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -429,7 +461,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === КОЛЛЕКЦИИ ===
 	addTool(s, mcp.NewTool("list_collections",
-		mcp.WithDescription("List collection from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список коллекций (умных подборок)"),
+		mcp.WithDescription("List collection from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список коллекций (умных подборок)"),
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -448,6 +480,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	addTool(s, mcp.NewTool("create_collection",
 		mcp.WithDescription("Create or add a new collection in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать новую коллекцию"),
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название коллекции")),
+		mcp.WithNumber("parent_id", mcp.Description("ID родительской коллекции (0 — корень дерева)")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -473,7 +506,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === ИЗОБРАЖЕНИЯ ===
 	addTool(s, mcp.NewTool("list_images",
-		mcp.WithDescription("List product image from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список изображений товара"),
+		mcp.WithDescription("List product image from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список изображений товара"),
 		mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
@@ -502,7 +535,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === МЕТАПОЛЯ ===
 	addTool(s, mcp.NewTool("list_meta_fields",
-		mcp.WithDescription("List meta field from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список метаполей"),
+		mcp.WithDescription("List meta field from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список метаполей"),
 		mcp.WithString("resource_type", mcp.Description("Тип ресурса: Product, Variant, Order, Client, Category, Page")),
 		mcp.WithString("resource_id", mcp.Description("ID ресурса")),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -541,7 +574,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === ВЕБХУКИ ===
 	addTool(s, mcp.NewTool("list_webhooks",
-		mcp.WithDescription("List webhook from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список подписанных вебхуков"),
+		mcp.WithDescription("List webhook from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список подписанных вебхуков"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -585,14 +618,14 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), getShopInfoHandler(svc))
 
 	addTool(s, mcp.NewTool("list_currencies",
-		mcp.WithDescription("List currency from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список валют магазина"),
+		mcp.WithDescription("List currency from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список валют магазина"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), listCurrenciesHandler(svc))
 
 	addTool(s, mcp.NewTool("list_delivery_variants",
-		mcp.WithDescription("List delivery variant from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
+		mcp.WithDescription("List delivery variant from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
 		mcp.WithToolTitle("Способы доставки"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
@@ -651,7 +684,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteDeliveryVariant, "variant_id", "Способ доставки удалён"))
 
 	addTool(s, mcp.NewTool("list_payment_gateways",
-		mcp.WithDescription("List payment gateway from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
+		mcp.WithDescription("List payment gateway from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
 		mcp.WithToolTitle("Способы оплаты"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
@@ -707,7 +740,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === СТРАНИЦЫ ===
 	addTool(s, mcp.NewTool("list_pages",
-		mcp.WithDescription("List page from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список страниц магазина"),
+		mcp.WithDescription("List page from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список страниц магазина"),
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -754,7 +787,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === АКСЕССУАРЫ ===
 	addTool(s, mcp.NewTool("list_accessories",
-		mcp.WithDescription("List accessory from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список аксессуаров (характеристик товаров)"),
+		mcp.WithDescription("List accessory from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список аксессуаров (характеристик товаров)"),
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -802,7 +835,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === ВАРИАНТЫ ТОВАРОВ ===
 	addTool(s, mcp.NewTool("list_variants",
-		mcp.WithDescription("List product variant from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список вариантов товара (размеры, цвета)"),
+		mcp.WithDescription("List product variant from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список вариантов товара (размеры, цвета)"),
 		mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
@@ -842,7 +875,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === ЗНАЧЕНИЯ СВОЙСТВ ===
 	addTool(s, mcp.NewTool("list_property_values",
-		mcp.WithDescription("List property value from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список значений аксессуара"),
+		mcp.WithDescription("List property value from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список значений аксессуара"),
 		mcp.WithString("accessory_id", mcp.Required(), mcp.Description("ID аксессуара")),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
@@ -880,7 +913,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === МЕНЮ ===
 	addTool(s, mcp.NewTool("list_menus",
-		mcp.WithDescription("List navigation menu from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список навигационных меню"),
+		mcp.WithDescription("List navigation menu from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список навигационных меню"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -923,7 +956,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === MENU ITEMS (B2) ===
 	addTool(s, mcp.NewTool("list_menu_items",
-		mcp.WithDescription("List navigation menu item from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
+		mcp.WithDescription("List navigation menu item from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
 		mcp.WithToolTitle("Пункты меню"),
 		mcp.WithString("menu_id", mcp.Required(), mcp.Description("Menu id")),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -987,7 +1020,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === РЕДИРЕКТЫ ===
 	addTool(s, mcp.NewTool("list_redirects",
-		mcp.WithDescription("List redirect from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список URL-редиректов"),
+		mcp.WithDescription("List redirect from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список URL-редиректов"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1012,7 +1045,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === БЛОГИ ===
 	addTool(s, mcp.NewTool("list_blogs",
-		mcp.WithDescription("List blog from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список блогов магазина"),
+		mcp.WithDescription("List blog from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список блогов магазина"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1060,7 +1093,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === ЗАПИСИ БЛОГА ===
 	addTool(s, mcp.NewTool("list_blog_posts",
-		mcp.WithDescription("List blog post from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список записей в блоге"),
+		mcp.WithDescription("List blog post from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список записей в блоге"),
 		mcp.WithString("blog_id", mcp.Required(), mcp.Description("ID блога")),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
@@ -1109,7 +1142,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === ПРОМОКОДЫ (Discount Codes) ===
 	addTool(s, mcp.NewTool("list_discount_codes",
-		mcp.WithDescription("List discount code from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список промокодов"),
+		mcp.WithDescription("List discount code from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список промокодов"),
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -1163,7 +1196,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === СВЯЗИ ТОВАР-КОЛЛЕКЦИЯ (Collects) ===
 	addTool(s, mcp.NewTool("list_collects",
-		mcp.WithDescription("List product-collection link from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список связей товар-коллекция"),
+		mcp.WithDescription("List product-collection link from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список связей товар-коллекция"),
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -1211,7 +1244,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === СВОЙСТВА ТОВАРОВ (Properties) ===
 	addTool(s, mcp.NewTool("list_properties",
-		mcp.WithDescription("List property from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список свойств товаров (Бренд, Цвет...)"),
+		mcp.WithDescription("List property from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список свойств товаров (Бренд, Цвет...)"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1256,7 +1289,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === ХАРАКТЕРИСТИКИ (Characteristics) ===
 	addTool(s, mcp.NewTool("list_characteristics",
-		mcp.WithDescription("List characteristic from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список характеристик свойства (Nike, Adidas...)"),
+		mcp.WithDescription("List characteristic from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список характеристик свойства (Nike, Adidas...)"),
 		mcp.WithString("property_id", mcp.Required(), mcp.Description("ID свойства")),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
@@ -1303,7 +1336,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === ОТЗЫВЫ (Reviews) ===
 	addTool(s, mcp.NewTool("list_reviews",
-		mcp.WithDescription("List review from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список отзывов"),
+		mcp.WithDescription("List review from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список отзывов"),
 		mcp.WithNumber("page", mcp.DefaultNumber(1)),
 		mcp.WithNumber("per_page", mcp.DefaultNumber(25)),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -1355,7 +1388,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === ФАЙЛЫ (Files) ===
 	addTool(s, mcp.NewTool("list_files",
-		mcp.WithDescription("List file from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список файлов магазина"),
+		mcp.WithDescription("List file from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список файлов магазина"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1386,7 +1419,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), deleteFileHandler(svc))
 
 	// === DOMAINS ===
-	addTool(s, mcp.NewTool("list_domains", mcp.WithDescription("List domain from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список доменов магазина"),
+	addTool(s, mcp.NewTool("list_domains", mcp.WithDescription("List domain from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список доменов магазина"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1414,7 +1447,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteDomain, "domain_id", "Домен удалён"))
 
 	// === CLIENT GROUPS ===
-	addTool(s, mcp.NewTool("list_client_groups", mcp.WithDescription("List client group from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список групп клиентов"),
+	addTool(s, mcp.NewTool("list_client_groups", mcp.WithDescription("List client group from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список групп клиентов"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1442,7 +1475,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteClientGroup, "group_id", "Группа удалена"))
 
 	// === CUSTOM STATUSES ===
-	addTool(s, mcp.NewTool("list_custom_statuses", mcp.WithDescription("List custom order status from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список кастомных статусов"),
+	addTool(s, mcp.NewTool("list_custom_statuses", mcp.WithDescription("List custom order status from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список кастомных статусов"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1471,7 +1504,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === PRODUCT FIELDS ===
 	addTool(s, mcp.NewTool("list_product_fields",
-		mcp.WithDescription("List product custom field from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
+		mcp.WithDescription("List product custom field from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
 		mcp.WithToolTitle("Список полей товаров"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
@@ -1525,7 +1558,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === PRODUCT FIELD VALUES (custom field values on a product) ===
 	addTool(s, mcp.NewTool("list_product_field_values",
-		mcp.WithDescription("List product custom field value from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
+		mcp.WithDescription("List product custom field value from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
 		mcp.WithToolTitle("Значения полей товара"),
 		mcp.WithString("product_id", mcp.Required(), mcp.Description("Product id")),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -1582,7 +1615,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	}, "product_id", "value_id", "Значение удалено"))
 
 	addTool(s, mcp.NewTool("list_product_accessory_links",
-		mcp.WithDescription("List accessory from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
+		mcp.WithDescription("List accessory from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
 		mcp.WithToolTitle("Связи аксессуаров товара"),
 		mcp.WithString("product_id", mcp.Required(), mcp.Description("Product id")),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -1594,7 +1627,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === VARIANT FIELD VALUES ===
 	addTool(s, mcp.NewTool("list_variant_field_values",
-		mcp.WithDescription("List variant custom field value from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
+		mcp.WithDescription("List variant custom field value from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
 		mcp.WithToolTitle("Значения полей варианта"),
 		mcp.WithString("variant_id", mcp.Required(), mcp.Description("Variant id")),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -1652,7 +1685,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	// === COLLECTION FIELD VALUES (GET/PUT only) ===
 	addTool(s, mcp.NewTool("list_collection_field_values",
-		mcp.WithDescription("List collection custom field value from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
+		mcp.WithDescription("List collection custom field value from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
 		mcp.WithToolTitle("Значения полей коллекции"),
 		mcp.WithString("collection_id", mcp.Required(), mcp.Description("Collection id")),
 		mcp.WithReadOnlyHintAnnotation(true),
@@ -1687,7 +1720,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	}, "collection_id", "value_id"))
 
 	// === VARIANT FIELDS ===
-	addTool(s, mcp.NewTool("list_variant_fields", mcp.WithDescription("List variant custom field from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список полей вариантов"),
+	addTool(s, mcp.NewTool("list_variant_fields", mcp.WithDescription("List variant custom field from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список полей вариантов"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1715,7 +1748,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteVariantField, "field_id", "Поле удалено"))
 
 	// === COLLECTION FIELDS ===
-	addTool(s, mcp.NewTool("list_collection_fields", mcp.WithDescription("List collection custom field from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список полей коллекций"),
+	addTool(s, mcp.NewTool("list_collection_fields", mcp.WithDescription("List collection custom field from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список полей коллекций"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1743,7 +1776,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteCollectionField, "field_id", "Поле удалено"))
 
 	// === COLLECTION FILTERS ===
-	addTool(s, mcp.NewTool("list_collection_filters", mcp.WithDescription("List collection filter from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список фильтров коллекций"),
+	addTool(s, mcp.NewTool("list_collection_filters", mcp.WithDescription("List collection filter from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список фильтров коллекций"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1771,7 +1804,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteCollectionFilter, "filter_id", "Фильтр удалён"))
 
 	// === JS TAGS ===
-	addTool(s, mcp.NewTool("list_js_tags", mcp.WithDescription("List JS tag from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список JS-тегов"),
+	addTool(s, mcp.NewTool("list_js_tags", mcp.WithDescription("List JS tag from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список JS-тегов"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1799,7 +1832,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteJsTag, "tag_id", "Тег удалён"))
 
 	// === EXTERNAL DISCOUNTS ===
-	addTool(s, mcp.NewTool("list_external_discounts", mcp.WithDescription("List external discount from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список внешних скидок"),
+	addTool(s, mcp.NewTool("list_external_discounts", mcp.WithDescription("List external discount from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список внешних скидок"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1827,7 +1860,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteExternalDiscount, "discount_id", "Скидка удалена"))
 
 	// === DISCOUNT COLLECTIONS GROUPS ===
-	addTool(s, mcp.NewTool("list_discount_collections_groups", mcp.WithDescription("List discount collections group from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список групп коллекций скидок"),
+	addTool(s, mcp.NewTool("list_discount_collections_groups", mcp.WithDescription("List discount collections group from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список групп коллекций скидок"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1855,7 +1888,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteDiscountCollectionsGroup, "group_id", "Группа удалена"))
 
 	// === WAREHOUSES ===
-	addTool(s, mcp.NewTool("list_warehouses", mcp.WithDescription("List warehouse from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список складов"),
+	addTool(s, mcp.NewTool("list_warehouses", mcp.WithDescription("List warehouse from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список складов"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1883,7 +1916,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteWarehouse, "warehouse_id", "Склад удалён"))
 
 	// === SALES CHANNELS ===
-	addTool(s, mcp.NewTool("list_sales_channels", mcp.WithDescription("List sales channel from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список каналов продаж"),
+	addTool(s, mcp.NewTool("list_sales_channels", mcp.WithDescription("List sales channel from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список каналов продаж"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1911,7 +1944,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteSalesChannel, "channel_id", "Канал удалён"))
 
 	// === STOCK CURRENCIES ===
-	addTool(s, mcp.NewTool("list_stock_currencies", mcp.WithDescription("List stock currency from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список валют склада"),
+	addTool(s, mcp.NewTool("list_stock_currencies", mcp.WithDescription("List stock currency from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список валют склада"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1939,7 +1972,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteStockCurrency, "currency_id", "Валюта удалена"))
 
 	// === PRICE KINDS ===
-	addTool(s, mcp.NewTool("list_price_kinds", mcp.WithDescription("List price kind from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список типов цен"),
+	addTool(s, mcp.NewTool("list_price_kinds", mcp.WithDescription("List price kind from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список типов цен"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1967,7 +2000,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeletePriceKind, "kind_id", "Тип цены удалён"))
 
 	// === OPTION NAMES ===
-	addTool(s, mcp.NewTool("list_option_names", mcp.WithDescription("List option name from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список имён опций (Размер, Цвет...)"),
+	addTool(s, mcp.NewTool("list_option_names", mcp.WithDescription("List option name from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список имён опций (Размер, Цвет...)"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1995,7 +2028,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteOptionName, "option_name_id", "Имя опции удалено"))
 
 	// === OPTION VALUES ===
-	addTool(s, mcp.NewTool("list_option_values", mcp.WithDescription("List option value from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список значений опции"), mcp.WithString("option_name_id", mcp.Required(), mcp.Description("ID имени опции")),
+	addTool(s, mcp.NewTool("list_option_values", mcp.WithDescription("List option value from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список значений опции"), mcp.WithString("option_name_id", mcp.Required(), mcp.Description("ID имени опции")),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -2023,7 +2056,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteOptionValueHandler(svc))
 
 	// === ROUND 4: APPLICATION ACTIONS ===
-	addTool(s, mcp.NewTool("list_application_actions", mcp.WithDescription("List application action from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список действий приложения"),
+	addTool(s, mcp.NewTool("list_application_actions", mcp.WithDescription("List application action from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список действий приложения"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -2051,7 +2084,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteApplicationAction, "action_id", "Действие удалено"))
 
 	// === APPLICATION CHARGES ===
-	addTool(s, mcp.NewTool("list_application_charges", mcp.WithDescription("List application charge from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список счетов приложения"),
+	addTool(s, mcp.NewTool("list_application_charges", mcp.WithDescription("List application charge from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список счетов приложения"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -2073,7 +2106,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), declineApplicationChargeHandler(svc))
 
 	// === APPLICATION WIDGETS ===
-	addTool(s, mcp.NewTool("list_application_widgets", mcp.WithDescription("List application widget from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список виджетов приложения"),
+	addTool(s, mcp.NewTool("list_application_widgets", mcp.WithDescription("List application widget from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список виджетов приложения"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -2101,7 +2134,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteApplicationWidget, "widget_id", "Виджет удалён"))
 
 	// === RECURRING APPLICATION CHARGES ===
-	addTool(s, mcp.NewTool("list_recurring_application_charges", mcp.WithDescription("List recurring application charge from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список рекуррентных счетов"),
+	addTool(s, mcp.NewTool("list_recurring_application_charges", mcp.WithDescription("List recurring application charge from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список рекуррентных счетов"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -2129,7 +2162,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteRecurringApplicationCharge, "charge_id", "Счёт удалён"))
 
 	// === BONUS SYSTEM TRANSACTIONS ===
-	addTool(s, mcp.NewTool("list_bonus_system_transactions", mcp.WithDescription("List bonus transaction from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список бонусных транзакций"),
+	addTool(s, mcp.NewTool("list_bonus_system_transactions", mcp.WithDescription("List bonus transaction from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список бонусных транзакций"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -2144,14 +2177,14 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createBonusSystemTransactionHandler(svc))
-	addTool(s, mcp.NewTool("list_client_bonus_transactions", mcp.WithDescription("List client from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список бонусных транзакций клиента"), mcp.WithString("client_id", mcp.Required(), mcp.Description("ID клиента")),
+	addTool(s, mcp.NewTool("list_client_bonus_transactions", mcp.WithDescription("List client from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список бонусных транзакций клиента"), mcp.WithString("client_id", mcp.Required(), mcp.Description("ID клиента")),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), listClientBonusTransactionsHandler(svc))
 
 	// === OAUTH APPS ===
-	addTool(s, mcp.NewTool("list_oauth_apps", mcp.WithDescription("List OAuth app from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список OAuth приложений"),
+	addTool(s, mcp.NewTool("list_oauth_apps", mcp.WithDescription("List OAuth app from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список OAuth приложений"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -2179,7 +2212,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteOAuthApp, "app_id", "Приложение удалено"))
 
 	// === USER TASKS ===
-	addTool(s, mcp.NewTool("list_user_tasks", mcp.WithDescription("List user task from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список задач пользователя"),
+	addTool(s, mcp.NewTool("list_user_tasks", mcp.WithDescription("List user task from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список задач пользователя"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -2207,7 +2240,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteUserTask, "task_id", "Задача удалена"))
 
 	// === SUPPLEMENTARY ===
-	addTool(s, mcp.NewTool("list_supplementaries", mcp.WithDescription("List supplementary-product link from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список дополнительных товаров"),
+	addTool(s, mcp.NewTool("list_supplementaries", mcp.WithDescription("List supplementary-product link from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список дополнительных товаров"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -2229,7 +2262,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteSupplementary, "supplementary_id", "Удалено"))
 
 	// === SIMILARS ===
-	addTool(s, mcp.NewTool("list_similars", mcp.WithDescription("List similar-product link from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Похожие товары"), mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
+	addTool(s, mcp.NewTool("list_similars", mcp.WithDescription("List similar-product link from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Похожие товары"), mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -2246,14 +2279,14 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteSimilar, "similar_id", "Удалено"))
 
 	// === UNITS ===
-	addTool(s, mcp.NewTool("list_units", mcp.WithDescription("List unit from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список единиц измерения"),
+	addTool(s, mcp.NewTool("list_units", mcp.WithDescription("List unit from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список единиц измерения"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericListHandler(svc, svc.ListUnits))
 
 	// === OUTLETS ===
-	addTool(s, mcp.NewTool("list_outlets", mcp.WithDescription("List outlet from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список точек выдачи"),
+	addTool(s, mcp.NewTool("list_outlets", mcp.WithDescription("List outlet from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список точек выдачи"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -2281,7 +2314,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericDeleteHandler(svc.DeleteOutlet, "outlet_id", "Точка выдачи удалена"))
 
 	// === MARKETPLACES ===
-	addTool(s, mcp.NewTool("list_marketplaces", mcp.WithDescription("List marketplace from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список маркетплейсов"),
+	addTool(s, mcp.NewTool("list_marketplaces", mcp.WithDescription("List marketplace from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список маркетплейсов"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -2324,12 +2357,12 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), updateAccountHandler(svc))
 
 	// === COUNTS ===
-	addTool(s, mcp.NewTool("get_orders_count", mcp.WithDescription("List order from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Количество заказов"), mcp.WithString("fulfillment_status", mcp.Description("Статус выполнения")),
+	addTool(s, mcp.NewTool("get_orders_count", mcp.WithDescription("List order from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Количество заказов"), mcp.WithString("fulfillment_status", mcp.Description("Статус выполнения")),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), getOrdersCountHandler(svc))
-	addTool(s, mcp.NewTool("get_products_count", mcp.WithDescription("List product from the InSales shop. Returns JSON items (envelope with total/page/per_page when paginated). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Количество товаров"),
+	addTool(s, mcp.NewTool("get_products_count", mcp.WithDescription("List product from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Количество товаров"),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),

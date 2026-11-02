@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/chubuk/mcp-is/internal/core"
@@ -93,11 +95,70 @@ func toolError(err error) *mcp.CallToolResult {
 	return mcp.NewToolResultError(cleanError(err).Error())
 }
 
-func getFloat(args map[string]any, key string, def float64) float64 {
-	if v, ok := args[key].(float64); ok {
-		return v
+// getFloatArg parses a numeric tool argument (float64, int, json.Number or
+// numeric string). Absent key → def; present but unparseable → error.
+func getFloatArg(args map[string]any, key string, def float64) (float64, error) {
+	v, ok := args[key]
+	if !ok || v == nil {
+		return def, nil
 	}
-	return def
+	switch t := v.(type) {
+	case float64:
+		return t, nil
+	case float32:
+		return float64(t), nil
+	case int:
+		return float64(t), nil
+	case int32:
+		return float64(t), nil
+	case int64:
+		return float64(t), nil
+	case json.Number:
+		f, err := t.Float64()
+		if err != nil {
+			return 0, fmt.Errorf("%s must be a number, got %q", key, t)
+		}
+		return f, nil
+	case string:
+		f, err := strconv.ParseFloat(strings.TrimSpace(t), 64)
+		if err != nil {
+			return 0, fmt.Errorf("%s must be a number, got %q", key, t)
+		}
+		return f, nil
+	default:
+		return 0, fmt.Errorf("%s must be a number", key)
+	}
+}
+
+func getFloat(args map[string]any, key string, def float64) float64 {
+	f, _ := getFloatArg(args, key, def)
+	return f
+}
+
+// pageArgs parses page/per_page for list tools with clamping: page ≥ 1,
+// 1 ≤ per_page ≤ 250; per_page < 1 means "unset" → default 25. Garbage values
+// are a tool error, not a silent default.
+func pageArgs(args map[string]any) (page, perPage int, err error) {
+	pf, err := getFloatArg(args, "page", 1)
+	if err != nil {
+		return 0, 0, err
+	}
+	ppf, err := getFloatArg(args, "per_page", 25)
+	if err != nil {
+		return 0, 0, err
+	}
+	page = int(pf)
+	if page < 1 {
+		page = 1
+	}
+	perPage = int(ppf)
+	if perPage < 1 {
+		perPage = 25
+	}
+	if perPage > 250 {
+		perPage = 250
+	}
+	return page, perPage, nil
 }
 
 // applyPDNToResult маскирует ПДн в результате инструмента при включённом режиме.
@@ -132,13 +193,92 @@ func applyPDNToResult(ctx context.Context, result any, toolName string) any {
 	return out.Elem().Interface()
 }
 
+// === SEO ===
+
+var seoReadArgs = map[string]bool{"resource_type": true, "resource_id": true, "blog_id": true}
+
+var seoWriteArgs = map[string]bool{
+	"resource_type": true, "resource_id": true, "blog_id": true, "clear_fields": true,
+	"html_title": true, "meta_keywords": true, "meta_description": true, "seo_description": true,
+}
+
+// stringArg reads a string tool argument, coercing numbers (IDs often arrive as numbers).
+func stringArg(args map[string]any, key string) string {
+	switch v := args[key].(type) {
+	case string:
+		return v
+	case float64:
+		return strconv.FormatInt(int64(v), 10)
+	case int:
+		return strconv.Itoa(v)
+	case json.Number:
+		return v.String()
+	}
+	return ""
+}
+
+func seoResultMap(resourceType, resourceID string, fields *insales.SEOFields) map[string]any {
+	out := map[string]any{
+		"resource_type":    resourceType,
+		"resource_id":      resourceID,
+		"html_title":       fields.HTMLTitle,
+		"meta_keywords":    fields.MetaKeywords,
+		"meta_description": fields.MetaDescription,
+	}
+	if resourceType == "collection" {
+		out["seo_description"] = fields.SEODescription
+	}
+	return out
+}
+
+func getSeoHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		resourceType := strings.TrimSpace(stringArg(args, "resource_type"))
+		resourceID := strings.TrimSpace(stringArg(args, "resource_id"))
+		blogID := strings.TrimSpace(stringArg(args, "blog_id"))
+		if resourceType == "" || resourceID == "" {
+			return toolError(errors.New("resource_type and resource_id are required")), nil
+		}
+		ignored := filterKnown(args, seoReadArgs)
+		fields, err := svc.GetSEO(ctx, resourceType, resourceID, blogID)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return toolResult(withIgnoredKeys(seoResultMap(resourceType, resourceID, fields), ignored)), nil
+	}
+}
+
+func updateSeoHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		resourceType := strings.TrimSpace(stringArg(args, "resource_type"))
+		resourceID := strings.TrimSpace(stringArg(args, "resource_id"))
+		blogID := strings.TrimSpace(stringArg(args, "blog_id"))
+		if resourceType == "" || resourceID == "" {
+			return toolError(errors.New("resource_type and resource_id are required")), nil
+		}
+		if err := resolveKeywordsAlias(args); err != nil {
+			return toolError(err), nil
+		}
+		ignored := filterKnown(args, seoWriteArgs)
+		fields, err := svc.UpdateSEO(ctx, resourceType, resourceID, blogID, args)
+		if err != nil {
+			return toolError(err), nil
+		}
+		return toolResult(withIgnoredKeys(seoResultMap(resourceType, resourceID, fields), ignored)), nil
+	}
+}
+
 // === ТОВАРЫ ===
 
 func listProductsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		page := int(getFloat(args, "page", 1))
-		perPage := int(getFloat(args, "per_page", 25))
+		page, perPage, err := pageArgs(args)
+		if err != nil {
+			return toolError(err), nil
+		}
 		result, err := svc.GetProducts(ctx, page, perPage, args)
 		if err != nil {
 			return toolError(err), nil
@@ -180,6 +320,60 @@ func createProductHandler(svc *service.Service) func(ctx context.Context, req mc
 	}
 }
 
+// resolveKeywordsAlias maps the legacy keywords key to meta_keywords; passing
+// both is a conflict.
+func resolveKeywordsAlias(args map[string]any) error {
+	if _, hasAlias := args["keywords"]; !hasAlias {
+		return nil
+	}
+	if _, hasCanonical := args["meta_keywords"]; hasCanonical {
+		return errors.New("передайте только meta_keywords: keywords — устаревший алиас")
+	}
+	args["meta_keywords"] = args["keywords"]
+	delete(args, "keywords")
+	return nil
+}
+
+// filterKnown drops non-whitelisted keys and returns them sorted (for ignored_keys).
+func filterKnown(args map[string]any, known map[string]bool) []string {
+	ignored := []string{}
+	for k := range args {
+		if !known[k] {
+			ignored = append(ignored, k)
+			delete(args, k)
+		}
+	}
+	sort.Strings(ignored)
+	return ignored
+}
+
+// withIgnoredKeys adds ignored_keys to an object result (additive key).
+func withIgnoredKeys(result any, ignored []string) any {
+	if len(ignored) == 0 {
+		return result
+	}
+	b, err := json.Marshal(result)
+	if err != nil {
+		return result
+	}
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		return result
+	}
+	m["ignored_keys"] = ignored
+	return m
+}
+
+// productArgFields is the update_product argument whitelist (handler UX layer;
+// the InSales client enforces the same list as a safety net).
+var productArgFields = map[string]bool{
+	"product_id": true, "clear_fields": true,
+	"title": true, "description": true, "short_description": true,
+	"vendor": true, "sku": true,
+	"html_title": true, "meta_keywords": true, "meta_description": true,
+	"category_id": true,
+}
+
 func updateProductHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		productID, err := req.RequireString("product_id")
@@ -187,11 +381,15 @@ func updateProductHandler(svc *service.Service) func(ctx context.Context, req mc
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
+		if err := resolveKeywordsAlias(args); err != nil {
+			return toolError(err), nil
+		}
+		ignored := filterKnown(args, productArgFields)
 		result, err := svc.UpdateProduct(ctx, productID, args)
 		if err != nil {
 			return toolError(err), nil
 		}
-		return toolResult(result), nil
+		return toolResult(withIgnoredKeys(result, ignored)), nil
 	}
 }
 
@@ -213,8 +411,10 @@ func deleteProductHandler(svc *service.Service) func(ctx context.Context, req mc
 func listOrdersHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		page := int(getFloat(args, "page", 1))
-		perPage := int(getFloat(args, "per_page", 25))
+		page, perPage, err := pageArgs(args)
+		if err != nil {
+			return toolError(err), nil
+		}
 		filters := make(map[string]any)
 		if v, ok := args["fulfillment_status"].(string); ok && v != "" {
 			filters["fulfillment_status"] = v
@@ -293,8 +493,10 @@ func createOrderHandler(svc *service.Service) func(ctx context.Context, req mcp.
 func listClientsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		page := int(getFloat(args, "page", 1))
-		perPage := int(getFloat(args, "per_page", 25))
+		page, perPage, err := pageArgs(args)
+		if err != nil {
+			return toolError(err), nil
+		}
 		result, err := svc.GetClients(ctx, page, perPage)
 		if err != nil {
 			return toolError(err), nil
@@ -366,8 +568,10 @@ func deleteClientHandler(svc *service.Service) func(ctx context.Context, req mcp
 func listCategoriesHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		page := int(getFloat(args, "page", 1))
-		perPage := int(getFloat(args, "per_page", 25))
+		page, perPage, err := pageArgs(args)
+		if err != nil {
+			return toolError(err), nil
+		}
 		result, err := svc.GetCategories(ctx, page, perPage)
 		if err != nil {
 			return toolError(err), nil
@@ -438,8 +642,10 @@ func deleteCategoryHandler(svc *service.Service) func(ctx context.Context, req m
 func listCollectionsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		page := int(getFloat(args, "page", 1))
-		perPage := int(getFloat(args, "per_page", 25))
+		page, perPage, err := pageArgs(args)
+		if err != nil {
+			return toolError(err), nil
+		}
 		result, err := svc.GetCollections(ctx, page, perPage)
 		if err != nil {
 			return toolError(err), nil
@@ -468,7 +674,8 @@ func createCollectionHandler(svc *service.Service) func(ctx context.Context, req
 		if err != nil {
 			return toolError(err), nil
 		}
-		result, err := svc.CreateCollection(ctx, title)
+		args := req.GetArguments()
+		result, err := svc.CreateCollection(ctx, title, args)
 		if err != nil {
 			return toolError(err), nil
 		}
@@ -714,8 +921,10 @@ func listPaymentGatewaysHandler(svc *service.Service) func(ctx context.Context, 
 func listPagesHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		page := int(getFloat(args, "page", 1))
-		perPage := int(getFloat(args, "per_page", 25))
+		page, perPage, err := pageArgs(args)
+		if err != nil {
+			return toolError(err), nil
+		}
 		result, err := svc.ListPages(ctx, page, perPage)
 		if err != nil {
 			return toolError(err), nil
@@ -790,8 +999,10 @@ func deletePageHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 func listAccessoriesHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		page := int(getFloat(args, "page", 1))
-		perPage := int(getFloat(args, "per_page", 25))
+		page, perPage, err := pageArgs(args)
+		if err != nil {
+			return toolError(err), nil
+		}
 		result, err := svc.ListAccessories(ctx, page, perPage)
 		if err != nil {
 			return toolError(err), nil
@@ -1275,8 +1486,10 @@ func deleteBlogPostHandler(svc *service.Service) func(ctx context.Context, req m
 func listDiscountCodesHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		page := int(getFloat(args, "page", 1))
-		perPage := int(getFloat(args, "per_page", 25))
+		page, perPage, err := pageArgs(args)
+		if err != nil {
+			return toolError(err), nil
+		}
 		result, err := svc.ListDiscountCodes(ctx, page, perPage)
 		if err != nil {
 			return toolError(err), nil
@@ -1343,8 +1556,10 @@ func deleteDiscountCodeHandler(svc *service.Service) func(ctx context.Context, r
 func listCollectsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		page := int(getFloat(args, "page", 1))
-		perPage := int(getFloat(args, "per_page", 25))
+		page, perPage, err := pageArgs(args)
+		if err != nil {
+			return toolError(err), nil
+		}
 		result, err := svc.ListCollects(ctx, page, perPage)
 		if err != nil {
 			return toolError(err), nil
@@ -1591,8 +1806,10 @@ func deleteCharacteristicHandler(svc *service.Service) func(ctx context.Context,
 func listReviewsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		page := int(getFloat(args, "page", 1))
-		perPage := int(getFloat(args, "per_page", 25))
+		page, perPage, err := pageArgs(args)
+		if err != nil {
+			return toolError(err), nil
+		}
 		result, err := svc.ListReviews(ctx, page, perPage)
 		if err != nil {
 			return toolError(err), nil

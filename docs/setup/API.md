@@ -826,7 +826,7 @@ Authorization: Bearer <AI_KEY>
     "capabilities": {"tools": {"listChanged": true}},
     "serverInfo": {
       "name": "mcp-is",
-      "version": "0.9.4"
+      "version": "0.9.5"
     },
     "instructions": "Discovery: default tools/list is a core surface; use search_insales_tools → call_insales_tool for the full catalog. MCP_TOOLS_MODE=all lists everything."
   }
@@ -900,14 +900,21 @@ Authorization: Bearer <AI_KEY>
 
 ### update_product
 
-Обновить товар.
+Обновить товар. Принимает только перечисленные поля; лишние ключи не отправляются в InSales и возвращаются в ответе как `ignored_keys`. Цена и остаток живут в вариантах — обновляются через `update_variant` (здесь `price`/`quantity` не принимаются).
 
 | Параметр | Тип | Обязательный | Описание |
 |----------|-----|--------------|----------|
 | product_id | string | Да | ID товара |
 | title | string | Нет | Название |
-| price | string | Нет | Цена |
-| quantity | integer | Нет | Количество |
+| description | string | Нет | Описание (HTML) |
+| short_description | string | Нет | Краткое описание (HTML) |
+| vendor | string | Нет | Производитель |
+| sku | string | Нет | Артикул |
+| html_title | string | Нет | SEO: html title |
+| meta_keywords | string | Нет | SEO: meta keywords |
+| meta_description | string | Нет | SEO: meta description |
+| category_id | number | Нет | ID категории (перемещение товара) |
+| clear_fields | array | Нет | Очистить перечисленные поля (записать пустое значение) |
 
 ### delete_product
 
