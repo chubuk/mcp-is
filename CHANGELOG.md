@@ -6,11 +6,14 @@
 - **Lint-гейты инфраструктуры**: `make lint-nginx` (реальные тесты entrypoint + `nginx -t` + gixy), `make lint-docker` (hadolint + trivy config/secret + `docker compose config`), `make lint-frontend` (ESLint, safety-правила), `make lint-all`; в CI — job `lint-infra` (gixy HIGH — падение, hadolint/eslint — warn).
 
 ### Безопасность
-- **docker.sock убран из app-контейнера**: Docker доступен только через allowlist-прокси `dockerproxy` (tecnativa/docker-socket-proxy v0.5.0, internal-сеть): разрешены только containers/exec/allow_start/images + POST — операции certbot и backup/restore; restore-исполнитель тоже без сокета (через `DOCKER_HOST`).
+- **docker.sock убран из app-контейнера**: Docker доступен только через allowlist-прокси `dockerproxy` (tecnativa/docker-socket-proxy v0.5.0, internal-сеть): разрешены только containers/exec/allow_start/allow_stop/images + POST — операции certbot и backup/restore; restore-исполнитель тоже без сокета (через `DOCKER_HOST`).
 - **`.bak-*` больше не отдаются по HTTP**: deny-regex теперь покрывает `bak-<timestamp>` (раньше `*.bak-20261025-225344` были доступны); устаревшие `.bak-*` файлы удалены.
 
 ### Исправлено
 - **`entrypoint_test.sh` реально тестирует `entrypoint.sh`** (раньше проверял собственные heredoc-заготовки вместо результата): 4 сценария / 30 проверок внутри nginx-образа.
+- **Restore через API не запускался вообще**: `docker run image backup.sh --restore ...` упирался в `ENTRYPOINT ["./mcp-is"]` — сервер получал скрипт аргументами; добавлен `--entrypoint` (проверено живым restore через `/api/admin/backup/restore`).
+- **dockerproxy allowlist: `ALLOW_STOP`** — restore-процедуре нужен `docker stop` контейнеров при свапе PGDATA (без флага свап шёл бы при живой БД).
+- **CI `lint-infra`**: `nginx -t` получил `--add-host app:127.0.0.1` (на раннере с `--no-deps` upstream не резолвится); gixy — Python 3.12 (в 3.13 удалён `sre_constants`).
 
 ## [0.9.5] — 2026-11-02 (безопасная запись payload, честная пагинация, SEO-тулы, фиксы create/add)
 

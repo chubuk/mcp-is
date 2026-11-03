@@ -783,7 +783,7 @@ CI на push в main: lint + lint-infra (gixy/hadolint/trivy/eslint) → test �
 |------|----------|
 | **Пароли** | Генерируются автоматически deploy.sh, сохраняются в `/root/.mcp-is-credentials` |
 | **Docker-сеть** | PostgreSQL доступен только из контейнера app (internal сеть) |
-| **docker.sock** | App не имеет доступа к сокету Docker — только allowlist-прокси (dockerproxy): exec/run/inspect для certbot и backup |
+| **docker.sock** | App не имеет доступа к сокету Docker — только allowlist-прокси (dockerproxy): exec/run/stop/inspect для certbot и backup |
 | **Порт 5432** | НЕ экспортирован на хост |
 | **Rate limiting** | login: 5/min, API: 10/s, reset-password: 3/min, MCP: 300/min **на API-ключ** (burst 60, плавное замедление до 200, 429 при переполнении); щит от флуда 100/с на IP |
 | **Блокировка файлов** | .env, .git, .sql, .log — 403 Forbidden |
