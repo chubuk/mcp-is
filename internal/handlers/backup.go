@@ -546,14 +546,17 @@ func (h *BackupHandler) Restore(w http.ResponseWriter, r *http.Request) {
 	if net == "" {
 		net = "mcp-is_internal"
 	}
+	// --entrypoint: в образе ENTRYPOINT ["./mcp-is"] — без флага команда
+	// станет аргументами сервера, а не скриптом (так restore и не запускался).
 	cmd := exec.Command("docker", "run", "-d",
 		"--name", "mcp-is-restore",
 		"--network", net,
+		"--entrypoint", "/opt/mcp-is/scripts/backup.sh",
 		"-e", "DOCKER_HOST=tcp://dockerproxy:2375",
 		"-v", "/opt/mcp-is/scripts:/opt/mcp-is/scripts:ro",
 		"-v", dir+":"+dir,
 		"ghcr.io/chubuk/mcp-is:latest",
-		"/opt/mcp-is/scripts/backup.sh", "--restore", path,
+		"--restore", path,
 	)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
