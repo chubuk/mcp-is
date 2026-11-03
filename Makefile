@@ -38,7 +38,8 @@ lint-fix:
 lint-nginx:
 	docker compose build nginx
 	bash web/nginx/entrypoint_test.sh
-	docker compose run --rm --no-deps -e DOMAIN=nginx-test.local nginx nginx -t
+	# --add-host: nginx -t резолвит upstream app, а с --no-deps его нет (CI)
+	docker run --rm --add-host app:127.0.0.1 -e DOMAIN=nginx-test.local ghcr.io/chubuk/mcp-is-nginx:latest nginx -t
 	@tmp=$$(mktemp -d); \
 	mkdir -p "$$tmp/snippets" "$$tmp/conf.d"; \
 	sed "s|/etc/nginx/|$$tmp/|g" web/nginx/nginx.conf > "$$tmp/nginx.conf"; \
