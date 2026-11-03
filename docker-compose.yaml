@@ -19,6 +19,8 @@ services:
       CONTAINERS: "1"
       EXEC: "1"
       ALLOW_START: "1"
+      # stop нужен restore-процедуре backup.sh (свап PGDATA при остановленных контейнерах)
+      ALLOW_STOP: "1"
       IMAGES: "1"
       POST: "1"
     logging:
