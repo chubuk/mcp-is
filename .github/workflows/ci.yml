@@ -29,6 +29,30 @@ jobs:
         with:
           version: v2.15.0
 
+  lint-infra:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+
+      - name: Install gixy
+        run: pip install gixy==0.1.21
+
+      # compose services declare env_file: .env (gitignored) — runners need an empty one
+      - run: touch .env
+
+      # gixy HIGH fails the gate; hadolint warns only (--no-fail in Makefile)
+      - run: make lint-nginx
+
+      - run: make lint-docker
+
+      # eslint = warn initially (see plan: tighten later)
+      - continue-on-error: true
+        run: make lint-frontend
+
   test:
     needs: lint
     runs-on: ubuntu-latest

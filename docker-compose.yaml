@@ -5,6 +5,28 @@ networks:
     driver: bridge
 
 services:
+  # Прокси над docker.sock: app не имеет сырого сокета (root-эквивалент),
+  # только урезанный API — allowlist для certbot (docker exec) и backup/restore.
+  dockerproxy:
+    image: ghcr.io/tecnativa/docker-socket-proxy:v0.5.0
+    container_name: mcp_is_dockerproxy
+    restart: always
+    networks:
+      - internal
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      CONTAINERS: "1"
+      EXEC: "1"
+      ALLOW_START: "1"
+      IMAGES: "1"
+      POST: "1"
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
   db:
     image: postgres:16-alpine
     container_name: mcp_is_db
@@ -44,19 +66,18 @@ services:
     environment:
       DB_URL: postgres://admin:${DB_PASSWORD:-password}@db:5432/mcp_is?sslmode=disable
       SERVER_PORT: "8080"
+      # docker CLI ходит в dockerproxy вместо прямого /var/run/docker.sock
+      DOCKER_HOST: tcp://dockerproxy:2375
     volumes:
       - ./scripts:/opt/mcp-is/scripts:ro
       - ./backups:/opt/mcp-is/backups
-      # docker.sock: certbot/backup вызывают docker exec из app-контейнера
-      - /var/run/docker.sock:/var/run/docker.sock
       # /etc/letsencrypt: GetCertInfo читает серт напрямую (статус/планировщик)
       - certbot_data:/etc/letsencrypt:ro
-    group_add:
-      # GID группы docker на хосте (сокет root:docker)
-      - "${DOCKER_GID:-110}"
     depends_on:
       db:
         condition: service_healthy
+      dockerproxy:
+        condition: service_started
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8080/health"]
       interval: 30s

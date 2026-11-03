@@ -541,14 +541,15 @@ func (h *BackupHandler) Restore(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dir := h.backupDir()
-	gid := os.Getenv("DOCKER_GID")
-	if gid == "" {
-		gid = "110"
+	// Executor без docker.sock — доступ к Docker только через dockerproxy (allowlist).
+	net := os.Getenv("DOCKER_PROXY_NETWORK")
+	if net == "" {
+		net = "mcp-is_internal"
 	}
 	cmd := exec.Command("docker", "run", "-d",
 		"--name", "mcp-is-restore",
-		"--group_add", gid,
-		"-v", "/var/run/docker.sock:/var/run/docker.sock",
+		"--network", net,
+		"-e", "DOCKER_HOST=tcp://dockerproxy:2375",
 		"-v", "/opt/mcp-is/scripts:/opt/mcp-is/scripts:ro",
 		"-v", dir+":"+dir,
 		"ghcr.io/chubuk/mcp-is:latest",

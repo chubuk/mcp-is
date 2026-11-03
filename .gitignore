@@ -30,3 +30,6 @@ tmp/
 
 # rollback backups (see project rules: create rollback point before edits)
 *.bak-*
+
+# frontend tooling
+web/node_modules/

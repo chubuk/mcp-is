@@ -1,0 +1,5 @@
+misconfigurations:
+  - id: AVD-DS-0002
+    paths:
+      - web/nginx/Dockerfile
+    statement: nginx entrypoint needs root for cert generation/letsencrypt writes

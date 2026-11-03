@@ -773,7 +773,7 @@ curl -k https://YOUR_DOMAIN/health
 
 ### CI/CD (GitHub Actions)
 
-CI на push в main: lint → test → integration → сборка Docker-образов (app и nginx) и push в `ghcr.io`.
+CI на push в main: lint + lint-infra (gixy/hadolint/trivy/eslint) → test → integration → сборка Docker-образов (app и nginx) и push в `ghcr.io`.
 
 **Деплой — только вручную** (локальная сборка → `ghcr.io` → VDS), см. `.mimocode/skills/mcp-is-deploy/SKILL.md`. Автодеплой удалён: **GitHub не хранит SSH-доступ к серверу** (Secrets `SERVER_HOST` / `SERVER_USER` / `SSH_KEY` не используются и не должны добавляться).
 
@@ -783,6 +783,7 @@ CI на push в main: lint → test → integration → сборка Docker-об
 |------|----------|
 | **Пароли** | Генерируются автоматически deploy.sh, сохраняются в `/root/.mcp-is-credentials` |
 | **Docker-сеть** | PostgreSQL доступен только из контейнера app (internal сеть) |
+| **docker.sock** | App не имеет доступа к сокету Docker — только allowlist-прокси (dockerproxy): exec/run/inspect для certbot и backup |
 | **Порт 5432** | НЕ экспортирован на хост |
 | **Rate limiting** | login: 5/min, API: 10/s, reset-password: 3/min, MCP: 300/min **на API-ключ** (burst 60, плавное замедление до 200, 429 при переполнении); щит от флуда 100/с на IP |
 | **Блокировка файлов** | .env, .git, .sql, .log — 403 Forbidden |
@@ -817,6 +818,10 @@ make build          # Собрать бинарник
 make run            # Запустить локально
 make test           # Запустить тесты
 make lint           # golangci-lint (обязательно перед коммитом)
+make lint-nginx     # entrypoint tests + nginx -t + gixy (при изменении web/nginx)
+make lint-docker    # hadolint + trivy + docker compose config
+make lint-frontend  # ESLint safety-rules (web/static/js)
+make lint-all       # все проверки сразу
 make docker-up      # Запустить в Docker
 make docker-down    # Остановить Docker
 make logs           # Смотреть логи

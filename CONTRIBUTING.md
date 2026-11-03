@@ -120,7 +120,9 @@ A change is **done** only when all applicable checks are green:
 - [ ] `go test ./...`
 - [ ] `scripts/check-schema.sh` — **required** if Go structs or SQL/migrations changed
 - [ ] `./scripts/ui-smoke.sh` — **required** if UI changed (local docker on `https://127.0.0.1:8443`)
-- [ ] `nginx -t` — **required** if `web/nginx/nginx.conf` changed (run in `nginx:alpine` container with the config mounted)
+- [ ] `make lint-nginx` — **required** if `web/nginx/` changed (entrypoint tests + `nginx -t` + gixy)
+- [ ] `make lint-docker` — **required** if Dockerfiles or `docker-compose.yaml` changed
+- [ ] `make lint-frontend` — **required** if `web/static/js/` changed
 - [ ] Code follows project style guidelines
 - [ ] Tests added/updated and passing
 - [ ] Documentation updated (if behavior changes)
