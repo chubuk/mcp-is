@@ -36,7 +36,8 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          # 3.13+ удалил sre_constants — gixy 0.1.21 на нём не импортируется
+          python-version: '3.12'
 
       - name: Install gixy
         run: pip install gixy==0.1.21
