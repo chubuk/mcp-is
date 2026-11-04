@@ -263,7 +263,7 @@ const Settings = {
                 <div class="form-group">
                     <label>Email</label>
                     <input type="email" value="${email}" disabled>
-                    <small style="color:#888">Смена e-mail — только через администратора</small>
+                    <small style="color:#707070">Смена e-mail — только через администратора</small>
                 </div>
             </div>
             <div class="card">

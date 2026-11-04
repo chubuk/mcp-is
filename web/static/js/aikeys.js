@@ -97,7 +97,7 @@ const AIKeys = {
                             </select>
                         </div>
                         <div id="mcp-config-output" style="display:none">
-                            <p id="mcp-file-hint" style="color:#888;font-size:13px;margin-bottom:8px"></p>
+                            <p id="mcp-file-hint" style="color:#707070;font-size:13px;margin-bottom:8px"></p>
                             <pre style="background:#f8f9fa;padding:12px;border-radius:6px;font-size:12px;overflow-x:auto;white-space:pre-wrap"><code id="mcp-config-code"></code></pre>
                             <div style="display:flex;gap:8px;margin-top:8px">
                                 <button class="btn btn--ghost btn--sm" onclick="AIKeys.copyMCPConfig()">📋 Копировать</button>
@@ -126,7 +126,7 @@ const AIKeys = {
                     ? '<button class="btn btn--ghost btn--sm" style="color:#27ae60;border-color:#27ae60" onclick="AIKeys.togglePDN(\'' + k.id + '\', false)">✅ ПДн</button>'
                     : '<button class="btn btn--ghost btn--sm" onclick="AIKeys.togglePDN(\'' + k.id + '\', true)">☐ ПДн</button>';
                 const shopCell = k.shop_id
-                    ? `${k.shop_name || k.shop_id}<br><code style="font-size:11px;color:#888">${k.connection_name || ''}</code>`
+                    ? `${k.shop_name || k.shop_id}<br><code style="font-size:11px;color:#707070">${k.connection_name || ''}</code>`
                     : '<span style="color:#c0392b;font-weight:600">не привязан</span>';
                 rows += `
                     <tr>

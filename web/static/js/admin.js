@@ -167,9 +167,9 @@ const Admin = {
                     <button class="btn btn--ghost btn--sm" onclick="Admin.unblockUser('${u.id}')">🔓 Разблокировать</button>`;
             }
         } else if (isMe) {
-            actions = '<span style="color:#888;font-size:13px">Вы не можете изменить свой профиль через админку</span>';
+            actions = '<span style="color:#707070;font-size:13px">Вы не можете изменить свой профиль через админку</span>';
         } else {
-            actions = '<span style="color:#888;font-size:13px">Super Admin защищён от изменений</span>';
+            actions = '<span style="color:#707070;font-size:13px">Super Admin защищён от изменений</span>';
         }
 
         return `
@@ -374,7 +374,7 @@ const Admin = {
                 <div class="form-group">
                     <label>Стоимость подписки, ₽/мес (0 = бесплатно)</label>
                     <input type="number" id="srv-billing-monthly" value="${s.billing_monthly != null ? s.billing_monthly : 0}" min="0" ${!isSuperAdmin ? 'disabled' : ''}>
-                    <small style="color:#888">Синхронизируйте с полем «Стоимость» в карточке приложения InSales. Меняет тариф для новых списаний — уже созданный RecurringApplicationCharge не пересоздаётся.</small>
+                    <small style="color:#707070">Синхронизируйте с полем «Стоимость» в карточке приложения InSales. Меняет тариф для новых списаний — уже созданный RecurringApplicationCharge не пересоздаётся.</small>
                 </div>
                 ${isSuperAdmin ? '<button class="btn btn--primary" onclick="Admin.saveServer()">💾 Сохранить</button>' : ''}
             </div>
@@ -558,27 +558,27 @@ const Admin = {
 
             <div class="card">
                 <div class="card__title">🛡️ АвтоПДн — Юрисдикция и автоматическая защита</div>
-                <p style="color:#888;font-size:13px;margin-bottom:12px">Система автоматически включает защиту ПДн если магазин в юрисдикции РФ, а LLM-провайдер иностранный (152-ФЗ).</p>
+                <p style="color:#707070;font-size:13px;margin-bottom:12px">Система автоматически включает защиту ПДн если магазин в юрисдикции РФ, а LLM-провайдер иностранный (152-ФЗ).</p>
                 <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px">
                     <div class="card" style="flex:1;min-width:120px;text-align:center">
                         <div style="font-size:24px">🇷🇺</div>
                         <div style="font-size:20px;font-weight:700">${juris.jurisdictions ? (juris.jurisdictions.RU || 0) : 0}</div>
-                        <div style="font-size:12px;color:#888">Россия</div>
+                        <div style="font-size:12px;color:#707070">Россия</div>
                     </div>
                     <div class="card" style="flex:1;min-width:120px;text-align:center">
                         <div style="font-size:24px">🇰🇿</div>
                         <div style="font-size:20px;font-weight:700">${juris.jurisdictions ? (juris.jurisdictions.KZ || 0) : 0}</div>
-                        <div style="font-size:12px;color:#888">Казахстан</div>
+                        <div style="font-size:12px;color:#707070">Казахстан</div>
                     </div>
                     <div class="card" style="flex:1;min-width:120px;text-align:center">
                         <div style="font-size:24px">🇧🇾</div>
                         <div style="font-size:20px;font-weight:700">${juris.jurisdictions ? (juris.jurisdictions.BY || 0) : 0}</div>
-                        <div style="font-size:12px;color:#888">Беларусь</div>
+                        <div style="font-size:12px;color:#707070">Беларусь</div>
                     </div>
                     <div class="card" style="flex:1;min-width:120px;text-align:center">
                         <div style="font-size:24px">🌍</div>
                         <div style="font-size:20px;font-weight:700">${juris.jurisdictions ? (juris.jurisdictions.INTL || 0) : 0}</div>
-                        <div style="font-size:12px;color:#888">Международные</div>
+                        <div style="font-size:12px;color:#707070">Международные</div>
                     </div>
                 </div>
                 <div style="display:flex;gap:16px;font-size:13px;color:#555">

@@ -365,7 +365,7 @@ const EmailAdmin = {
                 <div class="form-group" style="flex:1">
                     <label for="smtp-port">Порт</label>
                     <input type="text" id="smtp-port" value="${esc(s.port || '')}" placeholder="587">
-                    <small style="color:#888;font-size:11px">587 = STARTTLS, 465 = SSL</small>
+                    <small style="color:#707070;font-size:11px">587 = STARTTLS, 465 = SSL</small>
                 </div>
             </div>
             <div class="form-row" style="display:flex;gap:12px;flex-wrap:wrap">

@@ -55,5 +55,5 @@ Send an email to **chubuk@mail.ru** with:
 - Set `MCP_READ_ONLY=true` if write operations not needed
 - Configure `ALLOWED_ORIGINS` instead of using `*`
 - Use strong passwords (8+ chars, uppercase, digit)
-- Keep dependencies updated (`govulncheck ./...`)
+- Keep dependencies updated — `govulncheck ./...` входит в `make lint` и CI (вместе с gosec)
 - Do not store server SSH credentials in GitHub Secrets (deploy is manual)

@@ -125,7 +125,7 @@ const Auth = {
                 <div class="form-group">
                     <label>Пароль</label>
                     <input type="password" id="verify-password" required minlength="8" autocomplete="new-password">
-                    <small style="color:#888">Минимум 8 символов, заглавная буква и цифра</small>
+                    <small style="color:#707070">Минимум 8 символов, заглавная буква и цифра</small>
                 </div>
                 <button type="submit" class="btn btn--primary" style="width:100%">✅ Подтвердить и задать пароль</button>
             </form>
@@ -286,7 +286,7 @@ const Auth = {
                         </select>
                     </div>
                     <div id="onboard-config-output" style="display:none">
-                        <p id="onboard-file-hint" style="color:#888;font-size:13px;margin-bottom:8px"></p>
+                        <p id="onboard-file-hint" style="color:#707070;font-size:13px;margin-bottom:8px"></p>
                         <pre style="background:#f8f9fa;padding:12px;border-radius:6px;font-size:12px;overflow-x:auto;white-space:pre-wrap"><code id="onboard-config-code"></code></pre>
                         <div style="display:flex;gap:8px;margin-top:8px">
                             <button class="btn btn--ghost btn--sm" onclick="Auth.copyOnboardConfig()">📋 Копировать конфиг</button>
@@ -488,7 +488,7 @@ const Auth = {
                         <div class="form-group">
                             <label>Новый пароль</label>
                             <input type="password" id="force-new-password" required minlength="8" autocomplete="new-password">
-                            <small style="color:#888">Минимум 8 символов, заглавная буква и цифра</small>
+                            <small style="color:#707070">Минимум 8 символов, заглавная буква и цифра</small>
                         </div>
                         <div class="form-group">
                             <label>Повторите пароль</label>

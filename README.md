@@ -817,7 +817,7 @@ WantedBy=multi-user.target
 make build          # Собрать бинарник
 make run            # Запустить локально
 make test           # Запустить тесты
-make lint           # golangci-lint (обязательно перед коммитом)
+make lint           # golangci-lint + govulncheck (обязательно перед коммитом)
 make lint-nginx     # entrypoint tests + nginx -t + gixy (при изменении web/nginx)
 make lint-docker    # hadolint + trivy + docker compose config
 make lint-frontend  # ESLint+no-unsanitized, stylelint, html-validate, retire (web/static)

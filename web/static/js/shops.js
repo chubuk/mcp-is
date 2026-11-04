@@ -20,11 +20,11 @@ const Shops = {
                     : '<span style="color:#27ae60">Чтение/Запись</span>';
                 const pdnBadge = s.pdn_enabled
                     ? '<span style="color:#27ae60;font-weight:600">ПДн ✅</span>'
-                    : '<span style="color:#888">ПДн —</span>';
-                const jurBadge = isAdmin && s.jurisdiction ? `<br><small style="color:#888">Юрисдикция: ${s.jurisdiction}</small>` : '';
+                    : '<span style="color:#707070">ПДн —</span>';
+                const jurBadge = isAdmin && s.jurisdiction ? `<br><small style="color:#707070">Юрисдикция: ${s.jurisdiction}</small>` : '';
                 rows += `
                     <tr>
-                        <td data-label="Магазин"><strong>${s.name || 'Без названия'}</strong><br><small style="color:#888">${s.shop_url}</small>${jurBadge}</td>
+                        <td data-label="Магазин"><strong>${s.name || 'Без названия'}</strong><br><small style="color:#707070">${s.shop_url}</small>${jurBadge}</td>
                         <td data-label="API Key"><code>${s.api_key_id.substring(0, 12)}...</code></td>
                         <td data-label="По умолчанию">${s.is_default ? 'Да' : 'Нет'}</td>
                         <td data-label="Режим">${roBadge}<br>${pdnBadge}</td>
@@ -60,7 +60,7 @@ const Shops = {
                             <textarea id="shop-paste" rows="10" style="width:100%;min-height:180px;font-family:monospace;font-size:13px;padding:8px;cursor:text"
                                 placeholder="Вставьте данные ключа из InSales:&#10;&#10;Название ключа&#10;Идентификатор&#10;c06a4060214a31ad...&#10;Пароль&#10;802a7fc14bafd094...&#10;Пример URL&#10;https://...@myshop.myinsales.ru/..."></textarea>
                             <div id="paste-status"></div>
-                            <small style="color:#888">Скопируйте ключ в InSales и вставьте сюда — поля заполнятся автоматически</small>
+                            <small style="color:#707070">Скопируйте ключ в InSales и вставьте сюда — поля заполнятся автоматически</small>
                         </div>
                         <hr style="border:none;border-top:1px solid #eee;margin:12px 0">
                         <div class="form-group">

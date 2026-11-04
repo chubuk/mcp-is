@@ -41,6 +41,7 @@ This project follows our [Code of Conduct](CODE_OF_CONDUCT.md). By participating
 - Docker and Docker Compose v2
 - PostgreSQL 16+ (or use Docker)
 - golangci-lint v2.15.0 (v1.x cannot build against Go 1.25)
+- govulncheck (`go install golang.org/x/vuln/cmd/govulncheck@latest`)
 
 ### Getting Started
 
@@ -115,7 +116,7 @@ make lint-fix
 
 A change is **done** only when all applicable checks are green:
 
-- [ ] `make lint` (golangci-lint: govet, staticcheck, errcheck, ineffassign, gofmt)
+- [ ] `make lint` (golangci-lint: govet, staticcheck, errcheck, ineffassign, gosec, gofmt + govulncheck)
 - [ ] `go vet ./...`
 - [ ] `go test ./...`
 - [ ] `scripts/check-schema.sh` — **required** if Go structs or SQL/migrations changed
