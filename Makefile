@@ -55,6 +55,10 @@ lint-docker:
 	docker compose config -q
 
 lint-frontend:
-	cd web && npm install --no-fund --no-audit && npx eslint static/js/
+	cd web && npm install --no-fund --no-audit \
+		&& npx eslint static/js/ \
+		&& npx stylelint "static/css/style.css" \
+		&& npx html-validate "static/*.html" \
+		&& npx retire --path static --severity medium
 
 lint-all: lint lint-nginx lint-docker lint-frontend

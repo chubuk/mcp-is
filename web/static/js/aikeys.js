@@ -45,7 +45,7 @@ const AIKeys = {
 
     shopOptions(selectedId) {
         return AIKeys._shops.map(s =>
-            `<option value="${s.id}" ${s.id === selectedId ? 'selected' : ''}>${s.name || s.shop_url}</option>`
+            `<option value="${esc(s.id)}" ${s.id === selectedId ? 'selected' : ''}>${esc(s.name || s.shop_url)}</option>`
         ).join('');
     },
 
@@ -277,6 +277,7 @@ const AIKeys = {
         document.getElementById('edit-aikey-id').value = id;
         document.getElementById('edit-aikey-name').value = k.name || '';
         document.getElementById('edit-aikey-pdn').checked = !!k.pdn_enabled;
+        // eslint-disable-next-line no-unsanitized/property -- HTML из shopOptions, данные экранированы внутри
         document.getElementById('edit-aikey-shop').innerHTML =
             '<option value="">— Выберите магазин —</option>' + AIKeys.shopOptions(k.shop_id || '');
         document.getElementById('edit-aikey-conn').value = k.connection_name || '';
@@ -342,7 +343,7 @@ const AIKeys = {
                 App.navigate('/ai-keys');
             } else {
                 alertEl.innerHTML =
-                    '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+                    '<div class="alert alert--error">' + esc(res ? res.data.error : 'Ошибка') + '</div>';
             }
         });
 
@@ -377,7 +378,7 @@ const AIKeys = {
                     App.navigate('/ai-keys');
                 } else {
                     alertEl.innerHTML =
-                        '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+                        '<div class="alert alert--error">' + esc(res ? res.data.error : 'Ошибка') + '</div>';
                 }
             });
         }
@@ -452,7 +453,7 @@ const AIKeys = {
             if (select) {
                 select.innerHTML = '<option value="">— Выберите —</option>';
                 AIKeys._mcpTypes.forEach(t => {
-                    select.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+                    select.innerHTML += `<option value="${esc(t.id)}">${esc(t.name)}</option>`;
                 });
                 const saved = localStorage.getItem('mcp_client_type');
                 if (saved) {

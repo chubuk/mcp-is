@@ -111,6 +111,7 @@ const Admin = {
             this._usersQuery = value;
             this._usersPage = 1;
             this.renderUsers(1, getPerPage()).then(html => {
+                // eslint-disable-next-line no-unsanitized/property -- шаблон собственной render-функции
                 document.getElementById('app').innerHTML = html;
                 const input = document.getElementById('user-search');
                 if (input) {
@@ -265,7 +266,7 @@ const Admin = {
             App.navigate('/admin/users/' + res.data.id);
         } else {
             const errEl = document.getElementById('create-user-error');
-            if (errEl) errEl.innerHTML = '<div class="alert alert--error">' + (res ? res.data.error : 'Сервер недоступен') + '</div>';
+            if (errEl) errEl.innerHTML = '<div class="alert alert--error">' + esc(res ? res.data.error : 'Сервер недоступен') + '</div>';
         }
     },
 
@@ -422,8 +423,8 @@ const Admin = {
                 <div class="alert alert--success">SMTP настроен и работает</div>
                 <table class="table">
                     <tr><td><strong>Статус</strong></td><td style="color:#27ae60">Активен</td></tr>
-                    <tr><td><strong>Сервер</strong></td><td>${s.host}:${s.port}</td></tr>
-                    <tr><td><strong>Отправитель</strong></td><td>${s.from}</td></tr>
+                    <tr><td><strong>Сервер</strong></td><td>${esc(s.host)}:${esc(s.port)}</td></tr>
+                    <tr><td><strong>Отправитель</strong></td><td>${esc(s.from)}</td></tr>
                 </table>
                 <div style="margin-top:12px">
                     <div class="form-group">
@@ -445,10 +446,10 @@ const Admin = {
         const res = await API.post('/api/admin/smtp/test', { email });
         if (res && res.ok) {
             document.getElementById('smtp-alert').innerHTML =
-                '<div class="alert alert--success">Тестовое письмо отправлено на ' + email + '</div>';
+                '<div class="alert alert--success">Тестовое письмо отправлено на ' + esc(email) + '</div>';
         } else {
             document.getElementById('smtp-alert').innerHTML =
-                '<div class="alert alert--error">Ошибка: ' + (res ? res.data.error : 'Сервер недоступен') + '</div>';
+                '<div class="alert alert--error">Ошибка: ' + esc(res ? res.data.error : 'Сервер недоступен') + '</div>';
         }
     },
 
@@ -475,11 +476,12 @@ const Admin = {
             document.getElementById('srv-alert').innerHTML =
                 '<div class="alert alert--success">Настройки сохранены</div>';
             setTimeout(() => Admin.renderServer().then(html => {
+                // eslint-disable-next-line no-unsanitized/property -- шаблон собственной render-функции
                 document.getElementById('app').innerHTML = html;
             }), 1000);
         } else {
             document.getElementById('srv-alert').innerHTML =
-                '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+                '<div class="alert alert--error">' + esc(res ? res.data.error : 'Ошибка') + '</div>';
         }
     },
 
@@ -488,6 +490,7 @@ const Admin = {
         const res = await API.post('/api/admin/server/cert-issue');
         if (res && res.ok) {
             alert('Запрос на выпуск сертификата отправлен');
+            // eslint-disable-next-line no-unsanitized/property -- шаблон собственной render-функции
             Admin.renderServer().then(html => document.getElementById('app').innerHTML = html);
         } else {
             alert('Ошибка: ' + (res ? res.data.error : 'Сервер недоступен'));
@@ -645,11 +648,12 @@ const Admin = {
             document.getElementById('pdn-alert').innerHTML =
                 '<div class="alert alert--success">Настройки сохранены</div>';
             setTimeout(() => Admin.renderPDN().then(html => {
+                // eslint-disable-next-line no-unsanitized/property -- шаблон собственной render-функции
                 document.getElementById('app').innerHTML = html;
             }), 1000);
         } else {
             document.getElementById('pdn-alert').innerHTML =
-                '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+                '<div class="alert alert--error">' + esc(res ? res.data.error : 'Ошибка') + '</div>';
         }
     },
 
@@ -890,11 +894,12 @@ const Admin = {
             document.getElementById('backup-alert').innerHTML =
                 '<div class="alert alert--success">Настройки сохранены</div>';
             setTimeout(() => Admin.renderBackup(Admin._backupLogPage, Admin._incidentsPage).then(html => {
+                // eslint-disable-next-line no-unsanitized/property -- шаблон собственной render-функции
                 document.getElementById('app').innerHTML = html;
             }), 1000);
         } else {
             document.getElementById('backup-alert').innerHTML =
-                '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+                '<div class="alert alert--error">' + esc(res ? res.data.error : 'Ошибка') + '</div>';
         }
     },
 
@@ -907,7 +912,7 @@ const Admin = {
                 '<div class="alert alert--success">Бэкап запущен</div>';
         } else {
             document.getElementById('backup-alert').innerHTML =
-                '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+                '<div class="alert alert--error">' + esc(res ? res.data.error : 'Ошибка') + '</div>';
         }
     },
 
@@ -918,12 +923,12 @@ const Admin = {
 
     async verifyBackupFile(name) {
         const alert = document.getElementById('restore-alert');
-        alert.innerHTML = '<div class="alert alert--info">Проверка «' + name + '»…</div>';
+        alert.innerHTML = '<div class="alert alert--info">Проверка «' + esc(name) + '»…</div>';
         const res = await API.post('/api/admin/backup/files/' + encodeURIComponent(name) + '/verify');
         if (res && res.ok && res.data.result === 'readable') {
-            alert.innerHTML = '<div class="alert alert--success">✅ «' + name + '» — архив целый</div>';
+            alert.innerHTML = '<div class="alert alert--success">✅ «' + esc(name) + '» — архив целый</div>';
         } else {
-            alert.innerHTML = '<div class="alert alert--error">❌ «' + name + '» — архив повреждён или нечитаем</div>';
+            alert.innerHTML = '<div class="alert alert--error">❌ «' + esc(name) + '» — архив повреждён или нечитаем</div>';
         }
     },
 
@@ -931,7 +936,7 @@ const Admin = {
         const cmd = 'sudo /opt/mcp-is/scripts/backup.sh --restore /opt/mcp-is/backups/' + name;
         navigator.clipboard.writeText(cmd).then(() => {
             document.getElementById('restore-alert').innerHTML =
-                '<div class="alert alert--success">Команда скопирована: <code>' + cmd + '</code></div>';
+                '<div class="alert alert--success">Команда скопирована: <code>' + esc(cmd) + '</code></div>';
         });
     },
 
@@ -939,11 +944,11 @@ const Admin = {
         document.getElementById('restore-alert').innerHTML = `
             <div class="alert alert--error">
                 <strong>⚠️ ВНИМАНИЕ!</strong>
-                Восстановление из «<code>${name}</code>» <strong>заменит текущую базу данных</strong>.
+                Восстановление из «<code>${esc(name)}</code>» <strong>заменит текущую базу данных</strong>.
                 Сайт и MCP-сервер будут недоступны 2–5 минут.<br>
                 Перед восстановлением автоматически будет создан страховочный дамп текущей базы.
                 <div style="margin-top:12px;display:flex;gap:8px">
-                    <button class="btn btn--primary" style="background:#e74c3c" onclick="Admin.doRestore('${name}')">ВОССТАНОВИТЬ</button>
+                    <button class="btn btn--primary" style="background:#e74c3c" onclick="Admin.doRestore(${esc(JSON.stringify(name))})">ВОССТАНОВИТЬ</button>
                     <button class="btn btn--ghost" onclick="Admin.renderBackup()">Отмена</button>
                 </div>
             </div>`;
@@ -957,7 +962,7 @@ const Admin = {
             alert.innerHTML = '<div class="alert alert--info">🔄 Восстановление запущено. Статус обновляется автоматически.</div>';
             Admin.pollRestoreStatus();
         } else {
-            alert.innerHTML = '<div class="alert alert--error">' + (res ? res.data.error : 'Не удалось запустить восстановление') + '</div>';
+            alert.innerHTML = '<div class="alert alert--error">' + esc(res ? res.data.error : 'Не удалось запустить восстановление') + '</div>';
         }
     },
 
@@ -975,7 +980,7 @@ const Admin = {
                 FATAL: '❌ КРИТИЧНО: ' + (s.error || '') + ' — см. INSTALL «Если восстановление не удалось»',
             };
             if (alert && labels[s.state]) {
-                alert.innerHTML = '<div class="alert ' + (s.state === 'restored' ? 'alert--success' : s.state === 'running' ? 'alert--info' : 'alert--error') + '">' + labels[s.state] + '</div>';
+                alert.innerHTML = '<div class="alert ' + esc(s.state === 'restored' ? 'alert--success' : s.state === 'running' ? 'alert--info' : 'alert--error') + '">' + esc(labels[s.state]) + '</div>';
             }
             if (s.state === 'running') setTimeout(tick, 5000);
         };

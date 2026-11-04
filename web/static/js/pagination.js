@@ -15,6 +15,7 @@ function showPage(renderFn, page, perPage) {
     if (perPage) setPerPage(perPage);
     return Promise.resolve(renderFn(page, perPage || getPerPage())).then((html) => {
         const app = document.getElementById('app');
+        // eslint-disable-next-line no-unsanitized/property -- шаблон собственной render-функции
         if (app) app.innerHTML = html;
     });
 }

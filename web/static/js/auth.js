@@ -273,10 +273,10 @@ const Auth = {
             body.innerHTML = `
                 <p><strong>MCP-ключ</strong> (сохраните — показывается один раз; потеряли — перевыпустите в разделе «AI-ключи»):</p>
                 <div class="form-group">
-                    <input type="text" id="shown-key" readonly value="${apiKey}">
+                    <input type="text" id="shown-key" readonly value="${esc(apiKey)}">
                 </div>
-                <p><strong>URL сервера:</strong> <code>${url}</code></p>
-                <p><strong>Имя соединения (алиас):</strong> <code>${alias}</code></p>
+                <p><strong>URL сервера:</strong> <code>${esc(url)}</code></p>
+                <p><strong>Имя соединения (алиас):</strong> <code>${esc(alias)}</code></p>
                 <button class="btn btn--primary" id="copy-key">📋 Скопировать ключ</button>
                 <div style="margin-top:16px">
                     <div class="form-group" style="margin-bottom:8px">
@@ -309,7 +309,7 @@ const Auth = {
                     const sel = document.getElementById('onboard-client-type');
                     if (sel) {
                         Auth._onboardTypes.forEach(t => {
-                            sel.innerHTML += `<option value="${t.id}">${t.name}</option>`;
+                            sel.innerHTML += `<option value="${esc(t.id)}">${esc(t.name)}</option>`;
                         });
                         const saved = localStorage.getItem('mcp_client_type');
                         if (saved) {
@@ -349,6 +349,7 @@ const Auth = {
                 }
                 API.get('/api/shops').then((r) => {
                     if (r && r.ok && App.billingBanner(r.data.items)) {
+                        // eslint-disable-next-line no-unsanitized/method -- HTML из App.billingBanner, данные экранированы внутри
                         body.insertAdjacentHTML('afterbegin', App.billingBanner(r.data.items));
                     }
                 });
@@ -388,12 +389,12 @@ const Auth = {
 
     showError(msg) {
         const el = document.getElementById('alert');
-        if (el) el.innerHTML = '<div class="alert alert--error">' + msg + '</div>';
+        if (el) el.innerHTML = '<div class="alert alert--error">' + esc(msg) + '</div>';
     },
 
     showSuccess(msg) {
         const el = document.getElementById('alert');
-        if (el) el.innerHTML = '<div class="alert alert--success">' + msg + '</div>';
+        if (el) el.innerHTML = '<div class="alert alert--success">' + esc(msg) + '</div>';
     },
 
     renderForgotPassword() {

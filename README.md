@@ -773,7 +773,7 @@ curl -k https://YOUR_DOMAIN/health
 
 ### CI/CD (GitHub Actions)
 
-CI на push в main: lint + lint-infra (gixy/hadolint/trivy/eslint) → test → integration → сборка Docker-образов (app и nginx) и push в `ghcr.io`.
+CI на push в main: lint + lint-infra (gixy/hadolint/trivy/eslint/stylelint/html-validate) → test → integration → lhci (Lighthouse CI, бюджеты perf/a11y/SEO) → сборка Docker-образов (app и nginx) и push в `ghcr.io`.
 
 **Деплой — только вручную** (локальная сборка → `ghcr.io` → VDS), см. `.mimocode/skills/mcp-is-deploy/SKILL.md`. Автодеплой удалён: **GitHub не хранит SSH-доступ к серверу** (Secrets `SERVER_HOST` / `SERVER_USER` / `SSH_KEY` не используются и не должны добавляться).
 
@@ -820,7 +820,7 @@ make test           # Запустить тесты
 make lint           # golangci-lint (обязательно перед коммитом)
 make lint-nginx     # entrypoint tests + nginx -t + gixy (при изменении web/nginx)
 make lint-docker    # hadolint + trivy + docker compose config
-make lint-frontend  # ESLint safety-rules (web/static/js)
+make lint-frontend  # ESLint+no-unsanitized, stylelint, html-validate, retire (web/static)
 make lint-all       # все проверки сразу
 make docker-up      # Запустить в Docker
 make docker-down    # Остановить Docker

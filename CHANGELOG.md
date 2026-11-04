@@ -4,8 +4,11 @@
 
 ### Добавлено
 - **Lint-гейты инфраструктуры**: `make lint-nginx` (реальные тесты entrypoint + `nginx -t` + gixy), `make lint-docker` (hadolint + trivy config/secret + `docker compose config`), `make lint-frontend` (ESLint, safety-правила), `make lint-all`; в CI — job `lint-infra` (gixy HIGH — падение, hadolint/eslint — warn).
+- **FE-тулчейн (JS/CSS/HTML)**: `eslint-plugin-no-unsanitized` (DOM-XSS), stylelint 18 + `stylelint-config-recommended`, html-validate, Lighthouse CI (бюджеты perf/BP/a11y/SEO, job `lhci` в CI), retire.js (CVE vendored-библиотек). `make lint-frontend` гоняет eslint+stylelint+html-validate+retire; lhci — `cd web && npx lhci autorun` (бюджеты в `web/lighthouserc.json`).
 
 ### Безопасность
+- **DOM-XSS во фронтенде (41 сайт `innerHTML`/`insertAdjacentHTML`) закрыт**: добавлен `esc()` (HTML-экранирование, `api.js`) и экранированы данные API/ошибок/имена файлов перед вставкой в HTML; в `confirmRestore` исправлена JS-инъекция через имя файла в inline `onclick` (экранирование в JS-контексте через `JSON.stringify`); `billing_pay_url` в баннере биллинга проверяется на http(s)-схему. Осознанные присваивания HTML собственных render-функций помечены `eslint-disable-next-line` с причиной; правило `no-unsanitized` включено как `error`.
+- **Quill 2.0.3 — известная уязвимость CVE-2025-15056 (low, XSS в HTML-export)**: фикса в upstream нет (2.0.3 — последняя версия); риск принят осознанно (редактор email-шаблонов — только для админов), retire печатает её informational (`--severity medium`).
 - **docker.sock убран из app-контейнера**: Docker доступен только через allowlist-прокси `dockerproxy` (tecnativa/docker-socket-proxy v0.5.0, internal-сеть): разрешены только containers/exec/allow_start/allow_stop/images + POST — операции certbot и backup/restore; restore-исполнитель тоже без сокета (через `DOCKER_HOST`).
 - **`.bak-*` больше не отдаются по HTTP**: deny-regex теперь покрывает `bak-<timestamp>` (раньше `*.bak-20261025-225344` были доступны); устаревшие `.bak-*` файлы удалены.
 

@@ -294,7 +294,7 @@ const Shops = {
                 App.navigate('/shops');
             } else {
                 document.getElementById('shop-alert').innerHTML =
-                    '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+                    '<div class="alert alert--error">' + esc(res ? res.data.error : 'Ошибка') + '</div>';
             }
         });
 
@@ -325,7 +325,7 @@ const Shops = {
                     App.navigate('/shops');
                 } else {
                     document.getElementById('edit-shop-alert').innerHTML =
-                        '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+                        '<div class="alert alert--error">' + esc(res ? res.data.error : 'Ошибка') + '</div>';
                 }
             });
         }
@@ -347,21 +347,22 @@ const Shops = {
         if (res && res.ok) {
             const cmds = res.data.commands || [];
             const updatedAt = res.data.updated_at || '';
+            // eslint-disable-next-line no-unsanitized/property -- map-цепочка; данные экранированы внутри шаблона
             result.innerHTML = `
                 <div class="alert alert--success">
-                    Найдено команд: ${res.data.count}
-                    ${updatedAt ? '<br><small>Актуально: ' + updatedAt + '</small>' : ''}
+                    Найдено команд: ${esc(res.data.count)}
+                    ${updatedAt ? '<br><small>Актуально: ' + esc(updatedAt) + '</small>' : ''}
                 </div>
                 <div style="max-height:400px;overflow-y:auto">
                     <ul style="list-style:none;padding:0">
                         ${cmds.map(c => `<li style="padding:6px 0;border-bottom:1px solid #eee">
-                            <code>${c.name}</code>
-                            <span style="color:#666;margin-left:8px">${c.description}</span>
+                            <code>${esc(c.name)}</code>
+                            <span style="color:#666;margin-left:8px">${esc(c.description)}</span>
                         </li>`).join('')}
                     </ul>
                 </div>`;
         } else {
-            result.innerHTML = '<div class="alert alert--error">' + (res ? res.data.error : 'Ошибка') + '</div>';
+            result.innerHTML = '<div class="alert alert--error">' + esc(res ? res.data.error : 'Ошибка') + '</div>';
         }
     },
 
@@ -390,14 +391,14 @@ const Shops = {
             const shop = res.data.shop;
             resultEl.innerHTML = `
                 <div class="alert alert--success">
-                    <strong>${res.data.message}</strong><br>
-                    Магазин: ${shop.name}<br>
-                    Домен: ${shop.domain}<br>
-                    Валюта: ${shop.currency}
+                    <strong>${esc(res.data.message)}</strong><br>
+                    Магазин: ${esc(shop.name)}<br>
+                    Домен: ${esc(shop.domain)}<br>
+                    Валюта: ${esc(shop.currency)}
                 </div>`;
         } else {
             const errMsg = (res && res.data && res.data.error) ? res.data.error : 'Неизвестная ошибка';
-            resultEl.innerHTML = '<div class="alert alert--error"><strong>Ошибка соединения:</strong> ' + errMsg + '</div>';
+            resultEl.innerHTML = '<div class="alert alert--error"><strong>Ошибка соединения:</strong> ' + esc(errMsg) + '</div>';
         }
     },
 

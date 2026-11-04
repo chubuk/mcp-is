@@ -235,8 +235,9 @@ const EmailAdmin = {
             sel.innerHTML = '<option value="">Ошибка загрузки</option>';
             return;
         }
+        // eslint-disable-next-line no-unsanitized/property -- map-цепочка; данные экранированы внутри шаблона
         sel.innerHTML = (res.data.items || [])
-            .map((t) => `<option value="${t.key}">${t.name} (${t.key})</option>`)
+            .map((t) => `<option value="${esc(t.key)}">${esc(t.name)} (${esc(t.key)})</option>`)
             .join('');
         if (res.data.items && res.data.items.length) {
             await this.loadTemplate(res.data.items[0].key);
@@ -328,7 +329,7 @@ const EmailAdmin = {
 
     alert(msg, type) {
         document.getElementById('tpl-alert').innerHTML =
-            `<div class="alert alert--${type === 'success' ? 'success' : 'error'}">${msg}</div>`;
+            `<div class="alert alert--${esc(type === 'success' ? 'success' : 'error')}">${esc(msg)}</div>`;
     },
     hideAlert() {
         const el = document.getElementById('tpl-alert');
@@ -344,6 +345,7 @@ const EmailAdmin = {
             return;
         }
         const s = res.data;
+        // eslint-disable-next-line no-unsanitized/property -- шаблон настроек; поля данных экранированы (s.host/port/user/from)
         body.innerHTML = `
             <div class="form-group" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;background:#f7f9fc;border:1px solid #d9e2ef;border-radius:6px;margin-bottom:14px">
                 <label style="margin:0;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px">
@@ -358,18 +360,18 @@ const EmailAdmin = {
             <div class="form-row" style="display:flex;gap:12px;flex-wrap:wrap">
                 <div class="form-group" style="flex:2">
                     <label for="smtp-host">Хост</label>
-                    <input type="text" id="smtp-host" value="${s.host || ''}" placeholder="smtp.mail.ru">
+                    <input type="text" id="smtp-host" value="${esc(s.host || '')}" placeholder="smtp.mail.ru">
                 </div>
                 <div class="form-group" style="flex:1">
                     <label for="smtp-port">Порт</label>
-                    <input type="text" id="smtp-port" value="${s.port || ''}" placeholder="587">
+                    <input type="text" id="smtp-port" value="${esc(s.port || '')}" placeholder="587">
                     <small style="color:#888;font-size:11px">587 = STARTTLS, 465 = SSL</small>
                 </div>
             </div>
             <div class="form-row" style="display:flex;gap:12px;flex-wrap:wrap">
                 <div class="form-group" style="flex:1">
                     <label for="smtp-user">Пользователь</label>
-                    <input type="text" id="smtp-user" value="${s.user || ''}" placeholder="user@mail.ru">
+                    <input type="text" id="smtp-user" value="${esc(s.user || '')}" placeholder="user@mail.ru">
                 </div>
                 <div class="form-group" style="flex:1">
                     <label for="smtp-pass">Пароль${s.has_password ? ' <small style="color:#1a7f37">(сохранён ✓ — пустое поле сотрёт его)</small>' : ''}</label>
@@ -379,7 +381,7 @@ const EmailAdmin = {
             <div class="form-row" style="display:flex;gap:12px;flex-wrap:wrap">
                 <div class="form-group" style="flex:2">
                     <label for="smtp-from">От кого</label>
-                    <input type="text" id="smtp-from" value="${s.from || ''}" placeholder="MCP IS <user@mail.ru>">
+                    <input type="text" id="smtp-from" value="${esc(s.from || '')}" placeholder="MCP IS <user@mail.ru>">
                 </div>
                 <div class="form-group" style="flex:1">
                     <label for="smtp-tls">TLS</label>
@@ -415,7 +417,7 @@ const EmailAdmin = {
             alertEl.innerHTML = '<div class="alert alert--success">Настройки SMTP сохранены</div>';
             await this.loadSMTPSettings();
         } else {
-            alertEl.innerHTML = `<div class="alert alert--error">${(res && res.data && res.data.error) || 'Ошибка'}</div>`;
+            alertEl.innerHTML = `<div class="alert alert--error">${esc((res && res.data && res.data.error) || 'Ошибка')}</div>`;
         }
     },
 };

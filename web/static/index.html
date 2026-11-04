@@ -12,11 +12,11 @@
 <body>
     <div id="impersonate-banner" style="display:none;background:#f39c12;color:#fff;padding:6px 16px;text-align:center;font-size:13px">
         <span id="impersonate-text"></span>
-        <button class="btn btn--sm" style="margin-left:12px;background:#e67e22;color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer" onclick="App.stopImpersonate()">Выйти из аккаунта</button>
+        <button type="button" class="btn btn--sm" style="margin-left:12px;background:#e67e22;color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer" onclick="App.stopImpersonate()">Выйти из аккаунта</button>
     </div>
     <header class="header" id="header" style="display:none">
         <div class="header__logo">MCP IS</div>
-        <button class="header__toggle" id="nav-toggle" onclick="App.toggleNav()">☰</button>
+        <button type="button" class="header__toggle" id="nav-toggle" onclick="App.toggleNav()">☰</button>
         <nav class="header__nav" id="nav">
             <a href="/dashboard" class="nav-link" data-page="dashboard">Панель</a>
             <a href="/shops" class="nav-link" data-page="shops">Магазины</a>
@@ -30,7 +30,7 @@
         </nav>
         <div class="header__user">
             <span id="user-nickname"></span>
-            <button class="btn btn--sm" onclick="App.logout()">Выйти</button>
+            <button type="button" class="btn btn--sm" onclick="App.logout()">Выйти</button>
         </div>
     </header>
 
@@ -39,7 +39,7 @@
     </main>
 
     <footer class="footer">
-        <p>MCP IS v0.9.2</p>
+        <p>MCP IS v0.9.6</p>
     </footer>
 
     <script src="/vendor/quill/quill.min.js"></script>

@@ -50,9 +50,25 @@ jobs:
 
       - run: make lint-docker
 
-      # eslint = warn initially (see plan: tighten later)
+      # eslint/stylelint/html-validate = warn in CI (ratchet: tighten after stabilization)
       - continue-on-error: true
         run: make lint-frontend
+
+  lhci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - run: cd web && npm ci --no-fund --no-audit
+
+      # бюджеты в web/lighthouserc.json; вывод = assert-сводка (не raw JSON)
+      - run: cd web && npx lhci autorun
 
   test:
     needs: lint

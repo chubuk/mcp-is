@@ -57,11 +57,13 @@ const App = {
             : 'Текущий период не оплачен.';
         const payUrl = unpaid.billing_pay_url
             || (unpaid.shop_url ? `https://${unpaid.shop_url}/admin/applications` : '');
-        const btn = payUrl
-            ? `<a class="btn btn--primary btn--sm" href="${payUrl}" target="_blank" rel="noopener">Оплатить / Продлить</a>`
+        // только http(s): billing_pay_url приходит извне — не пропускать javascript:-схему в href
+        const safePayUrl = /^https?:\/\//i.test(payUrl) ? esc(payUrl) : '';
+        const btn = safePayUrl
+            ? `<a class="btn btn--primary btn--sm" href="${safePayUrl}" target="_blank" rel="noopener">Оплатить / Продлить</a>`
             : '';
         return `<div class="alert alert--error" style="margin:12px 0">
-            <strong>${text}</strong> Данные магазина ${unpaid.name || unpaid.shop_url} недоступны для ИИ до оплаты — продлите приложение в админке InSales. ${btn}
+            <strong>${text}</strong> Данные магазина ${esc(unpaid.name || unpaid.shop_url)} недоступны для ИИ до оплаты — продлите приложение в админке InSales. ${btn}
         </div>`;
     },
 
@@ -194,6 +196,7 @@ const App = {
         }
 
         const app = document.getElementById('app');
+        // eslint-disable-next-line no-unsanitized/property -- шаблон собственной route.render()
         app.innerHTML = await route.render(params);
 
         if (route.onMount) route.onMount();

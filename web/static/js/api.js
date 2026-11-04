@@ -1,3 +1,9 @@
+// esc: HTML-экранирование данных (API/пользователь) перед вставкой в innerHTML.
+// eslint-plugin-no-unsanitized знает этот esc через escape.methods — вызов esc() помечает значение безопасным.
+function esc(v) {
+    return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 const API = {
     token: localStorage.getItem('token'),
 

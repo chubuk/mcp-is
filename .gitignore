@@ -33,3 +33,5 @@ tmp/
 
 # frontend tooling
 web/node_modules/
+web/lighthouse-results/
+web/.lighthouseci/

@@ -2,9 +2,18 @@
   "name": "mcp-is-web",
   "private": true,
   "scripts": {
-    "lint": "eslint static/js/"
+    "lint": "eslint static/js/",
+    "lint:css": "stylelint \"static/css/style.css\"",
+    "lint:html": "html-validate \"static/*.html\"",
+    "lint:retire": "retire --path static --severity medium"
   },
   "devDependencies": {
-    "eslint": "^9.0.0"
+    "@lhci/cli": "^0.16.0",
+    "eslint": "^9.39.5",
+    "eslint-plugin-no-unsanitized": "^4.1.5",
+    "html-validate": "^11.18.0",
+    "retire": "^6.1.0",
+    "stylelint": "^18.0.0",
+    "stylelint-config-recommended": "^19.0.0"
   }
 }
