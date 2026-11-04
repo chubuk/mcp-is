@@ -2,7 +2,7 @@
 set -e
 
 # Single source of truth: internal/mcp/server.go version + CHANGELOG.md
-VERSION="${VERSION:-0.9.6}"
+VERSION="${VERSION:-0.9.7}"
 ARCH="amd64"
 PKG_NAME="mcp-is_${VERSION}_${ARCH}"
 BUILD_DIR="packaging/${PKG_NAME}"
