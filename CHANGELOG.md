@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.9.6] — 2026-11-04 (FE-tooling, DOM-XSS-фиксы, dockerproxy, restore-фиксы)
 
 ### Добавлено
 - **Lint-гейты инфраструктуры**: `make lint-nginx` (реальные тесты entrypoint + `nginx -t` + gixy), `make lint-docker` (hadolint + trivy config/secret + `docker compose config`), `make lint-frontend` (ESLint, safety-правила), `make lint-all`; в CI — job `lint-infra` (gixy HIGH — падение, hadolint/eslint — warn).
