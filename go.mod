@@ -4,14 +4,14 @@ go 1.25.5
 
 require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
-	github.com/jackc/pgx/v5 v5.7.4
+	github.com/jackc/pgx/v5 v5.9.2
 	github.com/joho/godotenv v1.5.1
 	github.com/mark3labs/mcp-go v0.56.0
 	github.com/prometheus/client_golang v1.24.0
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/wneessen/go-mail v0.8.1
 	golang.org/x/crypto v0.54.0
-	golang.org/x/text v0.40.0
+	golang.org/x/text v0.41.0
 )
 
 require (

@@ -68,7 +68,7 @@ body {
 
 .footer {
     background: #1a1a2e;
-    color: #666;
+    color: #8a8a9c;
     text-align: center;
     padding: 12px;
     font-size: 12px;
@@ -127,7 +127,7 @@ label > input[type="radio"] {
 
 .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
     outline: none;
-    border-color: #4a6cf7;
+    border-color: #3b5bdb;
 }
 
 /* Buttons */
@@ -146,7 +146,7 @@ label > input[type="radio"] {
 }
 
 .btn--primary {
-    background: #4a6cf7;
+    background: #3b5bdb;
     color: #fff;
 }
 
@@ -247,7 +247,7 @@ label > input[type="radio"] {
 }
 
 .auth-card .link a {
-    color: #4a6cf7;
+    color: #3b5bdb;
     text-decoration: none;
 }
 

@@ -386,7 +386,7 @@ func (h *BackupHandler) setSetting(key, value string) {
 }
 
 func readFile(path string) ([]byte, error) {
-	return exec.Command("cat", path).Output()
+	return os.ReadFile(path) // #nosec G304 -- only called with constant /proc/loadavg
 }
 
 // --- files / verify / restore (super_admin) ---
@@ -409,7 +409,7 @@ func safeBackupPath(dir, name string) (string, bool) {
 	if err != nil || strings.HasPrefix(rel, "..") {
 		return "", false
 	}
-	fi, err := os.Lstat(p)
+	fi, err := os.Lstat(p) // #nosec G703 -- this is the sanitizer: rejects separators/.., verifies Rel
 	if err != nil || fi.Mode()&os.ModeSymlink != 0 {
 		return "", false
 	}
@@ -489,7 +489,7 @@ func (h *BackupHandler) VerifyFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmd := exec.Command("/opt/mcp-is/scripts/backup.sh", "--verify", path)
+	cmd := exec.Command("/opt/mcp-is/scripts/backup.sh", "--verify", path) // #nosec G204 -- path from safeBackupPath, fixed argv, no shell
 	out, err := cmd.CombinedOutput()
 	result := strings.TrimSpace(string(out))
 	if err != nil || result != "readable" {
@@ -548,7 +548,7 @@ func (h *BackupHandler) Restore(w http.ResponseWriter, r *http.Request) {
 	}
 	// --entrypoint: в образе ENTRYPOINT ["./mcp-is"] — без флага команда
 	// станет аргументами сервера, а не скриптом (так restore и не запускался).
-	cmd := exec.Command("docker", "run", "-d",
+	cmd := exec.Command("docker", "run", "-d", // #nosec G204,G702 -- fixed docker argv; only DOCKER_PROXY_NETWORK env (admin-set) is variable, no shell
 		"--name", "mcp-is-restore",
 		"--network", net,
 		"--entrypoint", "/opt/mcp-is/scripts/backup.sh",

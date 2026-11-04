@@ -218,7 +218,7 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 			}
 
 			if shouldUpdateLastUsed(keyID) {
-				go func() {
+				go func() { // #nosec G118 -- fire-and-forget last_used update; request ctx dies with the response
 					if _, err := db.Exec(context.Background(), `UPDATE ai_keys SET last_used_at = NOW() WHERE id = $1`, keyID); err != nil {
 						slog.Warn("update ai key last_used_at", "error", err, "key_id", keyID)
 					}

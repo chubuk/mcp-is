@@ -11,9 +11,14 @@ linters:
     - staticcheck
     - errcheck
     - ineffassign
+    - gosec
   settings:
     errcheck:
       check-blank: false
+    gosec:
+      excludes:
+        # G104 duplicates errcheck (enabled above) with no extra signal.
+        - G104
     staticcheck:
       checks:
         - all
@@ -25,10 +30,16 @@ linters:
         - "-ST1022"
   exclusions:
     rules:
-      # Test helpers intentionally ignore Decode/Create/Write errors.
+      # Test helpers intentionally ignore Decode/Create/Write errors; gosec
+      # flags test fixtures (marshaled "password", md5 in protocol tests).
       - path: _test\.go
         linters:
           - errcheck
+          - gosec
+      # MD5 is mandated by the InSales install protocol (password=MD5(token+key)).
+      - path: internal/appinstall/crypto\.go
+        linters:
+          - gosec
 
 formatters:
   enable:

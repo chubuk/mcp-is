@@ -692,7 +692,7 @@ var allCommandNames = []string{
 	"store_info",
 }
 
-var commandDescriptions = map[string]string{
+var commandDescriptions = map[string]string{ // #nosec G101 -- map keys are InSales command names ("create_provider_token"), not credentials
 	"list_products":                       "Список товаров",
 	"get_product":                         "Товар по ID",
 	"create_product":                      "Создать новый товар в магазине",

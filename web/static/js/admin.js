@@ -416,7 +416,7 @@ const Admin = {
             el.innerHTML = `
                 <div class="alert alert--info">SMTP не настроен. Письма не отправляются.</div>
                 <table class="table">
-                    <tr><td><strong>Статус</strong></td><td style="color:#e67e22">Выключен</td></tr>
+                    <tr><td><strong>Статус</strong></td><td style="color:#b85c15">Выключен</td></tr>
                 </table>`;
         } else {
             el.innerHTML = `

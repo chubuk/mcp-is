@@ -47,7 +47,7 @@ func NewCertbotService(settingsRepo SettingsStore) *CertbotService {
 func (s *CertbotService) IssueCert(domain, email string) error {
 	slog.Info("issuing certificate via certbot", "domain", domain, "email", email)
 
-	cmd := exec.Command("docker", "exec", "mcp_is_nginx",
+	cmd := exec.Command("docker", "exec", "mcp_is_nginx", // #nosec G204 -- fixed argv, domain/email from admin config, no shell
 		"certbot", "certonly", "--webroot",
 		"--webroot-path=/var/www/certbot",
 		"-d", domain,
@@ -98,7 +98,7 @@ func (s *CertbotService) RenewCert(domain string) error {
 func (s *CertbotService) GetCertInfo(domain string) (*CertInfo, error) {
 	certFile := filepath.Join(s.certPath, domain, "fullchain.pem")
 
-	data, err := os.ReadFile(certFile)
+	data, err := os.ReadFile(certFile) // #nosec G304 -- cert path from admin-configured domain via filepath.Join
 	if err != nil {
 		return &CertInfo{
 			Domain:  domain,

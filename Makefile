@@ -30,6 +30,7 @@ deb:
 
 lint:
 	golangci-lint run ./...
+	govulncheck ./...
 
 lint-fix:
 	golangci-lint run ./... --fix

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -246,7 +247,7 @@ func (h *AppHandler) AppLanding(w http.ResponseWriter, r *http.Request) {
 	loginURL := fmt.Sprintf("https://%s/autologin", h.domain)
 	target := fmt.Sprintf("http://%s/admin/applications/%s/login?token=%s&login=%s",
 		shop, h.appKey, nonce, loginURL)
-	http.Redirect(w, r, target, http.StatusFound)
+	http.Redirect(w, r, target, http.StatusFound) // #nosec G710 -- host from normalizeShopHost (strict host[:port]); InSales install protocol redirect
 }
 
 // Autologin handles GET /autologin?token3=&user_email=&user_name=&user_id=&email_сonfirmed=
@@ -747,11 +748,18 @@ func normalizeShopHost(shop string) string {
 	shop = strings.TrimPrefix(shop, "https://")
 	shop = strings.TrimPrefix(shop, "http://")
 	shop = strings.TrimSuffix(shop, "/")
-	if shop == "" || strings.ContainsAny(shop, " ?#&\t\n") {
+	if shop == "" || strings.ContainsAny(shop, " ?#&\t\n/\\@") {
+		return ""
+	}
+	if !shopHostRe.MatchString(shop) {
 		return ""
 	}
 	return shop
 }
+
+// shopHostRe accepts strict host[:port] labels only — the value later lands in a
+// redirect URL, so path/userinfo/query smuggle characters must never pass.
+var shopHostRe = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*(:\d{1,5})?$`)
 
 func randomHex(n int) (string, error) {
 	b := make([]byte, n)

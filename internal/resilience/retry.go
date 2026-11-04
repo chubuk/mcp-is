@@ -14,7 +14,7 @@ func WithRetry(fn func() error, maxRetries int) error {
 		}
 		if i < maxRetries {
 			backoff := time.Duration(1<<uint(i)) * 200 * time.Millisecond
-			jitter := time.Duration(rand.Int63n(int64(backoff / 2)))
+			jitter := time.Duration(rand.Int63n(int64(backoff / 2))) // #nosec G404 -- backoff jitter only, not security-relevant
 			time.Sleep(backoff + jitter)
 		}
 	}

@@ -468,15 +468,22 @@
 - **Shop paste feature** — быстрое заполнение ключа из InSales
 - **Retry with backoff** — автоматические повторы с exponential backoff + jitter
 - **Prometheus метрики** — http_requests_total, http_request_duration_seconds, mcp_tool_calls_total, active_connections
-- **pprof** — профилирование CPU/memory/goroutine на порту 6060
 - **OpenAPI spec** — полная спецификация REST API (28 эндпоинтов)
 - **GitHub Actions CI/CD** — lint → test → build → docker → deploy
 - **Backup script** — автоматический бэкап PostgreSQL с retention 7 дней
 - **Certbot unit tests** — 13 тестов для `internal/certbot` (GetCertInfo, CheckRenewal, ShouldRetry, incrementRetry)
+- **Go security-гейт** — `govulncheck ./...` в `make lint` и CI (анализ достижимости уязвимостей), `gosec` в golangci-lint (G104 исключён как дубль errcheck)
 
 ### Исправлено
 - **Certbot в nginx** — добавлен `certbot` в nginx Dockerfile, выпуск/продление сертификатов Let's Encrypt теперь работает
 - **SettingsStore interface** — `internal/certbot` использует интерфейс вместо конкретного типа, улучшает тестируемость
+- **Мёртвый импорт `net/http/pprof`** — pprof-роуты регистрировались на DefaultServeMux, который не обслуживался; удалён (заявленного «pprof на 6060» в коде не было)
+- **`readFile` в backup** — чтение через подпроцесс `cat` заменено на `os.ReadFile`
+
+### Безопасность
+- **Достижимые уязвимости закрыты** (найдены govulncheck): `golang.org/x/text` v0.40.0→v0.41.0 (panic на crafted input в precis), `jackc/pgx/v5` v5.7.4→v5.9.2 (SQL injection через dollar-quoted placeholders)
+- **`normalizeShopHost` ужесточён** — строгий шаблон host[:port] (закрывает smuggle `/@\\` в redirect-URL install-потока)
+- **WCAG AA контраст в UI** — акценты затемнены (`#e67e22`→`#b85c15`, `#4a6cf7`→`#3b5bdb`), текст футера осветлён (`#666`→`#8a8a9c`); все пары ≥4.5:1 (impeccable)
 
 ### Улучшено
 - **Docker** — non-root user (appuser), resource limits (2 CPU/512MB), cap_drop: ALL, logging rotation

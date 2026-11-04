@@ -16,7 +16,7 @@ const Shops = {
         } else {
             shops.forEach(s => {
                 const roBadge = s.is_read_only
-                    ? '<span style="color:#e67e22;font-weight:600">Только чтение</span>'
+                    ? '<span style="color:#b85c15;font-weight:600">Только чтение</span>'
                     : '<span style="color:#27ae60">Чтение/Запись</span>';
                 const pdnBadge = s.pdn_enabled
                     ? '<span style="color:#27ae60;font-weight:600">ПДн ✅</span>'

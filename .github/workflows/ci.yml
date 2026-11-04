@@ -24,6 +24,11 @@ jobs:
 
       - run: go vet ./...
 
+      - name: govulncheck
+        run: |
+          go install golang.org/x/vuln/cmd/govulncheck@latest
+          govulncheck ./...
+
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
