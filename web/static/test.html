@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>MCP IS — JS Tests</title>
+    <link rel="stylesheet" href="/css/style.css">
     <style>
         body { font-family: monospace; padding: 20px; background: #1a1a2e; color: #eee; }
         h1 { color: #4a6cf7; }
@@ -14,6 +15,7 @@
 </head>
 <body>
     <h1>MCP IS — JS Tests</h1>
+    <nav id="nav"></nav>
     <div id="output"></div>
     <div id="summary"></div>
 
@@ -64,9 +66,13 @@
     assert(typeof API.clearToken === 'function', 'API.clearToken is function');
     assert(typeof API.isLoggedIn === 'function', 'API.isLoggedIn is function');
 
-    API.setToken('test-token');
-    assert(API.token === 'test-token', 'API.setToken sets token');
-    assert(API.isLoggedIn() === true, 'API.isLoggedIn returns true when token set');
+    // Fake JWT with future expiry for isLoggedIn test
+    const fakePayload = btoa(JSON.stringify({ user_id: 1, exp: Math.floor(Date.now() / 1000) + 3600 }));
+    const fakeJwt = 'eyJhbGciOiJIUzI1NiJ9.' + fakePayload + '.sig';
+
+    API.setToken(fakeJwt);
+    assert(API.token === fakeJwt, 'API.setToken sets token');
+    assert(API.isLoggedIn() === true, 'API.isLoggedIn returns true with valid JWT');
 
     API.clearToken();
     assert(API.token === null, 'API.clearToken clears token');
@@ -90,12 +96,12 @@
     assert(typeof App !== 'undefined', 'App object exists');
     assert(typeof App.navigate === 'function', 'App.navigate is function');
     assert(typeof App.routes === 'object', 'App.routes is object');
-    assert('/login' in App.routes, 'App.routes has /login');
-    assert('/register' in App.routes, 'App.routes has /register');
-    assert('/dashboard' in App.routes, 'App.routes has /dashboard');
-    assert('/shops' in App.routes, 'App.routes has /shops');
-    assert('/ai-keys' in App.routes, 'App.routes has /ai-keys');
-    assert('/settings' in App.routes, 'App.routes has /settings');
+    assert(App.routes.some(r => r.path === '/login'), 'App.routes has /login');
+    assert(App.routes.some(r => r.path === '/register'), 'App.routes has /register');
+    assert(App.routes.some(r => r.path === '/dashboard'), 'App.routes has /dashboard');
+    assert(App.routes.some(r => r.path === '/shops'), 'App.routes has /shops');
+    assert(App.routes.some(r => r.path === '/ai-keys'), 'App.routes has /ai-keys');
+    assert(App.routes.some(r => r.path === '/settings'), 'App.routes has /settings');
 
     // === Dashboard object tests ===
     assert(typeof Dashboard !== 'undefined', 'Dashboard object exists');
@@ -110,7 +116,8 @@
     // === AIKeys object tests ===
     assert(typeof AIKeys !== 'undefined', 'AIKeys object exists');
     assert(typeof AIKeys.render === 'function', 'AIKeys.render is function');
-    assert(typeof AIKeys.create === 'function', 'AIKeys.create is function');
+    assert(typeof AIKeys.bind === 'function', 'AIKeys.bind is function');
+    assert(typeof AIKeys.showForm === 'function', 'AIKeys.showForm is function');
 
     // === Responsive navigation tests ===
     assert(typeof App.toggleNav === 'function', 'App.toggleNav is function');
