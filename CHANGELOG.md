@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.10.0] — 2026-11-06 (capabilities probe, политика ИИ-ключей, диагностика для LLM)
+
+### Добавлено
+- **Живая проверка прав ключа магазина (capabilities probe)**: 25 GET-доменов InSales (`?per_page=1`), пул 4 воркера, таймаут 30s. Снимок в `shops.capabilities` (JSON с `since`/`source`), TTL 24h, cooldown 1h. Probe только в 4 точках: создание/смена кредов, кнопка «Проверить доступы», TTL-лениво, первый 403. `tools/list` — ноль запросов к InSales.
+- **Фильтрация инструментов по правам**: `toolFilter` скрывает инструменты denied-доменов; `call_insales_tool` — remediation-сообщение при denied; mcp-go `ToolFilterFunc` принудительно применяется и к `tools/list`, и к `tools/call`.
+- **Политика ИИ-ключа (`ai_keys.command_policy`)**: JSON `{default, groups:{read/write/delete}, commands:{override}}`; приоритет override команды > класс в группе > default; deny побеждает. UI — редактор политики в создании/редактировании ИИ-ключа: пресеты, поиск, аккордеон групп, классы «Чтение/Изменение/Удаление», per-command override, summary-чипсы, diff перед сохранением, серые позиции «нет прав магазина с <дата>» по capabilities-снимку. `GET /api/tool-meta` — метаданные инструментов (name/group/class/domain) для редактора.
+- **outputSchema для мутационных инструментов**: `addTool` автоматически ставит схему `MutationResult` (`update_*`/`delete_*`/`add_*`/`decline_*`) — типизированные MCP-клиенты получают контракт результата.
+- **Модель состояний (политика × капабилити)**: `enabled` / `off_by_policy` (постоянно) / `unavailable_no_scope` (временно, авто-восстановление перепроверкой) / `unavailable_unknown` (fail-open); denied несёт `since`/`source` (probe|runtime_403).
+- **`POST /api/shops/{id}/check-access`** (вместо `check-commands`): probe + сохранение снимка + ответ с доменами/инструментами.
+- **`store_info`**: блок `capabilities` (checked_at, stale, credentials_ok, allowed/denied/unknown) + `direct_rest` (прямой REST недоступен).
+- **Инструкции соединения**: блок о правах ключа, предупреждение про затирание пустыми значениями, `clear_fields`.
+- **Маппинг инструментов (`tool_domains.go`)**: 287 инструментов (123 read / 110 write / 54 delete) → {probe-домен, функциональная группа, класс операции}; drift-тест `TestToolDomainCoverage`.
+- **Mutation result (3c)**: delete-обработчики возвращают `{ok, action, resource, id, deleted:<снимок>}` с pre-fetch; `toolError` — remediation для 403/401.
+- **handle/permalink унификация**: `handle` — единый публичный ключ, `permalink` — алиас (дублируется в выдаче).
+- **ignored_keys на все мутации**: whitelist аргументов извлекается автоматически из `inputSchema` при регистрации (`addTool`); незнакомые ключи не уходят в InSales и возвращаются списком `ignored_keys` для всех create/update/delete.
+- **inputSchema**: форматы полей (HTML/текст/slug/число) в description create/update-инструментов.
+- **Лимит ИИ-ключей**: `MAX_AI_KEYS_PER_USER` 20 → 50.
+
+### Изменено
+- **`ai_keys.available_commands` — legacy**: производное чтение (политика × капабилити), зеркало не пишется; `UpdateCommands`/`UpdateCommandsByUserID` удалены.
+- **Версия**: 0.9.7 → 0.10.0 (скрытие инструментов + переименование роута = breaking-семантика).
+
 ## [0.9.7] — 2026-11-04 (security-гейт gosec/govulncheck, закрытые уязвимости, WCAG-контраст)
 
 ### Добавлено

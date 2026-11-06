@@ -423,7 +423,8 @@ func MapProperty(resp *InSalesPropertyResponse) map[string]any {
 		"id":              resp.ID,
 		"title":           resp.Title,
 		"position":        resp.Position,
-		"permalink":       resp.Permalink,
+		"handle":          resp.Permalink,
+		"permalink":       resp.Permalink, // alias of handle (InSales API field name)
 		"backoffice":      resp.Backoffice,
 		"is_hidden":       resp.IsHidden,
 		"is_navigational": resp.IsNavigational,
@@ -436,7 +437,8 @@ func MapCharacteristic(resp *InSalesCharacteristicResponse) map[string]any {
 		"property_id": resp.PropertyID,
 		"title":       resp.Title,
 		"position":    resp.Position,
-		"permalink":   resp.Permalink,
+		"handle":      resp.Permalink,
+		"permalink":   resp.Permalink, // alias of handle
 	}
 }
 
@@ -634,7 +636,8 @@ func MapOptionName(resp *InSalesOptionNameResponse) map[string]any {
 		"title":        resp.Title,
 		"position":     resp.Position,
 		"navigational": resp.Navigational,
-		"permalink":    resp.Permalink,
+		"handle":       resp.Permalink,
+		"permalink":    resp.Permalink, // alias of handle
 	}
 }
 
@@ -644,7 +647,8 @@ func MapOptionValue(resp *InSalesOptionValueResponse) map[string]any {
 		"option_name_id": resp.OptionNameID,
 		"title":          resp.Title,
 		"position":       resp.Position,
-		"permalink":      resp.Permalink,
+		"handle":         resp.Permalink,
+		"permalink":      resp.Permalink, // alias of handle
 		"image_url":      resp.ImageURL,
 	}
 }

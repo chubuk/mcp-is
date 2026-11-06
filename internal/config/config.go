@@ -64,7 +64,7 @@ func Load() *Config {
 		RegistrationEnabled: getEnv("REGISTRATION_ENABLED", "false") == "true",
 		BillingMonthly:      getEnvInt("BILLING_MONTHLY", 0),
 		MaxShopsPerUser:     getEnvInt("MAX_SHOPS_PER_USER", 20),
-		MaxAIKeysPerUser:    getEnvInt("MAX_AI_KEYS_PER_USER", 20),
+		MaxAIKeysPerUser:    getEnvInt("MAX_AI_KEYS_PER_USER", 50),
 	}
 
 	// Security warnings

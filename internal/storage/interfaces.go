@@ -33,6 +33,7 @@ type ShopRepositoryInterface interface {
 	Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) error
 	UpdateAPIPassword(id, apiPasswordEncrypted string) error
 	UpdateBillingStatus(id, status string, until *time.Time, payURL string) error
+	UpdateCapabilities(id, capabilitiesJSON string, checkedAt *time.Time) error
 	Delete(id string) error
 }
 
@@ -44,8 +45,7 @@ type AIKeyRepositoryInterface interface {
 	ListByUserID(userID string) ([]AIKey, error)
 	ListByUserIDFiltered(userID string, page, perPage int) ([]AIKey, int, error)
 	UpdateLastUsed(id string) error
-	UpdateCommands(id, commands string) error
-	UpdateCommandsByUserID(userID, commands string) error
+	UpdateCommandPolicy(id, policyJSON string) error
 	UpdatePDNEnabled(id string, enabled bool) error
 	UpdateName(id, name string) error
 	UpdateKeyHash(id, keyHash string) error

@@ -16,6 +16,7 @@ type AIKey struct {
 	KeyHash           string
 	Name              string
 	AvailableCommands string
+	CommandPolicy     string // JSON политики (default/groups/commands)
 	PDNEnabled        bool
 	LastUsedAt        string
 	CreatedAt         string
@@ -53,10 +54,10 @@ func (r *AIKeyRepository) CreateForShop(userID, shopID, keyHash, name string) (*
 func (r *AIKeyRepository) GetByHash(keyHash string) (*AIKey, error) {
 	var k AIKey
 	err := r.db.QueryRow(context.Background(),
-		`SELECT k.id, k.user_id, COALESCE(k.shop_id::text,''), k.key_hash, COALESCE(k.name,''), COALESCE(k.connection_name,''), COALESCE(s.name,''), COALESCE(k.last_used_at::text,''), k.created_at::text
+		`SELECT k.id, k.user_id, COALESCE(k.shop_id::text,''), k.key_hash, COALESCE(k.name,''), COALESCE(k.connection_name,''), COALESCE(s.name,''), COALESCE(k.command_policy,''), COALESCE(k.last_used_at::text,''), k.created_at::text
 		 FROM ai_keys k LEFT JOIN shops s ON s.id = k.shop_id
 		 WHERE k.key_hash = $1`, keyHash,
-	).Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.ConnectionName, &k.ShopName, &k.LastUsedAt, &k.CreatedAt)
+	).Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.ConnectionName, &k.ShopName, &k.CommandPolicy, &k.LastUsedAt, &k.CreatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("ai key not found: %w", err)
@@ -66,7 +67,7 @@ func (r *AIKeyRepository) GetByHash(keyHash string) (*AIKey, error) {
 
 func (r *AIKeyRepository) ListByUserID(userID string) ([]AIKey, error) {
 	rows, err := r.db.Query(context.Background(),
-		`SELECT k.id, k.user_id, COALESCE(k.shop_id::text,''), k.key_hash, COALESCE(k.name,''), COALESCE(k.connection_name,''), COALESCE(s.name,''), COALESCE(k.last_used_at::text,''), k.created_at::text
+		`SELECT k.id, k.user_id, COALESCE(k.shop_id::text,''), k.key_hash, COALESCE(k.name,''), COALESCE(k.connection_name,''), COALESCE(s.name,''), COALESCE(k.command_policy,''), COALESCE(k.last_used_at::text,''), k.created_at::text
 		 FROM ai_keys k LEFT JOIN shops s ON s.id = k.shop_id
 		 WHERE k.user_id = $1 ORDER BY k.created_at DESC`, userID,
 	)
@@ -78,7 +79,7 @@ func (r *AIKeyRepository) ListByUserID(userID string) ([]AIKey, error) {
 	var keys []AIKey
 	for rows.Next() {
 		var k AIKey
-		if err := rows.Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.ConnectionName, &k.ShopName, &k.LastUsedAt, &k.CreatedAt); err != nil {
+		if err := rows.Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.ConnectionName, &k.ShopName, &k.CommandPolicy, &k.LastUsedAt, &k.CreatedAt); err != nil {
 			return nil, fmt.Errorf("scan ai key: %w", err)
 		}
 		keys = append(keys, k)
@@ -101,7 +102,7 @@ func (r *AIKeyRepository) ListByUserIDFiltered(userID string, page, perPage int)
 	}
 
 	rows, err := r.db.Query(context.Background(),
-		`SELECT k.id, k.user_id, COALESCE(k.shop_id::text,''), k.key_hash, COALESCE(k.name,''), COALESCE(k.connection_name,''), COALESCE(s.name,''), k.pdn_enabled, COALESCE(k.last_used_at::text,''), k.created_at::text
+		`SELECT k.id, k.user_id, COALESCE(k.shop_id::text,''), k.key_hash, COALESCE(k.name,''), COALESCE(k.connection_name,''), COALESCE(s.name,''), k.pdn_enabled, COALESCE(k.command_policy,''), COALESCE(k.last_used_at::text,''), k.created_at::text
 		 FROM ai_keys k LEFT JOIN shops s ON s.id = k.shop_id
 		 WHERE k.user_id = $1 ORDER BY k.created_at DESC LIMIT $2 OFFSET $3`,
 		userID, perPage, offset,
@@ -114,7 +115,7 @@ func (r *AIKeyRepository) ListByUserIDFiltered(userID string, page, perPage int)
 	var keys []AIKey
 	for rows.Next() {
 		var k AIKey
-		if err := rows.Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.ConnectionName, &k.ShopName, &k.PDNEnabled, &k.LastUsedAt, &k.CreatedAt); err != nil {
+		if err := rows.Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.ConnectionName, &k.ShopName, &k.PDNEnabled, &k.CommandPolicy, &k.LastUsedAt, &k.CreatedAt); err != nil {
 			return nil, 0, fmt.Errorf("scan ai key: %w", err)
 		}
 		keys = append(keys, k)
@@ -137,16 +138,10 @@ func (r *AIKeyRepository) Delete(id string) error {
 	return nil
 }
 
-func (r *AIKeyRepository) UpdateCommands(id, commands string) error {
+// UpdateCommandPolicy сохраняет JSON-политику ИИ-ключа (default/groups/commands).
+func (r *AIKeyRepository) UpdateCommandPolicy(id, policyJSON string) error {
 	_, err := r.db.Exec(context.Background(),
-		`UPDATE ai_keys SET available_commands = $1, commands_updated_at = NOW() WHERE id = $2`, commands, id,
-	)
-	return err
-}
-
-func (r *AIKeyRepository) UpdateCommandsByUserID(userID, commands string) error {
-	_, err := r.db.Exec(context.Background(),
-		`UPDATE ai_keys SET available_commands = $1, commands_updated_at = NOW() WHERE user_id = $2`, commands, userID,
+		`UPDATE ai_keys SET command_policy = $1 WHERE id = $2`, policyJSON, id,
 	)
 	return err
 }
@@ -202,10 +197,10 @@ func (r *AIKeyRepository) UpdateShopBinding(id, shopID, connectionName string) e
 func (r *AIKeyRepository) GetByID(id string) (*AIKey, error) {
 	var k AIKey
 	err := r.db.QueryRow(context.Background(),
-		`SELECT k.id, k.user_id, COALESCE(k.shop_id::text,''), k.key_hash, COALESCE(k.name,''), COALESCE(k.connection_name,''), COALESCE(s.name,''), COALESCE(k.available_commands,''), k.pdn_enabled, COALESCE(k.last_used_at::text,''), k.created_at::text
+		`SELECT k.id, k.user_id, COALESCE(k.shop_id::text,''), k.key_hash, COALESCE(k.name,''), COALESCE(k.connection_name,''), COALESCE(s.name,''), COALESCE(k.available_commands,''), COALESCE(k.command_policy,''), k.pdn_enabled, COALESCE(k.last_used_at::text,''), k.created_at::text
 		 FROM ai_keys k LEFT JOIN shops s ON s.id = k.shop_id
 		 WHERE k.id = $1`, id,
-	).Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.ConnectionName, &k.ShopName, &k.AvailableCommands, &k.PDNEnabled, &k.LastUsedAt, &k.CreatedAt)
+	).Scan(&k.ID, &k.UserID, &k.ShopID, &k.KeyHash, &k.Name, &k.ConnectionName, &k.ShopName, &k.AvailableCommands, &k.CommandPolicy, &k.PDNEnabled, &k.LastUsedAt, &k.CreatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("ai key not found: %w", err)

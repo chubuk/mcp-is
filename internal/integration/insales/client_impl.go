@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -15,6 +16,13 @@ import (
 
 	"github.com/chubuk/mcp-is/internal/ratelimit"
 	"github.com/chubuk/mcp-is/internal/resilience"
+)
+
+// Сентинелы ошибок InSales API (обнаруживаются через errors.Is).
+var (
+	ErrForbidden    = errors.New("insales: forbidden — нет прав для данной операции")
+	ErrUnauthorized = errors.New("insales: unauthorized — неверные учётные данные")
+	ErrNotFound     = errors.New("insales: not found")
 )
 
 type InSalesClient struct {
@@ -150,6 +158,18 @@ func (c *InSalesClient) doRequestRaw(ctx context.Context, method, path string, b
 	}
 
 	if resp.StatusCode >= 400 {
+		var sentinel error
+		switch resp.StatusCode {
+		case http.StatusForbidden:
+			sentinel = ErrForbidden
+		case http.StatusUnauthorized:
+			sentinel = ErrUnauthorized
+		case http.StatusNotFound:
+			sentinel = ErrNotFound
+		}
+		if sentinel != nil {
+			return nil, resp.StatusCode, fmt.Errorf("API error %d: %s: %w", resp.StatusCode, string(respBody), sentinel)
+		}
 		return nil, resp.StatusCode, fmt.Errorf("API error %d: %s", resp.StatusCode, string(respBody))
 	}
 

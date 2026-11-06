@@ -367,6 +367,18 @@ func (m *mockShopRepo) UpdateBillingStatus(id, status string, until *time.Time, 
 	return fmt.Errorf("not found")
 }
 
+func (m *mockShopRepo) UpdateCapabilities(id, capabilitiesJSON string, checkedAt *time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if s, ok := m.shops[id]; ok {
+		s.Capabilities = capabilitiesJSON
+		s.CapabilitiesCheckedAt = checkedAt
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
+
 func (m *mockShopRepo) Delete(id string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -477,27 +489,15 @@ func (m *mockAIKeyRepo) GetByID(id string) (*storage.AIKey, error) {
 	return nil, fmt.Errorf("not found")
 }
 
-func (m *mockAIKeyRepo) UpdateCommands(id, commands string) error {
+func (m *mockAIKeyRepo) UpdateCommandPolicy(id, policyJSON string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if k, ok := m.keys[id]; ok {
-		k.AvailableCommands = commands
+		k.CommandPolicy = policyJSON
 		return nil
 	}
 	return fmt.Errorf("not found")
-}
-
-func (m *mockAIKeyRepo) UpdateCommandsByUserID(userID, commands string) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	for _, k := range m.keys {
-		if k.UserID == userID {
-			k.AvailableCommands = commands
-		}
-	}
-	return nil
 }
 
 func (m *mockAIKeyRepo) UpdatePDNEnabled(id string, enabled bool) error {

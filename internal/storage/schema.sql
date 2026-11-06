@@ -36,6 +36,8 @@ CREATE TABLE IF NOT EXISTS shops (
     billing_until TIMESTAMPTZ,
     billing_checked_at TIMESTAMPTZ,
     billing_pay_url TEXT DEFAULT '',
+    capabilities TEXT DEFAULT '',
+    capabilities_checked_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -49,6 +51,7 @@ CREATE TABLE IF NOT EXISTS ai_keys (
     key_hash TEXT UNIQUE NOT NULL,
     name TEXT,
     available_commands TEXT DEFAULT '',
+    command_policy TEXT DEFAULT '',
     commands_updated_at TIMESTAMPTZ,
     last_used_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW()

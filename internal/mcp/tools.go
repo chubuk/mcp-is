@@ -16,6 +16,10 @@ type ToolInfo struct {
 
 var toolRegistry = make(map[string]ToolInfo)
 
+// toolArgWhitelist — имена аргументов каждого инструмента (из inputSchema),
+// для ignored_keys при create/update (план 3c #2). Заполняется в addTool.
+var toolArgWhitelist = make(map[string]map[string]bool)
+
 func GetToolNames() []string {
 	names := make([]string, 0, len(toolRegistry))
 	for name := range toolRegistry {
@@ -66,6 +70,24 @@ func fixSchemaNodes(v any) any {
 // addTool — единственная точка регистрации инструментов: нормализует outputSchema
 // (bool-схемы → объекты) перед AddTool. Все вызовы в пакете должны идти через неё.
 func addTool(s *server.MCPServer, tool mcp.Tool, handler server.ToolHandlerFunc) {
+	// Автоматический outputSchema для мутационных инструментов (компромисс, см. output_schemas.go).
+	if tool.RawOutputSchema == nil && tool.OutputSchema.Type == "" {
+		if schema := outputSchemaFor(tool.Name); schema != nil {
+			tool.RawOutputSchema = schema
+		}
+	}
+	// Whitelist аргументов из inputSchema — для ignored_keys.
+	if len(tool.InputSchema.Properties) > 0 {
+		wl := make(map[string]bool, len(tool.InputSchema.Properties))
+		for k := range tool.InputSchema.Properties {
+			wl[k] = true
+		}
+		toolArgWhitelist[tool.Name] = wl
+	}
+	// Аудит аргументов (ignored_keys) для мутаций — единообразно, без дрейфа.
+	if class := ToolClass(tool.Name); class == ClassWrite || class == ClassDelete {
+		handler = wrapArgsAudit(handler)
+	}
 	if tool.OutputSchema.Properties != nil {
 		tool.OutputSchema.Properties = fixSchemaNodes(tool.OutputSchema.Properties).(map[string]any)
 	}
@@ -113,19 +135,19 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 
 	addTool(s, mcp.NewTool("create_product",
 		mcp.WithDescription("Create or add a new product in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать новый товар в магазине"),
-		mcp.WithString("title", mcp.Required(), mcp.Description("Название товара")),
-		mcp.WithString("price", mcp.Required(), mcp.Description("Цена (например 1000.00)")),
-		mcp.WithString("description", mcp.Description("Описание товара")),
-		mcp.WithString("vendor", mcp.Description("Производитель")),
-		mcp.WithString("sku", mcp.Description("Артикул")),
-		mcp.WithNumber("quantity", mcp.Description("Количество на складе")),
+		mcp.WithString("title", mcp.Required(), mcp.Description("Название товара (обычный текст)")),
+		mcp.WithString("price", mcp.Required(), mcp.Description("Цена (число, например 1000.00)")),
+		mcp.WithString("description", mcp.Description("Описание товара (HTML)")),
+		mcp.WithString("vendor", mcp.Description("Производитель (обычный текст)")),
+		mcp.WithString("sku", mcp.Description("Артикул (строка)")),
+		mcp.WithNumber("quantity", mcp.Description("Количество на складе (целое число)")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createProductHandler(svc))
 
 	addTool(s, mcp.NewTool("update_product",
-		mcp.WithDescription("Update an existing product by id. Only send fields that should change; empty values do not change a field (use clear_fields to clear). Price and stock live in variants — change them via update_variant (price/quantity are not accepted here). Returns the updated object as JSON."), mcp.WithToolTitle("Обновить данные товара"),
+		mcp.WithDescription("Update an existing product by id. Only send fields that should change. WARNING: a present key with an empty value CLEARS the field in InSales — omit keys you don't change; use clear_fields for explicit clearing. Price and stock live in variants — change them via update_variant. Returns {ok, action, changed_fields:{old,new}, data}. "), mcp.WithToolTitle("Обновить данные товара"),
 		mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
 		mcp.WithString("title", mcp.Description("Название")),
 		mcp.WithString("description", mcp.Description("Описание (HTML)")),
@@ -205,9 +227,9 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	addTool(s, mcp.NewTool("update_order",
 		mcp.WithDescription("Update an existing order by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить заказ: статус, комментарий, строки, скидки, адрес доставки. status — alias для financial_status"),
 		mcp.WithString("order_id", mcp.Required(), mcp.Description("ID заказа")),
-		mcp.WithString("status", mcp.Description("Alias для financial_status: pending | paid")),
-		mcp.WithString("financial_status", mcp.Description("Финансовый статус: pending | paid")),
-		mcp.WithString("custom_status_permalink", mcp.Description("Permalink кастомного статуса")),
+		mcp.WithString("status", mcp.Enum("pending", "paid"), mcp.Description("Alias для financial_status")),
+		mcp.WithString("financial_status", mcp.Enum("pending", "paid"), mcp.Description("Финансовый статус")),
+		mcp.WithString("custom_status_permalink", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("Permalink кастомного статуса (slug)")),
 		mcp.WithString("fulfillment_status", mcp.Description("Статус выполнения")),
 		mcp.WithString("comment", mcp.Description("Комментарий клиента")),
 		mcp.WithString("manager_comment", mcp.Description("Комментарий менеджера")),
@@ -238,8 +260,8 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithObject("client", mcp.Description("Новый клиент: {name?, email?, phone?, consent_to_personal_data?}")),
 		mcp.WithString("comment", mcp.Description("Комментарий")),
 		mcp.WithString("manager_comment", mcp.Description("Комментарий менеджера")),
-		mcp.WithString("status", mcp.Description("Alias для financial_status: pending | paid")),
-		mcp.WithString("financial_status", mcp.Description("Финансовый статус: pending | paid")),
+		mcp.WithString("status", mcp.Enum("pending", "paid"), mcp.Description("Alias для financial_status")),
+		mcp.WithString("financial_status", mcp.Enum("pending", "paid"), mcp.Description("Финансовый статус")),
 		mcp.WithNumber("delivery_variant_id", mcp.Description("ID способа доставки")),
 		mcp.WithNumber("payment_gateway_id", mcp.Description("ID платёжного шлюза")),
 		mcp.WithString("coupon", mcp.Description("Промокод")),
@@ -760,7 +782,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDescription("Create or add a new page in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать новую страницу в магазине"),
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название страницы")),
 		mcp.WithString("content", mcp.Required(), mcp.Description("HTML-содержимое")),
-		mcp.WithString("handle", mcp.Description("URL-идентификатор")),
+		mcp.WithString("handle", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("URL-идентификатор (handle/slug)")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -808,7 +830,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название (например 'Цвет', 'Размер')")),
 		mcp.WithNumber("max_count", mcp.Description("Максимальное количество опций в заказе")),
 		mcp.WithNumber("min_count", mcp.Description("Минимальное количество опций в заказе")),
-		mcp.WithString("permalink", mcp.Description("URL-идентификатор")),
+		mcp.WithString("permalink", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("URL-идентификатор (handle/slug; в API InSales — permalink)")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -930,7 +952,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	addTool(s, mcp.NewTool("create_menu",
 		mcp.WithDescription("Create or add a new navigation menu in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать новое навигационное меню"),
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название меню")),
-		mcp.WithString("handle", mcp.Description("URL-идентификатор")),
+		mcp.WithString("handle", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("URL-идентификатор (handle/slug)")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1062,7 +1084,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	addTool(s, mcp.NewTool("create_blog",
 		mcp.WithDescription("Create or add a new blog in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать новый блог в магазине"),
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название блога")),
-		mcp.WithString("handle", mcp.Description("URL-идентификатор")),
+		mcp.WithString("handle", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("URL-идентификатор (handle/slug)")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
@@ -1072,7 +1094,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDescription("Update an existing blog by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить блог"),
 		mcp.WithString("blog_id", mcp.Required(), mcp.Description("ID блога")),
 		mcp.WithString("title", mcp.Description("Название блога")),
-		mcp.WithString("handle", mcp.Description("URL-идентификатор")),
+		mcp.WithString("handle", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("URL-идентификатор (handle/slug)")),
 		mcp.WithString("commentable", mcp.Description("Комментарии: no, yes, moderable")),
 		mcp.WithBoolean("notify_about_comment", mcp.Description("Уведомлять о комментариях")),
 		mcp.WithBoolean("captcha_enabled", mcp.Description("Капча при комментировании")),
@@ -1261,7 +1283,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	addTool(s, mcp.NewTool("create_property",
 		mcp.WithDescription("Create or add a new property in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать свойство товаров"),
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название свойства")),
-		mcp.WithString("permalink", mcp.Description("URL-идентификатор")),
+		mcp.WithString("permalink", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("URL-идентификатор (handle/slug; в API InSales — permalink)")),
 		mcp.WithBoolean("is_navigational", mcp.Description("Показывать в фильтре")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
@@ -1522,8 +1544,8 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDescription("Create or add a new product custom field in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."),
 		mcp.WithToolTitle("Создать поле товара"),
 		mcp.WithString("title", mcp.Required(), mcp.Description("Display title")),
-		mcp.WithString("handle", mcp.Required(), mcp.Description("API handle/slug, e.g. dosage — language-invariant")),
-		mcp.WithString("type", mcp.Description("ProductField::TextField | ProductField::TextArea")),
+		mcp.WithString("handle", mcp.Required(), mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("API handle/slug, e.g. dosage — language-invariant")),
+		mcp.WithString("type", mcp.Enum("ProductField::TextField", "ProductField::TextArea"), mcp.Description("Тип поля")),
 		mcp.WithString("field_type", mcp.Description("Alias for type (legacy)")),
 		mcp.WithBoolean("is_hidden", mcp.Description("Hide in admin UI")),
 		mcp.WithBoolean("is_indexed", mcp.Description("Include in search index")),
@@ -1537,8 +1559,8 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithToolTitle("Обновить поле товара"),
 		mcp.WithString("field_id", mcp.Required(), mcp.Description("Field id or handle")),
 		mcp.WithString("title", mcp.Description("Display title")),
-		mcp.WithString("handle", mcp.Description("API handle/slug")),
-		mcp.WithString("type", mcp.Description("ProductField::TextField | ProductField::TextArea")),
+		mcp.WithString("handle", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("API handle/slug")),
+		mcp.WithString("type", mcp.Enum("ProductField::TextField", "ProductField::TextArea"), mcp.Description("Тип поля")),
 		mcp.WithBoolean("is_hidden", mcp.Description("Hide in admin UI")),
 		mcp.WithBoolean("is_indexed", mcp.Description("Include in search index")),
 		mcp.WithNumber("position", mcp.Description("Sort position")),
@@ -2324,7 +2346,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericGetHandler(svc, "marketplace_id", svc.GetMarketplace))
-	addTool(s, mcp.NewTool("create_marketplace", mcp.WithDescription("Create or add a new marketplace in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать маркетплейс. Типы: Marketplace::GoogleMerchant, Marketplace::LiquidYandexMarket, Marketplace::ModelYandexMarket"), mcp.WithString("name", mcp.Required(), mcp.Description("Название")), mcp.WithString("type", mcp.Required(), mcp.Description("Тип: Marketplace::GoogleMerchant, Marketplace::LiquidYandexMarket, Marketplace::ModelYandexMarket")), mcp.WithString("page_encoding", mcp.Description("Кодировка (для Yandex): windows-1251, utf-8")), mcp.WithString("offer_liquid", mcp.Description("Liquid шаблон (для LiquidYandexMarket)")), mcp.WithString("vendor_id", mcp.Description("ID свойства (для ModelYandexMarket)")), mcp.WithString("image_style", mcp.Description("Стиль изображения (для ModelYandexMarket): thumb, compact, medium, large, original")), mcp.WithString("model_type", mcp.Description("Тип наименования (для ModelYandexMarket): name, sku")), mcp.WithString("shop_name", mcp.Description("Название магазина")), mcp.WithString("shop_company", mcp.Description("Название компании")), mcp.WithNumber("description_type", mcp.Description("Тип описания: 1=краткое, 2=полное")), mcp.WithString("local_delivery_cost", mcp.Description("Стоимость локальной доставки")), mcp.WithBoolean("adult", mcp.Description("Только для взрослых")), mcp.WithString("utm_label", mcp.Description("UTM метка")),
+	addTool(s, mcp.NewTool("create_marketplace", mcp.WithDescription("Create or add a new marketplace in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать маркетплейс"), mcp.WithString("name", mcp.Required(), mcp.Description("Название")), mcp.WithString("type", mcp.Required(), mcp.Enum("Marketplace::GoogleMerchant", "Marketplace::LiquidYandexMarket", "Marketplace::ModelYandexMarket"), mcp.Description("Тип маркетплейса")), mcp.WithString("page_encoding", mcp.Enum("windows-1251", "utf-8"), mcp.Description("Кодировка (для Yandex)")), mcp.WithString("offer_liquid", mcp.Description("Liquid шаблон (для LiquidYandexMarket)")), mcp.WithString("vendor_id", mcp.Description("ID свойства (для ModelYandexMarket)")), mcp.WithString("image_style", mcp.Enum("thumb", "compact", "medium", "large", "original"), mcp.Description("Стиль изображения (для ModelYandexMarket)")), mcp.WithString("model_type", mcp.Enum("name", "sku"), mcp.Description("Тип наименования (для ModelYandexMarket)")), mcp.WithString("shop_name", mcp.Description("Название магазина")), mcp.WithString("shop_company", mcp.Description("Название компании")), mcp.WithNumber("description_type", mcp.Description("Тип описания: 1=краткое, 2=полное")), mcp.WithString("local_delivery_cost", mcp.Description("Стоимость локальной доставки")), mcp.WithBoolean("adult", mcp.Description("Только для взрослых")), mcp.WithString("utm_label", mcp.Description("UTM метка")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),

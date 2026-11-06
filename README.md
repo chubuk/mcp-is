@@ -107,7 +107,7 @@ curl http://localhost:8080/health
 
 ## MCP Инструменты
 
-Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **287 инструментов** (122 read-only). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent` (structuredContent всегда JSON-объект, списки — конверт `{items, total}`; у core-инструментов есть `outputSchema`).
+Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **287 инструментов** (123 read-only). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent` (structuredContent всегда JSON-объект, списки — конверт `{items, total}`; у core-инструментов есть `outputSchema`).
 
 По умолчанию `tools/list` возвращает **core surface** (32 tools) + discovery meta-tools. Полный каталог — `search_insales_tools` → `call_insales_tool` или `MCP_TOOLS_MODE=all`.
 

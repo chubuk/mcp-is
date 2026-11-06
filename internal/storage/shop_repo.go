@@ -9,23 +9,25 @@ import (
 )
 
 type Shop struct {
-	ID                   string
-	UserID               string
-	Name                 string
-	ShopURL              string
-	APIKeyID             string
-	APIPasswordEncrypted string
-	IsDefault            bool
-	IsReadOnly           bool
-	Jurisdiction         string
-	PDNEnabled           bool
-	IsAppInstall         bool   // shop provisioned via InSales app install (billing-managed)
-	BillingStatus        string // active | unpaid | unknown
-	BillingUntil         *time.Time
-	BillingCheckedAt     *time.Time
-	BillingPayURL        string
-	CreatedAt            string
-	UpdatedAt            string
+	ID                    string
+	UserID                string
+	Name                  string
+	ShopURL               string
+	APIKeyID              string
+	APIPasswordEncrypted  string
+	IsDefault             bool
+	IsReadOnly            bool
+	Jurisdiction          string
+	PDNEnabled            bool
+	Capabilities          string // JSON снимок прав (probe)
+	CapabilitiesCheckedAt *time.Time
+	IsAppInstall          bool   // shop provisioned via InSales app install (billing-managed)
+	BillingStatus         string // active | unpaid | unknown
+	BillingUntil          *time.Time
+	BillingCheckedAt      *time.Time
+	BillingPayURL         string
+	CreatedAt             string
+	UpdatedAt             string
 }
 
 type ShopRepository struct {
@@ -56,9 +58,9 @@ func (r *ShopRepository) GetByID(id string) (*Shop, error) {
 	err := r.db.QueryRow(context.Background(),
 		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, api_password_encrypted, is_default, is_read_only, COALESCE(jurisdiction,'AUTO'), pdn_enabled,
 			EXISTS (SELECT 1 FROM app_installs ai WHERE ai.shop_id = shops.id AND ai.status = 'installed'),
-			billing_status, billing_until, billing_checked_at, COALESCE(billing_pay_url,''), created_at::text, updated_at::text
+			billing_status, billing_until, billing_checked_at, COALESCE(billing_pay_url,''), COALESCE(capabilities,''), capabilities_checked_at, created_at::text, updated_at::text
 		 FROM shops WHERE id = $1`, id,
-	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.APIPasswordEncrypted, &s.IsDefault, &s.IsReadOnly, &s.Jurisdiction, &s.PDNEnabled, &s.IsAppInstall, &s.BillingStatus, &s.BillingUntil, &s.BillingCheckedAt, &s.BillingPayURL, &s.CreatedAt, &s.UpdatedAt)
+	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.APIPasswordEncrypted, &s.IsDefault, &s.IsReadOnly, &s.Jurisdiction, &s.PDNEnabled, &s.IsAppInstall, &s.BillingStatus, &s.BillingUntil, &s.BillingCheckedAt, &s.BillingPayURL, &s.Capabilities, &s.CapabilitiesCheckedAt, &s.CreatedAt, &s.UpdatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("shop not found: %w", err)
@@ -68,7 +70,7 @@ func (r *ShopRepository) GetByID(id string) (*Shop, error) {
 
 func (r *ShopRepository) ListByUserID(userID string) ([]Shop, error) {
 	rows, err := r.db.Query(context.Background(),
-		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, is_default, is_read_only, pdn_enabled, created_at::text, updated_at::text
+		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, is_default, is_read_only, pdn_enabled, COALESCE(capabilities,''), capabilities_checked_at, created_at::text, updated_at::text
 		 FROM shops WHERE user_id = $1 ORDER BY is_default DESC, created_at DESC`, userID,
 	)
 	if err != nil {
@@ -79,7 +81,7 @@ func (r *ShopRepository) ListByUserID(userID string) ([]Shop, error) {
 	var shops []Shop
 	for rows.Next() {
 		var s Shop
-		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.PDNEnabled, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.PDNEnabled, &s.Capabilities, &s.CapabilitiesCheckedAt, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan shop: %w", err)
 		}
 		shops = append(shops, s)
@@ -102,7 +104,7 @@ func (r *ShopRepository) ListByUserIDFiltered(userID string, page, perPage int) 
 	}
 
 	rows, err := r.db.Query(context.Background(),
-		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, is_default, is_read_only, pdn_enabled, billing_status, billing_until, COALESCE(billing_pay_url,''), created_at::text, updated_at::text
+		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, is_default, is_read_only, pdn_enabled, billing_status, billing_until, COALESCE(billing_pay_url,''), COALESCE(capabilities,''), capabilities_checked_at, created_at::text, updated_at::text
 		 FROM shops WHERE user_id = $1 ORDER BY is_default DESC, created_at DESC LIMIT $2 OFFSET $3`,
 		userID, perPage, offset,
 	)
@@ -114,7 +116,7 @@ func (r *ShopRepository) ListByUserIDFiltered(userID string, page, perPage int) 
 	var shops []Shop
 	for rows.Next() {
 		var s Shop
-		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.PDNEnabled, &s.BillingStatus, &s.BillingUntil, &s.BillingPayURL, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.PDNEnabled, &s.BillingStatus, &s.BillingUntil, &s.BillingPayURL, &s.Capabilities, &s.CapabilitiesCheckedAt, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, 0, fmt.Errorf("scan shop: %w", err)
 		}
 		shops = append(shops, s)
@@ -127,9 +129,9 @@ func (r *ShopRepository) GetDefault(userID string) (*Shop, error) {
 	err := r.db.QueryRow(context.Background(),
 		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, api_password_encrypted, is_default, is_read_only, COALESCE(jurisdiction,'AUTO'), pdn_enabled,
 			EXISTS (SELECT 1 FROM app_installs ai WHERE ai.shop_id = shops.id AND ai.status = 'installed'),
-			billing_status, billing_until, billing_checked_at, COALESCE(billing_pay_url,''), created_at::text, updated_at::text
+			billing_status, billing_until, billing_checked_at, COALESCE(billing_pay_url,''), COALESCE(capabilities,''), capabilities_checked_at, created_at::text, updated_at::text
 		 FROM shops WHERE user_id = $1 AND is_default = TRUE`, userID,
-	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.APIPasswordEncrypted, &s.IsDefault, &s.IsReadOnly, &s.Jurisdiction, &s.PDNEnabled, &s.IsAppInstall, &s.BillingStatus, &s.BillingUntil, &s.BillingCheckedAt, &s.BillingPayURL, &s.CreatedAt, &s.UpdatedAt)
+	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.APIPasswordEncrypted, &s.IsDefault, &s.IsReadOnly, &s.Jurisdiction, &s.PDNEnabled, &s.IsAppInstall, &s.BillingStatus, &s.BillingUntil, &s.BillingCheckedAt, &s.BillingPayURL, &s.Capabilities, &s.CapabilitiesCheckedAt, &s.CreatedAt, &s.UpdatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("default shop not found: %w", err)
@@ -176,6 +178,18 @@ func (r *ShopRepository) UpdateBillingStatus(id, status string, until *time.Time
 	}
 	if tag.RowsAffected() == 0 {
 		return fmt.Errorf("update shop billing status: shop %s not found", id)
+	}
+	return nil
+}
+
+// UpdateCapabilities сохраняет JSON-снимок прав (probe) и время проверки.
+func (r *ShopRepository) UpdateCapabilities(id, capabilitiesJSON string, checkedAt *time.Time) error {
+	_, err := r.db.Exec(context.Background(),
+		`UPDATE shops SET capabilities=$1, capabilities_checked_at=$2, updated_at=NOW() WHERE id=$3`,
+		capabilitiesJSON, checkedAt, id,
+	)
+	if err != nil {
+		return fmt.Errorf("update shop capabilities: %w", err)
 	}
 	return nil
 }

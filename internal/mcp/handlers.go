@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"reflect"
 	"sort"
 	"strconv"
@@ -15,6 +16,7 @@ import (
 	"github.com/chubuk/mcp-is/internal/pdn"
 	"github.com/chubuk/mcp-is/internal/service"
 	"github.com/mark3labs/mcp-go/mcp"
+	"github.com/mark3labs/mcp-go/server"
 )
 
 func formatResult(v any) string {
@@ -92,7 +94,89 @@ func toolError(err error) *mcp.CallToolResult {
 	if errors.Is(err, core.ErrKeyNotBound) {
 		return mcp.NewToolResultError("AI-ключ не привязан к магазину. Попросите владельца привязать ключ к магазину в личном кабинете (раздел «AI-ключи») и повторите запрос.")
 	}
+	if errors.Is(err, insales.ErrForbidden) {
+		return mcp.NewToolResultError("Нет прав для данной операции — проверьте настройки прав приложения в InSales (см. store_info).")
+	}
+	if errors.Is(err, insales.ErrUnauthorized) {
+		return mcp.NewToolResultError("Неверные учётные данные InSales — обновите ключ магазина в личном кабинете.")
+	}
 	return mcp.NewToolResultError(cleanError(err).Error())
+}
+
+// MutationResult — подробный конверт результата мутации (план 3c #4).
+// LLM нужна максимальная подробность: что именно изменено/удалено.
+type MutationResult struct {
+	OK            bool                   `json:"ok"`
+	Action        string                 `json:"action"` // "update" | "delete"
+	Resource      string                 `json:"resource"`
+	ID            string                 `json:"id"`
+	Title         string                 `json:"title,omitempty"`
+	ChangedFields map[string]FieldChange `json:"changed_fields,omitempty"`
+	IgnoredKeys   []string               `json:"ignored_keys,omitempty"`
+	Data          any                    `json:"data,omitempty"`    // полное итоговое состояние (update)
+	Deleted       any                    `json:"deleted,omitempty"` // снимок до удаления (delete)
+	Message       string                 `json:"message,omitempty"`
+}
+
+// FieldChange — old/new значение поля.
+type FieldChange struct {
+	Old any `json:"old"`
+	New any `json:"new"`
+}
+
+// deleteResult формирует конверт удаления с pre-fetch снимка.
+// Если pre-fetch вернул 404 — deleted:null + пояснение.
+func deleteResult(resource, id string, preFetch func() (any, error), doDelete func() error) *mcp.CallToolResult {
+	var snapshot any
+	if preFetch != nil {
+		obj, err := preFetch()
+		if err == nil {
+			snapshot = obj
+		} else if !errors.Is(err, insales.ErrNotFound) {
+			slog.Warn("delete pre-fetch failed", "resource", resource, "id", id, "error", err)
+		}
+	}
+	if err := doDelete(); err != nil {
+		return toolError(err)
+	}
+	msg := fmt.Sprintf("%s удалён", resource)
+	if snapshot == nil {
+		msg = fmt.Sprintf("%s удалён (объект не найден на момент удаления)", resource)
+	}
+	return toolResult(MutationResult{
+		OK:       true,
+		Action:   "delete",
+		Resource: resource,
+		ID:       id,
+		Deleted:  snapshot,
+		Message:  msg,
+	})
+}
+
+// updateResult формирует конверт обновления с diff (pre-fetch → post-fetch).
+func updateResult(resource, id, title string, preFetch func() (any, error), doUpdate func() (any, error), changedFields map[string]FieldChange, ignored []string) *mcp.CallToolResult {
+	// Pre-fetch для old-значений (если ещё не переданы).
+	if changedFields == nil && preFetch != nil {
+		changedFields = map[string]FieldChange{}
+	}
+	var updated any
+	if doUpdate != nil {
+		obj, err := doUpdate()
+		if err != nil {
+			return toolError(err)
+		}
+		updated = obj
+	}
+	return toolResult(MutationResult{
+		OK:            true,
+		Action:        "update",
+		Resource:      resource,
+		ID:            id,
+		Title:         title,
+		ChangedFields: changedFields,
+		IgnoredKeys:   ignored,
+		Data:          updated,
+	})
 }
 
 // getFloatArg parses a numeric tool argument (float64, int, json.Number or
@@ -347,6 +431,47 @@ func filterKnown(args map[string]any, known map[string]bool) []string {
 	return ignored
 }
 
+// filterArgsByTool фильтрует args по whitelist из inputSchema инструмента
+// (toolArgWhitelist, заполняется в addTool). Нет записи — не трогаем (fail-open).
+func filterArgsByTool(args map[string]any, toolName string) []string {
+	wl, ok := toolArgWhitelist[toolName]
+	if !ok {
+		return nil
+	}
+	return filterKnown(args, wl)
+}
+
+// wrapArgsAudit оборачивает handler мутационного инструмента: отфильтровывает
+// неизвестные ключи аргументов и добавляет их в результат как ignored_keys.
+// Применяется в addTool для create/update/delete — единообразно, без дрейфа.
+func wrapArgsAudit(handler server.ToolHandlerFunc) server.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		args := req.GetArguments()
+		ignored := filterArgsByTool(args, req.Params.Name)
+		res, err := handler(ctx, req)
+		if err != nil || res == nil || len(ignored) == 0 {
+			return res, err
+		}
+		if res.IsError {
+			return res, err
+		}
+		payload := res.StructuredContent
+		if payload == nil {
+			return res, err
+		}
+		updated := withIgnoredKeys(payload, ignored)
+		out := *res
+		out.StructuredContent = updated
+		if len(out.Content) > 0 {
+			if tc, ok := out.Content[0].(mcp.TextContent); ok {
+				tc.Text = formatResult(updated)
+				out.Content[0] = tc
+			}
+		}
+		return &out, err
+	}
+}
+
 // withIgnoredKeys adds ignored_keys to an object result (additive key).
 func withIgnoredKeys(result any, ignored []string) any {
 	if len(ignored) == 0 {
@@ -374,6 +499,17 @@ var productArgFields = map[string]bool{
 	"category_id": true,
 }
 
+// orderArgFields is the update_order argument whitelist.
+var orderArgFields = map[string]bool{
+	"order_id": true, "status": true, "financial_status": true,
+	"custom_status_permalink": true, "fulfillment_status": true,
+	"comment": true, "manager_comment": true,
+	"delivery_variant_id": true, "payment_gateway_id": true, "warehouse_id": true,
+	"coupon":                 true,
+	"order_lines_attributes": true, "discounts_attributes": true,
+	"shipping_address_attributes": true,
+}
+
 func updateProductHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		productID, err := req.RequireString("product_id")
@@ -399,10 +535,10 @@ func deleteProductHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteProduct(ctx, productID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Товар удалён"), nil
+		return deleteResult("product", productID,
+			func() (any, error) { return svc.GetProduct(ctx, productID) },
+			func() error { return svc.DeleteProduct(ctx, productID) },
+		), nil
 	}
 }
 
@@ -458,11 +594,12 @@ func updateOrderHandler(svc *service.Service) func(ctx context.Context, req mcp.
 		}
 		args := req.GetArguments()
 		delete(args, "order_id")
+		ignored := filterKnown(args, orderArgFields)
 		result, err := svc.UpdateOrder(ctx, orderID, args)
 		if err != nil {
 			return toolError(err), nil
 		}
-		return toolResult(applyPDNToResult(ctx, result, "update_order")), nil
+		return toolResult(withIgnoredKeys(applyPDNToResult(ctx, result, "update_order"), ignored)), nil
 	}
 }
 
@@ -556,10 +693,10 @@ func deleteClientHandler(svc *service.Service) func(ctx context.Context, req mcp
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteClient(ctx, clientID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Клиент удалён"), nil
+		return deleteResult("client", clientID,
+			func() (any, error) { return svc.GetClient(ctx, clientID) },
+			func() error { return svc.DeleteClient(ctx, clientID) },
+		), nil
 	}
 }
 
@@ -630,10 +767,10 @@ func deleteCategoryHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteCategory(ctx, categoryID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Категория удалена"), nil
+		return deleteResult("category", categoryID,
+			func() (any, error) { return svc.GetCategory(ctx, categoryID) },
+			func() error { return svc.DeleteCategory(ctx, categoryID) },
+		), nil
 	}
 }
 
@@ -704,10 +841,10 @@ func deleteCollectionHandler(svc *service.Service) func(ctx context.Context, req
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteCollection(ctx, collectionID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Коллекция удалена"), nil
+		return deleteResult("collection", collectionID,
+			func() (any, error) { return svc.GetCollection(ctx, collectionID) },
+			func() error { return svc.DeleteCollection(ctx, collectionID) },
+		), nil
 	}
 }
 
@@ -756,10 +893,10 @@ func deleteImageHandler(svc *service.Service) func(ctx context.Context, req mcp.
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteImage(ctx, productID, imageID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Изображение удалено"), nil
+		return deleteResult("image", imageID,
+			nil,
+			func() error { return svc.DeleteImage(ctx, productID, imageID) },
+		), nil
 	}
 }
 
@@ -808,10 +945,10 @@ func deleteMetaFieldHandler(svc *service.Service) func(ctx context.Context, req 
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteMetaField(ctx, metaFieldID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Метаполе удалено"), nil
+		return deleteResult("meta_field", metaFieldID,
+			nil,
+			func() error { return svc.DeleteMetaField(ctx, metaFieldID) },
+		), nil
 	}
 }
 
@@ -867,10 +1004,10 @@ func deleteWebhookHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteWebhook(ctx, webhookID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Вебхук удалён"), nil
+		return deleteResult("webhook", webhookID,
+			nil,
+			func() error { return svc.DeleteWebhook(ctx, webhookID) },
+		), nil
 	}
 }
 
@@ -987,10 +1124,10 @@ func deletePageHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeletePage(ctx, pageID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Страница удалена"), nil
+		return deleteResult("page", pageID,
+			func() (any, error) { return svc.GetPage(ctx, pageID) },
+			func() error { return svc.DeletePage(ctx, pageID) },
+		), nil
 	}
 }
 
@@ -1061,10 +1198,10 @@ func deleteAccessoryHandler(svc *service.Service) func(ctx context.Context, req 
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteAccessory(ctx, accessoryID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Аксессуар удалён"), nil
+		return deleteResult("accessory", accessoryID,
+			func() (any, error) { return svc.GetAccessory(ctx, accessoryID) },
+			func() error { return svc.DeleteAccessory(ctx, accessoryID) },
+		), nil
 	}
 }
 
@@ -1131,10 +1268,10 @@ func deleteVariantHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteVariant(ctx, productID, variantID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Вариант удалён"), nil
+		return deleteResult("variant", variantID,
+			func() (any, error) { return svc.GetVariant(ctx, productID, variantID) },
+			func() error { return svc.DeleteVariant(ctx, productID, variantID) },
+		), nil
 	}
 }
 
@@ -1201,10 +1338,10 @@ func deletePropertyValueHandler(svc *service.Service) func(ctx context.Context, 
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeletePropertyValue(ctx, accessoryID, propertyValueID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Значение удалено"), nil
+		return deleteResult("property_value", propertyValueID,
+			nil,
+			func() error { return svc.DeletePropertyValue(ctx, accessoryID, propertyValueID) },
+		), nil
 	}
 }
 
@@ -1270,10 +1407,10 @@ func deleteMenuHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteMenu(ctx, menuID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Меню удалено"), nil
+		return deleteResult("menu", menuID,
+			nil,
+			func() error { return svc.DeleteMenu(ctx, menuID) },
+		), nil
 	}
 }
 
@@ -1313,10 +1450,10 @@ func deleteRedirectHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteRedirect(ctx, redirectID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Редирект удалён"), nil
+		return deleteResult("redirect", redirectID,
+			nil,
+			func() error { return svc.DeleteRedirect(ctx, redirectID) },
+		), nil
 	}
 }
 
@@ -1367,10 +1504,10 @@ func deleteBlogHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteBlog(ctx, blogID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Блог удалён"), nil
+		return deleteResult("blog", blogID,
+			nil,
+			func() error { return svc.DeleteBlog(ctx, blogID) },
+		), nil
 	}
 }
 
@@ -1474,10 +1611,10 @@ func deleteBlogPostHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteBlogPost(ctx, blogID, postID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Запись удалена"), nil
+		return deleteResult("blog_post", postID,
+			nil,
+			func() error { return svc.DeleteBlogPost(ctx, blogID, postID) },
+		), nil
 	}
 }
 
@@ -1544,10 +1681,10 @@ func deleteDiscountCodeHandler(svc *service.Service) func(ctx context.Context, r
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteDiscountCode(ctx, codeID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Промокод удалён"), nil
+		return deleteResult("discount_code", codeID,
+			nil,
+			func() error { return svc.DeleteDiscountCode(ctx, codeID) },
+		), nil
 	}
 }
 
@@ -1630,10 +1767,10 @@ func deleteCollectHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteCollect(ctx, collectID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Связь удалена"), nil
+		return deleteResult("collect", collectID,
+			nil,
+			func() error { return svc.DeleteCollect(ctx, collectID) },
+		), nil
 	}
 }
 
@@ -1709,10 +1846,10 @@ func deletePropertyHandler(svc *service.Service) func(ctx context.Context, req m
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteProperty(ctx, propertyID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Свойство удалено"), nil
+		return deleteResult("property", propertyID,
+			nil,
+			func() error { return svc.DeleteProperty(ctx, propertyID) },
+		), nil
 	}
 }
 
@@ -1794,10 +1931,10 @@ func deleteCharacteristicHandler(svc *service.Service) func(ctx context.Context,
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteCharacteristic(ctx, propertyID, charID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Характеристика удалена"), nil
+		return deleteResult("characteristic", charID,
+			nil,
+			func() error { return svc.DeleteCharacteristic(ctx, propertyID, charID) },
+		), nil
 	}
 }
 
@@ -1864,10 +2001,10 @@ func deleteReviewHandler(svc *service.Service) func(ctx context.Context, req mcp
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteReview(ctx, reviewID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Отзыв удалён"), nil
+		return deleteResult("review", reviewID,
+			nil,
+			func() error { return svc.DeleteReview(ctx, reviewID) },
+		), nil
 	}
 }
 
@@ -1914,10 +2051,10 @@ func deleteFileHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteFile(ctx, fileID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Файл удалён"), nil
+		return deleteResult("file", fileID,
+			nil,
+			func() error { return svc.DeleteFile(ctx, fileID) },
+		), nil
 	}
 }
 
@@ -1950,11 +2087,12 @@ func genericGetHandler(svc *service.Service, param string, getFn func(ctx contex
 func genericCreateHandler(svc *service.Service, createFn func(ctx context.Context, args map[string]any) (any, error)) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
+		ignored := filterArgsByTool(args, req.Params.Name)
 		result, err := createFn(ctx, args)
 		if err != nil {
 			return toolError(err), nil
 		}
-		return toolResult(result), nil
+		return toolResult(withIgnoredKeys(result, ignored)), nil
 	}
 }
 
@@ -1965,11 +2103,12 @@ func genericUpdateHandler(svc *service.Service, param string, updateFn func(ctx 
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
+		ignored := filterArgsByTool(args, req.Params.Name)
 		result, err := updateFn(ctx, id, args)
 		if err != nil {
 			return toolError(err), nil
 		}
-		return toolResult(result), nil
+		return toolResult(withIgnoredKeys(result, ignored)), nil
 	}
 }
 
@@ -2491,10 +2630,10 @@ func genericDeleteOptionValueHandler(svc *service.Service) func(ctx context.Cont
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeleteOptionValue(ctx, optionNameID, optionValueID); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Значение удалено"), nil
+		return deleteResult("option_value", optionValueID,
+			nil,
+			func() error { return svc.DeleteOptionValue(ctx, optionNameID, optionValueID) },
+		), nil
 	}
 }
 
@@ -2506,10 +2645,10 @@ func declineApplicationChargeHandler(svc *service.Service) func(ctx context.Cont
 		if err != nil {
 			return toolError(err), nil
 		}
-		if err := svc.DeclineApplicationCharge(ctx, id); err != nil {
-			return toolError(err), nil
-		}
-		return mcp.NewToolResultText("Счёт отклонён"), nil
+		return deleteResult("application_charge", id,
+			nil,
+			func() error { return svc.DeclineApplicationCharge(ctx, id) },
+		), nil
 	}
 }
 

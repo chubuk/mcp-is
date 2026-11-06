@@ -157,6 +157,31 @@ func TestAIKeyList_IncludesShopFields(t *testing.T) {
 	}
 }
 
+func TestAIKeyList_IncludesCommandPolicy(t *testing.T) {
+	h, keys, shops := setupAIKeyHandler()
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	key := createAIKey(t, h, "user-1", shop.ID)
+	policy := `{"default":"deny","groups":{"catalog":{"read":true,"write":false,"delete":false}}}`
+	if err := keys.UpdateCommandPolicy(key.ID, policy); err != nil {
+		t.Fatalf("UpdateCommandPolicy: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/ai-keys", nil)
+	req = req.WithContext(withUserID(req.Context(), "user-1"))
+	w := httptest.NewRecorder()
+	h.List(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("got %d", w.Code)
+	}
+	var result map[string]any
+	json.NewDecoder(w.Body).Decode(&result)
+	item := result["items"].([]any)[0].(map[string]any)
+	if item["command_policy"] != policy {
+		t.Errorf("item command_policy = %v, want %s", item["command_policy"], policy)
+	}
+}
+
 func TestAIKeyUpdate_UnboundRequiresShopID(t *testing.T) {
 	h, keys, _ := setupAIKeyHandler()
 	key, _ := keys.Create("user-1", "hash", "legacy") // unbound legacy key

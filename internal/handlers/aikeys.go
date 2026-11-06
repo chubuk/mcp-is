@@ -30,6 +30,7 @@ type AIKeyRequest struct {
 	PDNEnabled     *bool   `json:"pdn_enabled"`
 	ShopID         *string `json:"shop_id"`
 	ConnectionName *string `json:"connection_name"`
+	CommandPolicy  *string `json:"command_policy"` // JSON политики; nil = не менять
 }
 
 type AIKeyResponse struct {
@@ -43,6 +44,7 @@ type AIKeyResponse struct {
 	ShopName       string `json:"shop_name,omitempty"`
 	ConnectionName string `json:"connection_name,omitempty"`
 	PDNEnabled     bool   `json:"pdn_enabled"`
+	CommandPolicy  string `json:"command_policy,omitempty"`
 	CreatedAt      string `json:"created_at,omitempty"`
 	Error          string `json:"error,omitempty"`
 }
@@ -172,6 +174,17 @@ func (h *AIKeyHandler) Create(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	// Политика ИИ-ключа: валидация JSON при записи.
+	if req.CommandPolicy != nil && *req.CommandPolicy != "" {
+		if !json.Valid([]byte(*req.CommandPolicy)) {
+			writeJSON(w, http.StatusBadRequest, AIKeyResponse{Error: "command_policy: некорректный JSON"})
+			return
+		}
+		if err := h.keyRepo.UpdateCommandPolicy(key.ID, *req.CommandPolicy); err != nil {
+			writeJSON(w, http.StatusInternalServerError, AIKeyResponse{Error: "failed to update key"})
+			return
+		}
+	}
 
 	slog.Info("ai key created", "id", key.ID, "name", reqName, "shop_id", shop.ID, "connection_name", connName)
 
@@ -207,7 +220,8 @@ func (h *AIKeyHandler) List(w http.ResponseWriter, r *http.Request) {
 		result[i] = AIKeyResponse{
 			ID: k.ID, Name: k.Name, KeyHash: k.KeyHash,
 			ShopID: k.ShopID, ShopName: k.ShopName, ConnectionName: k.ConnectionName,
-			PDNEnabled: k.PDNEnabled, CreatedAt: k.CreatedAt, LastUsedAt: k.LastUsedAt,
+			PDNEnabled: k.PDNEnabled, CommandPolicy: k.CommandPolicy,
+			CreatedAt: k.CreatedAt, LastUsedAt: k.LastUsedAt,
 		}
 	}
 
@@ -272,6 +286,17 @@ func (h *AIKeyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if req.PDNEnabled != nil {
 		if err := h.keyRepo.UpdatePDNEnabled(keyID, *req.PDNEnabled); err != nil {
 			writeJSON(w, http.StatusInternalServerError, AIKeyResponse{Error: "failed to update pdn"})
+			return
+		}
+	}
+	// Политика ИИ-ключа: валидация JSON при записи.
+	if req.CommandPolicy != nil {
+		if *req.CommandPolicy != "" && !json.Valid([]byte(*req.CommandPolicy)) {
+			writeJSON(w, http.StatusBadRequest, AIKeyResponse{Error: "command_policy: некорректный JSON"})
+			return
+		}
+		if err := h.keyRepo.UpdateCommandPolicy(keyID, *req.CommandPolicy); err != nil {
+			writeJSON(w, http.StatusInternalServerError, AIKeyResponse{Error: "failed to update command_policy"})
 			return
 		}
 	}

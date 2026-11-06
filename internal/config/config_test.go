@@ -11,7 +11,7 @@ func TestConfigQuotaDefaults(t *testing.T) {
 	if cfg.MaxShopsPerUser != 20 {
 		t.Errorf("MaxShopsPerUser = %d, want 20", cfg.MaxShopsPerUser)
 	}
-	if cfg.MaxAIKeysPerUser != 20 {
-		t.Errorf("MaxAIKeysPerUser = %d, want 20", cfg.MaxAIKeysPerUser)
+	if cfg.MaxAIKeysPerUser != 50 {
+		t.Errorf("MaxAIKeysPerUser = %d, want 50", cfg.MaxAIKeysPerUser)
 	}
 }

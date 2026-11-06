@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"os"
@@ -76,6 +77,8 @@ func isCoreTool(name string) bool {
 
 // toolFilter hides write tools in read-only mode and applies progressive
 // discovery (core surface) unless MCP_TOOLS_MODE=all.
+// Цепочка приоритетов (план D4): cfg.ReadOnly → shop capabilities (denied) →
+// is_read_only → policy ИИ-ключа → core/all.
 func toolFilter(globalReadOnly bool) server.ToolFilterFunc {
 	return func(ctx context.Context, tools []mcp.Tool) []mcp.Tool {
 		readOnly := globalReadOnly
@@ -86,12 +89,34 @@ func toolFilter(globalReadOnly bool) server.ToolFilterFunc {
 			readOnly = readOnly || v
 		}
 
+		// Capabilities снимка (denied домены скрывают инструменты).
+		var snap *core.Snapshot
+		if v, ok := ctx.Value(auth.CapabilitiesJSONKey).(string); ok && v != "" {
+			snap = core.ParseSnapshot(v)
+		}
+		// Политика ИИ-ключа.
+		var policy *CommandPolicy
+		if v, ok := ctx.Value(auth.CommandPolicyJSONKey).(string); ok && v != "" {
+			policy = parseCommandPolicy(v)
+		}
+
 		mode := toolsMode()
 		filtered := make([]mcp.Tool, 0, len(tools))
 		for _, t := range tools {
 			// nil ReadOnlyHint is treated as write (no leak into read-only list)
 			isWrite := t.Annotations.ReadOnlyHint == nil || !*t.Annotations.ReadOnlyHint
 			if readOnly && isWrite {
+				continue
+			}
+			// Capabilities: denied домен → скрыт; unknown/нет снимка → виден (fail-open).
+			if snap != nil {
+				domain := ToolDomain(t.Name)
+				if domain != "" && core.DomainStatus(snap, domain) == core.CapStatusDenied {
+					continue
+				}
+			}
+			// Политика ИИ-ключа: deny побеждает.
+			if policy != nil && !policy.IsCommandAllowed(t.Name) {
 				continue
 			}
 			if mode == toolsModeCore && !isCoreTool(t.Name) {
@@ -102,6 +127,16 @@ func toolFilter(globalReadOnly bool) server.ToolFilterFunc {
 		sort.Slice(filtered, func(i, j int) bool { return filtered[i].Name < filtered[j].Name })
 		return filtered
 	}
+}
+
+// parseCommandPolicy разбирает JSON политики; кривой JSON → deny-all (fail-closed).
+func parseCommandPolicy(raw string) *CommandPolicy {
+	var p CommandPolicy
+	if err := json.Unmarshal([]byte(raw), &p); err != nil {
+		slog.Warn("corrupt command_policy, fail-closed", "error", err)
+		return &CommandPolicy{Default: "deny"}
+	}
+	return &p
 }
 
 // RegisterDiscoveryTools adds search_insales_tools / call_insales_tool.
@@ -155,9 +190,28 @@ func storeInfoHandler() server.ToolHandlerFunc {
 		if v, ok := ctx.Value(mcpReadOnlyKey).(bool); ok {
 			info["read_only"] = v
 		}
+		// Capabilities-блок: права ключа магазина (из снимка probe).
+		if v, ok := ctx.Value(auth.CapabilitiesJSONKey).(string); ok && v != "" {
+			snap := core.ParseSnapshot(v)
+			if snap != nil {
+				var checkedAt string
+				summary := core.BuildSummary(snap, nil)
+				checkedAt = summary.CheckedAt
+				info["capabilities"] = map[string]any{
+					"checked_at":     checkedAt,
+					"stale":          summary.Stale,
+					"credentials_ok": snap.CredentialsOK,
+					"allowed":        summary.AllowedDomains,
+					"denied":         summary.DeniedDomains,
+					"unknown":        summary.UnknownDomains,
+					"error":          snap.Error,
+				}
+			}
+		}
 		if shopID == "" {
 			info["message"] = "AI-ключ не привязан к магазину. Попросите владельца привязать ключ к магазину в личном кабинете (раздел «AI-ключи») и повторите запрос."
 		}
+		info["direct_rest"] = "Прямой REST к InSales через этот ключ недоступен — используйте инструменты или call_insales_tool."
 		return toolResult(info), nil
 	}
 }
@@ -259,6 +313,24 @@ func callInSalesToolHandler(s *server.MCPServer, auditRepo *storage.AuditReposit
 				recordDenied(auditRepo, ctx, name, args)
 			}
 			return mcp.NewToolResultError(fmt.Sprintf("tool %q is write; session is read-only", name)), nil
+		}
+
+		// Capabilities: denied домен → remediation-сообщение.
+		if v, ok := ctx.Value(auth.CapabilitiesJSONKey).(string); ok && v != "" {
+			snap := core.ParseSnapshot(v)
+			domain := ToolDomain(name)
+			if snap != nil && domain != "" && core.DomainStatus(snap, domain) == core.CapStatusDenied {
+				return mcp.NewToolResultError(fmt.Sprintf(
+					"Нет прав ключа на ресурс %q — включите доступ в настройках приложения InSales; см. store_info", domain)), nil
+			}
+		}
+		// Политика ИИ-ключа: deny → remediation.
+		if v, ok := ctx.Value(auth.CommandPolicyJSONKey).(string); ok && v != "" {
+			policy := parseCommandPolicy(v)
+			if !policy.IsCommandAllowed(name) {
+				return mcp.NewToolResultError(fmt.Sprintf(
+					"Инструмент %q отключён политикой ИИ-ключа — измените политику в настройках ключа", name)), nil
+			}
 		}
 
 		args := map[string]any{}

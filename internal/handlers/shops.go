@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/chubuk/mcp-is/internal/auth"
+	"github.com/chubuk/mcp-is/internal/core"
 	"github.com/chubuk/mcp-is/internal/integration/insales"
 	"github.com/chubuk/mcp-is/internal/mcp"
 	"github.com/chubuk/mcp-is/internal/storage"
@@ -49,6 +51,7 @@ type ShopResponse struct {
 	BillingStatus string `json:"billing_status,omitempty"`
 	BillingUntil  string `json:"billing_until,omitempty"`
 	BillingPayURL string `json:"billing_pay_url,omitempty"`
+	Capabilities  string `json:"capabilities,omitempty"` // JSON снимок прав (probe)
 	CreatedAt     string `json:"created_at,omitempty"`
 	Error         string `json:"error,omitempty"`
 }
@@ -93,9 +96,51 @@ func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	slog.Info("shop created", "id", shop.ID, "name", shop.Name, "url", shop.ShopURL)
+	// Async probe прав ключа (не блокируем создание).
+	h.probeAsync(shop.ID, shop.ShopURL, shop.APIKeyID, *req.APIPassword, false)
 	writeJSON(w, http.StatusCreated, ShopResponse{
 		ID: shop.ID, Name: shop.Name, ShopURL: shop.ShopURL, APIKeyID: shop.APIKeyID, IsDefault: shop.IsDefault, IsReadOnly: shop.IsReadOnly, PDNEnabled: shop.PDNEnabled,
 	})
+}
+
+// probeAsync запускает probe прав в фоне (singleflight + cooldown внутри Prober).
+func (h *ShopHandler) probeAsync(shopID, shopURL, apiKeyID, password string, resetFirst bool) {
+	go func() { // #nosec G118 -- fire-and-forget probe; не блокирует ответ
+		ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+		defer cancel()
+
+		baseURL := fmt.Sprintf("https://%s/admin", shopURL)
+		httpClient := &http.Client{Timeout: 30 * time.Second}
+		doGet := func(ctx context.Context, endpoint string) (int, error) {
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+endpoint+"?per_page=1", nil)
+			if err != nil {
+				return 0, err
+			}
+			req.Header.Set("Cache-Control", "no-cache, no-store")
+			req.SetBasicAuth(apiKeyID, password)
+			resp, err := httpClient.Do(req)
+			if err != nil {
+				return 0, err
+			}
+			defer func() { _ = resp.Body.Close() }()
+			return resp.StatusCode, nil
+		}
+
+		prober := core.NewProber(doGet)
+		var prev *core.Snapshot
+		if !resetFirst {
+			if shop, err := h.shopRepo.GetByID(shopID); err == nil {
+				prev = core.EnsureSnapshot(shop.Capabilities)
+			}
+		}
+		snap := prober.ProbeAll(ctx, prev)
+		now := time.Now()
+		capsJSON := core.MarshalSnapshot(snap)
+		if err := h.shopRepo.UpdateCapabilities(shopID, capsJSON, &now); err != nil {
+			slog.Error("async probe save", "error", err, "shop_id", shopID)
+		}
+		slog.Info("async probe done", "shop_id", shopID, "credentials_ok", snap.CredentialsOK)
+	}()
 }
 
 func (h *ShopHandler) List(w http.ResponseWriter, r *http.Request) {
@@ -125,6 +170,7 @@ func (h *ShopHandler) List(w http.ResponseWriter, r *http.Request) {
 			HasPass:       s.APIPasswordEncrypted != "",
 			BillingStatus: s.BillingStatus,
 			BillingPayURL: s.BillingPayURL,
+			Capabilities:  s.Capabilities,
 		}
 		if s.BillingUntil != nil {
 			resp.BillingUntil = s.BillingUntil.Format(time.RFC3339)
@@ -187,6 +233,11 @@ func (h *ShopHandler) Update(w http.ResponseWriter, r *http.Request) {
 	if err := h.shopRepo.Update(shopID, req.Name, req.ShopURL, req.APIKeyID, encrypted, req.IsDefault, req.IsReadOnly, req.PDNEnabled); err != nil {
 		writeJSON(w, http.StatusInternalServerError, ShopResponse{Error: "failed to update shop"})
 		return
+	}
+
+	// Смена кредов → сброс снимка + async probe (факты старого ключа не переживают ротацию).
+	if req.APIPassword != nil && *req.APIPassword != "" {
+		h.probeAsync(shopID, req.ShopURL, req.APIKeyID, *req.APIPassword, true)
 	}
 
 	writeJSON(w, http.StatusOK, ShopResponse{ID: shopID, Name: req.Name, ShopURL: req.ShopURL, APIKeyID: req.APIKeyID, IsDefault: req.IsDefault, IsReadOnly: req.IsReadOnly, PDNEnabled: req.PDNEnabled, HasPass: encrypted != ""})
@@ -982,38 +1033,99 @@ var commandDescriptions = map[string]string{ // #nosec G101 -- map keys are InSa
 	"store_info":                          "Магазин этого соединения: алиас, название, домен, привязка. Проверять перед записью.",
 }
 
-func (h *ShopHandler) CheckCommands(w http.ResponseWriter, r *http.Request) {
+// CheckAccessResponse — ответ probe-проверки прав ключа магазина.
+type CheckAccessDomain struct {
+	Domain     string `json:"domain"`
+	Status     string `json:"status"` // allowed | denied | unknown
+	HTTPStatus int    `json:"http_status,omitempty"`
+}
+
+type CheckAccessResponse struct {
+	CredentialsOK bool                `json:"credentials_ok"`
+	CheckedAt     string              `json:"checked_at"`
+	Domains       []CheckAccessDomain `json:"domains"`
+	AllowedTools  []string            `json:"allowed_tools"`
+	Count         int                 `json:"count"`
+	Error         string              `json:"error,omitempty"`
+}
+
+// CheckAccess выполняет живой probe прав ключа магазина (25 GET-доменов InSales)
+// и сохраняет снимок в shops.capabilities.
+func (h *ShopHandler) CheckAccess(w http.ResponseWriter, r *http.Request) {
 	shopID := r.PathValue("id")
 
 	shop, err := h.shopRepo.GetByID(shopID)
 	if err != nil {
-		writeJSON(w, http.StatusNotFound, CheckCommandsResponse{Error: "shop not found"})
+		writeJSON(w, http.StatusNotFound, CheckAccessResponse{Error: "shop not found"})
 		return
 	}
 
-	var commandNames []string
-	if shop.IsReadOnly {
-		commandNames = readCommands
-	} else {
-		commandNames = allCommandNames
+	password, derr := h.aes.Decrypt(shop.APIPasswordEncrypted)
+	if derr != nil {
+		writeJSON(w, http.StatusInternalServerError, CheckAccessResponse{Error: "decrypt api_password failed"})
+		return
 	}
 
-	items := make([]CheckCommandItem, len(commandNames))
-	for i, name := range commandNames {
-		items[i] = CheckCommandItem{
-			Name:        name,
-			Description: commandDescriptions[name],
+	// Probe: GET-запросы с basic auth напрямую (не через бизнес-клиент).
+	baseURL := fmt.Sprintf("https://%s/admin", shop.ShopURL)
+	httpClient := &http.Client{Timeout: 30 * time.Second}
+	doGet := func(ctx context.Context, endpoint string) (int, error) {
+		req, rerr := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+endpoint+"?per_page=1", nil)
+		if rerr != nil {
+			return 0, rerr
+		}
+		req.Header.Set("Cache-Control", "no-cache, no-store")
+		req.SetBasicAuth(shop.APIKeyID, password)
+		resp, rerr := httpClient.Do(req)
+		if rerr != nil {
+			return 0, rerr
+		}
+		defer func() { _ = resp.Body.Close() }()
+		return resp.StatusCode, nil
+	}
+
+	prober := core.NewProber(doGet)
+	prev := core.EnsureSnapshot(shop.Capabilities)
+	snap := prober.ProbeAll(r.Context(), prev)
+
+	now := time.Now()
+	checkedAt := &now
+	capsJSON := core.MarshalSnapshot(snap)
+	if uerr := h.shopRepo.UpdateCapabilities(shopID, capsJSON, checkedAt); uerr != nil {
+		slog.Error("save capabilities snapshot", "error", uerr, "shop_id", shopID)
+	}
+
+	// Список доступных инструментов (для UI).
+	var allowedTools []string
+	for _, name := range allCommandNames {
+		domain := mcp.ToolDomain(name)
+		if domain == "" || core.DomainStatus(snap, domain) == core.CapStatusAllowed {
+			allowedTools = append(allowedTools, name)
 		}
 	}
 
-	commandsJSON, _ := json.Marshal(commandNames)
-	_ = h.aiKeyRepo.UpdateCommandsByUserID(shop.UserID, string(commandsJSON))
+	// Домены в ответе.
+	var domains []CheckAccessDomain
+	for _, dp := range core.ProbeDomains {
+		dc := snap.Domains[dp.Domain]
+		status := dc.Status
+		if status == "" {
+			status = core.CapStatusUnknown
+		}
+		domains = append(domains, CheckAccessDomain{
+			Domain: dp.Domain,
+			Status: status,
+		})
+	}
 
-	now := time.Now().Format("2006-01-02 15:04")
-	slog.Info("commands updated", "shop_id", shopID, "count", len(commandNames), "read_only", shop.IsReadOnly)
-	writeJSON(w, http.StatusOK, CheckCommandsResponse{
-		Commands:  items,
-		Count:     len(commandNames),
-		UpdatedAt: now,
+	slog.Info("check access probe", "shop_id", shopID,
+		"allowed", len(snap.Domains), "credentials_ok", snap.CredentialsOK)
+	writeJSON(w, http.StatusOK, CheckAccessResponse{
+		CredentialsOK: snap.CredentialsOK,
+		CheckedAt:     now.UTC().Format(time.RFC3339),
+		Domains:       domains,
+		AllowedTools:  allowedTools,
+		Count:         len(allowedTools),
+		Error:         snap.Error,
 	})
 }

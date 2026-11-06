@@ -187,6 +187,32 @@ func TestShopList_Success(t *testing.T) {
 	}
 }
 
+func TestShopList_IncludesCapabilities(t *testing.T) {
+	h, repo := setupShopHandler()
+	shop, _ := repo.Create("user-1", "Магазин", "shop1.ru", "k1", "enc1", true, false, false)
+	snap := `{"credentials_ok":true,"domains":{"orders":{"status":"denied","since":"2026-11-01T10:00:00Z","source":"probe"}}}`
+	if err := repo.UpdateCapabilities(shop.ID, snap, nil); err != nil {
+		t.Fatalf("UpdateCapabilities: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/api/shops", nil)
+	ctx := withUserID(req.Context(), "user-1")
+	ctx = context.WithValue(ctx, auth.RoleKey, "user")
+	req = req.WithContext(ctx)
+	w := httptest.NewRecorder()
+	h.List(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("got %d", w.Code)
+	}
+	var result map[string]any
+	json.NewDecoder(w.Body).Decode(&result)
+	item := result["items"].([]any)[0].(map[string]any)
+	if item["capabilities"] != snap {
+		t.Errorf("item capabilities = %v, want %s", item["capabilities"], snap)
+	}
+}
+
 func TestShopList_Empty(t *testing.T) {
 	h, _ := setupShopHandler()
 
@@ -323,48 +349,38 @@ func TestTestConnection_InvalidDomain(t *testing.T) {
 	}
 }
 
-func TestCheckCommands_ReadOnly(t *testing.T) {
-	h, repo := setupShopHandler()
-
-	shop, _ := repo.Create("user-1", "Тестовый", "test.ru", "k", "enc", false, true, false)
-
-	req := httptest.NewRequest(http.MethodPost, "/api/shops/"+shop.ID+"/check-commands", nil)
-	req.SetPathValue("id", shop.ID)
-	w := httptest.NewRecorder()
-
-	h.CheckCommands(w, req)
-
-	if w.Code != http.StatusOK {
-		t.Errorf("expected 200, got %d", w.Code)
-	}
-
-	var resp CheckCommandsResponse
-	json.NewDecoder(w.Body).Decode(&resp)
-	if resp.Count == 0 {
-		t.Error("expected commands count > 0")
-	}
-	if resp.UpdatedAt == "" {
-		t.Error("expected updated_at")
-	}
-	if len(resp.Commands) == 0 {
-		t.Error("expected commands list")
-	}
-	if resp.Commands[0].Description == "" {
-		t.Error("expected command description")
-	}
-}
-
-func TestCheckCommands_NotFound(t *testing.T) {
+func TestCheckAccess_NotFound(t *testing.T) {
 	h, _ := setupShopHandler()
 
-	req := httptest.NewRequest(http.MethodPost, "/api/shops/nonexistent/check-commands", nil)
+	req := httptest.NewRequest(http.MethodPost, "/api/shops/nonexistent/check-access", nil)
 	req.SetPathValue("id", "nonexistent")
 	w := httptest.NewRecorder()
 
-	h.CheckCommands(w, req)
+	h.CheckAccess(w, req)
 
 	if w.Code != http.StatusNotFound {
 		t.Errorf("expected 404, got %d", w.Code)
+	}
+}
+
+func TestCheckAccess_DecryptFail(t *testing.T) {
+	h, repo := setupShopHandler()
+
+	shop, _ := repo.Create("user-1", "Тестовый", "test.ru", "k", "not-a-valid-ciphertext", false, true, false)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/shops/"+shop.ID+"/check-access", nil)
+	req.SetPathValue("id", shop.ID)
+	w := httptest.NewRecorder()
+
+	h.CheckAccess(w, req)
+
+	if w.Code != http.StatusInternalServerError {
+		t.Errorf("expected 500 on decrypt fail, got %d", w.Code)
+	}
+	var resp CheckAccessResponse
+	_ = json.NewDecoder(w.Body).Decode(&resp)
+	if resp.Error == "" {
+		t.Error("expected error message")
 	}
 }
 

@@ -285,6 +285,7 @@ HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле 
       "api_key_id": "key123",
       "is_default": true,
       "is_read_only": false,
+      "capabilities": "{\"credentials_ok\":true,\"domains\":{\"orders\":{\"status\":\"denied\",\"since\":\"2026-11-01T10:00:00Z\",\"source\":\"probe\"}}}",
       "created_at": "2026-01-01T00:00:00Z"
     }
   ],
@@ -293,6 +294,8 @@ HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле 
   "per_page": 20
 }
 ```
+
+`capabilities` — JSON-снимок прав магазина (probe 25 доменов InSales): `{credentials_ok, domains:{<домен>:{status: allowed|denied|unknown, since, source: probe|runtime_403}}}`. UI использует denied-домены для серых позиций в редакторе политики.
 
 #### PUT /api/shops/:id
 
@@ -344,6 +347,7 @@ HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле 
       "name": "Cursor MCP",
       "key_hash": "sha256_hash",
       "pdn_enabled": false,
+      "command_policy": "{\"default\":\"deny\",\"groups\":{\"catalog\":{\"read\":true,\"write\":false,\"delete\":false}}}",
       "created_at": "2026-01-01T00:00:00Z",
       "last_used_at": "2026-07-17T10:00:00Z"
     }
@@ -353,6 +357,12 @@ HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле 
   "per_page": 20
 }
 ```
+
+`command_policy` — JSON политики ИИ-ключа: `{"default":"allow|deny","groups":{<группа>:{read,write,delete}},"commands":{<имя>:true|false}}`. Пустая строка = всё разрешено. Приоритет: override команды > класс в группе > default; deny побеждает.
+
+#### GET /api/tool-meta
+
+Метаданные инструментов для UI-редактора политики: имя, функциональная группа (`catalog`, `orders`, …), класс операции (`read`/`write`/`delete`) и probe-домен InSales (для серых позиций «нет прав магазина»). Источник — единый маппинг `tool_domains.go`.
 
 #### DELETE /api/ai-keys/:id
 

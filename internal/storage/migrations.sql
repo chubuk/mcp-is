@@ -19,6 +19,11 @@ ALTER TABLE shops ADD COLUMN IF NOT EXISTS billing_status TEXT NOT NULL DEFAULT 
 ALTER TABLE shops ADD COLUMN IF NOT EXISTS billing_until TIMESTAMPTZ;
 ALTER TABLE shops ADD COLUMN IF NOT EXISTS billing_checked_at TIMESTAMPTZ;
 ALTER TABLE shops ADD COLUMN IF NOT EXISTS billing_pay_url TEXT DEFAULT '';
+
+-- Миграция v0.10.0 - capabilities probe (снимок прав ключа магазина)
+ALTER TABLE shops ADD COLUMN IF NOT EXISTS capabilities TEXT DEFAULT '';
+ALTER TABLE shops ADD COLUMN IF NOT EXISTS capabilities_checked_at TIMESTAMPTZ;
+
 CREATE INDEX IF NOT EXISTS idx_app_installs_shop ON app_installs(shop_id);
 
 -- Миграция v0.3.0 (будущее)
@@ -79,6 +84,9 @@ ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS shop_id UUID REFERENCES shops(id) O
 -- Миграция - AI key connection_name (алиас соединения; NULL = легаси, без backfill)
 ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS connection_name TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_keys_user_connection ON ai_keys(user_id, connection_name) WHERE connection_name IS NOT NULL;
+
+-- Миграция v0.10.0 - политика ИИ-ключа (JSON: default/groups/commands)
+ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS command_policy TEXT DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS app_installs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

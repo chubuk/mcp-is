@@ -10,7 +10,7 @@ info:
     
     ## Формат ответов
     Все ответы в формате JSON.
-  version: 0.9.7
+  version: 0.10.0
   contact:
     name: MCP IS
     url: https://github.com/chubuk/mcp-is
@@ -378,9 +378,9 @@ paths:
         '404':
           $ref: '#/components/responses/NotFound'
 
-  /api/shops/{id}/check-commands:
+  /api/shops/{id}/check-access:
     post:
-      summary: Проверка доступных MCP команд
+      summary: Живая проверка прав ключа магазина (probe 25 доменов InSales)
       tags: [Shops]
       security:
         - bearerAuth: []
@@ -388,7 +388,17 @@ paths:
         - $ref: '#/components/parameters/ShopID'
       responses:
         '200':
-          description: Команды обновлены
+          description: Снимок прав обновлён (domains, allowed_tools, credentials_ok)
+
+  /api/tool-meta:
+    get:
+      summary: Метаданные инструментов (name/group/class/domain) для UI-редактора политики ИИ-ключа
+      tags: [AI Keys]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список инструментов с функциональной группой, классом операции и probe-доменом InSales
 
   /api/ai-keys:
     get:
@@ -398,7 +408,7 @@ paths:
         - bearerAuth: []
       responses:
         '200':
-          description: Список ключей
+          description: Список ключей (включая command_policy)
     post:
       summary: Создание AI-ключа
       tags: [AI Keys]

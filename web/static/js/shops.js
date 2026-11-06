@@ -31,7 +31,7 @@ const Shops = {
                         <td data-label="">
                             <div style="display:flex;gap:4px;flex-wrap:nowrap">
                                 <button class="btn btn--ghost btn--sm" onclick="Shops.edit('${s.id}')">✏️ Ред.</button>
-                                <button class="btn btn--ghost btn--sm" onclick="Shops.checkCommands('${s.id}')">⚙️ Команды</button>
+                                <button class="btn btn--ghost btn--sm" onclick="Shops.checkAccess('${s.id}')">🔍 Проверить доступы</button>
                                 <button class="btn btn--danger btn--sm" onclick="Shops.delete('${s.id}')">🗑️ Удалить</button>
                             </div>
                         </td>
@@ -143,7 +143,7 @@ const Shops = {
 
             <div id="commands-modal" style="display:none">
                 <div class="card">
-                    <div class="card__title">Доступные команды</div>
+                    <div class="card__title">Права доступа ключа магазина</div>
                     <div id="commands-result"></div>
                     <button class="btn btn--ghost" onclick="document.getElementById('commands-modal').style.display='none'">✖️ Закрыть</button>
                 </div>
@@ -337,29 +337,35 @@ const Shops = {
         App.navigate('/shops');
     },
 
-    async checkCommands(id) {
+    async checkAccess(id) {
         const modal = document.getElementById('commands-modal');
         const result = document.getElementById('commands-result');
         modal.style.display = 'block';
-        result.innerHTML = '<div class="alert alert--info">Проверка доступных команд...</div>';
+        result.innerHTML = '<div class="alert alert--info">Проверка доступов ключа магазина (25 доменов InSales)...</div>';
 
-        const res = await API.post(`/api/shops/${id}/check-commands`);
+        const res = await API.post(`/api/shops/${id}/check-access`);
         if (res && res.ok) {
-            const cmds = res.data.commands || [];
-            const updatedAt = res.data.updated_at || '';
+            const d = res.data;
+            const domains = d.domains || [];
+            const statusIcon = (s) => s === 'allowed' ? '✅' : s === 'denied' ? '❌' : '❓';
+            const statusLabel = (s) => s === 'allowed' ? 'доступно' : s === 'denied' ? 'нет прав' : 'не проверено';
             // eslint-disable-next-line no-unsanitized/property -- map-цепочка; данные экранированы внутри шаблона
             result.innerHTML = `
-                <div class="alert alert--success">
-                    Найдено команд: ${esc(res.data.count)}
-                    ${updatedAt ? '<br><small>Актуально: ' + esc(updatedAt) + '</small>' : ''}
+                <div class="alert alert--${d.credentials_ok ? 'success' : 'error'}">
+                    ${d.credentials_ok ? 'Учётные данные подтверждены' : 'Ошибка учётных данных InSales'}
+                    <br><small>Проверено: ${esc(d.checked_at)} · Доступно инструментов: ${esc(d.count)}</small>
+                    ${d.error ? '<br><small>' + esc(d.error) + '</small>' : ''}
                 </div>
                 <div style="max-height:400px;overflow-y:auto">
-                    <ul style="list-style:none;padding:0">
-                        ${cmds.map(c => `<li style="padding:6px 0;border-bottom:1px solid #eee">
-                            <code>${esc(c.name)}</code>
-                            <span style="color:#666;margin-left:8px">${esc(c.description)}</span>
-                        </li>`).join('')}
-                    </ul>
+                    <table class="table">
+                        <thead><tr><th>Домен</th><th>Статус</th></tr></thead>
+                        <tbody>
+                            ${domains.map(x => `<tr>
+                                <td><code>${esc(x.domain)}</code></td>
+                                <td>${statusIcon(x.status)} ${statusLabel(x.status)}</td>
+                            </tr>`).join('')}
+                        </tbody>
+                    </table>
                 </div>`;
         } else {
             result.innerHTML = '<div class="alert alert--error">' + esc(res ? res.data.error : 'Ошибка') + '</div>';

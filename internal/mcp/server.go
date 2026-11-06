@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/core"
@@ -86,6 +87,24 @@ func buildInstructions(ctx context.Context, base string) string {
 			"If the user names a different store, say so — do not guess and do not write.\n"+
 			"Call store_info to confirm the target store before any write.\n\n",
 			connName, shopName, shopURL, connName)
+
+		// Права ключа (из снимка probe) + прямой REST недоступен.
+		if v, ok := ctx.Value(auth.CapabilitiesJSONKey).(string); ok && v != "" {
+			snap := core.ParseSnapshot(v)
+			if snap != nil {
+				summary := core.BuildSummary(snap, nil)
+				if len(summary.DeniedDomains) > 0 {
+					header += fmt.Sprintf("НЕТ ПРАВ на ресурсы: %s — эти инструменты скрыты. "+
+						"Включите доступ в настройках приложения InSales.\n", strings.Join(summary.DeniedDomains, ", "))
+				}
+				if !summary.CredentialsOK {
+					header += "ВНИМАНИЕ: учётные данные InSales не прошли проверку (401).\n"
+				}
+				header += fmt.Sprintf("Права проверены: %s. Актуальное состояние — через store_info.\n\n", summary.CheckedAt)
+			}
+		}
+		header += "Прямой REST к InSales через этот ключ недоступен — используйте инструменты или call_insales_tool.\n" +
+			"При update передавайте только изменяемые поля: пустое значение затирает поле. Для явной очистки — clear_fields.\n\n"
 	}
 	return header + base
 }
@@ -98,7 +117,7 @@ func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry st
 
 	s := server.NewMCPServer(
 		"mcp-is",
-		"0.9.7",
+		"0.10.0",
 		server.WithToolCapabilities(true),
 		server.WithToolFilter(toolFilter(readOnly)),
 		server.WithRecovery(),
