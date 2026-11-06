@@ -98,6 +98,113 @@ func TestUpdateResult_ChangedFields(t *testing.T) {
 	}
 }
 
+// ── updateWithDiff: diff по аргументам (old из pre-fetch, new из аргументов) ──
+
+func TestUpdateWithDiff_ChangedFields(t *testing.T) {
+	old := map[string]any{"id": "42", "title": "Было", "sku": "A1"}
+	args := map[string]any{"title": "Стало", "sku": "A2", "product_id": "42", "bogus": "x"}
+	res := updateWithDiff("product", "42", args, []string{"bogus"},
+		func() (any, error) { return old, nil },
+		func() (any, error) { return map[string]any{"id": "42", "title": "Стало"}, nil },
+		nil,
+	)
+	if res == nil || res.IsError {
+		t.Fatalf("updateWithDiff error: %+v", res)
+	}
+	var payload MutationResult
+	if err := json.Unmarshal([]byte(res.Content[0].(mcp.TextContent).Text), &payload); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if payload.Action != "update" || payload.Resource != "product" || payload.ID != "42" {
+		t.Errorf("envelope wrong: %+v", payload)
+	}
+	if fc := payload.ChangedFields["title"]; fc.Old != "Было" || fc.New != "Стало" {
+		t.Errorf("title diff wrong: %+v", fc)
+	}
+	if fc := payload.ChangedFields["sku"]; fc.Old != "A1" || fc.New != "A2" {
+		t.Errorf("sku diff wrong: %+v", fc)
+	}
+	if _, ok := payload.ChangedFields["product_id"]; ok {
+		t.Error("product_id must not be in changed_fields")
+	}
+	if _, ok := payload.ChangedFields["bogus"]; ok {
+		t.Error("ignored key must not be in changed_fields")
+	}
+	if len(payload.IgnoredKeys) != 1 || payload.IgnoredKeys[0] != "bogus" {
+		t.Errorf("ignored_keys wrong: %v", payload.IgnoredKeys)
+	}
+}
+
+func TestUpdateWithDiff_PriceFromVariants(t *testing.T) {
+	// Цена товара живёт в variants[0].price, product.price = null.
+	old := map[string]any{"id": "1", "price": nil, "variants": []any{
+		map[string]any{"id": "7", "price": "100.0"},
+	}}
+	args := map[string]any{"price": "250"}
+	res := updateWithDiff("product", "1", args, nil,
+		func() (any, error) { return old, nil },
+		func() (any, error) { return old, nil },
+		nil,
+	)
+	var payload MutationResult
+	if err := json.Unmarshal([]byte(res.Content[0].(mcp.TextContent).Text), &payload); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if fc := payload.ChangedFields["price"]; fc.Old != "100.0" || fc.New != "250" {
+		t.Errorf("price diff wrong: %+v", fc)
+	}
+}
+
+func TestUpdateWithDiff_MaskAppliedToOldAndData(t *testing.T) {
+	old := map[string]any{"id": "9", "email": "real@example.com"}
+	args := map[string]any{"email": "new@example.com"}
+	mask := func(v any) any {
+		m, ok := v.(map[string]any)
+		if !ok {
+			return v
+		}
+		out := make(map[string]any, len(m))
+		for k, val := range m {
+			if k == "email" {
+				val = "m***@example.com"
+			}
+			out[k] = val
+		}
+		return out
+	}
+	res := updateWithDiff("client", "9", args, nil,
+		func() (any, error) { return old, nil },
+		func() (any, error) { return map[string]any{"id": "9", "email": "new@example.com"}, nil },
+		mask,
+	)
+	var payload MutationResult
+	if err := json.Unmarshal([]byte(res.Content[0].(mcp.TextContent).Text), &payload); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if fc := payload.ChangedFields["email"]; fc.Old != "m***@example.com" {
+		t.Errorf("old must be masked: %+v", fc)
+	}
+	data := payload.Data.(map[string]any)
+	if data["email"] != "m***@example.com" {
+		t.Errorf("data must be masked: %+v", data)
+	}
+}
+
+func TestUpdateWithDiff_NoPrefetch_OldNil(t *testing.T) {
+	args := map[string]any{"title": "X"}
+	res := updateWithDiff("account", "", args, nil, nil,
+		func() (any, error) { return map[string]any{"title": "X"}, nil },
+		nil,
+	)
+	var payload MutationResult
+	if err := json.Unmarshal([]byte(res.Content[0].(mcp.TextContent).Text), &payload); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	if fc := payload.ChangedFields["title"]; fc.Old != nil || fc.New != "X" {
+		t.Errorf("diff without prefetch wrong: %+v", fc)
+	}
+}
+
 // ── outputSchema ──
 
 func TestOutputSchemaFor_Mutations(t *testing.T) {

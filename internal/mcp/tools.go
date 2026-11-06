@@ -694,7 +694,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "variant_id", svc.UpdateDeliveryVariant))
+	), genericUpdateGetHandler("variant_id", svc.GetDeliveryVariant, svc.UpdateDeliveryVariant))
 
 	addTool(s, mcp.NewTool("delete_delivery_variant",
 		mcp.WithDescription("Delete or remove delivery variant on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."),
@@ -749,7 +749,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "gateway_id", svc.UpdatePaymentGateway))
+	), genericUpdateGetHandler("gateway_id", svc.GetPaymentGateway, svc.UpdatePaymentGateway))
 
 	addTool(s, mcp.NewTool("delete_payment_gateway",
 		mcp.WithDescription("Delete or remove payment gateway on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."),
@@ -1461,7 +1461,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "domain_id", svc.UpdateDomain))
+	), genericUpdateGetHandler("domain_id", svc.GetDomain, svc.UpdateDomain))
 	addTool(s, mcp.NewTool("delete_domain", mcp.WithDescription("Delete or remove domain on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить домен"), mcp.WithString("domain_id", mcp.Required(), mcp.Description("ID домена")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -1489,7 +1489,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "group_id", svc.UpdateClientGroup))
+	), genericUpdateGetHandler("group_id", svc.GetClientGroup, svc.UpdateClientGroup))
 	addTool(s, mcp.NewTool("delete_client_group", mcp.WithDescription("Delete or remove client group on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить группу клиентов"), mcp.WithString("group_id", mcp.Required(), mcp.Description("ID группы")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -1517,7 +1517,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "status_id", svc.UpdateCustomStatus))
+	), genericUpdateGetHandler("status_id", svc.GetCustomStatus, svc.UpdateCustomStatus))
 	addTool(s, mcp.NewTool("delete_custom_status", mcp.WithDescription("Delete or remove custom order status on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить кастомный статус"), mcp.WithString("status_id", mcp.Required(), mcp.Description("ID статуса")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -1762,7 +1762,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "field_id", svc.UpdateVariantField))
+	), genericUpdateGetHandler("field_id", svc.GetVariantField, svc.UpdateVariantField))
 	addTool(s, mcp.NewTool("delete_variant_field", mcp.WithDescription("Delete or remove variant custom field on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить поле варианта"), mcp.WithString("field_id", mcp.Required(), mcp.Description("ID поля")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -1790,7 +1790,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "field_id", svc.UpdateCollectionField))
+	), genericUpdateGetHandler("field_id", svc.GetCollectionField, svc.UpdateCollectionField))
 	addTool(s, mcp.NewTool("delete_collection_field", mcp.WithDescription("Delete or remove collection custom field on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить поле коллекции"), mcp.WithString("field_id", mcp.Required(), mcp.Description("ID поля")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -1818,7 +1818,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "filter_id", svc.UpdateCollectionFilter))
+	), genericUpdateGetHandler("filter_id", svc.GetCollectionFilter, svc.UpdateCollectionFilter))
 	addTool(s, mcp.NewTool("delete_collection_filter", mcp.WithDescription("Delete or remove collection filter on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить фильтр коллекции"), mcp.WithString("filter_id", mcp.Required(), mcp.Description("ID фильтра")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -1846,7 +1846,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "tag_id", svc.UpdateJsTag))
+	), genericUpdateGetHandler("tag_id", svc.GetJsTag, svc.UpdateJsTag))
 	addTool(s, mcp.NewTool("delete_js_tag", mcp.WithDescription("Delete or remove JS tag on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить JS-тег"), mcp.WithString("tag_id", mcp.Required(), mcp.Description("ID тега")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -1874,7 +1874,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "discount_id", svc.UpdateExternalDiscount))
+	), genericUpdateGetHandler("discount_id", svc.GetExternalDiscount, svc.UpdateExternalDiscount))
 	addTool(s, mcp.NewTool("delete_external_discount", mcp.WithDescription("Delete or remove external discount on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить внешнюю скидку"), mcp.WithString("discount_id", mcp.Required(), mcp.Description("ID скидки")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -1902,7 +1902,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "group_id", svc.UpdateDiscountCollectionsGroup))
+	), genericUpdateGetHandler("group_id", svc.GetDiscountCollectionsGroup, svc.UpdateDiscountCollectionsGroup))
 	addTool(s, mcp.NewTool("delete_discount_collections_group", mcp.WithDescription("Delete or remove discount collections group on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить группу коллекций скидок"), mcp.WithString("group_id", mcp.Required(), mcp.Description("ID группы")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -1930,7 +1930,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "warehouse_id", svc.UpdateWarehouse))
+	), genericUpdateGetHandler("warehouse_id", svc.GetWarehouse, svc.UpdateWarehouse))
 	addTool(s, mcp.NewTool("delete_warehouse", mcp.WithDescription("Delete or remove warehouse on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить склад"), mcp.WithString("warehouse_id", mcp.Required(), mcp.Description("ID склада")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -1958,7 +1958,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "channel_id", svc.UpdateSalesChannel))
+	), genericUpdateGetHandler("channel_id", svc.GetSalesChannel, svc.UpdateSalesChannel))
 	addTool(s, mcp.NewTool("delete_sales_channel", mcp.WithDescription("Delete or remove sales channel on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить канал продаж"), mcp.WithString("channel_id", mcp.Required(), mcp.Description("ID канала")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -1986,7 +1986,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "currency_id", svc.UpdateStockCurrency))
+	), genericUpdateGetHandler("currency_id", svc.GetStockCurrency, svc.UpdateStockCurrency))
 	addTool(s, mcp.NewTool("delete_stock_currency", mcp.WithDescription("Delete or remove stock currency on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить валюту склада"), mcp.WithString("currency_id", mcp.Required(), mcp.Description("ID валюты")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -2014,7 +2014,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "kind_id", svc.UpdatePriceKind))
+	), genericUpdateGetHandler("kind_id", svc.GetPriceKind, svc.UpdatePriceKind))
 	addTool(s, mcp.NewTool("delete_price_kind", mcp.WithDescription("Delete or remove price kind on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить тип цены"), mcp.WithString("kind_id", mcp.Required(), mcp.Description("ID типа")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -2042,7 +2042,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "option_name_id", svc.UpdateOptionName))
+	), genericUpdateGetHandler("option_name_id", svc.GetOptionName, svc.UpdateOptionName))
 	addTool(s, mcp.NewTool("delete_option_name", mcp.WithDescription("Delete or remove option name on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить имя опции"), mcp.WithString("option_name_id", mcp.Required(), mcp.Description("ID имени опции")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -2098,7 +2098,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "action_id", svc.UpdateApplicationAction))
+	), genericUpdateGetHandler("action_id", svc.GetApplicationAction, svc.UpdateApplicationAction))
 	addTool(s, mcp.NewTool("delete_application_action", mcp.WithDescription("Delete or remove application action on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить действие приложения"), mcp.WithString("action_id", mcp.Required(), mcp.Description("ID действия")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -2148,7 +2148,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "widget_id", svc.UpdateApplicationWidget))
+	), genericUpdateGetHandler("widget_id", svc.GetApplicationWidget, svc.UpdateApplicationWidget))
 	addTool(s, mcp.NewTool("delete_application_widget", mcp.WithDescription("Delete or remove application widget on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить виджет"), mcp.WithString("widget_id", mcp.Required(), mcp.Description("ID виджета")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -2226,7 +2226,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "app_id", svc.UpdateOAuthApp))
+	), genericUpdateGetHandler("app_id", svc.GetOAuthApp, svc.UpdateOAuthApp))
 	addTool(s, mcp.NewTool("delete_oauth_app", mcp.WithDescription("Delete or remove OAuth app on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить OAuth приложение"), mcp.WithString("app_id", mcp.Required(), mcp.Description("ID приложения")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -2254,7 +2254,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "task_id", svc.UpdateUserTask))
+	), genericUpdateGetHandler("task_id", svc.GetUserTask, svc.UpdateUserTask))
 	addTool(s, mcp.NewTool("delete_user_task", mcp.WithDescription("Delete or remove user task on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить задачу"), mcp.WithString("task_id", mcp.Required(), mcp.Description("ID задачи")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -2328,7 +2328,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "outlet_id", svc.UpdateOutlet))
+	), genericUpdateGetHandler("outlet_id", svc.GetOutlet, svc.UpdateOutlet))
 	addTool(s, mcp.NewTool("delete_outlet", mcp.WithDescription("Delete or remove outlet on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить точку выдачи"), mcp.WithString("outlet_id", mcp.Required(), mcp.Description("ID точки выдачи")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
@@ -2356,7 +2356,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericUpdateHandler(svc, "marketplace_id", svc.UpdateMarketplace))
+	), genericUpdateGetHandler("marketplace_id", svc.GetMarketplace, svc.UpdateMarketplace))
 	addTool(s, mcp.NewTool("delete_marketplace", mcp.WithDescription("Delete or remove marketplace on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить маркетплейс"), mcp.WithString("marketplace_id", mcp.Required(), mcp.Description("ID маркетплейса")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),

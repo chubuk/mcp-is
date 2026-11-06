@@ -179,6 +179,106 @@ func updateResult(resource, id, title string, preFetch func() (any, error), doUp
 	})
 }
 
+// asMap нормализует объект (map или struct из маппера) в map[string]any.
+func asMap(obj any) map[string]any {
+	switch t := obj.(type) {
+	case map[string]any:
+		return t
+	case nil:
+		return nil
+	}
+	b, err := json.Marshal(obj)
+	if err != nil {
+		return nil
+	}
+	var m map[string]any
+	if err := json.Unmarshal(b, &m); err != nil {
+		return nil
+	}
+	return m
+}
+
+// fieldOf возвращает значение поля объекта по ключу аргумента.
+// Особый случай: цена товара живёт в variants[0].price (product.price = null).
+func fieldOf(obj any, key string) any {
+	m := asMap(obj)
+	if m == nil {
+		return nil
+	}
+	if key == "price" {
+		if v, ok := m["variants"].([]any); ok && len(v) > 0 {
+			if vm, ok := v[0].(map[string]any); ok {
+				return vm["price"]
+			}
+		}
+	}
+	return m[key]
+}
+
+// diffFromArgs строит changed_fields {old,new} для присланных аргументов:
+// old — из pre-fetch снимка, new — значение из аргументов (то, что ушло в InSales).
+func diffFromArgs(oldObj any, args map[string]any, ignored []string) map[string]FieldChange {
+	skip := map[string]bool{}
+	for _, k := range ignored {
+		skip[k] = true
+	}
+	diff := map[string]FieldChange{}
+	for k, v := range args {
+		if skip[k] || k == "id" || strings.HasSuffix(k, "_id") {
+			continue
+		}
+		diff[k] = FieldChange{Old: fieldOf(oldObj, k), New: v}
+	}
+	if len(diff) == 0 {
+		return nil
+	}
+	return diff
+}
+
+// updateWithDiff — единый конверт update-мутации: pre-fetch снимка → diff → обновление.
+// +1 GET на мутацию (осознанно, план 3c): LLM видит old/new каждого изменённого поля.
+// mask (опционально) — ПДн-маскировка: применяется к Data и old-значениям diff'а.
+func updateWithDiff(resource, id string, args map[string]any, ignored []string,
+	preFetch func() (any, error), doUpdate func() (any, error), mask func(any) any) *mcp.CallToolResult {
+	var old any
+	if preFetch != nil {
+		if obj, err := preFetch(); err == nil {
+			old = obj
+		} else if !errors.Is(err, insales.ErrNotFound) {
+			slog.Warn("update pre-fetch failed", "resource", resource, "id", id, "error", err)
+		}
+	}
+	var updated any
+	if doUpdate != nil {
+		obj, err := doUpdate()
+		if err != nil {
+			return toolError(err)
+		}
+		updated = obj
+	}
+	changed := diffFromArgs(old, args, ignored)
+	if mask != nil {
+		updated = mask(updated)
+		for k, fc := range changed {
+			// Скаляр маскируем через map-обёртку — MaskAny маскирует по имени PII-ключа.
+			if masked, ok := mask(map[string]any{k: fc.Old}).(map[string]any); ok {
+				fc.Old = masked[k]
+			}
+			changed[k] = fc
+		}
+	}
+	return toolResult(MutationResult{
+		OK:            true,
+		Action:        "update",
+		Resource:      resource,
+		ID:            id,
+		Title:         fmt.Sprint(fieldOf(updated, "title")),
+		ChangedFields: changed,
+		IgnoredKeys:   ignored,
+		Data:          updated,
+	})
+}
+
 // getFloatArg parses a numeric tool argument (float64, int, json.Number or
 // numeric string). Absent key → def; present but unparseable → error.
 func getFloatArg(args map[string]any, key string, def float64) (float64, error) {
@@ -346,11 +446,24 @@ func updateSeoHandler(svc *service.Service) func(ctx context.Context, req mcp.Ca
 			return toolError(err), nil
 		}
 		ignored := filterKnown(args, seoWriteArgs)
-		fields, err := svc.UpdateSEO(ctx, resourceType, resourceID, blogID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(withIgnoredKeys(seoResultMap(resourceType, resourceID, fields), ignored)), nil
+		delete(args, "resource_type")
+		return updateWithDiff("seo", resourceID, args, ignored,
+			func() (any, error) {
+				f, err := svc.GetSEO(ctx, resourceType, resourceID, blogID)
+				if err != nil {
+					return nil, err
+				}
+				return f, nil
+			},
+			func() (any, error) {
+				f, err := svc.UpdateSEO(ctx, resourceType, resourceID, blogID, args)
+				if err != nil {
+					return nil, err
+				}
+				return seoResultMap(resourceType, resourceID, f), nil
+			},
+			nil,
+		), nil
 	}
 }
 
@@ -521,11 +634,11 @@ func updateProductHandler(svc *service.Service) func(ctx context.Context, req mc
 			return toolError(err), nil
 		}
 		ignored := filterKnown(args, productArgFields)
-		result, err := svc.UpdateProduct(ctx, productID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(withIgnoredKeys(result, ignored)), nil
+		return updateWithDiff("product", productID, args, ignored,
+			func() (any, error) { return svc.GetProduct(ctx, productID) },
+			func() (any, error) { return svc.UpdateProduct(ctx, productID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -595,11 +708,11 @@ func updateOrderHandler(svc *service.Service) func(ctx context.Context, req mcp.
 		args := req.GetArguments()
 		delete(args, "order_id")
 		ignored := filterKnown(args, orderArgFields)
-		result, err := svc.UpdateOrder(ctx, orderID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(withIgnoredKeys(applyPDNToResult(ctx, result, "update_order"), ignored)), nil
+		return updateWithDiff("order", orderID, args, ignored,
+			func() (any, error) { return svc.GetOrderDetails(ctx, orderID) },
+			func() (any, error) { return svc.UpdateOrder(ctx, orderID, args) },
+			func(v any) any { return applyPDNToResult(ctx, v, "update_order") },
+		), nil
 	}
 }
 
@@ -678,12 +791,11 @@ func updateClientHandler(svc *service.Service) func(ctx context.Context, req mcp
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateClient(ctx, clientID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		masked := applyPDNToResult(ctx, result, "update_client")
-		return toolResult(masked), nil
+		return updateWithDiff("client", clientID, args, nil,
+			func() (any, error) { return svc.GetClient(ctx, clientID) },
+			func() (any, error) { return svc.UpdateClient(ctx, clientID, args) },
+			func(v any) any { return applyPDNToResult(ctx, v, "update_client") },
+		), nil
 	}
 }
 
@@ -753,11 +865,11 @@ func updateCategoryHandler(svc *service.Service) func(ctx context.Context, req m
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateCategory(ctx, categoryID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("category", categoryID, args, nil,
+			func() (any, error) { return svc.GetCategory(ctx, categoryID) },
+			func() (any, error) { return svc.UpdateCategory(ctx, categoryID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -827,11 +939,11 @@ func updateCollectionHandler(svc *service.Service) func(ctx context.Context, req
 			return toolError(err), nil
 		}
 		title, _ := req.RequireString("title")
-		result, err := svc.UpdateCollection(ctx, collectionID, title)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("collection", collectionID, map[string]any{"title": title}, nil,
+			func() (any, error) { return svc.GetCollection(ctx, collectionID) },
+			func() (any, error) { return svc.UpdateCollection(ctx, collectionID, title) },
+			nil,
+		), nil
 	}
 }
 
@@ -931,11 +1043,11 @@ func updateMetaFieldHandler(svc *service.Service) func(ctx context.Context, req 
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateMetaField(ctx, metaFieldID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("meta_field", metaFieldID, args, nil,
+			nil,
+			func() (any, error) { return svc.UpdateMetaField(ctx, metaFieldID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -990,11 +1102,11 @@ func updateWebhookHandler(svc *service.Service) func(ctx context.Context, req mc
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateWebhook(ctx, webhookID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("webhook", webhookID, args, nil,
+			nil,
+			func() (any, error) { return svc.UpdateWebhook(ctx, webhookID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -1110,11 +1222,11 @@ func updatePageHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdatePage(ctx, pageID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("page", pageID, args, nil,
+			func() (any, error) { return svc.GetPage(ctx, pageID) },
+			func() (any, error) { return svc.UpdatePage(ctx, pageID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -1184,11 +1296,11 @@ func updateAccessoryHandler(svc *service.Service) func(ctx context.Context, req 
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateAccessory(ctx, accessoryID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("accessory", accessoryID, args, nil,
+			func() (any, error) { return svc.GetAccessory(ctx, accessoryID) },
+			func() (any, error) { return svc.UpdateAccessory(ctx, accessoryID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -1250,11 +1362,11 @@ func updateVariantHandler(svc *service.Service) func(ctx context.Context, req mc
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateVariant(ctx, productID, variantID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("variant", variantID, args, nil,
+			func() (any, error) { return svc.GetVariant(ctx, productID, variantID) },
+			func() (any, error) { return svc.UpdateVariant(ctx, productID, variantID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -1320,11 +1432,11 @@ func updatePropertyValueHandler(svc *service.Service) func(ctx context.Context, 
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdatePropertyValue(ctx, accessoryID, propertyValueID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("property_value", propertyValueID, args, nil,
+			nil, // GetPropertyValue в API нет
+			func() (any, error) { return svc.UpdatePropertyValue(ctx, accessoryID, propertyValueID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -1393,11 +1505,11 @@ func updateMenuHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateMenu(ctx, menuID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("menu", menuID, args, nil,
+			func() (any, error) { return svc.GetMenu(ctx, menuID) },
+			func() (any, error) { return svc.UpdateMenu(ctx, menuID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -1518,11 +1630,11 @@ func updateBlogHandler(svc *service.Service) func(ctx context.Context, req mcp.C
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateBlog(ctx, blogID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("blog", blogID, args, nil,
+			func() (any, error) { return svc.GetBlog(ctx, blogID) },
+			func() (any, error) { return svc.UpdateBlog(ctx, blogID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -1593,11 +1705,11 @@ func updateBlogPostHandler(svc *service.Service) func(ctx context.Context, req m
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateBlogPost(ctx, blogID, postID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("blog_post", postID, args, nil,
+			func() (any, error) { return svc.GetBlogPost(ctx, blogID, postID) },
+			func() (any, error) { return svc.UpdateBlogPost(ctx, blogID, postID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -1667,11 +1779,11 @@ func updateDiscountCodeHandler(svc *service.Service) func(ctx context.Context, r
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateDiscountCode(ctx, codeID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("discount_code", codeID, args, nil,
+			func() (any, error) { return svc.GetDiscountCode(ctx, codeID) },
+			func() (any, error) { return svc.UpdateDiscountCode(ctx, codeID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -1757,7 +1869,11 @@ func updateCollectHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		return toolResult(result), nil
+		// GetCollect (одиночного) в API нет — diff без old.
+		return updateWithDiff("collect", collectID, payload, nil, nil,
+			func() (any, error) { return result, nil },
+			nil,
+		), nil
 	}
 }
 
@@ -1782,11 +1898,11 @@ func updateRecurringApplicationChargeHandler(svc *service.Service) func(ctx cont
 		if !ok || monthly == nil || monthly == "" {
 			return mcp.NewToolResultError("monthly is required"), nil
 		}
-		result, err := svc.UpdateRecurringApplicationCharge(ctx, map[string]any{"monthly": monthly})
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		payload := map[string]any{"monthly": monthly}
+		return updateWithDiff("recurring_application_charge", "", payload, nil, nil,
+			func() (any, error) { return svc.UpdateRecurringApplicationCharge(ctx, payload) },
+			nil,
+		), nil
 	}
 }
 
@@ -1832,11 +1948,11 @@ func updatePropertyHandler(svc *service.Service) func(ctx context.Context, req m
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateProperty(ctx, propertyID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("property", propertyID, args, nil,
+			func() (any, error) { return svc.GetProperty(ctx, propertyID) },
+			func() (any, error) { return svc.UpdateProperty(ctx, propertyID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -1913,11 +2029,11 @@ func updateCharacteristicHandler(svc *service.Service) func(ctx context.Context,
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateCharacteristic(ctx, propertyID, charID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("characteristic", charID, args, nil,
+			func() (any, error) { return svc.GetCharacteristic(ctx, propertyID, charID) },
+			func() (any, error) { return svc.UpdateCharacteristic(ctx, propertyID, charID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -1987,11 +2103,11 @@ func updateReviewHandler(svc *service.Service) func(ctx context.Context, req mcp
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateReview(ctx, reviewID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("review", reviewID, args, nil,
+			func() (any, error) { return svc.GetReview(ctx, reviewID) },
+			func() (any, error) { return svc.UpdateReview(ctx, reviewID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -2097,6 +2213,12 @@ func genericCreateHandler(svc *service.Service, createFn func(ctx context.Contex
 }
 
 func genericUpdateHandler(svc *service.Service, param string, updateFn func(ctx context.Context, id string, args map[string]any) (any, error)) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+	return genericUpdateGetHandler(param, nil, updateFn)
+}
+
+// genericUpdateGetHandler — generic update с pre-fetch снимка для changed_fields.
+// getFn может быть nil (diff без old-значений).
+func genericUpdateGetHandler(param string, getFn func(ctx context.Context, id string) (any, error), updateFn func(ctx context.Context, id string, args map[string]any) (any, error)) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		id, err := req.RequireString(param)
 		if err != nil {
@@ -2104,11 +2226,14 @@ func genericUpdateHandler(svc *service.Service, param string, updateFn func(ctx 
 		}
 		args := req.GetArguments()
 		ignored := filterArgsByTool(args, req.Params.Name)
-		result, err := updateFn(ctx, id, args)
-		if err != nil {
-			return toolError(err), nil
+		var preFetch func() (any, error)
+		if getFn != nil {
+			preFetch = func() (any, error) { return getFn(ctx, id) }
 		}
-		return toolResult(withIgnoredKeys(result, ignored)), nil
+		return updateWithDiff("", id, args, ignored, preFetch,
+			func() (any, error) { return updateFn(ctx, id, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -2247,11 +2372,11 @@ func updateProductFieldHandler(svc *service.Service) func(ctx context.Context, r
 				args["type"] = ft
 			}
 		}
-		result, err := svc.UpdateProductField(ctx, fieldID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("product_field", fieldID, args, nil,
+			func() (any, error) { return svc.GetProductField(ctx, fieldID) },
+			func() (any, error) { return svc.UpdateProductField(ctx, fieldID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -2305,11 +2430,11 @@ func orderSubHandler(svc *service.Service, build func(req mcp.CallToolRequest) (
 		if err != nil {
 			return toolError(err), nil
 		}
-		result, err := svc.UpdateOrder(ctx, orderID, body)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(applyPDNToResult(ctx, result, "update_order")), nil
+		return updateWithDiff("order", orderID, body, nil,
+			func() (any, error) { return svc.GetOrderDetails(ctx, orderID) },
+			func() (any, error) { return svc.UpdateOrder(ctx, orderID, body) },
+			func(v any) any { return applyPDNToResult(ctx, v, "update_order") },
+		), nil
 	}
 }
 
@@ -2612,11 +2737,11 @@ func genericUpdateOptionValueHandler(svc *service.Service) func(ctx context.Cont
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		result, err := svc.UpdateOptionValue(ctx, optionNameID, optionValueID, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		return updateWithDiff("option_value", optionValueID, args, nil,
+			func() (any, error) { return svc.GetOptionValue(ctx, optionNameID, optionValueID) },
+			func() (any, error) { return svc.UpdateOptionValue(ctx, optionNameID, optionValueID, args) },
+			nil,
+		), nil
 	}
 }
 
@@ -2716,11 +2841,11 @@ func createProviderTokenHandler(svc *service.Service) func(ctx context.Context, 
 func updateAccountHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		args := req.GetArguments()
-		result, err := svc.UpdateAccount(ctx, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
+		// GetAccount в API нет — diff без old.
+		return updateWithDiff("account", "", args, nil, nil,
+			func() (any, error) { return svc.UpdateAccount(ctx, args) },
+			nil,
+		), nil
 	}
 }
 

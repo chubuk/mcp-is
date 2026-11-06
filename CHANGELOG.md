@@ -12,7 +12,7 @@
 - **`store_info`**: блок `capabilities` (checked_at, stale, credentials_ok, allowed/denied/unknown) + `direct_rest` (прямой REST недоступен).
 - **Инструкции соединения**: блок о правах ключа, предупреждение про затирание пустыми значениями, `clear_fields`.
 - **Маппинг инструментов (`tool_domains.go`)**: 287 инструментов (123 read / 110 write / 54 delete) → {probe-домен, функциональная группа, класс операции}; drift-тест `TestToolDomainCoverage`.
-- **Mutation result (3c)**: delete-обработчики возвращают `{ok, action, resource, id, deleted:<снимок>}` с pre-fetch; `toolError` — remediation для 403/401.
+- **Mutation result (3c)**: delete-обработчики возвращают `{ok, action, resource, id, deleted:<снимок>}` с pre-fetch; update-обработчики — `{ok, action, resource, id, changed_fields:{old,new}, ignored_keys, data}` (pre-fetch +1 GET на мутацию, осознанно); `toolError` — remediation для 403/401.
 - **handle/permalink унификация**: `handle` — единый публичный ключ, `permalink` — алиас (дублируется в выдаче).
 - **ignored_keys на все мутации**: whitelist аргументов извлекается автоматически из `inputSchema` при регистрации (`addTool`); незнакомые ключи не уходят в InSales и возвращаются списком `ignored_keys` для всех create/update/delete.
 - **inputSchema**: форматы полей (HTML/текст/slug/число) в description create/update-инструментов.
