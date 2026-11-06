@@ -517,6 +517,7 @@ generate_env() {
     if [[ -f "$env_path" ]]; then
         local backup_name="${env_path}.backup.$(date +%Y%m%d_%H%M%S)"
         run_cmd cp "$env_path" "$backup_name"
+        run_cmd chmod 600 "$backup_name"
         print_status "INFO" "Существующий .env сохранён как $(basename "$backup_name")"
     fi
 

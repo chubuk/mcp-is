@@ -292,6 +292,9 @@ acquire_shared_lock() {
         fi
     fi
     echo "$(hostname) $$ $(date +%s)" > "$BACKUP_LOCK_FILE/owner"
+    # Lock создаёт root (cron) или appuser (restore) — оба должны уметь снять stale.
+    chown -R 1001:1001 "$BACKUP_LOCK_FILE" 2>/dev/null || true
+    chmod 770 "$BACKUP_LOCK_FILE" 2>/dev/null || true
     trap 'rm -rf "$BACKUP_LOCK_FILE" "$BACKUP_PID_FILE"' EXIT
 }
 
@@ -309,6 +312,20 @@ write_sha256() {
     if command -v sha256sum >/dev/null 2>&1; then
         (cd "$(dirname "$file")" && sha256sum "$(basename "$file")" > "$(basename "$file").sha256") 2>/dev/null || true
     fi
+}
+
+# Дампы читает appuser (uid 1001) из контейнера (список/restore) — файлы ему, без world.
+# chown только от root (cron); не-root запуску достаточно chmod от владельца.
+secure_backup_file() {
+    local file="$1"
+    chown 1001:1001 "$file" "$file.sha256" 2>/dev/null || true
+    chmod 600 "$file" "$file.sha256" 2>/dev/null || true
+}
+
+init_backup_dir() {
+    mkdir -p "$BACKUP_DIR"
+    chown 1001:1001 "$BACKUP_DIR" 2>/dev/null || true
+    chmod 700 "$BACKUP_DIR" 2>/dev/null || true
 }
 
 do_backup_pg_basebackup() {
@@ -333,6 +350,7 @@ do_backup_pg_basebackup() {
         rm -rf /tmp/pgbackup/
         docker exec -i "$DB_CONTAINER" rm -rf /tmp/pgbackup
         write_sha256 "$backup_file"
+        secure_backup_file "$backup_file"
         
         local end_time
         end_time=$(date +%s)
@@ -377,6 +395,7 @@ do_backup_pg_dump() {
     if docker exec -i "$DB_CONTAINER" \
         pg_dump -U "$DB_USER" "$DB_NAME" 2>/dev/null | gzip > "$backup_file"; then
         write_sha256 "$backup_file"
+        secure_backup_file "$backup_file"
         
         local end_time
         end_time=$(date +%s)
@@ -676,6 +695,7 @@ pre_restore_dump() {
     fi
     # Храним только 3 последних
     ls -1t "${BACKUP_DIR}"/pre_restore_*.sql.gz 2>/dev/null | tail -n +4 | xargs -r rm -f
+    secure_backup_file "$dump"
     PRE_RESTORE_DUMP="$dump"
     return 0
 }
@@ -947,7 +967,7 @@ main() {
     case "$command" in
         --scheduled)
             step "Запуск по расписанию"
-            mkdir -p "$BACKUP_DIR"
+            init_backup_dir
             load_backup_config
             check_stuck_backup
             
@@ -993,7 +1013,7 @@ main() {
             
         "")
             step "Ручной бэкап"
-            mkdir -p "$BACKUP_DIR"
+            init_backup_dir
             load_backup_config
             
             if ! acquire_backup_lock; then
