@@ -881,6 +881,7 @@ Create/update/delete-инструменты возвращают подробн�
 
 **update** — `{ok, action:"update", resource, id, title, changed_fields:{<поле>:{old,new}}, ignored_keys, data}`:
 - `changed_fields` — diff по присланным аргументам (old из pre-fetch снимка, new — отправленное значение); цена товара берётся из `variants[0].price`
+- ограничение: вложенные операции заказа (`update_order_line`, скидки, адрес) шлют обёртки `*_attributes` — их нет в верхнем уровне снимка заказа, поэтому `old` для таких ключей `null`; итоговое состояние видно в `data`
 - `ignored_keys` — незнакомые аргументы, не отправленные в InSales
 - `data` — полное итоговое состояние объекта
 

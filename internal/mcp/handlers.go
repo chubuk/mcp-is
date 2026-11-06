@@ -217,6 +217,9 @@ func fieldOf(obj any, key string) any {
 
 // diffFromArgs строит changed_fields {old,new} для присланных аргументов:
 // old — из pre-fetch снимка, new — значение из аргументов (то, что ушло в InSales).
+// Ограничение: вложенные операции заказа шлют Rails-обёртки *_attributes
+// (order_lines_attributes и т.п.) — их нет в верхнем уровне снимка, поэтому
+// old для таких ключей = null; итоговое состояние видно в data.
 func diffFromArgs(oldObj any, args map[string]any, ignored []string) map[string]FieldChange {
 	skip := map[string]bool{}
 	for _, k := range ignored {
