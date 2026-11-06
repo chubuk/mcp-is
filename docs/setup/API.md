@@ -244,26 +244,28 @@ HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле 
 
 **Обязательные поля:** `name`, `shop_url`, `api_key_id`, `api_password`
 
-#### POST /api/shops/:id/check-commands
+#### POST /api/shops/:id/check-access
 
-Проверить и сохранить доступные команды для магазина.
+Живая проверка прав ключа магазина (probe 25 доменов InSales, GET `?per_page=1`), снимок сохраняется в `shops.capabilities`.
 
 **Ответ (200):**
 ```json
 {
-  "commands": [
-    {"name": "list_products", "description": "Получить список товаров"},
-    {"name": "get_product", "description": "Получить товар по ID"}
+  "credentials_ok": true,
+  "checked_at": "2026-11-06T20:37:17Z",
+  "domains": [
+    {"domain": "products", "status": "allowed"},
+    {"domain": "orders", "status": "denied", "http_status": 403}
   ],
-  "count": 285,
-  "updated_at": "02.07.2026 14:30"
+  "allowed_tools": ["list_products", "get_product", "..."],
+  "count": 287
 }
 ```
 
 **Логика:**
-- `is_read_only=true` → read-команды (list_*, get_*, system)
-- `is_read_only=false` → все 285 команд (полный каталог; default tools/list — core surface)
-```
+- 25 доменов InSales пробируются параллельно (4 воркера); `allowed`/`denied`/`unknown`
+- denied-домены скрывают свои инструменты из `tools/list` (toolFilter)
+- снимок TTL 24ч, авто-re-probe не чаще раза в час; смена кредов сбрасывает снимок
 
 #### GET /api/shops
 
@@ -847,7 +849,7 @@ Authorization: Bearer <AI_KEY>
 
 Получить список доступных инструментов.
 
-По умолчанию возвращается **core surface** (~30 tools: products/orders/clients/categories/collections/product fields/pipelines/export + `search_insales_tools`/`call_insales_tool`). Полный каталог (~285) — через catalog meta-tools или env `MCP_TOOLS_MODE=all`. Результат каждого tool: JSON text + `structuredContent`; `structuredContent` всегда JSON-**объект** (MCP-спека), списки — конверт `{items, total[, page, per_page]}`; у core-инструментов объявлен `outputSchema` (runtime-валидация включена).
+По умолчанию возвращается **core surface** (~30 tools: products/orders/clients/categories/collections/product fields/pipelines/export + `search_insales_tools`/`call_insales_tool`). Полный каталог (287) — через catalog meta-tools или env `MCP_TOOLS_MODE=all`. Инструменты denied-доменов (по capabilities-снимку) и запрещённые политикой ИИ-ключа в список не попадают. Результат каждого tool: JSON text + `structuredContent`; `structuredContent` всегда JSON-**объект** (MCP-спека), списки — конверт `{items, total[, page, per_page]}`; у мутационных инструментов (`update_*`/`delete_*`/`add_*`/`decline_*`) объявлен `outputSchema` (runtime-валидация включена).
 
 ```json
 {
@@ -872,6 +874,19 @@ Authorization: Bearer <AI_KEY>
   }
 }
 ```
+
+### Результаты мутаций
+
+Create/update/delete-инструменты возвращают подробный конверт (LLM видит, что именно изменено):
+
+**update** — `{ok, action:"update", resource, id, title, changed_fields:{<поле>:{old,new}}, ignored_keys, data}`:
+- `changed_fields` — diff по присланным аргументам (old из pre-fetch снимка, new — отправленное значение); цена товара берётся из `variants[0].price`
+- `ignored_keys` — незнакомые аргументы, не отправленные в InSales
+- `data` — полное итоговое состояние объекта
+
+**delete** — `{ok, action:"delete", resource, id, deleted:<снимок до удаления>, message}`.
+
+**create** — полное состояние созданного объекта (как и раньше), плюс `ignored_keys`.
 
 ## Инструменты
 

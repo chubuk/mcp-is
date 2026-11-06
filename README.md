@@ -107,7 +107,7 @@ curl http://localhost:8080/health
 
 ## MCP Инструменты
 
-Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **287 инструментов** (123 read-only). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent` (structuredContent всегда JSON-объект, списки — конверт `{items, total}`; у core-инструментов есть `outputSchema`).
+Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **287 инструментов** (123 read-only). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent` (structuredContent всегда JSON-объект, списки — конверт `{items, total}`; `outputSchema` объявлен у core-инструментов и у мутаций — `MutationResult` с `changed_fields`/`deleted`).
 
 По умолчанию `tools/list` возвращает **core surface** (32 tools) + discovery meta-tools. Полный каталог — `search_insales_tools` → `call_insales_tool` или `MCP_TOOLS_MODE=all`.
 
@@ -426,8 +426,8 @@ curl -X POST http://localhost:8080/api/shops \
 curl http://localhost:8080/api/shops \
   -H "Authorization: Bearer <JWT_TOKEN>"
 
-# Проверить доступные команды магазина
-curl -X POST http://localhost:8080/api/shops/{id}/check-commands \
+# Проверить права ключа магазина (probe 25 доменов InSales)
+curl -X POST http://localhost:8080/api/shops/{id}/check-access \
   -H "Authorization: Bearer <JWT_TOKEN>"
 ```
 
@@ -577,12 +577,13 @@ SMTP_FROM=MCP IS <user@mail.ru>
 | POST | `/api/shops` | Добавить магазин | JWT |
 | POST | `/api/shops/link-pending` | Привязать магазин из InSales | JWT |
 | POST | `/api/shops/test-connection` | Проверить ключ InSales | JWT |
-| POST | `/api/shops/:id/check-commands` | Проверить доступные команды | JWT |
+| POST | `/api/shops/:id/check-access` | Проверить права ключа магазина (probe) | JWT |
 | GET | `/api/shops` | Список магазинов | JWT |
 | PUT | `/api/shops/:id` | Обновить магазин | JWT |
 | DELETE | `/api/shops/:id` | Удалить магазин | JWT |
 | POST | `/api/ai-keys` | Сгенерировать ключ | JWT |
 | GET | `/api/ai-keys` | Список ключей | JWT |
+| GET | `/api/tool-meta` | Метаданные инструментов (для UI-редактора политики) | JWT |
 | DELETE | `/api/ai-keys/:id` | Отозвать ключ | JWT |
 | POST | `/api/admin/users` | Создать пользователя | JWT + admin |
 | GET | `/api/admin/users` | Список пользователей | JWT + admin |

@@ -23,7 +23,7 @@
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
 │  │ Auth Layer  │  │ MCP Server  │  │ Web API (REST)      │ │
 │  │ JWT/API Key │  │ mcp-go SDK  │  │ handlers/shops/...  │ │
-│  │ Rate Limit  │  │ 285 tools   │  │ admin/auth/server   │ │
+│  │ Rate Limit  │  │ 287 tools   │  │ admin/auth/server   │ │
 │  └─────────────┘  └──────┬──────┘  └──────────┬──────────┘ │
 │                          │                     │            │
 │  ┌───────────────────────┴─────────────────────┴──────────┐ │
