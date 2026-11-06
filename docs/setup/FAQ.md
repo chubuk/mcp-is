@@ -148,8 +148,8 @@ docker exec mcp_is_db pg_dump -U admin mcp_is | gzip > backup.sql.gz
 # Или через скрипт проекта
 /opt/mcp-is/scripts/backup.sh
 
-# Бэкап .env
-cp .env .env.backup
+# Бэкап .env (копия с секретами — только 600, не world-readable)
+cp .env .env.backup && chmod 600 .env.backup
 ```
 
 ### Агент получает HTTP 429 — что делать?

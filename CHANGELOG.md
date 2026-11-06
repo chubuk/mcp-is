@@ -488,6 +488,10 @@
 - **Backup script** — автоматический бэкап PostgreSQL с retention 7 дней
 - **Certbot unit tests** — 13 тестов для `internal/certbot` (GetCertInfo, CheckRenewal, ShouldRetry, incrementRetry)
 
+### Безопасность
+- **Бэкапы закрыты от world-read** — новые архивы в `backups/` (включая `pre_restore_*`) сразу `600` с владельцем `appuser` (uid 1001:1001) — их читает restore-контейнер; каталог `backups/` — `700`. Stale-lock бэкапа/restore теперь снимается и root'ом, и appuser'ом. На установленных серверах права выставляются автоматически при первом прогоне `backup.sh`.
+- **deploy.sh** — копия старого `.env` (`.env.backup.*`) теперь `600`, а не `644` (раньше утечка секретов в world-readable файл).
+
 ### Исправлено
 - **Certbot в nginx** — добавлен `certbot` в nginx Dockerfile, выпуск/продление сертификатов Let's Encrypt теперь работает
 - **SettingsStore interface** — `internal/certbot` использует интерфейс вместо конкретного типа, улучшает тестируемость
