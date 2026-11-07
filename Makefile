@@ -1,4 +1,4 @@
-.PHONY: build run test docker-up docker-down logs clean deb lint lint-fix lint-nginx lint-docker lint-frontend lint-all
+.PHONY: build run test test-integration docker-up docker-down logs clean deb lint lint-fix lint-nginx lint-docker lint-frontend lint-all
 
 GIXY ?= $(shell command -v gixy 2>/dev/null || echo $(HOME)/.local/bin/gixy)
 
@@ -10,6 +10,10 @@ run:
 
 test:
 	go test ./...
+
+# TEST_DB_URL обязателен для storage-тестов (напр. postgres://admin:password@localhost:5432/mcp_is?sslmode=disable)
+test-integration:
+	go test -tags integration ./internal/storage/... ./internal/mcp/... -count=1
 
 docker-up:
 	docker compose up -d --build
@@ -27,6 +31,10 @@ clean:
 
 deb:
 	./packaging/build-deb.sh
+
+# Локальное учение backup→verify→restore на throwaway-БД (прост не трогает)
+restore-drill:
+	bash scripts/restore-drill.sh
 
 lint:
 	golangci-lint run ./...

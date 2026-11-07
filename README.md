@@ -107,9 +107,9 @@ curl http://localhost:8080/health
 
 ## MCP Инструменты
 
-Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **287 инструментов** (123 read-only). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent` (structuredContent всегда JSON-объект, списки — конверт `{items, total}`; `outputSchema` объявлен у core-инструментов и у мутаций — `MutationResult` с `changed_fields`/`deleted`).
+Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **287 инструментов** (123 read / 110 write / 54 delete). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent` (structuredContent всегда JSON-объект, списки — конверт `{items, total}`; `outputSchema` объявлен у core-инструментов и у мутаций — `MutationResult` с `changed_fields`/`deleted`). Мутации — best effort (InSales API нетранзакционен): после create/update рекомендуется verify-after-write через `get_*`.
 
-По умолчанию `tools/list` возвращает **core surface** (32 tools) + discovery meta-tools. Полный каталог — `search_insales_tools` → `call_insales_tool` или `MCP_TOOLS_MODE=all`.
+По умолчанию `tools/list` возвращает **core surface** (32 tools, включая discovery meta-tools `search_insales_tools`/`call_insales_tool`/`store_info`). Полный каталог — `search_insales_tools` → `call_insales_tool` или `MCP_TOOLS_MODE=all`.
 
 ### Живые данные и безопасная запись
 
@@ -117,6 +117,7 @@ curl http://localhost:8080/health
 - **Пагинация честная**: InSales клампит `per_page` снизу до 10, поэтому значения 1–9 эмулируются окном из 250-страниц; `total` в конверте — число элементов **в этом ответе**, не размер каталога (для подсчёта — `get_products_count`).
 - **Пустые значения не затирают поля**: в запрос обновления уходят только непустые значения (пустая строка/`null` отбрасываются; числа `0` и `false` остаются — иначе не записать нулевой остаток). Явная очистка поля — только `clear_fields: ["field"]`.
 - **`update_product` по whitelist**: лишние ключи не отправляются в InSales и возвращаются в ответе как `ignored_keys`; устаревший алиас `keywords` → `meta_keywords`. Цена и остатки (`price`/`quantity`) живут в вариантах и обновляются через `update_variant` — в `update_product` эти поля не принимаются.
+- **Дедупликация create-вызовов**: у всех 52 `create_*` есть опциональный `idempotency_key` (≤128 символов) — повтор с тем же ключом и payload возвращает первый результат с флагом `idempotent_replay`, тот же ключ с другим payload — ошибка; записи живут 24 часа (см. `docs/setup/API.md`).
 
 ### SEO (товары, страницы, блог, коллекции)
 
@@ -177,7 +178,7 @@ curl http://localhost:8080/health
 |------------|----------|-----------|
 | `list_clients` | Список клиентов | `page`, `per_page`, `q` |
 | `get_client` | Данные клиента | `client_id` |
-| `create_client` | Создать клиента | `email`, `first_name`, `last_name`, `phone` |
+| `create_client` | Создать клиента | `name`*, `surname`*, `middlename`, `email`, `phone`, `password`, `registered` |
 | `update_client` | Обновить клиента | `client_id`, `email`, `phone` |
 | `delete_client` | Удалить клиента | `client_id` |
 
@@ -570,6 +571,7 @@ SMTP_FROM=MCP IS <user@mail.ru>
 | GET | `/autologin` | Автологин из InSales | Нет |
 | POST | `/api/exchange-code` | Обмен one-time code на JWT | Нет |
 | POST | `/api/change-password` | Смена пароля | JWT |
+| POST | `/api/force-change-password` | Принудительная смена пароля (админ) | JWT |
 | POST | `/api/verify-email` | Подтверждение e-mail кодом | Нет |
 | POST | `/api/verify-email/resend` | Повторная отправка кода | Нет |
 | POST | `/api/link-code/send` | Код привязки магазина InSales | Нет |
@@ -583,10 +585,15 @@ SMTP_FROM=MCP IS <user@mail.ru>
 | DELETE | `/api/shops/:id` | Удалить магазин | JWT |
 | POST | `/api/ai-keys` | Сгенерировать ключ | JWT |
 | GET | `/api/ai-keys` | Список ключей | JWT |
+| PUT | `/api/ai-keys/:id` | Обновить ключ (merge-patch: имя, политика, лимиты) | JWT |
+| POST | `/api/ai-keys/:id/rotate` | Ротация ключа (новый raw-ключ) | JWT |
 | GET | `/api/tool-meta` | Метаданные инструментов (для UI-редактора политики) | JWT |
 | DELETE | `/api/ai-keys/:id` | Отозвать ключ | JWT |
 | POST | `/api/admin/users` | Создать пользователя | JWT + admin |
 | GET | `/api/admin/users` | Список пользователей | JWT + admin |
+| GET | `/api/admin/users/:id` | Данные пользователя | JWT + admin |
+| POST | `/api/admin/users/:id/impersonate` | Войти как пользователь | JWT + admin |
+| POST | `/api/admin/stop-impersonate` | Выйти из имперсонации | JWT |
 | PUT | `/api/admin/users/:id/role` | Изменить роль | JWT + super_admin |
 | PUT | `/api/admin/users/:id/status` | Заблокировать | JWT + admin |
 | DELETE | `/api/admin/users/:id` | Удалить пользователя | JWT + admin |
@@ -595,9 +602,36 @@ SMTP_FROM=MCP IS <user@mail.ru>
 | PUT | `/api/admin/pdn` | Обновить настройки ПДн | JWT + super_admin |
 | GET | `/api/admin/pdn/log` | Журнал доступа к ПДн | JWT + admin |
 | GET | `/api/admin/pdn/stats` | Статистика ПДн за сегодня | JWT + admin |
+| GET | `/api/admin/pdn/jurisdictions` | Список юрисдикций ПДн | JWT + admin |
+| GET | `/api/admin/server` | Настройки сервера | JWT + admin |
+| PUT | `/api/admin/server` | Обновить настройки сервера | JWT + super_admin |
+| POST | `/api/admin/server/cert-issue` | Выпустить SSL-сертификат | JWT + admin |
+| POST | `/api/admin/server/cert-renew` | Продлить SSL-сертификат | JWT + admin |
+| GET | `/api/admin/smtp/status` | Статус SMTP | JWT + admin |
+| POST | `/api/admin/smtp/test` | Тестовое письмо | JWT + admin |
+| GET | `/api/admin/smtp/settings` | Настройки SMTP | JWT + admin |
+| PUT | `/api/admin/smtp/settings` | Обновить настройки SMTP | JWT + admin |
+| GET | `/api/admin/email/templates` | Список шаблонов писем | JWT + admin |
+| GET | `/api/admin/email/templates/:key` | Шаблон письма | JWT + admin |
+| PUT | `/api/admin/email/templates/:key` | Сохранить шаблон | JWT + admin |
+| POST | `/api/admin/email/templates/:key/reset` | Сбросить шаблон к умолчанию | JWT + admin |
+| POST | `/api/admin/email/templates/:key/preview` | Превью шаблона | JWT + admin |
+| POST | `/api/admin/email/templates/:key/test` | Тест шаблона | JWT + admin |
+| GET | `/api/admin/backup` | Настройки бэкапов | JWT + admin |
+| PUT | `/api/admin/backup` | Обновить настройки бэкапов | JWT + super_admin |
+| GET | `/api/admin/backup/log` | Журнал бэкапов | JWT + admin |
+| GET | `/api/admin/backup/incidents` | Инциденты бэкапов | JWT + admin |
+| GET | `/api/admin/backup/status` | Текущий статус бэкапа | JWT + admin |
+| POST | `/api/admin/backup/run` | Запустить бэкап | JWT + admin |
+| GET | `/api/admin/backup/files` | Список файлов бэкапов | JWT + admin |
+| POST | `/api/admin/backup/files/:name/verify` | Проверить целостность файла | JWT + admin |
+| POST | `/api/admin/backup/restore` | Восстановление из бэкапа | JWT + super_admin |
+| GET | `/api/admin/backup/restore/status` | Статус восстановления | JWT + admin |
+| GET | `/api/mcp-client-types` | Типы MCP-клиентов | Нет |
 | POST | `/mcp` | MCP-запросы | API Key |
 | GET | `/mcp` | SSE-подключение | API Key |
 | GET | `/health` | Проверка здоровья | Нет |
+| GET | `/metrics` | Метрики Prometheus | Нет |
 
 ## Безопасность
 
@@ -623,7 +657,7 @@ SMTP_FROM=MCP IS <user@mail.ru>
 }
 ```
 
-При `tools/list` с read-only write-инструменты скрыты. По умолчанию возвращается core surface (32 tools) + `search_insales_tools` / `call_insales_tool`; полный каталог — через catalog или `MCP_TOOLS_MODE=all`.
+При `tools/list` с read-only write-инструменты скрыты. По умолчанию возвращается core surface (32 tools, включая `search_insales_tools` / `call_insales_tool`); полный каталог — через catalog или `MCP_TOOLS_MODE=all`.
 
 ## Доступные команды
 
@@ -631,9 +665,9 @@ SMTP_FROM=MCP IS <user@mail.ru>
 
 | Режим | Команд | Описание |
 |-------|--------|----------|
-| core (default tools/list) | ~30 | products/orders/clients/categories/collections/fields/pipelines/export + discovery meta-tools |
-| read-only catalog | 121 | все read-команды (list_*, get_*, export, pipeline) |
-| read/write catalog | 285 | все команды включая create/update/delete + пайплайны |
+| core (default tools/list) | 32 | products/orders/clients/categories/collections/fields/pipelines/export + discovery meta-tools |
+| read-only catalog | 123 | все read-команды (list_*, get_*, export, pipeline) |
+| read/write catalog | 287 | все команды включая create/update/delete + пайплайны |
 
 ## Пайплайн-инструменты
 
@@ -934,5 +968,9 @@ go test ./internal/storage/... -tags=integration -v
 - **коммерческое использование запрещено под любым именем** до даты смены лицензии (2030-01-01), в том числе после переименования продукта;
 - **нельзя** выдавать свой продукт за **«MCP IS»** или использовать это имя/бренд без разрешения правообладателя (см. п.4 `LICENSE`);
 - смена названия **не отменяет** условия BSL 1.1.
+
+**Self-hosted и агентства.** Если агентство работает через наш хостинг по AI-ключу клиента — нарушений нет, дополнительного соглашения не нужно. Если нужно поднять собственный инстанс и обслуживать клиентов за деньги — это коммерческое использование, есть коммерческая лицензия: напишите **Vladislav Chubuk &lt;chubuk@mail.ru&gt;**.
+
+**Версии и Change Date.** Change Date указана для каждой версии Licensed Work отдельно (сейчас для «MCP IS» — 2030-01-01). Уже опубликованной версии срок не переносится; новые мажорные релизы могут выходить под BSL с новой Change Date. Это стандартная практика BSL, а не обход обещания.
 
 Через 4 года (с 2030-01-01) лицензия автоматически переходит в [Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0) — после этого ограничение снимается.

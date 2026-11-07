@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+## [0.11.0] — 2026-11-07 (idempotency create-*, диагностика отказов, тестовый контур)
+
+### Добавлено
+- **`idempotency_key` для всех 52 `create_*`** (опциональный, ≤128 символов): повтор с тем же ключом и payload возвращает сохранённый результат с `idempotent_replay: true`; тот же ключ с другим payload — ошибка; параллельный повтор — «запрос выполняется». Дедупликация на стороне MCP-IS (см. `docs/setup/API.md`). Таблица `idempotency_keys`, TTL 24ч, fail-open при ошибке БД.
+- **Диагностика отказов прав**: `call_insales_tool` при отказе показывает причину (политика ключа / нет прав магазина) с датой и источником (`since`/`source`); `store_info` отдаёт блок `domains` со статусами по каждому домену.
+- **Тестовый контур**: chain-тесты всех 52 `create_*` против мок-InSales (запрос/путь/корпус + маппинг ответа), e2e через живые handler'ы, веточные тесты idempotency-обёртки, гонка `Begin` (ровно одна запись из N параллельных), `make test-integration` (storage + mcp) и прогон `internal/mcp` в CI-integration; `scripts/restore-drill.sh` — учение backup→verify→restore.
+- **Дизайн-нот `docs/design/agency-workspace.md`** (агентское рабочее пространство).
+
+### Исправлено
+- **`add_image` и `add_product_to_collection` отвечали конвертом `MutationResult`**, который их handler'ы не возвращали — с `outputSchema`-валидацией (v0.10.0) каждый вызов падал ошибкой схемы. Handler'ы приведены к форме `{ok, action: "create", resource, id, data}`; enum `action` в `MutationResult` расширен до `create|update|delete`.
+- **`title: "<nil>"` в ответах update-мутаций** для объектов без поля `title` (заказы) — теперь пустая строка.
+- **`idempotency_key` не утекает в InSales**: страховочное удаление в `filterArgsByTool` (ключ не входит в whitelist аргументов).
+
 ## [0.10.0] — 2026-11-06 (capabilities probe, политика ИИ-ключей, диагностика для LLM)
 
 ### Добавлено

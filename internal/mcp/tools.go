@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"strings"
 
 	"github.com/chubuk/mcp-is/internal/integration/insales"
 	"github.com/chubuk/mcp-is/internal/service"
@@ -87,6 +88,19 @@ func addTool(s *server.MCPServer, tool mcp.Tool, handler server.ToolHandlerFunc)
 	// Аудит аргументов (ignored_keys) для мутаций — единообразно, без дрейфа.
 	if class := ToolClass(tool.Name); class == ClassWrite || class == ClassDelete {
 		handler = wrapArgsAudit(handler)
+	}
+	// Idempotency: create_* получают опциональный idempotency_key (дедупликация retry
+	// MCP-клиента). Обёртка снаружи wrapArgsAudit — ключ вырезается до аудита аргументов;
+	// filterArgsByTool дублирует удаление (порядок обёрток не критичен).
+	if strings.HasPrefix(tool.Name, "create_") {
+		if tool.InputSchema.Properties == nil {
+			tool.InputSchema.Properties = map[string]any{}
+		}
+		tool.InputSchema.Properties["idempotency_key"] = map[string]any{
+			"type":        "string",
+			"description": "Optional client-generated key (max 128 chars) to deduplicate retries of this create call: a repeat with the same key and payload returns the first result.",
+		}
+		handler = withIdempotency(tool.Name, handler)
 	}
 	if tool.OutputSchema.Properties != nil {
 		tool.OutputSchema.Properties = fixSchemaNodes(tool.OutputSchema.Properties).(map[string]any)

@@ -67,7 +67,7 @@
 - **Role-based access** — super_admin, admin, user
 
 ### 3. MCP Server (mcp-go SDK)
-- **287 инструментов** для работы с InSales (123 read-only / 110 write / 54 delete)
+- **287 инструментов** для работы с InSales (123 read / 110 write / 54 delete)
 - **Progressive discovery** — default `tools/list` ≈ core surface (~30) + `search_insales_tools` / `call_insales_tool`; полный каталог через catalog или `MCP_TOOLS_MODE=all`
 - **Tool annotations** — readOnlyHint, destructiveHint, idempotentHint, openWorldHint
 - **Tool filtering** — read-only режим скрывает write-команды; nil ReadOnlyHint трактуется как write
@@ -146,14 +146,14 @@ Tool filtering (tools/list возвращает только read-команды
 
 ```bash
 # Установка
-sudo dpkg -i mcp-is_0.9.7_amd64.deb
+sudo dpkg -i mcp-is_0.11.0_amd64.deb
 sudo nano /etc/mcp-is/.env
 sudo systemctl start mcp-is
 ```
 
 ### 6. Покрытие InSales API → MCP tools (op→tool)
 
-Сгенерировано из `docs/api/Insales-api-docs.md` vs `internal/mcp/tools.go`. Ресурсов: 57, операций API: 327, MCP tools: 285.
+Сгенерировано из `docs/api/Insales-api-docs.md` vs `internal/mcp/tools.go`. Ресурсов: 57, операций API: 327, MCP tools: 287.
 
 Статусы: **OK** — есть list/get/create/update/delete (или API не даёт большего); **частично** — нет отдельных вербов (часто в API их и нет); **out-of-scope** — ресурс не нужен / сломан на стороне InSales.
 

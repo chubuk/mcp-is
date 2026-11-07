@@ -10,7 +10,7 @@ info:
     
     ## Формат ответов
     Все ответы в формате JSON.
-  version: 0.10.0
+  version: 0.11.0
   contact:
     name: MCP IS
     url: https://github.com/chubuk/mcp-is
@@ -158,6 +158,29 @@ paths:
               properties:
                 old_password:
                   type: string
+                new_password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Пароль обновлён
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/force-change-password:
+    post:
+      summary: Принудительная смена пароля (для пользователей с require_password_change)
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [new_password]
+              properties:
                 new_password:
                   type: string
                   minLength: 8
@@ -440,6 +463,29 @@ paths:
                     type: string
 
   /api/ai-keys/{id}:
+    put:
+      summary: "Обновление AI-ключа (merge-patch: имя, политика, лимиты)"
+      tags: [AI Keys]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Поля для обновления (имя, политика инструментов, лимиты)
+      responses:
+        '200':
+          description: Ключ обновлён
+        '404':
+          $ref: '#/components/responses/NotFound'
     delete:
       summary: Удаление AI-ключа
       tags: [AI Keys]
@@ -454,6 +500,24 @@ paths:
       responses:
         '204':
           description: Ключ удалён
+
+  /api/ai-keys/{id}/rotate:
+    post:
+      summary: Ротация AI-ключа (возвращает новый raw-ключ)
+      tags: [AI Keys]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Новый raw-ключ
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /api/admin/users:
     post:
@@ -500,6 +564,20 @@ paths:
           description: Пользователь
         '404':
           $ref: '#/components/responses/NotFound'
+    delete:
+      summary: Удаление пользователя
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Пользователь удалён
 
   /api/admin/users/{id}/role:
     put:
@@ -554,9 +632,9 @@ paths:
         '200':
           description: Статус обновлён
 
-  /api/admin/users/{id}:
-    delete:
-      summary: Удаление пользователя
+  /api/admin/users/{id}/impersonate:
+    post:
+      summary: Вход от имени пользователя (impersonation)
       tags: [Admin]
       security:
         - bearerAuth: []
@@ -567,8 +645,20 @@ paths:
           schema:
             type: string
       responses:
-        '204':
-          description: Пользователь удалён
+        '200':
+          description: JWT-токен от имени пользователя
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/stop-impersonate:
+    post:
+      summary: Выход из режима impersonation
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Режим impersonation завершён
 
   /api/admin/stats:
     get:
@@ -607,6 +697,26 @@ paths:
       responses:
         '200':
           description: Настройки обновлены
+
+  /api/admin/server/cert-issue:
+    post:
+      summary: Выпуск TLS-сертификата (Let's Encrypt)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Сертификат выпущен
+
+  /api/admin/server/cert-renew:
+    post:
+      summary: Продление TLS-сертификата
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Сертификат продлён
 
   /api/admin/pdn:
     get:
@@ -654,6 +764,315 @@ paths:
       responses:
         '200':
           description: Статистика
+
+  /api/admin/pdn/jurisdictions:
+    get:
+      summary: Список юрисдикций PDN
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список юрисдикций
+
+  /api/admin/smtp/status:
+    get:
+      summary: Статус SMTP-подключения
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Статус SMTP
+
+  /api/admin/smtp/test:
+    post:
+      summary: Тестовая отправка письма через SMTP
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Параметры тестового письма (получатель и др.)
+      responses:
+        '200':
+          description: Письмо отправлено
+
+  /api/admin/smtp/settings:
+    get:
+      summary: Настройки SMTP
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Настройки SMTP
+    put:
+      summary: Обновление настроек SMTP
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Настройки SMTP (хост, порт, учётная запись и др.)
+      responses:
+        '200':
+          description: Настройки обновлены
+
+  /api/admin/email/templates:
+    get:
+      summary: Список e-mail шаблонов
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список шаблонов
+
+  /api/admin/email/templates/{key}:
+    get:
+      summary: Получение e-mail шаблона
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Шаблон
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Сохранение e-mail шаблона
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Содержимое шаблона (тема, тело)
+      responses:
+        '200':
+          description: Шаблон сохранён
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/email/templates/{key}/reset:
+    post:
+      summary: Сброс e-mail шаблона к значению по умолчанию
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Шаблон сброшен
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/email/templates/{key}/preview:
+    post:
+      summary: Предпросмотр e-mail шаблона
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Данные для подстановки в шаблон
+      responses:
+        '200':
+          description: HTML письма
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/email/templates/{key}/test:
+    post:
+      summary: Тестовая отправка e-mail шаблона
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Получатель тестового письма
+      responses:
+        '200':
+          description: Письмо отправлено
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/backup:
+    get:
+      summary: Настройки резервного копирования
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Настройки
+    put:
+      summary: Обновление настроек резервного копирования
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Настройки резервного копирования
+      responses:
+        '200':
+          description: Настройки обновлены
+
+  /api/admin/backup/log:
+    get:
+      summary: Лог резервного копирования
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Лог записей
+
+  /api/admin/backup/incidents:
+    get:
+      summary: Инциденты резервного копирования
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список инцидентов
+
+  /api/admin/backup/status:
+    get:
+      summary: Статус резервного копирования
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Текущий статус
+
+  /api/admin/backup/run:
+    post:
+      summary: Запуск резервного копирования
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Резервное копирование запущено
+
+  /api/admin/backup/files:
+    get:
+      summary: Список резервных копий
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Список файлов
+
+  /api/admin/backup/files/{name}/verify:
+    post:
+      summary: Проверка целостности резервной копии
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Результат проверки
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/admin/backup/restore:
+    post:
+      summary: Восстановление из резервной копии (только super_admin)
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Имя файла резервной копии для восстановления
+      responses:
+        '200':
+          description: Восстановление запущено
+
+  /api/admin/backup/restore/status:
+    get:
+      summary: Статус восстановления из резервной копии
+      tags: [Admin]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Статус восстановления
+
+  /api/mcp-client-types:
+    get:
+      summary: Типы MCP-клиентов
+      tags: [MCP]
+      responses:
+        '200':
+          description: Список типов MCP-клиентов
 
   /mcp:
     post:

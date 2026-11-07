@@ -180,3 +180,17 @@ CREATE TABLE IF NOT EXISTS audit_log (
 
 CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_audit_log_tool ON audit_log(tool_name);
+
+-- Idempotency keys for MCP create-* tools (client-supplied key → stored response, replay on retry)
+CREATE TABLE IF NOT EXISTS idempotency_keys (
+    ai_key_id TEXT NOT NULL,
+    key TEXT NOT NULL,
+    tool TEXT NOT NULL,
+    request_hash TEXT NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending',
+    response JSONB,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    PRIMARY KEY (ai_key_id, key)
+);
+
+CREATE INDEX IF NOT EXISTS idx_idempotency_keys_created ON idempotency_keys(created_at);

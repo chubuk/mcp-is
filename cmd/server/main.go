@@ -56,7 +56,8 @@ func main() {
 	manager := core.NewAccountManager(shopRepo, aesCipher, cfg.ReadOnly, cfg.BillingMonthly, settingsRepo)
 	svc := service.NewService(manager)
 	auditRepo := storage.NewAuditRepository(pool)
-	mcpServer := mcp.NewMCPServer(svc, cfg.ReadOnly, cfg.PDNAutoProtect, cfg.ServerCountry, auditRepo)
+	idemRepo := storage.NewIdempotencyRepository(pool)
+	mcpServer := mcp.NewMCPServer(svc, cfg.ReadOnly, cfg.PDNAutoProtect, cfg.ServerCountry, auditRepo, idemRepo)
 
 	emailCfg := handlers.LoadSMTPConfigFromSettings(settingsRepo, email.Config{
 		Host:   cfg.SMTPHost,

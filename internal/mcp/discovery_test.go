@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -134,6 +135,41 @@ func TestCallInSalesToolUnknown(t *testing.T) {
 	}
 	if !res.IsError {
 		t.Errorf("expected unknown-tool error, got %v", res)
+	}
+}
+
+func TestCallInSalesToolDenialMessages(t *testing.T) {
+	s := newDiscoveryTestServer()
+	h := callInSalesToolHandler(s, nil)
+	req := mcp.CallToolRequest{
+		Params: mcp.CallToolParams{
+			Name:      "call_insales_tool",
+			Arguments: map[string]any{"name": "list_menus"},
+		},
+	}
+
+	// Capabilities denied + since/source → remediation с датой и источником.
+	capJSON := `{"credentials_ok":true,"domains":{"menus":{"status":"denied","since":"2026-11-01","source":"probe"}}}`
+	ctx := context.WithValue(context.Background(), auth.CapabilitiesJSONKey, capJSON)
+	res, err := h(ctx, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := res.Content[0].(mcp.TextContent).Text
+	if !res.IsError || !containsAll(text, "Нет прав ключа", "menus", "с 2026-11-01", "источник: probe") {
+		t.Errorf("capability denial should include since/source, got: %s", text)
+	}
+
+	// Policy deny побеждает capabilities denied (off_by_policy).
+	polJSON := `{"default":"allow","commands":{"list_menus":false}}`
+	ctx2 := context.WithValue(ctx, auth.CommandPolicyJSONKey, polJSON)
+	res2, err := h(ctx2, req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text2 := res2.Content[0].(mcp.TextContent).Text
+	if !res2.IsError || !containsAll(text2, "отключён политикой") {
+		t.Errorf("policy denial should win over capability denial, got: %s", text2)
 	}
 }
 

@@ -197,6 +197,18 @@ func storeInfoHandler() server.ToolHandlerFunc {
 				var checkedAt string
 				summary := core.BuildSummary(snap, nil)
 				checkedAt = summary.CheckedAt
+				// Детали по доменам (включая since/source) — чтобы были понятны причины отказа.
+				domainDetails := make([]map[string]any, 0, len(core.ProbeDomains))
+				for _, dp := range core.ProbeDomains {
+					st := core.DomainStatus(snap, dp.Domain)
+					dc := snap.Domains[dp.Domain]
+					domainDetails = append(domainDetails, map[string]any{
+						"domain": dp.Domain,
+						"status": st,
+						"since":  dc.Since,
+						"source": dc.Source,
+					})
+				}
 				info["capabilities"] = map[string]any{
 					"checked_at":     checkedAt,
 					"stale":          summary.Stale,
@@ -204,6 +216,7 @@ func storeInfoHandler() server.ToolHandlerFunc {
 					"allowed":        summary.AllowedDomains,
 					"denied":         summary.DeniedDomains,
 					"unknown":        summary.UnknownDomains,
+					"domains":        domainDetails,
 					"error":          snap.Error,
 				}
 			}
@@ -315,22 +328,34 @@ func callInSalesToolHandler(s *server.MCPServer, auditRepo *storage.AuditReposit
 			return mcp.NewToolResultError(fmt.Sprintf("tool %q is write; session is read-only", name)), nil
 		}
 
-		// Capabilities: denied домен → remediation-сообщение.
+		// Политика ИИ-ключа и capabilities: эффективное состояние = f(policy, capability);
+		// deny побеждает, unavailable_unknown — fail-open (выполняем).
+		policyOn := true
+		if v, ok := ctx.Value(auth.CommandPolicyJSONKey).(string); ok && v != "" {
+			policyOn = parseCommandPolicy(v).IsCommandAllowed(name)
+		}
+		capStatus := core.CapStatusUnknown
+		var capSince, capSource string
 		if v, ok := ctx.Value(auth.CapabilitiesJSONKey).(string); ok && v != "" {
-			snap := core.ParseSnapshot(v)
-			domain := ToolDomain(name)
-			if snap != nil && domain != "" && core.DomainStatus(snap, domain) == core.CapStatusDenied {
-				return mcp.NewToolResultError(fmt.Sprintf(
-					"Нет прав ключа на ресурс %q — включите доступ в настройках приложения InSales; см. store_info", domain)), nil
+			if snap := core.ParseSnapshot(v); snap != nil {
+				if domain := ToolDomain(name); domain != "" {
+					capStatus = core.DomainStatus(snap, domain)
+					dc := snap.Domains[domain]
+					capSince, capSource = dc.Since, dc.Source
+				}
 			}
 		}
-		// Политика ИИ-ключа: deny → remediation.
-		if v, ok := ctx.Value(auth.CommandPolicyJSONKey).(string); ok && v != "" {
-			policy := parseCommandPolicy(v)
-			if !policy.IsCommandAllowed(name) {
-				return mcp.NewToolResultError(fmt.Sprintf(
-					"Инструмент %q отключён политикой ИИ-ключа — измените политику в настройках ключа", name)), nil
+		switch core.EffectiveStatus(policyOn, capStatus) {
+		case core.EffOffByPolicy:
+			return mcp.NewToolResultError(fmt.Sprintf(
+				"Инструмент %q отключён политикой ИИ-ключа — измените политику в настройках ключа", name)), nil
+		case core.EffUnavailableNoScope:
+			msg := fmt.Sprintf(
+				"Нет прав ключа на ресурс %q — включите доступ в настройках приложения InSales; см. store_info", ToolDomain(name))
+			if capSince != "" || capSource != "" {
+				msg += fmt.Sprintf(" (с %s, источник: %s)", capSince, capSource)
 			}
+			return mcp.NewToolResultError(msg), nil
 		}
 
 		args := map[string]any{}

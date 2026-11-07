@@ -109,7 +109,7 @@ func buildInstructions(ctx context.Context, base string) string {
 	return header + base
 }
 
-func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry string, auditRepo *storage.AuditRepository) *MCPServer {
+func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry string, auditRepo *storage.AuditRepository, idemRepo *storage.IdempotencyRepository) *MCPServer {
 	hooks := &server.Hooks{}
 	hooks.AddAfterInitialize(func(ctx context.Context, _ any, _ *mcp.InitializeRequest, result *mcp.InitializeResult) {
 		result.Instructions = buildInstructions(ctx, baseInstructions)
@@ -117,7 +117,7 @@ func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry st
 
 	s := server.NewMCPServer(
 		"mcp-is",
-		"0.10.0",
+		"0.11.0",
 		server.WithToolCapabilities(true),
 		server.WithToolFilter(toolFilter(readOnly)),
 		server.WithRecovery(),
@@ -126,6 +126,7 @@ func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry st
 		server.WithInstructions(baseInstructions),
 	)
 
+	SetIdempotencyRepo(idemRepo)
 	RegisterTools(s, svc)
 	RegisterDiscoveryTools(s, svc, auditRepo)
 	if auditRepo != nil {

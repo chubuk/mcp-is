@@ -107,7 +107,7 @@ func toolError(err error) *mcp.CallToolResult {
 // LLM нужна максимальная подробность: что именно изменено/удалено.
 type MutationResult struct {
 	OK            bool                   `json:"ok"`
-	Action        string                 `json:"action"` // "update" | "delete"
+	Action        string                 `json:"action"` // "create" | "update" | "delete"
 	Resource      string                 `json:"resource"`
 	ID            string                 `json:"id"`
 	Title         string                 `json:"title,omitempty"`
@@ -270,12 +270,16 @@ func updateWithDiff(resource, id string, args map[string]any, ignored []string,
 			changed[k] = fc
 		}
 	}
+	title := ""
+	if v := fieldOf(updated, "title"); v != nil {
+		title = fmt.Sprint(v)
+	}
 	return toolResult(MutationResult{
 		OK:            true,
 		Action:        "update",
 		Resource:      resource,
 		ID:            id,
-		Title:         fmt.Sprint(fieldOf(updated, "title")),
+		Title:         title,
 		ChangedFields: changed,
 		IgnoredKeys:   ignored,
 		Data:          updated,
@@ -550,6 +554,9 @@ func filterKnown(args map[string]any, known map[string]bool) []string {
 // filterArgsByTool фильтрует args по whitelist из inputSchema инструмента
 // (toolArgWhitelist, заполняется в addTool). Нет записи — не трогаем (fail-open).
 func filterArgsByTool(args map[string]any, toolName string) []string {
+	// Зарезервированный ключ обёртки идемпотентности: никогда не должен уезжать
+	// в аргументы InSales — удаляем до любой фильтрации (порядок обёрток не важен).
+	delete(args, "idempotency_key")
 	wl, ok := toolArgWhitelist[toolName]
 	if !ok {
 		return nil
@@ -994,7 +1001,13 @@ func addImageHandler(svc *service.Service) func(ctx context.Context, req mcp.Cal
 		if err != nil {
 			return toolError(err), nil
 		}
-		return toolResult(result), nil
+		return toolResult(MutationResult{
+			OK:       true,
+			Action:   "create",
+			Resource: "image",
+			ID:       fmt.Sprint(fieldOf(result, "id")),
+			Data:     result,
+		}), nil
 	}
 }
 
@@ -1846,7 +1859,13 @@ func createCollectHandler(svc *service.Service) func(ctx context.Context, req mc
 		if err != nil {
 			return toolError(err), nil
 		}
-		return toolResult(result), nil
+		return toolResult(MutationResult{
+			OK:       true,
+			Action:   "create",
+			Resource: "collect",
+			ID:       fmt.Sprint(fieldOf(result, "id")),
+			Data:     result,
+		}), nil
 	}
 }
 

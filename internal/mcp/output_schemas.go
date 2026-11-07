@@ -72,7 +72,7 @@ var mutationResultSchema = json.RawMessage(`{
   "type": "object",
   "properties": {
     "ok": {"type": "boolean", "description": "Успех операции"},
-    "action": {"type": "string", "enum": ["update", "delete"], "description": "Тип мутации"},
+    "action": {"type": "string", "enum": ["create", "update", "delete"], "description": "Тип мутации"},
     "resource": {"type": "string", "description": "Тип ресурса (product, order, ...)"},
     "id": {"type": "string", "description": "ID затронутого объекта"},
     "title": {"type": "string", "description": "Заголовок объекта (если применимо)"},

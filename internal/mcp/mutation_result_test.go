@@ -275,6 +275,28 @@ func TestFilterArgsByTool_NoWhitelist_NoOp(t *testing.T) {
 	}
 }
 
+// TestFilterArgsByTool_StripsIdempotencyKey — зарезервированный ключ обёртки
+// удаляется всегда (страховка порядка обёрток), даже без whitelist и даже если
+// ключ как-то попал в whitelist — в InSales он не уезжает никогда.
+func TestFilterArgsByTool_StripsIdempotencyKey(t *testing.T) {
+	args := map[string]any{"anything": true, "idempotency_key": "k1"}
+	filterArgsByTool(args, "nonexistent_tool_zzz")
+	if _, ok := args["idempotency_key"]; ok {
+		t.Error("idempotency_key must be stripped even without whitelist")
+	}
+
+	toolArgWhitelist["leaky_tool"] = map[string]bool{"idempotency_key": true, "title": true}
+	defer delete(toolArgWhitelist, "leaky_tool")
+	args = map[string]any{"title": "X", "idempotency_key": "k1"}
+	filterArgsByTool(args, "leaky_tool")
+	if _, ok := args["idempotency_key"]; ok {
+		t.Error("idempotency_key must be stripped even if whitelisted")
+	}
+	if _, ok := args["title"]; !ok {
+		t.Error("title must survive")
+	}
+}
+
 func TestWrapArgsAudit_AddsIgnoredKeys(t *testing.T) {
 	toolArgWhitelist["audit_tool"] = map[string]bool{"keep": true}
 	defer delete(toolArgWhitelist, "audit_tool")

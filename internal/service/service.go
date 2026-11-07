@@ -9,11 +9,17 @@ import (
 	"github.com/chubuk/mcp-is/internal/integration/insales"
 )
 
-type Service struct {
-	manager *core.AccountManager
+// ClientProvider отдаёт клиент InSales для магазина запроса.
+// *core.AccountManager удовлетворяет интерфейсу; тесты подставляют fake поверх httptest.
+type ClientProvider interface {
+	GetClient(ctx context.Context) (*insales.InSalesClient, context.Context, error)
 }
 
-func NewService(mgr *core.AccountManager) *Service {
+type Service struct {
+	manager ClientProvider
+}
+
+func NewService(mgr ClientProvider) *Service {
 	return &Service{manager: mgr}
 }
 

@@ -838,7 +838,7 @@ Authorization: Bearer <AI_KEY>
     "capabilities": {"tools": {"listChanged": true}},
     "serverInfo": {
       "name": "mcp-is",
-      "version": "0.9.7"
+      "version": "0.11.0"
     },
     "instructions": "Discovery: default tools/list is a core surface; use search_insales_tools → call_insales_tool for the full catalog. MCP_TOOLS_MODE=all lists everything."
   }
@@ -849,7 +849,7 @@ Authorization: Bearer <AI_KEY>
 
 Получить список доступных инструментов.
 
-По умолчанию возвращается **core surface** (~30 tools: products/orders/clients/categories/collections/product fields/pipelines/export + `search_insales_tools`/`call_insales_tool`). Полный каталог (287) — через catalog meta-tools или env `MCP_TOOLS_MODE=all`. Инструменты denied-доменов (по capabilities-снимку) и запрещённые политикой ИИ-ключа в список не попадают. Результат каждого tool: JSON text + `structuredContent`; `structuredContent` всегда JSON-**объект** (MCP-спека), списки — конверт `{items, total[, page, per_page]}`; у мутационных инструментов (`update_*`/`delete_*`/`add_*`/`decline_*`) объявлен `outputSchema` (runtime-валидация включена).
+По умолчанию возвращается **core surface** (32 tools: products/orders/clients/categories/collections/product fields/pipelines/export + `search_insales_tools`/`call_insales_tool`/`store_info`). Полный каталог (287) — через catalog meta-tools или env `MCP_TOOLS_MODE=all`. Инструменты denied-доменов (по capabilities-снимку) и запрещённые политикой ИИ-ключа в список не попадают. Результат каждого tool: JSON text + `structuredContent`; `structuredContent` всегда JSON-**объект** (MCP-спека), списки — конверт `{items, total[, page, per_page]}`; у мутационных инструментов (`update_*`/`delete_*`/`add_*`/`decline_*`) объявлен `outputSchema` (runtime-валидация включена).
 
 ```json
 {
@@ -888,6 +888,10 @@ Create/update/delete-инструменты возвращают подробн�
 **delete** — `{ok, action:"delete", resource, id, deleted:<снимок до удаления>, message}`.
 
 **create** — полное состояние созданного объекта (как и раньше), плюс `ignored_keys`.
+
+**Best effort (важно).** InSales API нетранзакционен: конверт описывает фактически выполненное, но при частичном сбое (например, заказ создан, а строки — нет) картина может быть неполной. Рекомендуется **verify-after-write**: после create/update выполнить соответствующий `get_*` и сверить состояние. `data` содержит ответ самой мутации, а не повторный GET.
+
+**Idempotency (create).** У всех `create_*`-инструментов есть опциональный аргумент `idempotency_key` (строка до 128 символов). Если MCP-клиент повторяет вызов с тем же ключом и теми же данными (retry после таймаута), вернётся сохранённый ответ первого вызова с флагом `idempotent_replay: true` — дубль не создаётся. Тот же ключ с другими данными — ошибка; параллельный вызов с одним ключом — «запрос уже выполняется». Хранение — 24 часа.
 
 ## Инструменты
 
@@ -972,12 +976,21 @@ Create/update/delete-инструменты возвращают подробн�
 
 ### create_order
 
-Создать заказ.
+Создать заказ. Клиент задаётся одним из способов: `client_id` (существующий) **или** `client` (новый).
 
 | Параметр | Тип | Обязательный | Описание |
 |----------|-----|--------------|----------|
-| client_id | integer | Да | ID клиента |
+| client_id | number | Нет | ID существующего клиента |
+| client | object | Нет | Новый клиент: `{name?, email?, phone?, consent_to_personal_data?}` |
 | comment | string | Нет | Комментарий |
+| manager_comment | string | Нет | Комментарий менеджера |
+| status | string | Нет | Alias для `financial_status`: `pending`, `paid` |
+| financial_status | string | Нет | Финансовый статус: `pending`, `paid` |
+| delivery_variant_id | number | Нет | ID способа доставки |
+| payment_gateway_id | number | Нет | ID платёжного шлюза |
+| coupon | string | Нет | Промокод |
+| order_lines_attributes | array | Нет | Строки: `{product_id` ИЛИ `variant_id, quantity, vat?, sale_price?}` |
+| shipping_address_attributes | object | Нет | Адрес: `{address?, full_locality_name?}` |
 
 ### update_order
 
@@ -986,9 +999,19 @@ Create/update/delete-инструменты возвращают подробн�
 | Параметр | Тип | Обязательный | Описание |
 |----------|-----|--------------|----------|
 | order_id | string | Да | ID заказа |
-| status | string | Нет | Статус |
+| status | string | Нет | Alias для `financial_status`: `pending`, `paid` |
+| financial_status | string | Нет | Финансовый статус: `pending`, `paid` |
+| custom_status_permalink | string | Нет | Permalink кастомного статуса (slug `^[a-z0-9-]+$`) |
 | fulfillment_status | string | Нет | Статус выполнения |
-| comment | string | Нет | Комментарий |
+| comment | string | Нет | Комментарий клиента |
+| manager_comment | string | Нет | Комментарий менеджера |
+| delivery_variant_id | number | Нет | ID способа доставки |
+| payment_gateway_id | number | Нет | ID платёжного шлюза |
+| warehouse_id | number | Нет | ID склада |
+| coupon | string | Нет | Промокод |
+| order_lines_attributes | array | Нет | Строки: `{id, quantity?, sale_price?, vat?, comment?, _destroy?}` |
+| discounts_attributes | array | Нет | Скидки: `{discount, type_id? (1=percent, 2=money), description?, id?, _destroy?, discount_order_lines_ids?}` |
+| shipping_address_attributes | object | Нет | Адрес: `{address?, full_locality_name?, …}` |
 
 ### list_clients
 
@@ -1014,10 +1037,13 @@ Create/update/delete-инструменты возвращают подробн�
 
 | Параметр | Тип | Обязательный | Описание |
 |----------|-----|--------------|----------|
-| email | string | Да | Email |
-| first_name | string | Нет | Имя |
-| last_name | string | Нет | Фамилия |
+| name | string | Да | Имя |
+| surname | string | Да | Фамилия |
+| middlename | string | Нет | Отчество |
+| email | string | Нет | Email |
 | phone | string | Нет | Телефон |
+| password | string | Нет | Пароль (минимум 6 символов) |
+| registered | boolean | Нет | Зарегистрирован (требуется email и пароль) |
 
 ### update_client
 
@@ -1027,8 +1053,6 @@ Create/update/delete-инструменты возвращают подробн�
 |----------|-----|--------------|----------|
 | client_id | string | Да | ID клиента |
 | email | string | Нет | Email |
-| first_name | string | Нет | Имя |
-| last_name | string | Нет | Фамилия |
 | phone | string | Нет | Телефон |
 
 ### delete_client

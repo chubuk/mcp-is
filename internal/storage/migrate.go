@@ -67,6 +67,17 @@ func RunMigrations(pool *pgxpool.Pool) {
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_audit_log_created ON audit_log(created_at DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_audit_log_tool ON audit_log(tool_name)`,
+		`CREATE TABLE IF NOT EXISTS idempotency_keys (
+			ai_key_id TEXT NOT NULL,
+			key TEXT NOT NULL,
+			tool TEXT NOT NULL,
+			request_hash TEXT NOT NULL,
+			status TEXT NOT NULL DEFAULT 'pending',
+			response JSONB,
+			created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+			PRIMARY KEY (ai_key_id, key)
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_idempotency_keys_created ON idempotency_keys(created_at)`,
 		`CREATE TABLE IF NOT EXISTS mcp_client_types (
 			id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
 			name TEXT NOT NULL UNIQUE,
