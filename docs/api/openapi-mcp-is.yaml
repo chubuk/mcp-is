@@ -1168,6 +1168,7 @@ components:
           type: string
         shop_url:
           type: string
+          description: Только хост вида myshop.myinsales.ru (допускается :NNNN); схема, завершающий /, путь, query, @ и пробелы — 400.
           example: myshop.myinsales.ru
         api_key_id:
           type: string

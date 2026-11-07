@@ -49,7 +49,7 @@
                            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │              PostgreSQL 16                                  │
-│  users • shops • ai_keys • server_settings • password_resets│
+│  users • shops • ai_keys • idempotency_keys • … (12 таблиц) │
 └─────────────────────────────────────────────────────────────┘
 ```
 

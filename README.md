@@ -34,7 +34,7 @@ scripts/
 
 ## Технологии
 
-- **Язык**: Go 1.25
+- **Язык**: Go 1.26
 - **БД**: PostgreSQL 16
 - **Контейнеризация**: Docker (multi-stage сборка, статическая компиляция)
 - **Протокол**: MCP 2025-11-25 (через [mcp-go SDK](https://github.com/mark3labs/mcp-go))
@@ -852,6 +852,8 @@ WantedBy=multi-user.target
 make build          # Собрать бинарник
 make run            # Запустить локально
 make test           # Запустить тесты
+make test-integration  # storage+mcp тесты (нужен TEST_DB_URL на dev Postgres)
+make restore-drill  # учение backup→verify→restore в throwaway-контейнере (не трогает dev/prod БД)
 make lint           # golangci-lint + govulncheck (обязательно перед коммитом)
 make lint-nginx     # entrypoint tests + nginx -t + gixy (при изменении web/nginx)
 make lint-docker    # hadolint + trivy + docker compose config

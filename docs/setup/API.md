@@ -244,6 +244,8 @@ HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле 
 
 **Обязательные поля:** `name`, `shop_url`, `api_key_id`, `api_password`
 
+`shop_url` — только хост вида `myshop.myinsales.ru` (допускается порт `:NNNN`; схема `https://` и завершающий `/` отбрасываются). Путь, query, `@` и пробелы — **400**. Такой же формат требуется при `PUT /api/shops/:id`.
+
 #### POST /api/shops/:id/check-access
 
 Живая проверка прав ключа магазина (probe 25 доменов InSales, GET `?per_page=1`), снимок сохраняется в `shops.capabilities`.
@@ -875,23 +877,33 @@ Authorization: Bearer <AI_KEY>
 }
 ```
 
+### store_info
+
+Идентификация соединения (без запроса к InSales). Поля: `connection_name`, `key_name`, `bound` (ключ привязан к магазину), `store:{id,name,shop_url}`, `read_only`, `direct_rest` (всегда «прямой REST недоступен»). Блок `capabilities` (при привязке): `{checked_at, stale, credentials_ok, allowed, denied, unknown, domains:[{domain,status,since,source}], error}` — снимок probe прав ключа; `since`/`source` (`probe`/`runtime_403`) объясняют, с какого момента и почему домен недоступен.
+
+Отказы `call_insales_tool` для LLM:
+- политика ключа: `Инструмент "<имя>" отключён политикой ИИ-ключа — измените политику в настройках ключа`
+- нет прав магазина: `Нет прав ключа на ресурс "<домен>" — включите доступ в настройках приложения InSales; см. store_info (с <дата>, источник: probe|runtime_403)`
+
 ### Результаты мутаций
 
-Create/update/delete-инструменты возвращают подробный конверт (LLM видит, что именно изменено):
+Create/update/delete-инструменты возвращают подробный конверт (LLM видит, что именно изменено). Поле `action` — одно из `create`/`update`/`delete`.
 
 **update** — `{ok, action:"update", resource, id, title, changed_fields:{<поле>:{old,new}}, ignored_keys, data}`:
 - `changed_fields` — diff по присланным аргументам (old из pre-fetch снимка, new — отправленное значение); цена товара берётся из `variants[0].price`
 - ограничение: вложенные операции заказа (`update_order_line`, скидки, адрес) шлют обёртки `*_attributes` — их нет в верхнем уровне снимка заказа, поэтому `old` для таких ключей `null`; итоговое состояние видно в `data`
 - `ignored_keys` — незнакомые аргументы, не отправленные в InSales
-- `data` — полное итоговое состояние объекта
+- `data` — полное итоговое состояние объекта; `title` — имя объекта (пусто для объектов без `title`, например заказов)
 
 **delete** — `{ok, action:"delete", resource, id, deleted:<снимок до удаления>, message}`.
 
-**create** — полное состояние созданного объекта (как и раньше), плюс `ignored_keys`.
+**create** — два вида:
+- `create_*`-инструменты — полное состояние созданного объекта, плюс `ignored_keys`
+- `add_image`, `add_product_to_collection` — конверт `{ok, action:"create", resource, id, data}`
 
 **Best effort (важно).** InSales API нетранзакционен: конверт описывает фактически выполненное, но при частичном сбое (например, заказ создан, а строки — нет) картина может быть неполной. Рекомендуется **verify-after-write**: после create/update выполнить соответствующий `get_*` и сверить состояние. `data` содержит ответ самой мутации, а не повторный GET.
 
-**Idempotency (create).** У всех `create_*`-инструментов есть опциональный аргумент `idempotency_key` (строка до 128 символов). Если MCP-клиент повторяет вызов с тем же ключом и теми же данными (retry после таймаута), вернётся сохранённый ответ первого вызова с флагом `idempotent_replay: true` — дубль не создаётся. Тот же ключ с другими данными — ошибка; параллельный вызов с одним ключом — «запрос уже выполняется». Хранение — 24 часа.
+**Idempotency (create).** У всех `create_*`-инструментов есть опциональный аргумент `idempotency_key` (строка до 128 символов). Если MCP-клиент повторяет вызов с тем же ключом и теми же данными (retry после таймаута), вернётся сохранённый ответ первого вызова с флагом `idempotent_replay: true` — дубль не создаётся. Тот же ключ с другими данными — ошибка; параллельный вызов с одним ключом — «запрос уже выполняется». Хранение — 24 часа. Ключ служебный: из аргументов вырезается и в InSales не уходит.
 
 ## Инструменты
 
@@ -992,6 +1004,8 @@ Create/update/delete-инструменты возвращают подробн�
 | order_lines_attributes | array | Нет | Строки: `{product_id` ИЛИ `variant_id, quantity, vat?, sale_price?}` |
 | shipping_address_attributes | object | Нет | Адрес: `{address?, full_locality_name?}` |
 
+Живой контракт InSales (422 со списком полей): обязательны `delivery_variant_id`, `payment_gateway_id`, минимум одна позиция в `order_lines_attributes` и `full_locality_name` в адресе. Вложенные записи (`*_attributes`) в `changed_fields` возвращают `old: null` — сверка по верхнему уровню (`data`).
+
 ### update_order
 
 Обновить заказ.
@@ -1044,6 +1058,8 @@ Create/update/delete-инструменты возвращают подробн�
 | phone | string | Нет | Телефон |
 | password | string | Нет | Пароль (минимум 6 символов) |
 | registered | boolean | Нет | Зарегистрирован (требуется email и пароль) |
+
+Живой контракт InSales (422): нужен минимум `email` или `phone`.
 
 ### update_client
 
