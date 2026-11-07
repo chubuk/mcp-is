@@ -146,7 +146,7 @@ Tool filtering (tools/list возвращает только read-команды
 
 ```bash
 # Установка
-sudo dpkg -i mcp-is_0.11.0_amd64.deb
+sudo dpkg -i mcp-is_0.11.1_amd64.deb
 sudo nano /etc/mcp-is/.env
 sudo systemctl start mcp-is
 ```

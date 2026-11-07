@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [0.11.1] — 2026-11-07 (security: SSRF-guard shop_url)
+
+### Безопасность
+- **`shop_url` валидируется при создании/обновлении магазина** (`normalizeShopHost`, строгий `host[:port]`) — закрыт SSRF: значение уходило в исходящие запросы probe/InSales-клиента без проверки. Плюс `url.QueryEscape` для `insalesID` в redirect autologin.
+- **Сборка на Go 1.26.10** (CI и Docker-образ) — закрыты 12 достижимых stdlib-уязвимостей go1.25.14 (net/http, html/template, crypto/tls, net/textproto, crypto/x509).
+
 ## [0.11.0] — 2026-11-07 (idempotency create-*, диагностика отказов, тестовый контур)
 
 ### Добавлено
