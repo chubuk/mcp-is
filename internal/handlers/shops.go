@@ -73,6 +73,13 @@ func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusBadRequest, ShopResponse{Error: "shop_url, api_key_id and api_password are required"})
 		return
 	}
+	// SSRF-guard: shop_url уходит в исходящие запросы (probe/InSales client) —
+	// допускаем только строгий host[:port] (см. normalizeShopHost).
+	req.ShopURL = normalizeShopHost(req.ShopURL)
+	if req.ShopURL == "" {
+		writeJSON(w, http.StatusBadRequest, ShopResponse{Error: "shop_url: неверный формат хоста (нужен myshop.myinsales.ru)"})
+		return
+	}
 
 	if h.maxShops > 0 {
 		if _, total, err := h.shopRepo.ListByUserIDFiltered(userID, 1, 1); err == nil && total >= h.maxShops {
@@ -112,13 +119,13 @@ func (h *ShopHandler) probeAsync(shopID, shopURL, apiKeyID, password string, res
 		baseURL := fmt.Sprintf("https://%s/admin", shopURL)
 		httpClient := &http.Client{Timeout: 30 * time.Second}
 		doGet := func(ctx context.Context, endpoint string) (int, error) {
-			req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+endpoint+"?per_page=1", nil)
+			req, err := http.NewRequestWithContext(ctx, http.MethodGet, baseURL+endpoint+"?per_page=1", nil) // #nosec G704 -- shop_url валидируется normalizeShopHost (строгий host[:port]) при создании/обновлении
 			if err != nil {
 				return 0, err
 			}
 			req.Header.Set("Cache-Control", "no-cache, no-store")
 			req.SetBasicAuth(apiKeyID, password)
-			resp, err := httpClient.Do(req)
+			resp, err := httpClient.Do(req) // #nosec G704 -- см. выше: host строго валидирован
 			if err != nil {
 				return 0, err
 			}
@@ -225,6 +232,12 @@ func (h *ShopHandler) Update(w http.ResponseWriter, r *http.Request) {
 
 	if req.ShopURL == "" {
 		req.ShopURL = existing.ShopURL
+	}
+	// SSRF-guard: валидируем и то, что пришло из формы, и legacy-значение из БД.
+	req.ShopURL = normalizeShopHost(req.ShopURL)
+	if req.ShopURL == "" {
+		writeJSON(w, http.StatusBadRequest, ShopResponse{Error: "shop_url: неверный формат хоста (нужен myshop.myinsales.ru)"})
+		return
 	}
 	if req.APIKeyID == "" {
 		req.APIKeyID = existing.APIKeyID

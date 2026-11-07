@@ -3,7 +3,7 @@
 package appinstall
 
 import (
-	"crypto/md5"
+	"crypto/md5" // #nosec G501 -- MD5 обязателен протоколом InSales (password=MD5(token+secret_key))
 	"crypto/subtle"
 	"encoding/hex"
 	"strings"
@@ -12,7 +12,7 @@ import (
 // InstallPassword derives the per-shop app password from the one-time install token.
 // password = MD5(token + secret_key), hex lowercase (InSales protocol).
 func InstallPassword(token, secretKey string) string {
-	sum := md5.Sum([]byte(token + secretKey))
+	sum := md5.Sum([]byte(token + secretKey)) // #nosec G401 -- InSales-протокол, формат пароля не наш
 	return hex.EncodeToString(sum[:])
 }
 
@@ -21,7 +21,7 @@ func InstallPassword(token, secretKey string) string {
 // where password is the per-shop install password (not secret_key).
 // emailConfirmed is the raw query value ("true"/"false").
 func ValidateToken3(nonce, userEmail, userName, userID, emailConfirmed, password, token3 string) bool {
-	sum := md5.Sum([]byte(nonce + userEmail + userName + userID + emailConfirmed + password))
+	sum := md5.Sum([]byte(nonce + userEmail + userName + userID + emailConfirmed + password)) // #nosec G401 -- InSales-протокол (token3)
 	want := hex.EncodeToString(sum[:])
 	return subtle.ConstantTimeCompare([]byte(strings.ToLower(token3)), []byte(want)) == 1
 }
@@ -29,6 +29,6 @@ func ValidateToken3(nonce, userEmail, userName, userID, emailConfirmed, password
 // NoncePasswordMD5 is the short vendor callback token (?token=MD5(nonce+password)).
 // It carries no user identity — only proof of the InSales round-trip.
 func NoncePasswordMD5(nonce, password string) string {
-	sum := md5.Sum([]byte(nonce + password))
+	sum := md5.Sum([]byte(nonce + password)) // #nosec G401 -- InSales-протокол (vendor callback token)
 	return hex.EncodeToString(sum[:])
 }

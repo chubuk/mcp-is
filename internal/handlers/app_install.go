@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -363,7 +364,7 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			slog.Info("app autologin: pending link to existing user", "insales_id", insalesID, "user_id", existing.ID)
-			http.Redirect(w, r, "/login?pending_install="+insalesID, http.StatusFound)
+			http.Redirect(w, r, "/login?pending_install="+url.QueryEscape(insalesID), http.StatusFound) // #nosec G710 -- фиксированный путь /login; insalesID — query-escaped значение
 			return
 		}
 	}

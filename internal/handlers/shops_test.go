@@ -434,3 +434,36 @@ func TestShopCreate_Limit(t *testing.T) {
 		t.Errorf("third create at limit=2: got %d, want 403", w.Code)
 	}
 }
+
+// SSRF-guard: shop_url уходит в исходящие запросы — допускается только host[:port].
+func TestShopCreate_ShopURLValidation(t *testing.T) {
+	cases := []struct {
+		url  string
+		code int
+		want string // ожидаемый shop_url в ответе (для 201)
+	}{
+		{"user@evil.com", http.StatusBadRequest, ""},
+		{"myshop.myinsales.ru/steal?x=", http.StatusBadRequest, ""},
+		{"host name", http.StatusBadRequest, ""},
+		{"https://MyShop.MyInSales.ru/", http.StatusCreated, "myshop.myinsales.ru"},
+	}
+	for _, tc := range cases {
+		h, _ := setupShopHandler()
+		body, _ := json.Marshal(ShopRequest{Name: "t", ShopURL: tc.url, APIKeyID: "k", APIPassword: strPtr("p")})
+		req := httptest.NewRequest(http.MethodPost, "/api/shops", bytes.NewReader(body))
+		req = req.WithContext(withUserID(req.Context(), "user-1"))
+		w := httptest.NewRecorder()
+		h.Create(w, req)
+		if w.Code != tc.code {
+			t.Errorf("shop_url %q: expected %d, got %d: %s", tc.url, tc.code, w.Code, w.Body.String())
+			continue
+		}
+		if tc.code == http.StatusCreated {
+			var resp ShopResponse
+			json.NewDecoder(w.Body).Decode(&resp)
+			if resp.ShopURL != tc.want {
+				t.Errorf("shop_url %q: expected normalized %q, got %q", tc.url, tc.want, resp.ShopURL)
+			}
+		}
+	}
+}
