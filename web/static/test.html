@@ -127,6 +127,14 @@
     assert(typeof Shops.showForm === 'function', 'Shops.showForm is function');
     assert(typeof Shops.hideForm === 'function', 'Shops.hideForm is function');
 
+    const parsedLabeled = Shops.parseInsalesData('Название: Test\nДомен: https://myshop-dgi816.myinsales.ru/admin\nID ключа: mcpis\nПароль: secret123');
+    assert(parsedLabeled && parsedLabeled.api_key_id === 'mcpis', 'parseInsalesData labeled: api_key_id');
+    assert(parsedLabeled && parsedLabeled.api_password === 'secret123', 'parseInsalesData labeled: api_password');
+    assert(parsedLabeled && parsedLabeled.shop_url === 'myshop-dgi816.myinsales.ru', 'parseInsalesData labeled: domain без схемы и пути');
+    assert(parsedLabeled && parsedLabeled.name === 'Test', 'parseInsalesData labeled: name');
+    const parsedInSales = Shops.parseInsalesData('MyKey\nИдентификатор\nc06a4060\nПароль\n802a7fc1\nПример URL\nhttps://c06a:802a@shop.myinsales.ru/admin/products.json');
+    assert(parsedInSales && parsedInSales.api_key_id === 'c06a4060' && parsedInSales.shop_url === 'shop.myinsales.ru', 'parseInsalesData InSales-формат работает');
+
     // === AIKeys object tests ===
     assert(typeof AIKeys !== 'undefined', 'AIKeys object exists');
     assert(typeof AIKeys.render === 'function', 'AIKeys.render is function');

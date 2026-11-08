@@ -14,11 +14,16 @@ import (
 
 type contextKey string
 
+// Флаги магазина — ключи из auth: их проставляет APIKeyMiddleware в request ctx,
+// а читают toolFilter/диспетчер (core→auth импорт допустим, обратный — нет).
+var (
+	ShopReadOnlyKey     = auth.ShopReadOnlyKey
+	ShopDeleteDeniedKey = auth.ShopDeleteDeniedKey
+)
+
 const (
-	ShopReadOnlyKey     contextKey = "shop_read_only"
-	ShopDeleteDeniedKey contextKey = "shop_delete_denied"
-	ShopNameKey         contextKey = "shop_name"
-	ShopURLKey          contextKey = "shop_url"
+	ShopNameKey contextKey = "shop_name"
+	ShopURLKey  contextKey = "shop_url"
 )
 
 // ErrKeyNotBound: the AI key has no store binding (or its shop was deleted) —

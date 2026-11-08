@@ -30,6 +30,8 @@ const (
 	ShopURLKey           contextKey = "ai_shop_url"
 	CapabilitiesJSONKey  contextKey = "capabilities_json"   // raw JSON снимка прав магазина
 	CommandPolicyJSONKey contextKey = "command_policy_json" // raw JSON политики ИИ-ключа
+	ShopReadOnlyKey      contextKey = "shop_read_only"      // is_read_only магазина (для toolFilter/диспетчера)
+	ShopDeleteDeniedKey  contextKey = "shop_delete_denied"  // is_delete_denied магазина
 )
 
 var (
@@ -205,14 +207,15 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 			keyHash := HashAPIKey(apiKey)
 
 			var userID, keyID, keyName, shopID, connName, shopName, shopURL, capsJSON, policyJSON string
-			var aiKeyPDN bool
+			var aiKeyPDN, shopReadOnly, shopDeleteDenied bool
 			err := db.QueryRow(r.Context(),
 				`SELECT k.id, k.user_id, COALESCE(k.name,''), k.pdn_enabled, COALESCE(k.shop_id::text,''),
 				        COALESCE(k.connection_name,''), COALESCE(s.name,''), COALESCE(s.shop_url,''),
-				        COALESCE(s.capabilities,''), COALESCE(k.command_policy,'')
+				        COALESCE(s.capabilities,''), COALESCE(k.command_policy,''),
+				        COALESCE(s.is_read_only,false), COALESCE(s.is_delete_denied,false)
 				 FROM ai_keys k LEFT JOIN shops s ON s.id = k.shop_id
 				 WHERE k.key_hash = $1`, keyHash,
-			).Scan(&keyID, &userID, &keyName, &aiKeyPDN, &shopID, &connName, &shopName, &shopURL, &capsJSON, &policyJSON)
+			).Scan(&keyID, &userID, &keyName, &aiKeyPDN, &shopID, &connName, &shopName, &shopURL, &capsJSON, &policyJSON, &shopReadOnly, &shopDeleteDenied)
 
 			if err != nil {
 				slog.Warn("invalid api key", "hash", keyHash[:8]+"...")
@@ -237,6 +240,8 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 			ctx = context.WithValue(ctx, ShopURLKey, shopURL)
 			ctx = context.WithValue(ctx, CapabilitiesJSONKey, capsJSON)
 			ctx = context.WithValue(ctx, CommandPolicyJSONKey, policyJSON)
+			ctx = context.WithValue(ctx, ShopReadOnlyKey, shopReadOnly)
+			ctx = context.WithValue(ctx, ShopDeleteDeniedKey, shopDeleteDenied)
 			// App-installed keys are bound to a shop; unbound legacy keys fail closed (ErrKeyNotBound).
 			if shopID != "" {
 				ctx = context.WithValue(ctx, ShopIDKey, shopID)

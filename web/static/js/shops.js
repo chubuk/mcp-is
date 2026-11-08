@@ -243,6 +243,18 @@ const Shops = {
             const line = lines[i];
             const next = lines[i + 1];
 
+            // Подписанный формат вручную («Домен:», «ID ключа:», «Пароль:», «Название:»).
+            const kv = line.match(/^(Название|Домен|ID\s+ключа|Идентификатор|Пароль)\s*:\s*(.+)$/i);
+            if (kv) {
+                const k = kv[1].toLowerCase();
+                const v = kv[2].trim();
+                if (k === 'название') result.name = v;
+                else if (k === 'домен') result.shop_url = v.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+                else if (k === 'пароль') result.api_password = v;
+                else result.api_key_id = v;
+                continue;
+            }
+
             if (line === 'Идентификатор' && next) {
                 result.api_key_id = next;
             } else if (line === 'Пароль' && next) {
