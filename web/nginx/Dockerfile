@@ -1,6 +1,6 @@
-FROM nginx:alpine
+FROM nginx:1.29-alpine
 
-RUN apk --no-cache add openssl envsubst certbot
+RUN apk --no-cache upgrade && apk --no-cache add openssl envsubst certbot
 
 COPY nginx.conf /etc/nginx/nginx.conf
 COPY snippets/security-headers.conf /etc/nginx/snippets/security-headers.conf

@@ -33,12 +33,13 @@ services:
     image: postgres:16-alpine
     container_name: mcp_is_db
     restart: always
+    command: ["postgres", "-c", "log_min_duration_statement=200ms"]
     networks:
       - internal
     environment:
       POSTGRES_DB: mcp_is
       POSTGRES_USER: admin
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
     volumes:
       - db_data:/var/lib/postgresql/data
       - ./internal/storage/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
@@ -66,7 +67,7 @@ services:
     env_file:
       - .env
     environment:
-      DB_URL: postgres://admin:${DB_PASSWORD:-password}@db:5432/mcp_is?sslmode=disable
+      DB_URL: postgres://admin:${DB_PASSWORD:?DB_PASSWORD must be set in .env}@db:5432/mcp_is?sslmode=disable
       SERVER_PORT: "8080"
       # docker CLI ходит в dockerproxy вместо прямого /var/run/docker.sock
       DOCKER_HOST: tcp://dockerproxy:2375
