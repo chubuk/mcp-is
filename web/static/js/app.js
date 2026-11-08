@@ -257,11 +257,11 @@ const Settings = {
                 <div class="card__title">Профиль</div>
                 <div class="form-group">
                     <label>Никнейм</label>
-                    <input type="text" value="${nickname}" disabled>
+                    <input type="text" value="${esc(nickname)}" disabled>
                 </div>
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" value="${email}" disabled>
+                    <input type="email" value="${esc(email)}" disabled>
                     <small style="color:#707070">Смена e-mail — только через администратора</small>
                 </div>
             </div>

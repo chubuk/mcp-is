@@ -13,7 +13,7 @@ const Dashboard = {
             <div class="page-header">
                 <div>
                     <h1>Панель управления</h1>
-                    <p class="desc">Добро пожаловать, ${nickname}!</p>
+                    <p class="desc">Добро пожаловать, ${esc(nickname)}!</p>
                 </div>
             </div>
             ${App.billingBanner(shops)}

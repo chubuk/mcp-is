@@ -27,13 +27,13 @@ const Admin = {
 
                 rows += `
                     <tr>
-                        <td data-label="Никнейм">${u.nickname}</td>
-                        <td data-label="Email">${u.email || '—'}</td>
+                        <td data-label="Никнейм">${esc(u.nickname)}</td>
+                        <td data-label="Email">${esc(u.email || '—')}</td>
                         <td data-label="Роль">${roleBadge}</td>
                         <td data-label="Статус">${statusBadge}</td>
-                        <td data-label="Создан">${u.created_at ? u.created_at.split('T')[0] : '—'}</td>
+                        <td data-label="Создан">${esc(u.created_at ? u.created_at.split('T')[0] : '—')}</td>
                         <td data-label="">
-                            <button class="btn btn--ghost btn--sm" onclick="App.navigate('/admin/users/${u.id}')">👁️ Подробнее</button>
+                            <button class="btn btn--ghost btn--sm" onclick="App.navigate('/admin/users/${esc(u.id)}')">👁️ Подробнее</button>
                         </td>
                     </tr>`;
             });
@@ -83,7 +83,7 @@ const Admin = {
             </div>
             <div class="search-box">
                 <input type="text" id="user-search" placeholder="Поиск по никнейму, email, телефону, ФИО..." 
-                       value="${this._usersQuery}" oninput="Admin.onUserSearch(this.value)">
+                       value="${esc(this._usersQuery)}" oninput="Admin.onUserSearch(this.value)">
             </div>
             <div class="card">
                 <div class="table-wrap">
@@ -142,29 +142,29 @@ const Admin = {
         let actions = '';
         if (!isSuperAdmin && !isMe) {
             actions += `
-                <button class="btn btn--danger btn--sm" onclick="Admin.deleteUser('${u.id}')">🗑️ Удалить</button>`;
+                <button class="btn btn--danger btn--sm" onclick="Admin.deleteUser('${esc(u.id)}')">🗑️ Удалить</button>`;
             if (myRole === 'super_admin' || myRole === 'admin') {
                 const canImpersonate = (myRole === 'super_admin') || (myRole === 'admin' && u.role === 'user');
                 if (canImpersonate) {
                     actions += `
-                        <button class="btn btn--ghost btn--sm" onclick="Admin.impersonate('${u.id}', '${u.nickname}')">
-                            👤 Войти как ${u.nickname}
+                        <button class="btn btn--ghost btn--sm" onclick="Admin.impersonate('${esc(u.id)}', '${esc(u.nickname)}')">
+                            👤 Войти как ${esc(u.nickname)}
                         </button>`;
                 }
             }
             if (myRole === 'super_admin') {
                 const newRole = u.role === 'admin' ? 'user' : 'admin';
                 actions += `
-                    <button class="btn btn--ghost btn--sm" onclick="Admin.changeRole('${u.id}', '${newRole}')">
+                    <button class="btn btn--ghost btn--sm" onclick="Admin.changeRole('${esc(u.id)}', '${newRole}')">
                         ${u.role === 'admin' ? '⬇️ Понизить' : '⬆️ Повысить'}
                     </button>`;
             }
             if (u.is_active) {
                 actions += `
-                    <button class="btn btn--ghost btn--sm" onclick="Admin.blockUser('${u.id}')">🔒 Заблокировать</button>`;
+                    <button class="btn btn--ghost btn--sm" onclick="Admin.blockUser('${esc(u.id)}')">🔒 Заблокировать</button>`;
             } else {
                 actions += `
-                    <button class="btn btn--ghost btn--sm" onclick="Admin.unblockUser('${u.id}')">🔓 Разблокировать</button>`;
+                    <button class="btn btn--ghost btn--sm" onclick="Admin.unblockUser('${esc(u.id)}')">🔓 Разблокировать</button>`;
             }
         } else if (isMe) {
             actions = '<span style="color:#707070;font-size:13px">Вы не можете изменить свой профиль через админку</span>';
@@ -175,7 +175,7 @@ const Admin = {
         return `
             <div class="page-header">
                 <div>
-                    <h1>${u.nickname}</h1>
+                    <h1>${esc(u.nickname)}</h1>
                     <p class="desc">Просмотр пользователя</p>
                 </div>
                 <a href="/admin/users" class="btn btn--ghost">← Назад</a>
@@ -184,15 +184,15 @@ const Admin = {
                 <div class="card__title">Основная информация</div>
                 <div class="table-wrap">
                 <table class="table">
-                    <tr><td><strong>ID</strong></td><td><code>${u.id}</code></td></tr>
-                    <tr><td><strong>Никнейм</strong></td><td>${u.nickname}</td></tr>
-                    <tr><td><strong>Email</strong></td><td>${u.email || '—'}</td></tr>
-                    <tr><td><strong>Телефон</strong></td><td>${u.phone || '—'}</td></tr>
-                    <tr><td><strong>Имя</strong></td><td>${u.first_name || '—'}</td></tr>
-                    <tr><td><strong>Фамилия</strong></td><td>${u.last_name || '—'}</td></tr>
-                    <tr><td><strong>Роль</strong></td><td>${u.role}</td></tr>
+                    <tr><td><strong>ID</strong></td><td><code>${esc(u.id)}</code></td></tr>
+                    <tr><td><strong>Никнейм</strong></td><td>${esc(u.nickname)}</td></tr>
+                    <tr><td><strong>Email</strong></td><td>${esc(u.email || '—')}</td></tr>
+                    <tr><td><strong>Телефон</strong></td><td>${esc(u.phone || '—')}</td></tr>
+                    <tr><td><strong>Имя</strong></td><td>${esc(u.first_name || '—')}</td></tr>
+                    <tr><td><strong>Фамилия</strong></td><td>${esc(u.last_name || '—')}</td></tr>
+                    <tr><td><strong>Роль</strong></td><td>${esc(u.role)}</td></tr>
                     <tr><td><strong>Статус</strong></td><td>${u.is_active ? 'Активен' : 'Заблокирован'}</td></tr>
-                    <tr><td><strong>Создан</strong></td><td>${u.created_at || '—'}</td></tr>
+                    <tr><td><strong>Создан</strong></td><td>${esc(u.created_at || '—')}</td></tr>
                 </table>
                 </div>
             </div>
@@ -327,11 +327,11 @@ const Admin = {
         const domainField = isSuperAdmin
             ? `<div class="form-group">
                 <label>Доменное имя</label>
-                <input type="text" id="srv-domain" value="${s.domain || 'localhost'}" placeholder="example.com">
+                <input type="text" id="srv-domain" value="${esc(s.domain || 'localhost')}" placeholder="example.com">
                </div>`
             : `<div class="form-group">
                 <label>Доменное имя</label>
-                <input type="text" value="${s.domain || 'localhost'}" disabled>
+                <input type="text" value="${esc(s.domain || 'localhost')}" disabled>
                </div>`;
 
         const httpsField = isSuperAdmin
@@ -360,7 +360,7 @@ const Admin = {
                 ${httpsField}
                 <div class="form-group">
                     <label>Email для Let's Encrypt</label>
-                    <input type="email" id="srv-email" value="${s.letsencrypt_email || ''}" placeholder="admin@example.com" ${!isSuperAdmin ? 'disabled' : ''}>
+                    <input type="email" id="srv-email" value="${esc(s.letsencrypt_email || '')}" placeholder="admin@example.com" ${!isSuperAdmin ? 'disabled' : ''}>
                 </div>
                 <div class="form-group">
                     <label>
@@ -369,11 +369,11 @@ const Admin = {
                 </div>
                 <div class="form-group">
                     <label>Обновлять за (дней до окончания)</label>
-                    <input type="number" id="srv-renew-days" value="${s.renew_days_before || 30}" min="14" max="60" ${!isSuperAdmin ? 'disabled' : ''}>
+                    <input type="number" id="srv-renew-days" value="${esc(s.renew_days_before || 30)}" min="14" max="60" ${!isSuperAdmin ? 'disabled' : ''}>
                 </div>
                 <div class="form-group">
                     <label>Стоимость подписки, ₽/мес (0 = бесплатно)</label>
-                    <input type="number" id="srv-billing-monthly" value="${s.billing_monthly != null ? s.billing_monthly : 0}" min="0" ${!isSuperAdmin ? 'disabled' : ''}>
+                    <input type="number" id="srv-billing-monthly" value="${esc(s.billing_monthly != null ? s.billing_monthly : 0)}" min="0" ${!isSuperAdmin ? 'disabled' : ''}>
                     <small style="color:#707070">Синхронизируйте с полем «Стоимость» в карточке приложения InSales. Меняет тариф для новых списаний — уже созданный RecurringApplicationCharge не пересоздаётся.</small>
                 </div>
                 ${isSuperAdmin ? '<button class="btn btn--primary" onclick="Admin.saveServer()">💾 Сохранить</button>' : ''}
@@ -381,13 +381,13 @@ const Admin = {
 
             <div class="card">
                 <div class="card__title">Статус сертификата</div>
-                <div class="alert ${statusClass}">${statusText}</div>
+                <div class="alert ${statusClass}">${esc(statusText)}</div>
                 <div class="table-wrap">
                 <table class="table">
-                    <tr><td><strong>Тип</strong></td><td>${s.cert_issuer || 'Self-signed'}</td></tr>
-                    <tr><td><strong>Домен</strong></td><td>${s.domain || 'localhost'}</td></tr>
+                    <tr><td><strong>Тип</strong></td><td>${esc(s.cert_issuer || 'Self-signed')}</td></tr>
+                    <tr><td><strong>Домен</strong></td><td>${esc(s.domain || 'localhost')}</td></tr>
                     <tr><td><strong>Истекает</strong></td><td>${s.cert_expires_at ? new Date(s.cert_expires_at).toLocaleDateString('ru-RU') : '—'}</td></tr>
-                    ${s.last_renew_error ? `<tr><td><strong>Ошибка</strong></td><td style="color:#e74c3c">${s.last_renew_error.substring(0, 100)}</td></tr>` : ''}
+                    ${s.last_renew_error ? `<tr><td><strong>Ошибка</strong></td><td style="color:#e74c3c">${esc(s.last_renew_error.substring(0, 100))}</td></tr>` : ''}
                     ${s.retry_count > 0 ? `<tr><td><strong>Попыток</strong></td><td>${s.retry_count} / 10</td></tr>` : ''}
                 </table>
                 </div>
@@ -526,10 +526,10 @@ const Admin = {
                 logRows += `
                     <tr>
                         <td data-label="Время">${e.timestamp ? new Date(e.timestamp).toLocaleString('ru-RU') : '—'}</td>
-                        <td data-label="Команда"><code>${e.tool}</code></td>
-                        <td data-label="Данные">${(e.data_types || []).join(', ')}</td>
-                        <td data-label="Юрисдикция">${e.jurisdiction || '—'}</td>
-                        <td data-label="LLM">${e.llm_provider || '—'}</td>
+                        <td data-label="Команда"><code>${esc(e.tool)}</code></td>
+                        <td data-label="Данные">${esc((e.data_types || []).join(', '))}</td>
+                        <td data-label="Юрисдикция">${esc(e.jurisdiction || '—')}</td>
+                        <td data-label="LLM">${esc(e.llm_provider || '—')}</td>
                         <td data-label="Маска">${e.masked ? '<span style="color:#27ae60">Да</span>' : 'Нет'}</td>
                     </tr>`;
             });
@@ -700,11 +700,11 @@ const Admin = {
                 logRows += `
                     <tr>
                         <td data-label="Время">${time}</td>
-                        <td data-label="Статус"><span style="${statusClass}">${e.status}</span></td>
+                        <td data-label="Статус"><span style="${statusClass}">${esc(e.status)}</span></td>
                         <td data-label="Размер">${size}</td>
-                        <td data-label="Нагрузка">${e.load_5m || '—'}</td>
+                        <td data-label="Нагрузка">${esc(e.load_5m || '—')}</td>
                         <td data-label="Длительность">${e.duration_ms ? e.duration_ms + 'мс' : '—'}</td>
-                        <td data-label="Ошибка">${e.error_msg || '—'}</td>
+                        <td data-label="Ошибка">${esc(e.error_msg || '—')}</td>
                     </tr>`;
             });
         }
@@ -721,9 +721,9 @@ const Admin = {
                 incidentRows += `
                     <tr>
                         <td data-label="Время">${time}</td>
-                        <td data-label="Тип">${i.type}</td>
-                        <td data-label="Серьёзность"><span style="${sevClass}">${i.severity}</span></td>
-                        <td data-label="Сообщение">${i.message}</td>
+                        <td data-label="Тип">${esc(i.type)}</td>
+                        <td data-label="Серьёзность"><span style="${sevClass}">${esc(i.severity)}</span></td>
+                        <td data-label="Сообщение">${esc(i.message)}</td>
                         <td data-label="">${i.resolved ? '✅' : ''}</td>
                     </tr>`;
             });
@@ -776,16 +776,16 @@ const Admin = {
                     <thead><tr><th>Файл</th><th>Дата</th><th>Тип</th><th>Размер</th><th>Контрольная сумма</th><th></th></tr></thead>
                     <tbody>
                     ${(!filesData.files || filesData.files.length === 0) ? '<tr><td colspan="6" class="empty">Файлов нет</td></tr>' : filesData.files.map(f => `
-                        <tr data-file="${f.name}">
-                            <td data-label="Файл"><code>${f.name}</code></td>
+                        <tr data-file="${esc(f.name)}">
+                            <td data-label="Файл"><code>${esc(f.name)}</code></td>
                             <td data-label="Дата">${new Date(f.mod_time).toLocaleString('ru-RU')}</td>
                             <td data-label="Тип">${f.kind === 'tar' ? 'снэпшот' : 'SQL-дамп'}</td>
                             <td data-label="Размер">${(f.size_bytes / 1024 / 1024).toFixed(1)} MB</td>
                             <td data-label="Контрольная сумма">${f.has_sha256 ? '<span style="color:#27ae60">✓ есть</span>' : '<span style="color:#999">—</span>'}</td>
                             <td data-label="">
-                                <button class="btn btn--ghost btn--sm" onclick="Admin.verifyBackupFile('${f.name}')">🔍 Проверить</button>
-                                ${Admin.RESTORE_UI_ENABLED ? `<button class="btn btn--ghost btn--sm" style="color:#e74c3c" onclick="Admin.confirmRestore('${f.name}')">⚠️ Восстановить</button>` : ''}
-                                <button class="btn btn--ghost btn--sm" onclick="Admin.copyRestoreCommand('${f.name}')">📋 Копировать команду</button>
+                                <button class="btn btn--ghost btn--sm" onclick="Admin.verifyBackupFile('${esc(f.name)}')">🔍 Проверить</button>
+                                ${Admin.RESTORE_UI_ENABLED ? `<button class="btn btn--ghost btn--sm" style="color:#e74c3c" onclick="Admin.confirmRestore('${esc(f.name)}')">⚠️ Восстановить</button>` : ''}
+                                <button class="btn btn--ghost btn--sm" onclick="Admin.copyRestoreCommand('${esc(f.name)}')">📋 Копировать команду</button>
                             </td>
                         </tr>`).join('')}
                     </tbody>
@@ -814,11 +814,11 @@ const Admin = {
                     </div>
                     <div class="form-group">
                         <label>Хранение (дней)</label>
-                        <input type="number" id="backup-retention" class="input" value="${settings.retention_days || 14}" min="1" max="365">
+                        <input type="number" id="backup-retention" class="input" value="${esc(settings.retention_days || 14)}" min="1" max="365">
                     </div>
                     <div class="form-group">
                         <label>Макс. нагрузка CPU (%)</label>
-                        <input type="number" id="backup-load" class="input" value="${settings.max_load_pct || 50}" min="10" max="100">
+                        <input type="number" id="backup-load" class="input" value="${esc(settings.max_load_pct || 50)}" min="10" max="100">
                     </div>
                 </div>
                 <div style="margin-top:16px;display:flex;gap:8px">

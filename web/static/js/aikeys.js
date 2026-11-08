@@ -370,15 +370,15 @@ const AIKeys = {
                     <div class="card__desc">Скопируйте данные СЕЙЧАС. Ключ больше не будет отображаться. Потеряли — перевыпустите в редакторе ключа.</div>
                     <div style="margin-bottom:12px">
                         <label style="font-weight:600;font-size:13px;color:#555">🔑 API Key</label>
-                        <div class="key-display">${keyToShow}</div>
+                        <div class="key-display">${esc(keyToShow)}</div>
                     </div>
                     <div style="margin-bottom:12px">
                         <label style="font-weight:600;font-size:13px;color:#555">🌐 MCP Server URL</label>
-                        <div class="key-display">${mcpUrl}</div>
+                        <div class="key-display">${esc(mcpUrl)}</div>
                     </div>
                     <div style="margin-bottom:12px">
                         <label style="font-weight:600;font-size:13px;color:#555">📛 Имя соединения (алиас)</label>
-                        <div class="key-display">${alias}</div>
+                        <div class="key-display">${esc(alias)}</div>
                     </div>
                     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px">
                         <button class="btn btn--primary btn--sm" onclick="AIKeys.copyKey()">📋 Копировать ключ</button>
@@ -423,19 +423,19 @@ const AIKeys = {
                     ? '<button class="btn btn--ghost btn--sm" style="color:#27ae60;border-color:#27ae60" onclick="AIKeys.togglePDN(\'' + k.id + '\', false)">✅ ПДн</button>'
                     : '<button class="btn btn--ghost btn--sm" onclick="AIKeys.togglePDN(\'' + k.id + '\', true)">☐ ПДн</button>';
                 const shopCell = k.shop_id
-                    ? `${k.shop_name || k.shop_id}<br><code style="font-size:11px;color:#707070">${k.connection_name || ''}</code>`
+                    ? `${esc(k.shop_name || k.shop_id)}<br><code style="font-size:11px;color:#707070">${esc(k.connection_name || '')}</code>`
                     : '<span style="color:#c0392b;font-weight:600">не привязан</span>';
                 rows += `
                     <tr>
-                        <td data-label="Название">${k.name || 'Без названия'}</td>
+                        <td data-label="Название">${esc(k.name || 'Без названия')}</td>
                         <td data-label="Магазин">${shopCell}</td>
-                        <td data-label="Хэш"><code>${k.key_hash.substring(0, 16)}...</code></td>
+                        <td data-label="Хэш"><code>${esc(k.key_hash.substring(0, 16))}...</code></td>
                         <td data-label="ПДн">${pdnBtn}</td>
-                        <td data-label="Создан">${k.created_at ? k.created_at.split('T')[0] : '—'}</td>
+                        <td data-label="Создан">${esc(k.created_at ? k.created_at.split('T')[0] : '—')}</td>
                         <td data-label="">
                             <div style="display:flex;gap:4px;flex-wrap:nowrap">
-                                <button class="btn btn--ghost btn--sm" onclick="AIKeys.edit('${k.id}')">✏️ Ред.</button>
-                                <button class="btn btn--danger btn--sm" onclick="AIKeys.delete('${k.id}')">🗑️ Отозвать</button>
+                                <button class="btn btn--ghost btn--sm" onclick="AIKeys.edit('${esc(k.id)}')">✏️ Ред.</button>
+                                <button class="btn btn--danger btn--sm" onclick="AIKeys.delete('${esc(k.id)}')">🗑️ Отозвать</button>
                             </div>
                         </td>
                     </tr>`;

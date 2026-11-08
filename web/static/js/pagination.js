@@ -23,6 +23,10 @@ function showPage(renderFn, page, perPage) {
 // handlerPath — строка вида "Admin.goUsersPage": inline onclick видит только window,
 // а обработчики живут в объектах. Имя функции (fn.name) недостаточно — у AIKeys/Shop оба goPage.
 function renderPagination(page, total, perPage, handlerPath) {
+    // числовая коэрция: значения попадают в onclick-контекст без кавычек, esc() там не поможет
+    page = parseInt(page) || 1;
+    total = parseInt(total) || 0;
+    perPage = parseInt(perPage) || 20;
     const totalPages = Math.ceil(total / perPage);
     if (totalPages <= 1 && total <= perPage) return '';
 

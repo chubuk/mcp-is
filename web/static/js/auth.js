@@ -442,7 +442,7 @@ const Auth = {
                     <p class="subtitle">Введите новый пароль</p>
                     <div id="alert"></div>
                     <form id="reset-form">
-                        <input type="hidden" id="reset-token" value="${token}">
+                        <input type="hidden" id="reset-token" value="${esc(token)}">
                         <div class="form-group">
                             <label>Новый пароль</label>
                             <input type="password" id="reset-password" required minlength="6" autocomplete="new-password">

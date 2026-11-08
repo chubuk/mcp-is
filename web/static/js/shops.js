@@ -23,18 +23,18 @@ const Shops = {
                 const pdnBadge = s.pdn_enabled
                     ? '<span style="color:#27ae60;font-weight:600">ПДн ✅</span>'
                     : '<span style="color:#707070">ПДн —</span>';
-                const jurBadge = isAdmin && s.jurisdiction ? `<br><small style="color:#707070">Юрисдикция: ${s.jurisdiction}</small>` : '';
+                const jurBadge = isAdmin && s.jurisdiction ? `<br><small style="color:#707070">Юрисдикция: ${esc(s.jurisdiction)}</small>` : '';
                 rows += `
                     <tr>
-                        <td data-label="Магазин"><strong>${s.name || 'Без названия'}</strong><br><small style="color:#707070">${s.shop_url}</small>${jurBadge}</td>
-                        <td data-label="API Key"><code>${s.api_key_id.substring(0, 12)}...</code></td>
+                        <td data-label="Магазин"><strong>${esc(s.name || 'Без названия')}</strong><br><small style="color:#707070">${esc(s.shop_url)}</small>${jurBadge}</td>
+                        <td data-label="API Key"><code>${esc(s.api_key_id.substring(0, 12))}...</code></td>
                         <td data-label="По умолчанию">${s.is_default ? 'Да' : 'Нет'}</td>
                         <td data-label="Режим">${roBadge}<br>${pdnBadge}</td>
                         <td data-label="">
                             <div style="display:flex;gap:4px;flex-wrap:nowrap">
-                                <button class="btn btn--ghost btn--sm" onclick="Shops.edit('${s.id}')">✏️ Ред.</button>
-                                <button class="btn btn--ghost btn--sm" onclick="Shops.checkAccess('${s.id}')">🔍 Проверить доступы</button>
-                                <button class="btn btn--danger btn--sm" onclick="Shops.delete('${s.id}')">🗑️ Удалить</button>
+                                <button class="btn btn--ghost btn--sm" onclick="Shops.edit('${esc(s.id)}')">✏️ Ред.</button>
+                                <button class="btn btn--ghost btn--sm" onclick="Shops.checkAccess('${esc(s.id)}')">🔍 Проверить доступы</button>
+                                <button class="btn btn--danger btn--sm" onclick="Shops.delete('${esc(s.id)}')">🗑️ Удалить</button>
                             </div>
                         </td>
                     </tr>`;
