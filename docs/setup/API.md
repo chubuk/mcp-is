@@ -840,7 +840,7 @@ Authorization: Bearer <AI_KEY>
     "capabilities": {"tools": {"listChanged": true}},
     "serverInfo": {
       "name": "mcp-is",
-      "version": "0.11.1"
+      "version": "0.12.0"
     },
     "instructions": "Discovery: default tools/list is a core surface; use search_insales_tools → call_insales_tool for the full catalog. MCP_TOOLS_MODE=all lists everything."
   }
