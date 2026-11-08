@@ -215,9 +215,15 @@ HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле 
     "domain": "myshop.myinsales.ru",
     "email": "admin@myshop.ru",
     "currency": "RUB"
+  },
+  "settings": {
+    "product_fields": {"title": "Дополнительные поля: Товары", "items": [{"id": "1", "title": "Состав", "handle": "sostav"}]},
+    "properties": {"title": "Параметры товаров", "items": [{"id": "2", "title": "Бренд", "handle": "brand"}]}
   }
 }
 ```
+
+`settings` — текущий снимок «Настройки товаров» (8 групп: доп. поля товаров/вариантов/категорий, параметры, свойства вариантов, группы категорий, типы цен, опции).
 
 **Ответ (200) — ошибка:**
 ```json
@@ -238,11 +244,16 @@ HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле 
   "shop_url": "myshop.myinsales.ru",
   "api_key_id": "идентификатор_ключа",
   "api_password": "пароль_ключа",
-  "is_default": true
+  "is_default": true,
+  "is_read_only": false,
+  "is_delete_denied": false,
+  "pdn_enabled": false
 }
 ```
 
 **Обязательные поля:** `name`, `shop_url`, `api_key_id`, `api_password`
+
+**Флаги доступа:** `is_read_only` — только чтение (запись и удаление заблокированы); `is_delete_denied` — запрет удаления (`delete_*`/`remove_*`/`decline_*` скрыты, создание и правка работают); при `is_read_only` удаление блокируется и без него. `pdn_enabled` — принудительная защита ПДн для магазина.
 
 `shop_url` — только хост вида `myshop.myinsales.ru` (допускается порт `:NNNN`; схема `https://` и завершающий `/` отбрасываются). Путь, query, `@` и пробелы — **400**. Такой же формат требуется при `PUT /api/shops/:id`.
 
@@ -260,7 +271,11 @@ HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле 
     {"domain": "orders", "status": "denied", "http_status": 403}
   ],
   "allowed_tools": ["list_products", "get_product", "..."],
-  "count": 282
+  "count": 282,
+  "settings": [
+    {"title": "Дополнительные поля: Товары", "total": 2, "added": [{"id": "1", "title": "Противопоказания"}], "removed": []},
+    {"title": "Параметры товаров", "total": 33}
+  ]
 }
 ```
 
@@ -268,6 +283,7 @@ HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле 
 - 25 доменов InSales пробируются параллельно (4 воркера); `allowed`/`denied`/`unknown`
 - denied-домены скрывают свои инструменты из `tools/list` (toolFilter)
 - снимок TTL 24ч, авто-re-probe не чаще раза в час; смена кредов сбрасывает снимок
+- `settings` — дифф «Настройки товаров» с прошлой проверки (`added`/`removed` по каждой группе); после ответа новый снимок сохраняется в `shops.settings_snapshot` (первый прогон — всё в `added`)
 
 #### GET /api/shops
 
@@ -289,6 +305,7 @@ HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле 
       "api_key_id": "key123",
       "is_default": true,
       "is_read_only": false,
+      "is_delete_denied": false,
       "capabilities": "{\"credentials_ok\":true,\"domains\":{\"orders\":{\"status\":\"denied\",\"since\":\"2026-11-01T10:00:00Z\",\"source\":\"probe\"}}}",
       "created_at": "2026-01-01T00:00:00Z"
     }

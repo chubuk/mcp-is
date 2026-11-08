@@ -41,9 +41,12 @@ curl -X POST http://localhost:8080/api/shops \
     "shop_url": "myshop.myinsales.ru",
     "api_key_id": "ваш_ключ",
     "api_password": "ваш_пароль",
-    "is_default": true
+    "is_default": true,
+    "is_delete_denied": false
   }'
 ```
+
+Флаги: `is_read_only` — только чтение; `is_delete_denied` — запрет удаления (create/update работают); `pdn_enabled` — защита ПДн. В Web UI форма добавления умеет «Быстрое заполнение» — вставьте ключ из InSales (строки «Идентификатор/Пароль/Пример URL») либо подписанный блок («Домен:/ID ключа:/Пароль:»).
 
 ### 4. Генерация AI-ключа
 

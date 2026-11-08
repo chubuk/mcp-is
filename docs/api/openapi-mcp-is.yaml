@@ -365,7 +365,7 @@ paths:
                   type: string
       responses:
         '200':
-          description: Соединение установлено
+          description: Соединение установлено (shop + settings — текущий снимок «Настройки товаров», 8 групп)
         '400':
           description: Ошибка соединения
 
@@ -411,7 +411,7 @@ paths:
         - $ref: '#/components/parameters/ShopID'
       responses:
         '200':
-          description: Снимок прав обновлён (domains, allowed_tools, credentials_ok)
+          description: Снимок прав обновлён (domains, allowed_tools, credentials_ok, settings — дифф «Настройки товаров» added/removed по группам)
 
   /api/tool-meta:
     get:
@@ -1177,6 +1177,14 @@ components:
         is_read_only:
           type: boolean
           default: false
+        is_delete_denied:
+          type: boolean
+          default: false
+          description: Запрет удаления — delete_/remove_/decline_* скрыты и отклоняются; создание и правка работают
+        pdn_enabled:
+          type: boolean
+          default: false
+          description: Принудительная защита ПДн (152-ФЗ) для магазина
 
     UpdateShopRequest:
       type: object
@@ -1191,6 +1199,10 @@ components:
           type: string
         is_read_only:
           type: boolean
+        is_delete_denied:
+          type: boolean
+        pdn_enabled:
+          type: boolean
 
     Shop:
       type: object
@@ -1204,6 +1216,10 @@ components:
         is_default:
           type: boolean
         is_read_only:
+          type: boolean
+        is_delete_denied:
+          type: boolean
+        pdn_enabled:
           type: boolean
         created_at:
           type: string

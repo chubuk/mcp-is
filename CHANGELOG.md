@@ -9,6 +9,7 @@
 - Удалены мёртвые service-обёртки `Create/Update/DeleteMetaField`, `ListMetaFields`, `ListCurrencies` (вызывающих не было; клиентские методы и пайплайны не тронуты).
 
 ### Безопасность
+- **esc-свип HTML-билдеров веб-панели**: все данные из API/форм (имена, email, id, ошибки, URL) в шаблонах `web/static/js` проходят через `esc()` (текст, атрибуты, onclick-строки); числа пагинации коэрцируются (onclick-контекст без кавычек). Чинит DOM-XSS поверх учёных данных.
 - **Hardening-бэклог (critic-ревью 2026-11-03)**: пины базовых образов (`alpine:3.22`, `nginx:1.29-alpine`), `apk upgrade` в обоих образах, `POSTGRES_PASSWORD` без тихого дефолта (`${DB_PASSWORD:?...}`), HSTS без `preload`, security-headers на 429-локации `@mcp_rate_limited`, deny-regex ловит `.bak~`/`.bak.N`/`.old`/`.orig`, PG `log_min_duration_statement=200ms`, `golang.org/x/crypto` v0.55.0 (CVE-2026-56854). Trivy по образам: 0 HIGH/CRITICAL.
 
 ## [0.12.0] — 2026-11-08 (Настройки товаров, Запрет удаления, фикс сломанных тулов)

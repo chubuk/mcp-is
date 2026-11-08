@@ -48,8 +48,8 @@ cp .env.example .env
 Отредактируйте `.env`:
 
 ```env
-# База данных (пароль можно оставить по умолчанию)
-DB_PASSWORD=password
+# База данных (обязателен — compose не стартует без DB_PASSWORD)
+DB_PASSWORD=CHANGE_ME
 
 # Сервер
 SERVER_PORT=8080
