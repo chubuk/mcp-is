@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Добавлено
+- **PDN-настройки оживлены**: `shops.pdn_enabled` принудительно включает защиту ПДн (ранее галочка не влияла); `pdn_mask_pii` реально управляет маскировкой (по умолчанию включена, раньше маскировка игнорировала настройку); в `pdn_access_log` появился писатель — статистика «Персональные данные» заполняется (гейт `pdn_log_access`, по умолчанию вкл).
+
+### Изменено
+- Удалены мёртвые service-обёртки `Create/Update/DeleteMetaField`, `ListMetaFields`, `ListCurrencies` (вызывающих не было; клиентские методы и пайплайны не тронуты).
+
 ### Безопасность
 - **Hardening-бэклог (critic-ревью 2026-11-03)**: пины базовых образов (`alpine:3.22`, `nginx:1.29-alpine`), `apk upgrade` в обоих образах, `POSTGRES_PASSWORD` без тихого дефолта (`${DB_PASSWORD:?...}`), HSTS без `preload`, security-headers на 429-локации `@mcp_rate_limited`, deny-regex ловит `.bak~`/`.bak.N`/`.old`/`.orig`, PG `log_min_duration_statement=200ms`, `golang.org/x/crypto` v0.55.0 (CVE-2026-56854). Trivy по образам: 0 HIGH/CRITICAL.
 

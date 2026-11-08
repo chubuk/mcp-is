@@ -57,6 +57,7 @@ func main() {
 	svc := service.NewService(manager)
 	auditRepo := storage.NewAuditRepository(pool)
 	idemRepo := storage.NewIdempotencyRepository(pool)
+	mcp.SetPDNLog(storage.NewPDNLogRepository(pool), pool)
 	mcpServer := mcp.NewMCPServer(svc, cfg.ReadOnly, cfg.PDNAutoProtect, cfg.ServerCountry, auditRepo, idemRepo)
 
 	emailCfg := handlers.LoadSMTPConfigFromSettings(settingsRepo, email.Config{

@@ -11,10 +11,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/core"
 	"github.com/chubuk/mcp-is/internal/integration/insales"
 	"github.com/chubuk/mcp-is/internal/pdn"
 	"github.com/chubuk/mcp-is/internal/service"
+	"github.com/chubuk/mcp-is/internal/storage"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/mark3labs/mcp-go/mcp"
 	"github.com/mark3labs/mcp-go/server"
 )
@@ -352,6 +355,49 @@ func pageArgs(args map[string]any) (page, perPage int, err error) {
 	return page, perPage, nil
 }
 
+// Настройки ПДн и запись pdn_access_log (подключаются из main.go через SetPDNLog).
+var (
+	pdnLogRepo *storage.PDNLogRepository
+	pdnCache   *pdn.PDNSettingsCache
+	pdnDB      *pgxpool.Pool
+)
+
+// SetPDNLog подключает репозиторий лога доступа к ПДн и источник настроек маскировки.
+func SetPDNLog(repo *storage.PDNLogRepository, db *pgxpool.Pool) {
+	pdnLogRepo = repo
+	pdnDB = db
+	pdnCache = pdn.NewPDNSettingsCache()
+}
+
+func pdnSettings() *pdn.PDNSettings {
+	if pdnCache == nil || pdnDB == nil {
+		return &pdn.PDNSettings{Log: true, MaskPII: true}
+	}
+	return pdnCache.Get(pdnDB)
+}
+
+// pdnLogAccess пишет строку в pdn_access_log (best-effort).
+func pdnLogAccess(ctx context.Context, toolName string, masked bool) {
+	if pdnLogRepo == nil {
+		return
+	}
+	userID, _ := ctx.Value(auth.UserIDKey).(string)
+	shopID, _ := ctx.Value(auth.ShopIDKey).(string)
+	shopName, _ := ctx.Value(auth.ShopNameKey).(string)
+	keyName, _ := ctx.Value(auth.KeyNameKey).(string)
+	entry := storage.PDNLogEntry{
+		UserID:       userID,
+		ShopID:       shopID,
+		Tool:         toolName,
+		Jurisdiction: pdn.DetectJurisdiction(shopName),
+		LMProvider:   pdn.DetectLLMProvider(keyName),
+		Masked:       masked,
+	}
+	if err := pdnLogRepo.Insert(ctx, entry); err != nil {
+		slog.Warn("pdn access log insert failed", "error", err, "tool", toolName)
+	}
+}
+
 // applyPDNToResult маскирует ПДн в результате инструмента при включённом режиме.
 // Значение целиком JSON round-trip-ится (typed-структуры → generic-дерево → маска →
 // обратно в исходный Go-тип), чтобы вызывающие хендлеры и типизированные конверты
@@ -361,6 +407,14 @@ func applyPDNToResult(ctx context.Context, result any, toolName string) any {
 	aiKeyPDN, _ := ctx.Value(mcpAIKeyPDNKey).(bool)
 
 	if (!shopPDN && !aiKeyPDN) || result == nil {
+		return result
+	}
+
+	st := pdnSettings()
+	if st.Log {
+		pdnLogAccess(ctx, toolName, st.MaskPII)
+	}
+	if !st.MaskPII {
 		return result
 	}
 
@@ -2930,7 +2984,13 @@ func exportOrdersHandler(svc *service.Service) func(ctx context.Context, req mcp
 			return toolError(err), nil
 		}
 		if pdnActive(ctx) {
-			csv = pdn.MaskCSV(csv)
+			st := pdnSettings()
+			if st.Log {
+				pdnLogAccess(ctx, "export_orders", st.MaskPII)
+			}
+			if st.MaskPII {
+				csv = pdn.MaskCSV(csv)
+			}
 		}
 		return mcp.NewToolResultText(csv), nil
 	}
@@ -2943,7 +3003,13 @@ func exportClientsHandler(svc *service.Service) func(ctx context.Context, req mc
 			return toolError(err), nil
 		}
 		if pdnActive(ctx) {
-			csv = pdn.MaskCSV(csv)
+			st := pdnSettings()
+			if st.Log {
+				pdnLogAccess(ctx, "export_clients", st.MaskPII)
+			}
+			if st.MaskPII {
+				csv = pdn.MaskCSV(csv)
+			}
 		}
 		return mcp.NewToolResultText(csv), nil
 	}

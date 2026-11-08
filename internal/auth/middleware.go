@@ -32,6 +32,7 @@ const (
 	CommandPolicyJSONKey contextKey = "command_policy_json" // raw JSON политики ИИ-ключа
 	ShopReadOnlyKey      contextKey = "shop_read_only"      // is_read_only магазина (для toolFilter/диспетчера)
 	ShopDeleteDeniedKey  contextKey = "shop_delete_denied"  // is_delete_denied магазина
+	ShopPDNEnabledKey    contextKey = "shop_pdn_enabled"    // shops.pdn_enabled — принудительная защита ПДн
 )
 
 var (
@@ -207,15 +208,15 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 			keyHash := HashAPIKey(apiKey)
 
 			var userID, keyID, keyName, shopID, connName, shopName, shopURL, capsJSON, policyJSON string
-			var aiKeyPDN, shopReadOnly, shopDeleteDenied bool
+			var aiKeyPDN, shopReadOnly, shopDeleteDenied, shopPDN bool
 			err := db.QueryRow(r.Context(),
 				`SELECT k.id, k.user_id, COALESCE(k.name,''), k.pdn_enabled, COALESCE(k.shop_id::text,''),
 				        COALESCE(k.connection_name,''), COALESCE(s.name,''), COALESCE(s.shop_url,''),
 				        COALESCE(s.capabilities,''), COALESCE(k.command_policy,''),
-				        COALESCE(s.is_read_only,false), COALESCE(s.is_delete_denied,false)
+				        COALESCE(s.is_read_only,false), COALESCE(s.is_delete_denied,false), COALESCE(s.pdn_enabled,false)
 				 FROM ai_keys k LEFT JOIN shops s ON s.id = k.shop_id
 				 WHERE k.key_hash = $1`, keyHash,
-			).Scan(&keyID, &userID, &keyName, &aiKeyPDN, &shopID, &connName, &shopName, &shopURL, &capsJSON, &policyJSON, &shopReadOnly, &shopDeleteDenied)
+			).Scan(&keyID, &userID, &keyName, &aiKeyPDN, &shopID, &connName, &shopName, &shopURL, &capsJSON, &policyJSON, &shopReadOnly, &shopDeleteDenied, &shopPDN)
 
 			if err != nil {
 				slog.Warn("invalid api key", "hash", keyHash[:8]+"...")
@@ -242,6 +243,7 @@ func APIKeyMiddleware(db *pgxpool.Pool) func(http.Handler) http.Handler {
 			ctx = context.WithValue(ctx, CommandPolicyJSONKey, policyJSON)
 			ctx = context.WithValue(ctx, ShopReadOnlyKey, shopReadOnly)
 			ctx = context.WithValue(ctx, ShopDeleteDeniedKey, shopDeleteDenied)
+			ctx = context.WithValue(ctx, ShopPDNEnabledKey, shopPDN)
 			// App-installed keys are bound to a shop; unbound legacy keys fail closed (ErrKeyNotBound).
 			if shopID != "" {
 				ctx = context.WithValue(ctx, ShopIDKey, shopID)

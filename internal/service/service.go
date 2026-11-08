@@ -347,47 +347,6 @@ func (s *Service) DeleteImage(ctx context.Context, productID, imageID string) er
 
 // === МЕТАПОЛЯ ===
 
-func (s *Service) ListMetaFields(ctx context.Context, args map[string]any) ([]any, error) {
-	client, ctx, err := s.manager.GetClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return client.ListMetaFields(ctx, args)
-}
-
-func (s *Service) CreateMetaField(ctx context.Context, args map[string]any) (any, error) {
-	client, ctx, err := s.manager.GetClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if err := s.checkReadOnly(ctx); err != nil {
-		return nil, err
-	}
-	return client.CreateMetaField(ctx, args)
-}
-
-func (s *Service) UpdateMetaField(ctx context.Context, metaFieldID string, args map[string]any) (any, error) {
-	client, ctx, err := s.manager.GetClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	if err := s.checkReadOnly(ctx); err != nil {
-		return nil, err
-	}
-	return client.UpdateMetaField(ctx, metaFieldID, args)
-}
-
-func (s *Service) DeleteMetaField(ctx context.Context, metaFieldID string) error {
-	client, ctx, err := s.manager.GetClient(ctx)
-	if err != nil {
-		return err
-	}
-	if err := s.checkReadOnly(ctx); err != nil {
-		return err
-	}
-	return client.DeleteMetaField(ctx, metaFieldID)
-}
-
 // === ВЕБХУКИ ===
 
 func (s *Service) ListWebhooks(ctx context.Context) ([]any, error) {
@@ -432,14 +391,6 @@ func (s *Service) DeleteWebhook(ctx context.Context, webhookID string) error {
 }
 
 // === СИСТЕМНЫЕ ===
-
-func (s *Service) ListCurrencies(ctx context.Context) (any, error) {
-	client, ctx, err := s.manager.GetClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return client.ListCurrencies(ctx)
-}
 
 func (s *Service) ListDeliveryVariants(ctx context.Context) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)

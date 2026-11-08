@@ -175,6 +175,9 @@ func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		llmJurisdiction = pdn.DetectLLMProvider(keyName)
 	}
 	shopPDN := false
+	if v, ok := ctx.Value(auth.ShopPDNEnabledKey).(bool); ok {
+		shopPDN = v // shops.pdn_enabled — принудительная защита независимо от auto-PDN
+	}
 	if s.autoPDN {
 		serverInRU := s.serverCountry == "RU"
 		shopInRU := shopJurisdiction == "RU"
@@ -190,7 +193,7 @@ func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		slog.Debug("PDN protection active",
 			"shop_jurisdiction", shopJurisdiction,
 			"llm_provider", llmJurisdiction,
-			"auto_protected", shopPDN,
+			"shop_pdn_flag", shopPDN,
 			"manual_ai_key", aiKeyPDN,
 		)
 	}

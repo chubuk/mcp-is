@@ -52,7 +52,7 @@ func (c *PDNSettingsCache) loadFromDB(db *pgxpool.Pool) *PDNSettings {
 	s := &PDNSettings{
 		Enabled:     false,
 		Log:         true,
-		MaskPII:     false,
+		MaskPII:     true,
 		AutoProtect: true,
 	}
 
