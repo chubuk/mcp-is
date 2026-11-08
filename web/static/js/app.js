@@ -209,14 +209,9 @@ const App = {
     },
 
     logout() {
-        if (API.isImpersonating()) {
-            this.stopImpersonate();
-            return;
-        }
-        API.clearToken();
-        localStorage.removeItem('nickname');
-        localStorage.removeItem('role');
-        localStorage.removeItem('user_id');
+        // «Выйти» всегда закрывает сессию локально — без зависимостей от сервера
+        // и от флага имперсонации (иначе кнопка может упереться в «not impersonating»).
+        API.clearSession();
         this.navigate('/login');
     },
 
@@ -229,6 +224,10 @@ const App = {
             localStorage.setItem('nickname', res.data.nickname);
             localStorage.setItem('role', res.data.role);
             this.navigate('/admin/users');
+        } else if (res && res.data && res.data.error === 'not impersonating') {
+            // Флаг имперсонации протух (страница пережила свой токен) — выходим полностью.
+            alert('Сессия имперсонации уже завершена — выполните вход заново.');
+            this.logout();
         } else {
             alert('Ошибка: ' + (res ? res.data.error : 'Сервер недоступен'));
         }

@@ -88,6 +88,10 @@ func toolFilter(globalReadOnly bool) server.ToolFilterFunc {
 		if v, ok := ctx.Value(core.ShopReadOnlyKey).(bool); ok {
 			readOnly = readOnly || v
 		}
+		deleteDenied := false
+		if v, ok := ctx.Value(core.ShopDeleteDeniedKey).(bool); ok {
+			deleteDenied = v
+		}
 
 		// Capabilities снимка (denied домены скрывают инструменты).
 		var snap *core.Snapshot
@@ -106,6 +110,10 @@ func toolFilter(globalReadOnly bool) server.ToolFilterFunc {
 			// nil ReadOnlyHint is treated as write (no leak into read-only list)
 			isWrite := t.Annotations.ReadOnlyHint == nil || !*t.Annotations.ReadOnlyHint
 			if readOnly && isWrite {
+				continue
+			}
+			// Запрет удаления: тулы класса delete скрыты (write-класс при этом доступен).
+			if deleteDenied && ToolMetaFor(t.Name).Class == ClassDelete {
 				continue
 			}
 			// Capabilities: denied домен → скрыт; unknown/нет снимка → виден (fail-open).
@@ -244,6 +252,10 @@ func searchInSalesToolsHandler(s *server.MCPServer) server.ToolHandlerFunc {
 		if v, ok := ctx.Value(core.ShopReadOnlyKey).(bool); ok {
 			readOnly = readOnly || v
 		}
+		deleteDenied := false
+		if v, ok := ctx.Value(core.ShopDeleteDeniedKey).(bool); ok {
+			deleteDenied = v
+		}
 
 		all := s.ListTools()
 		matches := make([]map[string]any, 0, 20)
@@ -262,6 +274,9 @@ func searchInSalesToolsHandler(s *server.MCPServer) server.ToolHandlerFunc {
 			}
 			isWrite := st.Tool.Annotations.ReadOnlyHint == nil || !*st.Tool.Annotations.ReadOnlyHint
 			if readOnly && isWrite {
+				continue
+			}
+			if deleteDenied && ToolMetaFor(name).Class == ClassDelete {
 				continue
 			}
 			short := desc
@@ -326,6 +341,22 @@ func callInSalesToolHandler(s *server.MCPServer, auditRepo *storage.AuditReposit
 				recordDenied(auditRepo, ctx, name, args)
 			}
 			return mcp.NewToolResultError(fmt.Sprintf("tool %q is write; session is read-only", name)), nil
+		}
+
+		// block delete tools when the shop denies deletion (same rule as toolFilter)
+		deleteDenied := false
+		if v, ok := ctx.Value(core.ShopDeleteDeniedKey).(bool); ok {
+			deleteDenied = v
+		}
+		if deleteDenied && ToolMetaFor(name).Class == ClassDelete {
+			if auditRepo != nil {
+				args := map[string]any{}
+				if raw, ok := req.GetArguments()["args"].(map[string]any); ok {
+					args = raw
+				}
+				recordDenied(auditRepo, ctx, name, args)
+			}
+			return mcp.NewToolResultError(fmt.Sprintf("tool %q deletes data; shop denies deletion", name)), nil
 		}
 
 		// Политика ИИ-ключа и capabilities: эффективное состояние = f(policy, capability);

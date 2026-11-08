@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Добавлено
+- **Снимок «Настройки товаров» и дифф доп. полей**: при добавлении ключа магазина сохраняется снимок 8 групп (Доп. поля Товары/Варианты/Категории, Параметры товаров, Свойства вариантов, Группы категорий, Типы цен, Опции) в `shops.settings_snapshot`; «Проверить соединение» показывает текущий список полей, «Проверить доступы» — что добавилось/удалилось с прошлой проверки.
+- **Галочка «Запрет удаления»** у магазина (`is_delete_denied`): тулы класса delete (`delete_*`/`remove_*`/`decline_*`) скрыты из `tools/list`/`search_insales_tools`, `call_insales_tool` их отклоняет. При включённом «Только чтение» галочка включается автоматически (иерархия ограничений).
+- **`list_fields`** — чтение справочника полей заказов/клиентов (`GET /admin/fields.json`, `Field::TextField|TextArea|Checkbox|FileField|Delivery`).
+
+### Исправлено
+- **Выход из аккаунта залипал на «not impersonating»** после долгого простоя страницы: флаг имперсонации в localStorage переживал истечение JWT (24ч) и перелогин, обе кнопки выхода упирались в серверный отказ. «Выйти» теперь всегда полностью разлогинивает локально, кнопка выхода из имперсонации при протухшем флаге сама доводит до полного выхода, а любой новый вход зачищает следы имперсонации.
+- **`list_units` всегда отвечал 422 «Отсутствует параметр lang»** — клиент теперь шлёт `GET /units.json?lang=ru`.
+- **`create/delete_similar` и `list/create/delete_supplementaries` ходили в несуществующие топ-левел пути** (`/similars.json`, `/supplementaries.json`) — переведены на вложенные линковки `/products/:product_id/(similars|supplementaries).json` (`similar_ids`/`supplementary_ids`). Семантика create — «связать», не «создать сущность»; схемы тулов получили `product_id`.
+- **`product_id`/`similar_product_id` в `create_similar` были числовыми** — теперь string (числовой JSON приводил к ошибке валидации, урок `list_variants`).
+
+### Удалено
+- **Мёртвые тулы `list/create/update/delete_meta_field`, `list_currencies`, `get_supplementary`**: эндпоинты `/admin/meta_fields.json`, `/admin/currencies.json` в API InSales не существуют (возвращают HTML), одиночного GET у supplementaries в API нет. Клиентские методы и пайплайны (`search_product_details`, `order_full_details`, `client_full_profile`) оставлены: чтение метаполей best-effort. Каталог: 287 → 282 инструмента (121 read / 108 write / 53 delete); `create_*` 52 → 51.
+
 ## [0.11.1] — 2026-11-07 (security: SSRF-guard shop_url)
 
 ### Безопасность

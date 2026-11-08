@@ -88,6 +88,10 @@ func buildInstructions(ctx context.Context, base string) string {
 			"Call store_info to confirm the target store before any write.\n\n",
 			connName, shopName, shopURL, connName)
 
+		if v, ok := ctx.Value(core.ShopDeleteDeniedKey).(bool); ok && v {
+			header += "Deletion is denied on this store: delete_/remove_/decline_* tools are hidden.\n\n"
+		}
+
 		// Права ключа (из снимка probe) + прямой REST недоступен.
 		if v, ok := ctx.Value(auth.CapabilitiesJSONKey).(string); ok && v != "" {
 			snap := core.ParseSnapshot(v)

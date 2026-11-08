@@ -117,6 +117,31 @@ func TestToolFilterShopReadOnly(t *testing.T) {
 	}
 }
 
+func TestToolFilterDeleteDenied(t *testing.T) {
+	withToolsMode(t, "all")
+	filter := toolFilter(false)
+
+	tools := []mcp.Tool{
+		{Name: "list_products", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(true)}},
+		{Name: "create_product", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(false)}},
+		{Name: "delete_product", Annotations: mcp.ToolAnnotation{ReadOnlyHint: boolPtr(false)}},
+	}
+
+	ctx := context.WithValue(context.Background(), core.ShopDeleteDeniedKey, true)
+	filtered := filter(ctx, tools)
+
+	names := map[string]bool{}
+	for _, tool := range filtered {
+		names[tool.Name] = true
+	}
+	if !names["list_products"] || !names["create_product"] {
+		t.Errorf("read and write must stay visible, got %v", names)
+	}
+	if names["delete_product"] {
+		t.Errorf("delete-class tool must be hidden when shop denies deletion, got %v", names)
+	}
+}
+
 func TestCoreToolNamesAreKnownTools(t *testing.T) {
 	// every core name must exist in the full tool name list produced by tools.go
 	// (checked loosely: prefixes that we register; full sync test lives in handlers)

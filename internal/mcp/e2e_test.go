@@ -120,7 +120,7 @@ func TestE2E_CoreSurfaceProtocol(t *testing.T) {
 	}
 }
 
-// TestE2E_AllModeListsFullCatalog — MCP_TOOLS_MODE=all отдаёт весь каталог (287).
+// TestE2E_AllModeListsFullCatalog — MCP_TOOLS_MODE=all отдаёт весь каталог (282).
 func TestE2E_AllModeListsFullCatalog(t *testing.T) {
 	t.Setenv("MCP_TOOLS_MODE", "all")
 	srv := newE2EServer(t)
@@ -134,8 +134,8 @@ func TestE2E_AllModeListsFullCatalog(t *testing.T) {
 	if err != nil {
 		t.Fatalf("tools/list: %v", err)
 	}
-	if len(tools.Tools) != 287 {
-		t.Errorf("full catalog = %d tools, want 287", len(tools.Tools))
+	if len(tools.Tools) != 282 {
+		t.Errorf("full catalog = %d tools, want 282", len(tools.Tools))
 	}
 }
 

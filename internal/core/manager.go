@@ -15,9 +15,10 @@ import (
 type contextKey string
 
 const (
-	ShopReadOnlyKey contextKey = "shop_read_only"
-	ShopNameKey     contextKey = "shop_name"
-	ShopURLKey      contextKey = "shop_url"
+	ShopReadOnlyKey     contextKey = "shop_read_only"
+	ShopDeleteDeniedKey contextKey = "shop_delete_denied"
+	ShopNameKey         contextKey = "shop_name"
+	ShopURLKey          contextKey = "shop_url"
 )
 
 // ErrKeyNotBound: the AI key has no store binding (or its shop was deleted) —
@@ -88,6 +89,7 @@ func (m *AccountManager) GetClient(ctx context.Context) (*insales.InSalesClient,
 
 	shopReadOnly := m.globalReadOnly || shop.IsReadOnly
 	ctx = context.WithValue(ctx, ShopReadOnlyKey, shopReadOnly)
+	ctx = context.WithValue(ctx, ShopDeleteDeniedKey, shop.IsDeleteDenied)
 	ctx = context.WithValue(ctx, ShopNameKey, shop.Name)
 	ctx = context.WithValue(ctx, ShopURLKey, shop.ShopURL)
 

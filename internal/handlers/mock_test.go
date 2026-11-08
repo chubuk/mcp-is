@@ -244,7 +244,7 @@ func newMockShopRepo() *mockShopRepo {
 	return &mockShopRepo{shops: make(map[string]*storage.Shop)}
 }
 
-func (m *mockShopRepo) Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) (*storage.Shop, error) {
+func (m *mockShopRepo) Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled, isDeleteDenied bool) (*storage.Shop, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -258,6 +258,7 @@ func (m *mockShopRepo) Create(userID, name, shopURL, apiKeyID, apiPasswordEncryp
 		APIPasswordEncrypted: apiPasswordEncrypted,
 		IsDefault:            isDefault,
 		IsReadOnly:           isReadOnly,
+		IsDeleteDenied:       isDeleteDenied,
 		PDNEnabled:           pdnEnabled,
 		CreatedAt:            "2026-01-01T00:00:00Z",
 	}
@@ -324,7 +325,7 @@ func (m *mockShopRepo) GetDefault(userID string) (*storage.Shop, error) {
 	return nil, fmt.Errorf("not found")
 }
 
-func (m *mockShopRepo) Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) error {
+func (m *mockShopRepo) Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled, isDeleteDenied bool) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -335,6 +336,7 @@ func (m *mockShopRepo) Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted 
 		s.APIPasswordEncrypted = apiPasswordEncrypted
 		s.IsDefault = isDefault
 		s.IsReadOnly = isReadOnly
+		s.IsDeleteDenied = isDeleteDenied
 		s.PDNEnabled = pdnEnabled
 		return nil
 	}
@@ -374,6 +376,17 @@ func (m *mockShopRepo) UpdateCapabilities(id, capabilitiesJSON string, checkedAt
 	if s, ok := m.shops[id]; ok {
 		s.Capabilities = capabilitiesJSON
 		s.CapabilitiesCheckedAt = checkedAt
+		return nil
+	}
+	return fmt.Errorf("not found")
+}
+
+func (m *mockShopRepo) UpdateSettingsSnapshot(id, settingsJSON string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if s, ok := m.shops[id]; ok {
+		s.SettingsSnapshot = settingsJSON
 		return nil
 	}
 	return fmt.Errorf("not found")

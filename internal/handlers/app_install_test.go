@@ -111,7 +111,7 @@ func TestInstall_Reinstall_RefreshesShopPassword(t *testing.T) {
 	rec := httptest.NewRecorder()
 	h.Install(rec, req)
 	oldEnc, _ := h.aes.Encrypt(appinstall.InstallPassword("token123", "mysecret"))
-	shop, _ := shops.Create("user-1", "test.myinsales.ru", "test.myinsales.ru", "myapplogin", oldEnc, true, false, false)
+	shop, _ := shops.Create("user-1", "test.myinsales.ru", "test.myinsales.ru", "myapplogin", oldEnc, true, false, false, false)
 	_ = installs.LinkShop("123", "user-1", shop.ID)
 
 	// reinstall with a new token → new password
@@ -153,7 +153,7 @@ func TestInstall_Reinstall_ShopUpdateError_500(t *testing.T) {
 	rec := httptest.NewRecorder()
 	h.Install(rec, req)
 	oldEnc, _ := h.aes.Encrypt(appinstall.InstallPassword("token123", "mysecret"))
-	shop, _ := shops.Create("user-1", "test.myinsales.ru", "test.myinsales.ru", "myapplogin", oldEnc, true, false, false)
+	shop, _ := shops.Create("user-1", "test.myinsales.ru", "test.myinsales.ru", "myapplogin", oldEnc, true, false, false, false)
 	_ = installs.LinkShop("123", "user-1", shop.ID)
 
 	// shop row vanished → UpdateAPIPassword returns error
@@ -177,7 +177,7 @@ func TestProvisionUserAndShop_RestoresEmptyShopPassword(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
-	shop, err := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", "", true, false, false)
+	shop, err := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", "", true, false, false, false)
 	if err != nil {
 		t.Fatalf("create shop: %v", err)
 	}
@@ -250,7 +250,7 @@ func TestAppLanding_AlwaysInSalesRoundTrip(t *testing.T) {
 	h, installs, _, shops, _ := newTestAppHandler(t)
 	installFor(t, h, "123", "token123")
 	enc, _ := h.aes.Encrypt(appinstall.InstallPassword("token123", "mysecret"))
-	shop, _ := shops.Create("user-1", "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false)
+	shop, _ := shops.Create("user-1", "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false, false)
 	_ = installs.LinkShop("123", "user-1", shop.ID)
 
 	req := httptest.NewRequest("GET", "/app?shop=test.myinsales.ru&insales_id=123", nil)
@@ -273,7 +273,7 @@ func TestAutologin_ReturningUser_ReuseShop(t *testing.T) {
 	password := appinstall.InstallPassword("token123", "mysecret")
 	enc, _ := h.aes.Encrypt(password)
 	user, _ := users.Create("u1", "user@test.ru", "", "", "", "hash")
-	shop, _ := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false)
+	shop, _ := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false, false)
 	_ = installs.LinkShop("123", user.ID, shop.ID)
 
 	req := autologinReq("nonce1", "123",
@@ -534,7 +534,7 @@ func TestUninstall_OK(t *testing.T) {
 	password := appinstall.InstallPassword("token123", "mysecret")
 	enc, _ := h.aes.Encrypt(password)
 	_, _ = installs.UpsertInstall("123", "test.myinsales.ru", enc)
-	shop, _ := shops.Create("user-1", "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false)
+	shop, _ := shops.Create("user-1", "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false, false)
 	_, _ = keys.CreateForShop("user-1", shop.ID, "hash1", "InSales: test.myinsales.ru")
 	_ = installs.LinkShop("123", "user-1", shop.ID)
 
@@ -587,7 +587,7 @@ func TestAutologin_BillingBlocked_SessionIssued(t *testing.T) {
 	password := appinstall.InstallPassword("token123", "mysecret")
 	enc, _ := h.aes.Encrypt(password)
 	user, _ := users.Create("u1", "user@test.ru", "", "", "", "hash")
-	shop, _ := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false)
+	shop, _ := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false, false)
 	shop.IsAppInstall = true
 	_ = installs.LinkShop("123", user.ID, shop.ID)
 	h.chargeFn = func(_ *storage.AppInstall, _ string) (map[string]any, error) {
@@ -622,7 +622,7 @@ func TestAutologin_BillingPaid_Active(t *testing.T) {
 	password := appinstall.InstallPassword("token123", "mysecret")
 	enc, _ := h.aes.Encrypt(password)
 	user, _ := users.Create("u1", "user@test.ru", "", "", "", "hash")
-	shop, _ := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false)
+	shop, _ := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false, false)
 	shop.IsAppInstall = true
 	_ = installs.LinkShop("123", user.ID, shop.ID)
 	h.chargeFn = func(_ *storage.AppInstall, _ string) (map[string]any, error) {
@@ -651,7 +651,7 @@ func TestAutologin_BillingFree_NoChargeCall(t *testing.T) {
 	password := appinstall.InstallPassword("token123", "mysecret")
 	enc, _ := h.aes.Encrypt(password)
 	user, _ := users.Create("u1", "user@test.ru", "", "", "", "hash")
-	shop, _ := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false)
+	shop, _ := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false, false)
 	_ = installs.LinkShop("123", user.ID, shop.ID)
 	called := false
 	h.chargeFn = func(_ *storage.AppInstall, _ string) (map[string]any, error) {
@@ -681,7 +681,7 @@ func TestAutologin_BillingFetchError_LoginProceeds(t *testing.T) {
 	password := appinstall.InstallPassword("token123", "mysecret")
 	enc, _ := h.aes.Encrypt(password)
 	user, _ := users.Create("u1", "user@test.ru", "", "", "", "hash")
-	shop, _ := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false)
+	shop, _ := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false, false)
 	shop.IsAppInstall = true
 	_ = installs.LinkShop("123", user.ID, shop.ID)
 	h.chargeFn = func(_ *storage.AppInstall, _ string) (map[string]any, error) {
@@ -756,7 +756,7 @@ func TestExchangeCode_E2E_CookieHandoff(t *testing.T) {
 	enc, _ := h.aes.Encrypt(password)
 	user, _ := users.Create("u1", "user@test.ru", "", "", "", "hash")
 	shops := h.shops.(*mockShopRepo)
-	s, _ := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false)
+	s, _ := shops.Create(user.ID, "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false, false)
 	_ = installs.LinkShop("123", user.ID, s.ID)
 
 	req := autologinReq("nonce1", "123",

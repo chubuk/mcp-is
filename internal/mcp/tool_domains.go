@@ -36,9 +36,8 @@ func buildToolMeta() map[string]ToolMeta {
 		"list_images",
 		"list_collects", "get_collects_by_product",
 		"list_accessories", "get_accessory", "list_product_accessory_links",
-		"list_supplementaries", "get_supplementary",
+		"list_supplementaries",
 		"list_similars",
-		"list_meta_fields",
 		"list_product_fields", "get_product_field", "list_product_field_values", "get_product_field_value",
 		"list_variant_fields", "get_variant_field", "list_variant_field_values", "get_variant_field_value",
 		"get_seo",
@@ -53,7 +52,6 @@ func buildToolMeta() map[string]ToolMeta {
 		"create_accessory", "update_accessory",
 		"create_supplementary",
 		"create_similar",
-		"create_meta_field", "update_meta_field",
 		"create_product_field", "update_product_field",
 		"create_product_field_value", "update_product_field_value",
 		"create_variant_field", "update_variant_field",
@@ -67,7 +65,6 @@ func buildToolMeta() map[string]ToolMeta {
 		"delete_accessory",
 		"delete_supplementary",
 		"delete_similar",
-		"delete_meta_field",
 		"delete_product_field",
 		"delete_product_field_value",
 		"delete_variant_field",
@@ -128,6 +125,9 @@ func buildToolMeta() map[string]ToolMeta {
 		"delete_collection_filter",
 		"remove_product_from_collection",
 	)
+
+	// ── Select-поля заказов/клиентов (/admin/fields.json; эндпоинт не входит в probe-домены) ──
+	register(m, "", "orders", ClassRead, "list_fields")
 
 	// ── Заказы (domain: orders) ──
 	register(m, "orders", "orders", ClassRead,
@@ -318,7 +318,7 @@ func buildToolMeta() map[string]ToolMeta {
 
 	// ── Настройки магазина (domain: account) ──
 	register(m, "account", "shop_settings", ClassRead,
-		"get_shop_info", "list_currencies",
+		"get_shop_info",
 	)
 	register(m, "account", "shop_settings", ClassWrite,
 		"update_account",

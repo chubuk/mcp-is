@@ -430,21 +430,9 @@ curl -X POST http://localhost:8080/mcp \
   }'
 ```
 
-### Валюты магазина
+### Валюты магазина (тул удалён)
 
-```bash
-curl -X POST http://localhost:8080/mcp \
-  -H "Content-Type: application/json" \
-  -d '{
-    "jsonrpc": "2.0",
-    "method": "tools/call",
-    "id": 10,
-    "params": {
-      "name": "list_currencies",
-      "arguments": {}
-    }
-  }'
-```
+`list_currencies` удалён: эндпоинт `/admin/currencies.json` не существует в API InSales. Для валют склада используйте `list_stock_currencies`.
 
 ### Способы доставки
 

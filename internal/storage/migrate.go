@@ -19,6 +19,8 @@ func RunMigrations(pool *pgxpool.Pool) {
 		`ALTER TABLE shops ADD COLUMN IF NOT EXISTS billing_pay_url TEXT DEFAULT ''`,
 		`ALTER TABLE shops ADD COLUMN IF NOT EXISTS capabilities TEXT DEFAULT ''`,
 		`ALTER TABLE shops ADD COLUMN IF NOT EXISTS capabilities_checked_at TIMESTAMPTZ`,
+		`ALTER TABLE shops ADD COLUMN IF NOT EXISTS settings_snapshot TEXT DEFAULT ''`,
+		`ALTER TABLE shops ADD COLUMN IF NOT EXISTS is_delete_denied BOOLEAN DEFAULT FALSE`,
 		`ALTER TABLE ai_keys ADD COLUMN IF NOT EXISTS command_policy TEXT DEFAULT ''`,
 		`CREATE INDEX IF NOT EXISTS idx_app_installs_shop ON app_installs(shop_id)`,
 		`ALTER TABLE users ADD COLUMN IF NOT EXISTS require_password_change BOOLEAN DEFAULT FALSE`,

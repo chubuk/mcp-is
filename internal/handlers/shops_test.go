@@ -127,7 +127,7 @@ func TestShopCreate_EncryptsPassword(t *testing.T) {
 
 func TestShopUpdate_EmptyPassClears_OmittedKeeps(t *testing.T) {
 	h, repo := setupShopHandler()
-	shop, _ := repo.Create("user-1", "Тестовый", "test.myinsales.ru", "key", "enc-old", false, false, false)
+	shop, _ := repo.Create("user-1", "Тестовый", "test.myinsales.ru", "key", "enc-old", false, false, false, false)
 
 	// omitted api_password → keep
 	keep := strPtr("новое имя")
@@ -164,8 +164,8 @@ func TestShopUpdate_EmptyPassClears_OmittedKeeps(t *testing.T) {
 func TestShopList_Success(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	repo.Create("user-1", "Магазин 1", "shop1.ru", "k1", "enc1", true, false, false)
-	repo.Create("user-1", "Магазин 2", "shop2.ru", "k2", "enc2", false, false, false)
+	repo.Create("user-1", "Магазин 1", "shop1.ru", "k1", "enc1", true, false, false, false)
+	repo.Create("user-1", "Магазин 2", "shop2.ru", "k2", "enc2", false, false, false, false)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/shops", nil)
 	ctx := withUserID(req.Context(), "user-1")
@@ -189,7 +189,7 @@ func TestShopList_Success(t *testing.T) {
 
 func TestShopList_IncludesCapabilities(t *testing.T) {
 	h, repo := setupShopHandler()
-	shop, _ := repo.Create("user-1", "Магазин", "shop1.ru", "k1", "enc1", true, false, false)
+	shop, _ := repo.Create("user-1", "Магазин", "shop1.ru", "k1", "enc1", true, false, false, false)
 	snap := `{"credentials_ok":true,"domains":{"orders":{"status":"denied","since":"2026-11-01T10:00:00Z","source":"probe"}}}`
 	if err := repo.UpdateCapabilities(shop.ID, snap, nil); err != nil {
 		t.Fatalf("UpdateCapabilities: %v", err)
@@ -238,7 +238,7 @@ func TestShopList_Empty(t *testing.T) {
 func TestShopUpdate_Success(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	shop, _ := repo.Create("user-1", "Старое имя", "old.ru", "k1", "enc1", false, false, false)
+	shop, _ := repo.Create("user-1", "Старое имя", "old.ru", "k1", "enc1", false, false, false, false)
 
 	body, _ := json.Marshal(ShopRequest{
 		Name:     "Новое имя",
@@ -276,7 +276,7 @@ func TestShopUpdate_NotFound(t *testing.T) {
 func TestShopDelete_Success(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	shop, _ := repo.Create("user-1", "Удаляемый", "del.ru", "k", "enc", false, false, false)
+	shop, _ := repo.Create("user-1", "Удаляемый", "del.ru", "k", "enc", false, false, false, false)
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/shops/"+shop.ID, nil)
 	req.SetPathValue("id", shop.ID)
@@ -366,7 +366,7 @@ func TestCheckAccess_NotFound(t *testing.T) {
 func TestCheckAccess_DecryptFail(t *testing.T) {
 	h, repo := setupShopHandler()
 
-	shop, _ := repo.Create("user-1", "Тестовый", "test.ru", "k", "not-a-valid-ciphertext", false, true, false)
+	shop, _ := repo.Create("user-1", "Тестовый", "test.ru", "k", "not-a-valid-ciphertext", false, true, false, false)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/shops/"+shop.ID+"/check-access", nil)
 	req.SetPathValue("id", shop.ID)

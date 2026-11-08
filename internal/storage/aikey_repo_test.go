@@ -173,7 +173,7 @@ func TestAIKeyRepo_UpdateShopBinding(t *testing.T) {
 	keyRepo := NewAIKeyRepository(pool)
 
 	user, _ := userRepo.Create("binduser", "", "", "", "", "hash")
-	shop, _ := shopRepo.Create(user.ID, "Bind Shop", "bind.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shopRepo.Create(user.ID, "Bind Shop", "bind.myinsales.ru", "ik", "ip", true, false, false, false)
 	key, _ := keyRepo.Create(user.ID, "bindhash", "test")
 
 	if err := keyRepo.UpdateShopBinding(key.ID, shop.ID, "bind-alias"); err != nil {
@@ -233,7 +233,7 @@ func TestAIKeyRepo_ShopNameJoin(t *testing.T) {
 	keyRepo := NewAIKeyRepository(pool)
 
 	user, _ := userRepo.Create("shopname", "", "", "", "", "hash")
-	shop, _ := shopRepo.Create(user.ID, "My Shop", "name.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shopRepo.Create(user.ID, "My Shop", "name.myinsales.ru", "ik", "ip", true, false, false, false)
 	key, _ := keyRepo.CreateForShop(user.ID, shop.ID, "namehash", "test")
 
 	tests := []struct {

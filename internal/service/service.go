@@ -2422,19 +2422,12 @@ func (s *Service) DeleteUserTask(ctx context.Context, id string) error {
 }
 
 // === SUPPLEMENTARY ===
-func (s *Service) ListSupplementaries(ctx context.Context) ([]any, error) {
+func (s *Service) ListSupplementaries(ctx context.Context, productID string) ([]any, error) {
 	c, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return c.ListSupplementaries(ctx)
-}
-func (s *Service) GetSupplementary(ctx context.Context, id string) (any, error) {
-	c, ctx, err := s.manager.GetClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return c.GetSupplementary(ctx, id)
+	return c.ListSupplementaries(ctx, productID)
 }
 func (s *Service) CreateSupplementary(ctx context.Context, args map[string]any) (any, error) {
 	c, ctx, err := s.manager.GetClient(ctx)
@@ -2446,7 +2439,7 @@ func (s *Service) CreateSupplementary(ctx context.Context, args map[string]any) 
 	}
 	return c.CreateSupplementary(ctx, args)
 }
-func (s *Service) DeleteSupplementary(ctx context.Context, id string) error {
+func (s *Service) DeleteSupplementary(ctx context.Context, productID, id string) error {
 	c, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return err
@@ -2454,7 +2447,7 @@ func (s *Service) DeleteSupplementary(ctx context.Context, id string) error {
 	if err := s.checkReadOnly(ctx); err != nil {
 		return err
 	}
-	return c.DeleteSupplementary(ctx, id)
+	return c.DeleteSupplementary(ctx, productID, id)
 }
 
 // === SIMILARS ===
@@ -2475,7 +2468,7 @@ func (s *Service) CreateSimilar(ctx context.Context, args map[string]any) (any, 
 	}
 	return c.CreateSimilar(ctx, args)
 }
-func (s *Service) DeleteSimilar(ctx context.Context, id string) error {
+func (s *Service) DeleteSimilar(ctx context.Context, productID, id string) error {
 	c, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return err
@@ -2483,7 +2476,7 @@ func (s *Service) DeleteSimilar(ctx context.Context, id string) error {
 	if err := s.checkReadOnly(ctx); err != nil {
 		return err
 	}
-	return c.DeleteSimilar(ctx, id)
+	return c.DeleteSimilar(ctx, productID, id)
 }
 
 // === UNITS ===
@@ -2493,6 +2486,15 @@ func (s *Service) ListUnits(ctx context.Context) ([]any, error) {
 		return nil, err
 	}
 	return c.ListUnits(ctx)
+}
+
+// === FIELDS (select-поля заказов/клиентов) ===
+func (s *Service) ListFields(ctx context.Context) ([]any, error) {
+	c, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return c.ListFields(ctx)
 }
 
 // === PIPELINE TOOLS ===

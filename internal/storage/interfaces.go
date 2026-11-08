@@ -25,15 +25,16 @@ type UserRepositoryInterface interface {
 }
 
 type ShopRepositoryInterface interface {
-	Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) (*Shop, error)
+	Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled, isDeleteDenied bool) (*Shop, error)
 	GetByID(id string) (*Shop, error)
 	ListByUserID(userID string) ([]Shop, error)
 	ListByUserIDFiltered(userID string, page, perPage int) ([]Shop, int, error)
 	GetDefault(userID string) (*Shop, error)
-	Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) error
+	Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled, isDeleteDenied bool) error
 	UpdateAPIPassword(id, apiPasswordEncrypted string) error
 	UpdateBillingStatus(id, status string, until *time.Time, payURL string) error
 	UpdateCapabilities(id, capabilitiesJSON string, checkedAt *time.Time) error
+	UpdateSettingsSnapshot(id, settingsJSON string) error
 	Delete(id string) error
 }
 

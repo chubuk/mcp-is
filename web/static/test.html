@@ -85,6 +85,13 @@
     assert(API.token === null, 'API.clearToken clears token');
     assert(API.isLoggedIn() === false, 'API.isLoggedIn returns false when no token');
 
+    localStorage.setItem('impersonating', 'true');
+    localStorage.setItem('admin_token', 'x');
+    API.clearSession();
+    assert(localStorage.getItem('impersonating') === null, 'clearSession removes impersonating flag');
+    assert(localStorage.getItem('admin_token') === null, 'clearSession removes admin_token');
+    assert(API.token === null, 'clearSession keeps token empty');
+
     // === Auth object tests ===
     assert(typeof Auth !== 'undefined', 'Auth object exists');
     assert(typeof Auth.renderLogin === 'function', 'Auth.renderLogin is function');

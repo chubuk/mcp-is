@@ -107,7 +107,7 @@ curl http://localhost:8080/health
 
 ## MCP Инструменты
 
-Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **287 инструментов** (123 read / 110 write / 54 delete). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent` (structuredContent всегда JSON-объект, списки — конверт `{items, total}`; `outputSchema` объявлен у core-инструментов и у мутаций — `MutationResult` с `changed_fields`/`deleted`). Мутации — best effort (InSales API нетранзакционен): после create/update рекомендуется verify-after-write через `get_*`.
+Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **282 инструмента** (121 read / 108 write / 53 delete). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent` (structuredContent всегда JSON-объект, списки — конверт `{items, total}`; `outputSchema` объявлен у core-инструментов и у мутаций — `MutationResult` с `changed_fields`/`deleted`). Мутации — best effort (InSales API нетранзакционен): после create/update рекомендуется verify-after-write через `get_*`.
 
 По умолчанию `tools/list` возвращает **core surface** (32 tools, включая discovery meta-tools `search_insales_tools`/`call_insales_tool`/`store_info`). Полный каталог — `search_insales_tools` → `call_insales_tool` или `MCP_TOOLS_MODE=all`.
 
@@ -117,7 +117,7 @@ curl http://localhost:8080/health
 - **Пагинация честная**: InSales клампит `per_page` снизу до 10, поэтому значения 1–9 эмулируются окном из 250-страниц; `total` в конверте — число элементов **в этом ответе**, не размер каталога (для подсчёта — `get_products_count`).
 - **Пустые значения не затирают поля**: в запрос обновления уходят только непустые значения (пустая строка/`null` отбрасываются; числа `0` и `false` остаются — иначе не записать нулевой остаток). Явная очистка поля — только `clear_fields: ["field"]`.
 - **`update_product` по whitelist**: лишние ключи не отправляются в InSales и возвращаются в ответе как `ignored_keys`; устаревший алиас `keywords` → `meta_keywords`. Цена и остатки (`price`/`quantity`) живут в вариантах и обновляются через `update_variant` — в `update_product` эти поля не принимаются.
-- **Дедупликация create-вызовов**: у всех 52 `create_*` есть опциональный `idempotency_key` (≤128 символов) — повтор с тем же ключом и payload возвращает первый результат с флагом `idempotent_replay`, тот же ключ с другим payload — ошибка; записи живут 24 часа (см. `docs/setup/API.md`).
+- **Дедупликация create-вызовов**: у всех 51 `create_*` есть опциональный `idempotency_key` (≤128 символов) — повтор с тем же ключом и payload возвращает первый результат с флагом `idempotent_replay`, тот же ключ с другим payload — ошибка; записи живут 24 часа (см. `docs/setup/API.md`).
 
 ### SEO (товары, страницы, блог, коллекции)
 
@@ -158,6 +158,8 @@ curl http://localhost:8080/health
 | `list_product_accessory_links` | Связи аксессуаров | `product_id` |
 
 Аналогично: `*_variant_field_value`, `*_collection_field_value` (collection: только list/get/update).
+
+Для полей заказов/клиентов (`/admin/fields.json`, `Field::TextField|TextArea|Checkbox|FileField|Delivery`) — `list_fields` (только чтение справочника).
 
 ### Заказы
 
@@ -210,14 +212,9 @@ curl http://localhost:8080/health
 | `add_image` | Добавить изображение | `product_id`, `url`, `filename`, `position` |
 | `delete_image` | Удалить изображение | `product_id`, `image_id` |
 
-### Метаполя
+### Метаполя (удалены)
 
-| Инструмент | Описание | Параметры |
-|------------|----------|-----------|
-| `list_meta_fields` | Список метаполей | `resource_type`, `resource_id` |
-| `create_meta_field` | Создать метаполе | `resource_type`, `resource_id`, `key`, `value` |
-| `update_meta_field` | Обновить метаполе | `meta_field_id`, `value` |
-| `delete_meta_field` | Удалить метаполе | `meta_field_id` |
+Тулы `list/create/update/delete_meta_field` и `list_currencies` удалены из тулсета: эндпоинты `/admin/meta_fields.json` и `/admin/currencies.json` в API InSales не существуют (возвращают HTML). Значения метаполей в пайплайнах (`search_product_details`, `order_full_details`, `client_full_profile`) читаются best-effort и при недоступности пропускаются. Пользовательские поля — см. `list_product_fields`/`list_fields`.
 
 ### Вебхуки
 
@@ -232,7 +229,6 @@ curl http://localhost:8080/health
 
 | Инструмент | Описание | Параметры |
 |------------|----------|-----------|
-| `list_currencies` | Валюты магазина | — |
 | `list_delivery_variants` / `get_delivery_variant` | Способы доставки | `variant_id` |
 | `create_delivery_variant` / `update_delivery_variant` / `delete_delivery_variant` | CRUD доставки | `title`, `type` (External\|Fixed\|LocationDepend\|PickUp\|PriceDepend) |
 | `list_payment_gateways` / `get_payment_gateway` | Способы оплаты | `gateway_id` |
@@ -666,8 +662,8 @@ SMTP_FROM=MCP IS <user@mail.ru>
 | Режим | Команд | Описание |
 |-------|--------|----------|
 | core (default tools/list) | 32 | products/orders/clients/categories/collections/fields/pipelines/export + discovery meta-tools |
-| read-only catalog | 123 | все read-команды (list_*, get_*, export, pipeline) |
-| read/write catalog | 287 | все команды включая create/update/delete + пайплайны |
+| read-only catalog | 121 | все read-команды (list_*, get_*, export, pipeline) |
+| read/write catalog | 282 | все команды включая create/update/delete + пайплайны |
 
 ## Пайплайн-инструменты
 
@@ -675,9 +671,9 @@ SMTP_FROM=MCP IS <user@mail.ru>
 
 | Инструмент | Что делает |
 |------------|-----------|
-| `search_product_details` | Поиск товара + кастомные поля + метаполя + изображения |
-| `order_full_details` | Заказ + клиент + адрес + позиции + метаполя |
-| `client_full_profile` | Клиент + последние заказы + бонусы + метаполя |
+| `search_product_details` | Поиск товара + кастомные поля + изображения |
+| `order_full_details` | Заказ + клиент + адрес + позиции |
+| `client_full_profile` | Клиент + последние заказы + бонусы |
 | `product_catalog_search` | Поиск по каталогу с фильтрами |
 | `collection_products` | Коллекция + все её товары |
 

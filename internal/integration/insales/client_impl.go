@@ -10,6 +10,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -2557,18 +2558,17 @@ func (c *InSalesClient) DeleteUserTask(ctx context.Context, id string) error {
 }
 
 // === SUPPLEMENTARY ===
+// Сопутствующие товары — только вложенные линковки /products/:product_id/supplementaries.json:
+// топ-левел /supplementaries и одиночного GET в API нет; create = линковка, не создание сущности.
 
-func (c *InSalesClient) ListSupplementaries(ctx context.Context) ([]any, error) {
-	return c.crudList(ctx, "/supplementaries.json")
-}
-func (c *InSalesClient) GetSupplementary(ctx context.Context, id string) (any, error) {
-	return c.crudGet(ctx, fmt.Sprintf("/supplementaries/%s.json", id))
+func (c *InSalesClient) ListSupplementaries(ctx context.Context, productID string) ([]any, error) {
+	return c.crudList(ctx, fmt.Sprintf("/products/%s/supplementaries.json", productID))
 }
 func (c *InSalesClient) CreateSupplementary(ctx context.Context, args map[string]any) (any, error) {
-	return c.crudCreate(ctx, "/supplementaries.json", "supplementary", args)
+	return c.createProductLink(ctx, "supplementaries", "supplementary_ids", "supplementary_product_id", args)
 }
-func (c *InSalesClient) DeleteSupplementary(ctx context.Context, id string) error {
-	return c.crudDelete(ctx, fmt.Sprintf("/supplementaries/%s.json", id))
+func (c *InSalesClient) DeleteSupplementary(ctx context.Context, productID, id string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/products/%s/supplementaries/%s.json", productID, id))
 }
 
 // === SIMILARS ===
@@ -2577,16 +2577,95 @@ func (c *InSalesClient) ListSimilars(ctx context.Context, productID string) ([]a
 	return c.crudList(ctx, fmt.Sprintf("/products/%s/similars.json", productID))
 }
 func (c *InSalesClient) CreateSimilar(ctx context.Context, args map[string]any) (any, error) {
-	return c.crudCreate(ctx, "/similars.json", "similar", args)
+	return c.createProductLink(ctx, "similars", "similar_ids", "similar_product_id", args)
 }
-func (c *InSalesClient) DeleteSimilar(ctx context.Context, id string) error {
-	return c.crudDelete(ctx, fmt.Sprintf("/similars/%s.json", id))
+func (c *InSalesClient) DeleteSimilar(ctx context.Context, productID, id string) error {
+	return c.crudDelete(ctx, fmt.Sprintf("/products/%s/similars/%s.json", productID, id))
+}
+
+// createProductLink — POST /products/:product_id/<link>.json с телом {<idsKey>: [...]}:
+// операция линковки (similar_ids/supplementary_ids), а не создание сущности.
+func (c *InSalesClient) createProductLink(ctx context.Context, link, idsKey, singleKey string, args map[string]any) (any, error) {
+	productID := idToString(args["product_id"])
+	if productID == "" {
+		return nil, fmt.Errorf("product_id is required")
+	}
+	var ids []string
+	switch v := args[idsKey].(type) {
+	case []any:
+		for _, it := range v {
+			if s := idToString(it); s != "" {
+				ids = append(ids, s)
+			}
+		}
+	case nil:
+		if s := idToString(args[singleKey]); s != "" {
+			ids = []string{s}
+		}
+	default:
+		if s := idToString(v); s != "" {
+			ids = []string{s}
+		}
+	}
+	if len(ids) == 0 {
+		return nil, fmt.Errorf("%s or %s is required", idsKey, singleKey)
+	}
+	payload := map[string]any{idsKey: ids}
+	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/products/%s/%s.json", productID, link), payload)
+	if err != nil {
+		return nil, err
+	}
+	var result map[string]any
+	if err := json.Unmarshal(body, &result); err != nil {
+		return nil, fmt.Errorf("decode: %w", err)
+	}
+	return result, nil
+}
+
+// idToString нормализует ID из args тула: JSON-числа приходят как float64 — без экспоненты.
+func idToString(v any) string {
+	switch t := v.(type) {
+	case string:
+		return t
+	case float64:
+		return strconv.FormatFloat(t, 'f', -1, 64)
+	case json.Number:
+		return t.String()
+	case nil:
+		return ""
+	default:
+		return fmt.Sprintf("%v", t)
+	}
 }
 
 // === UNITS ===
 
 func (c *InSalesClient) ListUnits(ctx context.Context) ([]any, error) {
-	return c.crudList(ctx, "/units.json")
+	// API требует ?lang=ru (422 без параметра) и отдаёт словарь {code: label}, а не массив.
+	body, _, err := c.doRequest(ctx, http.MethodGet, "/units.json?lang=ru", nil)
+	if err != nil {
+		return nil, err
+	}
+	var dict map[string]string
+	if err := json.Unmarshal(body, &dict); err != nil {
+		return nil, fmt.Errorf("decode units: %w", err)
+	}
+	codes := make([]string, 0, len(dict))
+	for code := range dict {
+		codes = append(codes, code)
+	}
+	sort.Strings(codes)
+	result := make([]any, 0, len(codes))
+	for _, code := range codes {
+		result = append(result, map[string]any{"code": code, "title": dict[code]})
+	}
+	return result, nil
+}
+
+// === FIELDS (select-поля заказов/клиентов, /admin/fields.json) ===
+
+func (c *InSalesClient) ListFields(ctx context.Context) ([]any, error) {
+	return c.crudList(ctx, "/fields.json")
 }
 
 // === OUTLETS ===

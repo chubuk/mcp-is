@@ -17,7 +17,9 @@ const Shops = {
             shops.forEach(s => {
                 const roBadge = s.is_read_only
                     ? '<span style="color:#b85c15;font-weight:600">Только чтение</span>'
-                    : '<span style="color:#27ae60">Чтение/Запись</span>';
+                    : s.is_delete_denied
+                        ? '<span style="color:#b85c15;font-weight:600">Без удаления</span>'
+                        : '<span style="color:#27ae60">Чтение/Запись</span>';
                 const pdnBadge = s.pdn_enabled
                     ? '<span style="color:#27ae60;font-weight:600">ПДн ✅</span>'
                     : '<span style="color:#707070">ПДн —</span>';
@@ -86,8 +88,14 @@ const Shops = {
                         </div>
                         <div class="form-group">
                             <label>
-                                <input type="checkbox" id="shop-readonly"> Только чтение (запрет записи)
+                                <input type="checkbox" id="shop-readonly" onchange="Shops.syncNoDelete()"> Только чтение (запрет записи)
                             </label>
+                        </div>
+                        <div class="form-group">
+                            <label>
+                                <input type="checkbox" id="shop-nodel"> Запрет удаления
+                            </label>
+                            <span class="form-check-hint">Удалять ничего нельзя, создавать и править — можно</span>
                         </div>
                         <div class="form-group">
                             <label>
@@ -129,7 +137,11 @@ const Shops = {
                             <label><input type="checkbox" id="edit-shop-default"> Магазин по умолчанию</label>
                         </div>
                         <div class="form-group">
-                            <label><input type="checkbox" id="edit-shop-readonly"> Только чтение (запрет записи)</label>
+                            <label><input type="checkbox" id="edit-shop-readonly" onchange="Shops.syncNoDelete()"> Только чтение (запрет записи)</label>
+                        </div>
+                        <div class="form-group">
+                            <label><input type="checkbox" id="edit-shop-nodel"> Запрет удаления</label>
+                            <span class="form-check-hint">Удалять ничего нельзя, создавать и править — можно</span>
                         </div>
                         <div class="form-group">
                             <label><input type="checkbox" id="edit-shop-pdn"> Защита персональных данных (152-ФЗ)</label>
@@ -172,6 +184,21 @@ const Shops = {
         document.getElementById('shop-form').style.display = 'block';
     },
 
+    // «Только чтение» запрещает и удаление — галочка «Запрет удаления» включается и блокируется.
+    syncNoDelete() {
+        [['shop-readonly', 'shop-nodel'], ['edit-shop-readonly', 'edit-shop-nodel']].forEach(([roId, ndId]) => {
+            const ro = document.getElementById(roId);
+            const nd = document.getElementById(ndId);
+            if (!ro || !nd) return;
+            if (ro.checked) {
+                nd.checked = true;
+                nd.disabled = true;
+            } else {
+                nd.disabled = false;
+            }
+        });
+    },
+
     hideForm() {
         document.getElementById('shop-form').style.display = 'none';
     },
@@ -193,7 +220,9 @@ const Shops = {
             shop.has_password ? '(сохранён ✓ — оставьте пустым, чтобы не менять)' : '(не задан)';
         document.getElementById('edit-shop-default').checked = shop.is_default;
         document.getElementById('edit-shop-readonly').checked = shop.is_read_only;
+        document.getElementById('edit-shop-nodel').checked = shop.is_delete_denied;
         document.getElementById('edit-shop-pdn').checked = shop.pdn_enabled;
+        this.syncNoDelete();
 
         document.getElementById('edit-shop-form').style.display = 'block';
         document.getElementById('shop-form').style.display = 'none';
@@ -280,6 +309,7 @@ const Shops = {
                 api_password: ['shop-apipass', 'text'],
                 is_default: ['shop-default', 'bool'],
                 is_read_only: ['shop-readonly', 'bool'],
+                is_delete_denied: ['shop-nodel', 'bool'],
                 pdn_enabled: ['shop-pdn', 'bool'],
             });
             if (!f.name) {
@@ -310,6 +340,7 @@ const Shops = {
                     api_key_id: ['edit-shop-apikey', 'text'],
                     is_default: ['edit-shop-default', 'bool'],
                     is_read_only: ['edit-shop-readonly', 'bool'],
+                    is_delete_denied: ['edit-shop-nodel', 'bool'],
                     pdn_enabled: ['edit-shop-pdn', 'bool'],
                     api_password: ['edit-shop-apipass', 'text'],
                 });
@@ -335,6 +366,49 @@ const Shops = {
         if (!confirm('Удалить магазин?')) return;
         await API.del('/api/shops/' + id);
         App.navigate('/shops');
+    },
+
+    // Текущий снимок «Настройки товаров» (для «Проверить соединение»).
+    renderSettings(settings) {
+        const entries = Object.entries(settings || {});
+        if (!entries.length) return '';
+        const rows = entries.map(([key, g]) => {
+            const items = g.items || [];
+            const names = items.map(i => esc(i.title) + (i.handle ? ` <small><code>${esc(i.handle)}</code></small>` : '')).join(', ');
+            return `<tr>
+                <td>${esc(g.title || key)}</td>
+                <td>${g.error ? '⚠️ ' + esc(g.error) : (names || '—')}</td>
+            </tr>`;
+        }).join('');
+        return `
+            <div style="margin:8px 0">
+                <strong>Настройки товаров</strong>
+                <table class="table">
+                    <thead><tr><th>Группа</th><th>Поля</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                </table>
+            </div>`;
+    },
+
+    // Дифф «Настройки товаров» с прошлой проверки (для «Проверить доступы»).
+    renderSettingsDiff(diff) {
+        if (!diff || !diff.length) return '';
+        const rows = diff.map(g => {
+            const added = (g.added || []).map(i => '+' + esc(i.title)).join(', ');
+            const removed = (g.removed || []).map(i => '−' + esc(i.title)).join(', ');
+            const changes = [added, removed].filter(Boolean).join(' · ');
+            return `<tr>
+                <td>${esc(g.title)}</td>
+                <td>${esc(g.total)}</td>
+                <td>${g.error ? '⚠️ ' + esc(g.error) : (changes || 'без изменений')}</td>
+            </tr>`;
+        }).join('');
+        return `
+            <strong>Настройки товаров — изменения с прошлой проверки</strong>
+            <table class="table">
+                <thead><tr><th>Группа</th><th>Полей</th><th>Изменения</th></tr></thead>
+                <tbody>${rows}</tbody>
+            </table>`;
     },
 
     async checkAccess(id) {
@@ -366,7 +440,8 @@ const Shops = {
                             </tr>`).join('')}
                         </tbody>
                     </table>
-                </div>`;
+                </div>
+                <div style="margin-top:12px">${Shops.renderSettingsDiff(d.settings)}</div>`;
         } else {
             result.innerHTML = '<div class="alert alert--error">' + esc(res ? res.data.error : 'Ошибка') + '</div>';
         }
@@ -395,13 +470,15 @@ const Shops = {
 
         if (res && res.ok && res.data.ok) {
             const shop = res.data.shop;
+            // eslint-disable-next-line no-unsanitized/property -- esc() + шаблон собственной renderSettings()
             resultEl.innerHTML = `
                 <div class="alert alert--success">
                     <strong>${esc(res.data.message)}</strong><br>
                     Магазин: ${esc(shop.name)}<br>
                     Домен: ${esc(shop.domain)}<br>
                     Валюта: ${esc(shop.currency)}
-                </div>`;
+                </div>
+                ${Shops.renderSettings(res.data.settings)}`;
         } else {
             const errMsg = (res && res.data && res.data.error) ? res.data.error : 'Неизвестная ошибка';
             resultEl.innerHTML = '<div class="alert alert--error"><strong>Ошибка соединения:</strong> ' + esc(errMsg) + '</div>';

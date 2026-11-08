@@ -88,6 +88,7 @@ const Auth = {
 
             const res = await API.post('/api/login', { login, password });
             if (res && res.ok) {
+                API.clearSession();
                 API.setToken(res.data.token);
                 localStorage.setItem('nickname', res.data.nickname);
                 localStorage.setItem('role', res.data.role);
@@ -169,6 +170,7 @@ const Auth = {
                 // Код меняем на JWT сразу в JS — без попадания в URL/историю.
                 const ex = await API.post('/api/exchange-code', { code: r.data.code });
                 if (ex && ex.ok) {
+                    API.clearSession();
                     API.setToken(ex.data.token);
                     localStorage.setItem('nickname', ex.data.nickname);
                     localStorage.setItem('role', ex.data.role);
@@ -338,6 +340,7 @@ const Auth = {
         const legacyCode = params.get('code');
         API.post('/api/exchange-code', legacyCode ? { code: legacyCode } : {}).then((res) => {
             if (res && res.ok) {
+                API.clearSession();
                 API.setToken(res.data.token);
                 localStorage.setItem('nickname', res.data.nickname);
                 localStorage.setItem('role', res.data.role);

@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS shops (
     api_password_encrypted TEXT NOT NULL,
     is_default BOOLEAN DEFAULT FALSE,
     is_read_only BOOLEAN DEFAULT FALSE,
+    is_delete_denied BOOLEAN DEFAULT FALSE,
     jurisdiction TEXT DEFAULT 'AUTO',
     pdn_enabled BOOLEAN DEFAULT FALSE,
     billing_status TEXT NOT NULL DEFAULT 'active', -- active | unpaid | unknown
@@ -38,6 +39,7 @@ CREATE TABLE IF NOT EXISTS shops (
     billing_pay_url TEXT DEFAULT '',
     capabilities TEXT DEFAULT '',
     capabilities_checked_at TIMESTAMPTZ,
+    settings_snapshot TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );

@@ -23,7 +23,7 @@
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
 │  │ Auth Layer  │  │ MCP Server  │  │ Web API (REST)      │ │
 │  │ JWT/API Key │  │ mcp-go SDK  │  │ handlers/shops/...  │ │
-│  │ Rate Limit  │  │ 287 tools   │  │ admin/auth/server   │ │
+│  │ Rate Limit  │  │ 282 tools   │  │ admin/auth/server   │ │
 │  └─────────────┘  └──────┬──────┘  └──────────┬──────────┘ │
 │                          │                     │            │
 │  ┌───────────────────────┴─────────────────────┴──────────┐ │
@@ -67,7 +67,7 @@
 - **Role-based access** — super_admin, admin, user
 
 ### 3. MCP Server (mcp-go SDK)
-- **287 инструментов** для работы с InSales (123 read / 110 write / 54 delete)
+- **282 инструмента** для работы с InSales (121 read / 108 write / 53 delete)
 - **Progressive discovery** — default `tools/list` ≈ core surface (~30) + `search_insales_tools` / `call_insales_tool`; полный каталог через catalog или `MCP_TOOLS_MODE=all`
 - **Tool annotations** — readOnlyHint, destructiveHint, idempotentHint, openWorldHint
 - **Tool filtering** — read-only режим скрывает write-команды; nil ReadOnlyHint трактуется как write
@@ -153,7 +153,7 @@ sudo systemctl start mcp-is
 
 ### 6. Покрытие InSales API → MCP tools (op→tool)
 
-Сгенерировано из `docs/api/Insales-api-docs.md` vs `internal/mcp/tools.go`. Ресурсов: 57, операций API: 327, MCP tools: 287.
+Сгенерировано из `docs/api/Insales-api-docs.md` vs `internal/mcp/tools.go`. Ресурсов: 57, операций API: 327, MCP tools: 282.
 
 Статусы: **OK** — есть list/get/create/update/delete (или API не даёт большего); **частично** — нет отдельных вербов (часто в API их и нет); **out-of-scope** — ресурс не нужен / сломан на стороне InSales.
 
@@ -209,8 +209,8 @@ sudo systemctl start mcp-is
 | Redirect | 5 | DELETE, GET, POST | `create_redirect`, `delete_redirect` | OK (create/delete/list — без update в API) |
 | Review | 5 | DELETE, GET, POST, PUT | `create_review`, `delete_review`, `get_review`, `update_review` | OK |
 | SalesChannel | 4 | DELETE, GET, POST | `create_sales_channel`, `delete_sales_channel`, `get_sales_channel`, `update_sales_channel` | OK |
-| Similar | 7 | DELETE, GET, POST, PUT | `create_similar`, `delete_similar` | OK,update |
-| Supplementary | 3 | DELETE, GET, POST | `create_supplementary`, `delete_supplementary`, `get_supplementary` | частично: нет update |
+| Similar | 7 | DELETE, GET, POST, PUT | `list_similars`, `create_similar`, `delete_similar` | частично: только линковки `/products/:id/similars` (update отсутствует в API) |
+| Supplementary | 3 | DELETE, GET, POST | `list_supplementaries`, `create_supplementary`, `delete_supplementary` | частично: только линковки `/products/:id/supplementaries` |
 | Unit | 1 | GET | — | OK (в API только list) |
 | UserTask | 5 | DELETE, GET, POST, PUT | `create_user_task`, `delete_user_task`, `get_user_task`, `update_user_task` | OK |
 | Variant | 7 | DELETE, GET, POST, PUT | `create_delivery_variant`, `create_variant_field`, `create_variant_field_value`, `delete_delivery_variant`, `delete_variant`, `delete_variant_field`, `delete_variant_field_value`, `get_delivery_variant`… | OK |

@@ -683,7 +683,7 @@ func (h *AppHandler) provisionUserAndShop(inst *storage.AppInstall, email, userN
 			h.manager.InvalidateShop(shop)
 		}
 	} else {
-		created, err := h.shops.Create(userID, inst.ShopHost, inst.ShopHost, h.appKey, inst.APIPasswordEncrypted, true, false, false)
+		created, err := h.shops.Create(userID, inst.ShopHost, inst.ShopHost, h.appKey, inst.APIPasswordEncrypted, true, false, false, false)
 		if err != nil {
 			return nil, "", "", fmt.Errorf("create shop: %w", err)
 		}

@@ -327,19 +327,21 @@ type Client interface {
 	UpdateUserTask(ctx context.Context, id string, args map[string]any) (any, error)
 	DeleteUserTask(ctx context.Context, id string) error
 
-	// Supplementary
-	ListSupplementaries(ctx context.Context) ([]any, error)
-	GetSupplementary(ctx context.Context, id string) (any, error)
+	// Supplementary (линковки /products/:product_id/supplementaries.json)
+	ListSupplementaries(ctx context.Context, productID string) ([]any, error)
 	CreateSupplementary(ctx context.Context, args map[string]any) (any, error)
-	DeleteSupplementary(ctx context.Context, id string) error
+	DeleteSupplementary(ctx context.Context, productID, id string) error
 
-	// Similars
+	// Similars (линковки /products/:product_id/similars.json)
 	ListSimilars(ctx context.Context, productID string) ([]any, error)
 	CreateSimilar(ctx context.Context, args map[string]any) (any, error)
-	DeleteSimilar(ctx context.Context, id string) error
+	DeleteSimilar(ctx context.Context, productID, id string) error
 
 	// Units
 	ListUnits(ctx context.Context) ([]any, error)
+
+	// Fields (select-поля заказов/клиентов /admin/fields.json)
+	ListFields(ctx context.Context) ([]any, error)
 
 	// Outlets
 	ListOutlets(ctx context.Context) ([]any, error)

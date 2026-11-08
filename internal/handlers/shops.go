@@ -29,31 +29,33 @@ func NewShopHandler(shopRepo storage.ShopRepositoryInterface, aiKeyRepo storage.
 }
 
 type ShopRequest struct {
-	Name        string  `json:"name"`
-	ShopURL     string  `json:"shop_url"`
-	APIKeyID    string  `json:"api_key_id"`
-	APIPassword *string `json:"api_password,omitempty"` // omitted = keep existing; empty string = clear
-	IsDefault   bool    `json:"is_default"`
-	IsReadOnly  bool    `json:"is_read_only"`
-	PDNEnabled  bool    `json:"pdn_enabled"`
+	Name           string  `json:"name"`
+	ShopURL        string  `json:"shop_url"`
+	APIKeyID       string  `json:"api_key_id"`
+	APIPassword    *string `json:"api_password,omitempty"` // omitted = keep existing; empty string = clear
+	IsDefault      bool    `json:"is_default"`
+	IsReadOnly     bool    `json:"is_read_only"`
+	IsDeleteDenied bool    `json:"is_delete_denied"`
+	PDNEnabled     bool    `json:"pdn_enabled"`
 }
 
 type ShopResponse struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	ShopURL       string `json:"shop_url"`
-	APIKeyID      string `json:"api_key_id"`
-	IsDefault     bool   `json:"is_default"`
-	IsReadOnly    bool   `json:"is_read_only"`
-	PDNEnabled    bool   `json:"pdn_enabled"`
-	HasPass       bool   `json:"has_password"`
-	Jurisdiction  string `json:"jurisdiction,omitempty"`
-	BillingStatus string `json:"billing_status,omitempty"`
-	BillingUntil  string `json:"billing_until,omitempty"`
-	BillingPayURL string `json:"billing_pay_url,omitempty"`
-	Capabilities  string `json:"capabilities,omitempty"` // JSON снимок прав (probe)
-	CreatedAt     string `json:"created_at,omitempty"`
-	Error         string `json:"error,omitempty"`
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	ShopURL        string `json:"shop_url"`
+	APIKeyID       string `json:"api_key_id"`
+	IsDefault      bool   `json:"is_default"`
+	IsReadOnly     bool   `json:"is_read_only"`
+	IsDeleteDenied bool   `json:"is_delete_denied"`
+	PDNEnabled     bool   `json:"pdn_enabled"`
+	HasPass        bool   `json:"has_password"`
+	Jurisdiction   string `json:"jurisdiction,omitempty"`
+	BillingStatus  string `json:"billing_status,omitempty"`
+	BillingUntil   string `json:"billing_until,omitempty"`
+	BillingPayURL  string `json:"billing_pay_url,omitempty"`
+	Capabilities   string `json:"capabilities,omitempty"` // JSON снимок прав (probe)
+	CreatedAt      string `json:"created_at,omitempty"`
+	Error          string `json:"error,omitempty"`
 }
 
 func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
@@ -95,7 +97,7 @@ func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	shop, err := h.shopRepo.Create(userID, req.Name, req.ShopURL, req.APIKeyID, encrypted, req.IsDefault, req.IsReadOnly, req.PDNEnabled)
+	shop, err := h.shopRepo.Create(userID, req.Name, req.ShopURL, req.APIKeyID, encrypted, req.IsDefault, req.IsReadOnly, req.PDNEnabled, req.IsDeleteDenied)
 	if err != nil {
 		slog.Warn("create shop failed", "error", err)
 		writeJSON(w, http.StatusInternalServerError, ShopResponse{Error: "failed to create shop"})
@@ -106,7 +108,7 @@ func (h *ShopHandler) Create(w http.ResponseWriter, r *http.Request) {
 	// Async probe прав ключа (не блокируем создание).
 	h.probeAsync(shop.ID, shop.ShopURL, shop.APIKeyID, *req.APIPassword, false)
 	writeJSON(w, http.StatusCreated, ShopResponse{
-		ID: shop.ID, Name: shop.Name, ShopURL: shop.ShopURL, APIKeyID: shop.APIKeyID, IsDefault: shop.IsDefault, IsReadOnly: shop.IsReadOnly, PDNEnabled: shop.PDNEnabled,
+		ID: shop.ID, Name: shop.Name, ShopURL: shop.ShopURL, APIKeyID: shop.APIKeyID, IsDefault: shop.IsDefault, IsReadOnly: shop.IsReadOnly, IsDeleteDenied: shop.IsDeleteDenied, PDNEnabled: shop.PDNEnabled,
 	})
 }
 
@@ -146,6 +148,15 @@ func (h *ShopHandler) probeAsync(shopID, shopURL, apiKeyID, password string, res
 		if err := h.shopRepo.UpdateCapabilities(shopID, capsJSON, &now); err != nil {
 			slog.Error("async probe save", "error", err, "shop_id", shopID)
 		}
+		// Снимок «Настройки товаров» — база для диффа доп. полей при проверке.
+		if cli, cerr := insales.NewClient(shopURL, apiKeyID, password); cerr == nil {
+			settings := collectShopSettings(ctx, cli)
+			if b, merr := json.Marshal(settings); merr == nil {
+				if err := h.shopRepo.UpdateSettingsSnapshot(shopID, string(b)); err != nil {
+					slog.Error("async settings snapshot save", "error", err, "shop_id", shopID)
+				}
+			}
+		}
 		slog.Info("async probe done", "shop_id", shopID, "credentials_ok", snap.CredentialsOK)
 	}()
 }
@@ -173,7 +184,7 @@ func (h *ShopHandler) List(w http.ResponseWriter, r *http.Request) {
 	result := make([]ShopResponse, len(shops))
 	for i, s := range shops {
 		resp := ShopResponse{
-			ID: s.ID, Name: s.Name, ShopURL: s.ShopURL, APIKeyID: s.APIKeyID, IsDefault: s.IsDefault, IsReadOnly: s.IsReadOnly, PDNEnabled: s.PDNEnabled, CreatedAt: s.CreatedAt,
+			ID: s.ID, Name: s.Name, ShopURL: s.ShopURL, APIKeyID: s.APIKeyID, IsDefault: s.IsDefault, IsReadOnly: s.IsReadOnly, IsDeleteDenied: s.IsDeleteDenied, PDNEnabled: s.PDNEnabled, CreatedAt: s.CreatedAt,
 			HasPass:       s.APIPasswordEncrypted != "",
 			BillingStatus: s.BillingStatus,
 			BillingPayURL: s.BillingPayURL,
@@ -243,7 +254,7 @@ func (h *ShopHandler) Update(w http.ResponseWriter, r *http.Request) {
 		req.APIKeyID = existing.APIKeyID
 	}
 
-	if err := h.shopRepo.Update(shopID, req.Name, req.ShopURL, req.APIKeyID, encrypted, req.IsDefault, req.IsReadOnly, req.PDNEnabled); err != nil {
+	if err := h.shopRepo.Update(shopID, req.Name, req.ShopURL, req.APIKeyID, encrypted, req.IsDefault, req.IsReadOnly, req.PDNEnabled, req.IsDeleteDenied); err != nil {
 		writeJSON(w, http.StatusInternalServerError, ShopResponse{Error: "failed to update shop"})
 		return
 	}
@@ -253,7 +264,7 @@ func (h *ShopHandler) Update(w http.ResponseWriter, r *http.Request) {
 		h.probeAsync(shopID, req.ShopURL, req.APIKeyID, *req.APIPassword, true)
 	}
 
-	writeJSON(w, http.StatusOK, ShopResponse{ID: shopID, Name: req.Name, ShopURL: req.ShopURL, APIKeyID: req.APIKeyID, IsDefault: req.IsDefault, IsReadOnly: req.IsReadOnly, PDNEnabled: req.PDNEnabled, HasPass: encrypted != ""})
+	writeJSON(w, http.StatusOK, ShopResponse{ID: shopID, Name: req.Name, ShopURL: req.ShopURL, APIKeyID: req.APIKeyID, IsDefault: req.IsDefault, IsReadOnly: req.IsReadOnly, IsDeleteDenied: req.IsDeleteDenied, PDNEnabled: req.PDNEnabled, HasPass: encrypted != ""})
 }
 
 func (h *ShopHandler) Delete(w http.ResponseWriter, r *http.Request) {
@@ -283,6 +294,8 @@ type TestConnectionResponse struct {
 		Email    string `json:"email"`
 		Currency string `json:"currency"`
 	} `json:"shop,omitempty"`
+	// Settings — текущий снимок «Настройки товаров» (без диффа: ключ ещё не сохранён).
+	Settings SettingsSnapshot `json:"settings,omitempty"`
 }
 
 func (h *ShopHandler) TestConnection(w http.ResponseWriter, r *http.Request) {
@@ -325,6 +338,7 @@ func (h *ShopHandler) TestConnection(w http.ResponseWriter, r *http.Request) {
 			Email:    info.Email,
 			Currency: info.Currency,
 		},
+		Settings: collectShopSettings(r.Context(), client),
 	})
 }
 
@@ -354,10 +368,8 @@ var readCommands = []string{
 	"list_collections",
 	"get_collection",
 	"list_images",
-	"list_meta_fields",
 	"list_webhooks",
 	"get_shop_info",
-	"list_currencies",
 	"list_delivery_variants",
 	"get_delivery_variant",
 	"list_payment_gateways",
@@ -445,9 +457,9 @@ var readCommands = []string{
 	"list_user_tasks",
 	"get_user_task",
 	"list_supplementaries",
-	"get_supplementary",
 	"list_similars",
 	"list_units",
+	"list_fields",
 	"list_outlets",
 	"get_outlet",
 	"list_marketplaces",
@@ -504,16 +516,11 @@ var allCommandNames = []string{
 	"list_images",
 	"add_image",
 	"delete_image",
-	"list_meta_fields",
-	"create_meta_field",
-	"update_meta_field",
-	"delete_meta_field",
 	"list_webhooks",
 	"create_webhook",
 	"update_webhook",
 	"delete_webhook",
 	"get_shop_info",
-	"list_currencies",
 	"list_delivery_variants",
 	"get_delivery_variant",
 	"create_delivery_variant",
@@ -722,13 +729,13 @@ var allCommandNames = []string{
 	"update_user_task",
 	"delete_user_task",
 	"list_supplementaries",
-	"get_supplementary",
 	"create_supplementary",
 	"delete_supplementary",
 	"list_similars",
 	"create_similar",
 	"delete_similar",
 	"list_units",
+	"list_fields",
 	"list_outlets",
 	"get_outlet",
 	"create_outlet",
@@ -794,16 +801,11 @@ var commandDescriptions = map[string]string{ // #nosec G101 -- map keys are InSa
 	"list_images":                         "Получить список изображений товара",
 	"add_image":                           "Добавить изображение к товару",
 	"delete_image":                        "Удалить изображение товара",
-	"list_meta_fields":                    "Получить список метаполей",
-	"create_meta_field":                   "Создать метаполе для ресурса",
-	"update_meta_field":                   "Обновить метаполе",
-	"delete_meta_field":                   "Удалить метаполе",
 	"list_webhooks":                       "Получить список подписанных вебхуков",
 	"create_webhook":                      "Подписаться на событие InSales",
 	"update_webhook":                      "Обновить URL вебхука",
 	"delete_webhook":                      "Отписаться от вебхука",
 	"get_shop_info":                       "Получить информацию о магазине (название, домен, валюта)",
-	"list_currencies":                     "Получить список валют магазина",
 	"list_delivery_variants":              "Способы доставки",
 	"get_delivery_variant":                "Способ доставки",
 	"create_delivery_variant":             "Создать способ доставки",
@@ -1011,14 +1013,14 @@ var commandDescriptions = map[string]string{ // #nosec G101 -- map keys are InSa
 	"create_user_task":                    "Создать задачу",
 	"update_user_task":                    "Обновить задачу",
 	"delete_user_task":                    "Удалить задачу",
-	"list_supplementaries":                "Список дополнительных товаров",
-	"get_supplementary":                   "Получить дополнительный товар",
-	"create_supplementary":                "Создать дополнительный товар",
-	"delete_supplementary":                "Удалить дополнительный товар",
-	"list_similars":                       "Похожие товары",
-	"create_similar":                      "Добавить похожий товар",
-	"delete_similar":                      "Удалить похожий товар",
+	"list_supplementaries":                "Список сопутствующих товаров (связи)",
+	"create_supplementary":                "Связать сопутствующий товар",
+	"delete_supplementary":                "Убрать сопутствующий товар",
+	"list_similars":                       "Похожие товары (связи)",
+	"create_similar":                      "Связать похожий товар",
+	"delete_similar":                      "Убрать похожий товар",
 	"list_units":                          "Список единиц измерения",
+	"list_fields":                         "Список полей заказов и клиентов",
 	"list_outlets":                        "Список точек выдачи",
 	"get_outlet":                          "Получить точку выдачи по ID",
 	"create_outlet":                       "Создать точку выдачи",
@@ -1059,7 +1061,9 @@ type CheckAccessResponse struct {
 	Domains       []CheckAccessDomain `json:"domains"`
 	AllowedTools  []string            `json:"allowed_tools"`
 	Count         int                 `json:"count"`
-	Error         string              `json:"error,omitempty"`
+	// Settings — дифф «Настройки товаров» с прошлой проверки (добавленные/удалённые доп. поля).
+	Settings []SettingsGroupDiff `json:"settings,omitempty"`
+	Error    string              `json:"error,omitempty"`
 }
 
 // CheckAccess выполняет живой probe прав ключа магазина (25 GET-доменов InSales)
@@ -1108,6 +1112,20 @@ func (h *ShopHandler) CheckAccess(w http.ResponseWriter, r *http.Request) {
 		slog.Error("save capabilities snapshot", "error", uerr, "shop_id", shopID)
 	}
 
+	// «Настройки товаров»: текущий снимок + дифф с сохранённым, затем сохранение нового.
+	var settingsDiff []SettingsGroupDiff
+	if cli, cerr := insales.NewClient(shop.ShopURL, shop.APIKeyID, password); cerr == nil {
+		curr := collectShopSettings(r.Context(), cli)
+		var prevSettings SettingsSnapshot
+		_ = json.Unmarshal([]byte(shop.SettingsSnapshot), &prevSettings)
+		settingsDiff = diffSettings(prevSettings, curr)
+		if b, merr := json.Marshal(curr); merr == nil {
+			if uerr := h.shopRepo.UpdateSettingsSnapshot(shopID, string(b)); uerr != nil {
+				slog.Error("save settings snapshot", "error", uerr, "shop_id", shopID)
+			}
+		}
+	}
+
 	// Список доступных инструментов (для UI).
 	var allowedTools []string
 	for _, name := range allCommandNames {
@@ -1139,6 +1157,7 @@ func (h *ShopHandler) CheckAccess(w http.ResponseWriter, r *http.Request) {
 		Domains:       domains,
 		AllowedTools:  allowedTools,
 		Count:         len(allowedTools),
+		Settings:      settingsDiff,
 		Error:         snap.Error,
 	})
 }

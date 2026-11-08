@@ -24,6 +24,12 @@ ALTER TABLE shops ADD COLUMN IF NOT EXISTS billing_pay_url TEXT DEFAULT '';
 ALTER TABLE shops ADD COLUMN IF NOT EXISTS capabilities TEXT DEFAULT '';
 ALTER TABLE shops ADD COLUMN IF NOT EXISTS capabilities_checked_at TIMESTAMPTZ;
 
+-- Миграция v0.12.0 - снимок «Настройки товаров» (дифф доп. полей при проверке)
+ALTER TABLE shops ADD COLUMN IF NOT EXISTS settings_snapshot TEXT DEFAULT '';
+
+-- Миграция v0.12.0 - запрет удаления (ClassDelete тулы скрыты для магазина)
+ALTER TABLE shops ADD COLUMN IF NOT EXISTS is_delete_denied BOOLEAN DEFAULT FALSE;
+
 CREATE INDEX IF NOT EXISTS idx_app_installs_shop ON app_installs(shop_id);
 
 -- Миграция v0.3.0 (будущее)

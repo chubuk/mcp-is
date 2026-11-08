@@ -48,7 +48,7 @@ func TestContractCoreTools(t *testing.T) {
 
 // TestContractReadOnlyAnnotationMatchesClass — read-класс = readOnlyHint,
 // кроме call_insales_tool (диспетчер, вызывает и мутации). Фиксирует расхождение
-// 122 vs 123 как осознанный инвариант, а не дрейф.
+// 120 vs 121 как осознанный инвариант, а не дрейф.
 func TestContractReadOnlyAnnotationMatchesClass(t *testing.T) {
 	s := server.NewMCPServer("test", "1.0")
 	RegisterTools(s, nil)
@@ -75,8 +75,8 @@ func TestContractReadOnlyAnnotationMatchesClass(t *testing.T) {
 			t.Errorf("read-class tool %q lacks ReadOnlyHint(true)", name)
 		}
 	}
-	if checked != 123 {
-		t.Errorf("read-class tools = %d, want 123 (docs are synced to this number)", checked)
+	if checked != 121 {
+		t.Errorf("read-class tools = %d, want 121 (docs are synced to this number)", checked)
 	}
 }
 
@@ -100,8 +100,8 @@ func TestContractCreateToolsHaveIdempotencyKey(t *testing.T) {
 			t.Errorf("create tool %q lacks idempotency_key", name)
 		}
 	}
-	if count != 52 {
-		t.Errorf("create_* tools = %d, want 52 (docs/CHANGELOG)", count)
+	if count != 51 {
+		t.Errorf("create_* tools = %d, want 51 (docs/CHANGELOG)", count)
 	}
 	// Обратная проверка: ключ только у create_* — add_*/update_*/delete_* без него.
 	for name := range toolMeta {

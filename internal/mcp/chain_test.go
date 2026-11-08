@@ -240,8 +240,8 @@ var genericCreateCalls = []createCall{
 	{"create_recurring_application_charge", nil, "/recurring_application_charge.json", "recurring_application_charge", []string{"name"}},
 	{"create_oauth_app", nil, "/o_auth_apps.json", "o_auth_app", []string{"title"}},
 	{"create_user_task", nil, "/user_tasks.json", "user_task", []string{"title"}},
-	{"create_supplementary", nil, "/supplementaries.json", "supplementary", []string{"title"}},
-	{"create_similar", nil, "/similars.json", "similar", []string{"product_id"}},
+	{"create_supplementary", nil, "/products/1/supplementaries.json", "", []string{"supplementary_ids"}},
+	{"create_similar", nil, "/products/1/similars.json", "", []string{"similar_ids"}},
 	{"create_outlet", nil, "/outlets.json", "outlet", []string{"title"}},
 	{"create_marketplace", nil, "/marketplaces.json", "marketplace", []string{"name"}},
 }
@@ -255,7 +255,6 @@ var customCreateCalls = []createCall{
 	{"create_client", nil, "/clients.json", "client", []string{"name", "surname"}},
 	{"create_category", nil, "/categories.json", "category", []string{"title"}},
 	{"create_collection", nil, "/collections.json", "collection", []string{"title"}},
-	{"create_meta_field", nil, "/meta_fields.json", "meta_field", nil},
 	{"create_webhook", nil, "/webhooks.json", "webhook", []string{"event", "url"}},
 	{"create_page", nil, "/pages.json", "page", []string{"title", "content"}},
 	{"create_accessory", nil, "/accessories.json", "accessory", []string{"name"}},
@@ -267,7 +266,7 @@ var customCreateCalls = []createCall{
 	{"create_blog_post", nil, "/blogs/1/articles.json", "article", []string{"title", "content"}},
 	{"create_discount_code", nil, "/discount_codes.json", "discount_code", nil},
 	// add_* (не create_*): имя тулза — add_product_to_collection, строка нужна
-	// для контракта POST /collects.json; в инвариант «52 create_*» не входит.
+	// для контракта POST /collects.json; в инвариант «51 create_*» не входит.
 	{"add_product_to_collection", nil, "/collects.json", "collect", []string{"collection_id", "product_id"}},
 	{"create_property", nil, "/properties.json", "property", nil},
 	{"create_characteristic", nil, "/properties/1/characteristics.json", "characteristic", nil},
@@ -313,8 +312,8 @@ func TestChainCreateTools_CoverAllRegistered(t *testing.T) {
 			missing++
 		}
 	}
-	if missing == 0 && coveredCreates != 52 {
-		t.Errorf("create_* chain rows = %d, want 52", coveredCreates)
+	if missing == 0 && coveredCreates != 51 {
+		t.Errorf("create_* chain rows = %d, want 51", coveredCreates)
 	}
 }
 

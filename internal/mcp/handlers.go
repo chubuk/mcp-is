@@ -1028,58 +1028,6 @@ func deleteImageHandler(svc *service.Service) func(ctx context.Context, req mcp.
 	}
 }
 
-// === МЕТАПОЛЯ ===
-
-func listMetaFieldsHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		args := req.GetArguments()
-		result, err := svc.ListMetaFields(ctx, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
-	}
-}
-
-func createMetaFieldHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		args := req.GetArguments()
-		result, err := svc.CreateMetaField(ctx, args)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
-	}
-}
-
-func updateMetaFieldHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		metaFieldID, err := req.RequireString("meta_field_id")
-		if err != nil {
-			return toolError(err), nil
-		}
-		args := req.GetArguments()
-		return updateWithDiff("meta_field", metaFieldID, args, nil,
-			nil,
-			func() (any, error) { return svc.UpdateMetaField(ctx, metaFieldID, args) },
-			nil,
-		), nil
-	}
-}
-
-func deleteMetaFieldHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		metaFieldID, err := req.RequireString("meta_field_id")
-		if err != nil {
-			return toolError(err), nil
-		}
-		return deleteResult("meta_field", metaFieldID,
-			nil,
-			func() error { return svc.DeleteMetaField(ctx, metaFieldID) },
-		), nil
-	}
-}
-
 // === ВЕБХУКИ ===
 
 func listWebhooksHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
@@ -1144,16 +1092,6 @@ func deleteWebhookHandler(svc *service.Service) func(ctx context.Context, req mc
 func getShopInfoHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		result, err := svc.GetStoreDetails(ctx)
-		if err != nil {
-			return toolError(err), nil
-		}
-		return toolResult(result), nil
-	}
-}
-
-func listCurrenciesHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
-		result, err := svc.ListCurrencies(ctx)
 		if err != nil {
 			return toolError(err), nil
 		}

@@ -20,8 +20,7 @@ const API = {
         const data = await res.json();
 
         if (res.status === 401 && this.token) {
-            this.token = null;
-            localStorage.removeItem('token');
+            this.clearSession();
             App.navigate('/login');
             return null;
         }
@@ -42,6 +41,14 @@ const API = {
     clearToken() {
         this.token = null;
         localStorage.removeItem('token');
+    },
+
+    // Полная зачистка сессии, включая следы имперсонации (admin_*, impersonating):
+    // иначе протухший флаг переживает перелогин и обе кнопки выхода уходят в «not impersonating».
+    clearSession() {
+        this.clearToken();
+        ['nickname', 'role', 'user_id', 'impersonating', 'admin_token', 'admin_user_id', 'admin_nickname', 'admin_role']
+            .forEach(k => localStorage.removeItem(k));
     },
 
     isLoggedIn() {

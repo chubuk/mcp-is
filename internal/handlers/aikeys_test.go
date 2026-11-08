@@ -36,7 +36,7 @@ func createAIKey(t *testing.T, h *AIKeyHandler, userID, shopID string) AIKeyResp
 
 func TestAIKeyCreate_Success(t *testing.T) {
 	h, _, shops := setupAIKeyHandler()
-	shop, _ := shops.Create("user-1", "Ромашка", "romashka.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-1", "Ромашка", "romashka.myinsales.ru", "ik", "ip", true, false, false, false)
 
 	resp := createAIKey(t, h, "user-1", shop.ID)
 
@@ -74,7 +74,7 @@ func TestAIKeyCreate_NoShopID(t *testing.T) {
 	}
 
 	// with an existing shop → generic "Укажите магазин"
-	shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false, false)
 	w2 := httptest.NewRecorder()
 	req2 := httptest.NewRequest(http.MethodPost, "/api/ai-keys", bytes.NewReader(body))
 	req2 = req2.WithContext(withUserID(req2.Context(), "user-1"))
@@ -86,7 +86,7 @@ func TestAIKeyCreate_NoShopID(t *testing.T) {
 
 func TestAIKeyCreate_ForeignShop(t *testing.T) {
 	h, _, shops := setupAIKeyHandler()
-	shop, _ := shops.Create("user-2", "Чужой", "foreign.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-2", "Чужой", "foreign.myinsales.ru", "ik", "ip", true, false, false, false)
 
 	body, _ := json.Marshal(AIKeyRequest{Name: ptr("k"), ShopID: ptr(shop.ID)})
 	req := httptest.NewRequest(http.MethodPost, "/api/ai-keys", bytes.NewReader(body))
@@ -101,7 +101,7 @@ func TestAIKeyCreate_ForeignShop(t *testing.T) {
 
 func TestAIKeyCreate_InvalidConnectionName(t *testing.T) {
 	h, _, shops := setupAIKeyHandler()
-	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false, false)
 
 	body, _ := json.Marshal(AIKeyRequest{Name: ptr("k"), ShopID: ptr(shop.ID), ConnectionName: ptr("Bad_Name!")})
 	req := httptest.NewRequest(http.MethodPost, "/api/ai-keys", bytes.NewReader(body))
@@ -116,7 +116,7 @@ func TestAIKeyCreate_InvalidConnectionName(t *testing.T) {
 
 func TestAIKeyCreate_ConnectionNameCollisionGetsSuffix(t *testing.T) {
 	h, _, shops := setupAIKeyHandler()
-	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false, false)
 
 	first := createAIKey(t, h, "user-1", shop.ID)
 	second := createAIKey(t, h, "user-1", shop.ID)
@@ -131,7 +131,7 @@ func TestAIKeyCreate_ConnectionNameCollisionGetsSuffix(t *testing.T) {
 
 func TestAIKeyList_IncludesShopFields(t *testing.T) {
 	h, _, shops := setupAIKeyHandler()
-	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false, false)
 	createAIKey(t, h, "user-1", shop.ID)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/ai-keys", nil)
@@ -159,7 +159,7 @@ func TestAIKeyList_IncludesShopFields(t *testing.T) {
 
 func TestAIKeyList_IncludesCommandPolicy(t *testing.T) {
 	h, keys, shops := setupAIKeyHandler()
-	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false, false)
 	key := createAIKey(t, h, "user-1", shop.ID)
 	policy := `{"default":"deny","groups":{"catalog":{"read":true,"write":false,"delete":false}}}`
 	if err := keys.UpdateCommandPolicy(key.ID, policy); err != nil {
@@ -201,7 +201,7 @@ func TestAIKeyUpdate_UnboundRequiresShopID(t *testing.T) {
 
 func TestAIKeyUpdate_BindLegacyKey(t *testing.T) {
 	h, keys, shops := setupAIKeyHandler()
-	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false, false)
 	key, _ := keys.Create("user-1", "hash", "legacy")
 
 	body, _ := json.Marshal(AIKeyRequest{ShopID: ptr(shop.ID)})
@@ -226,7 +226,7 @@ func TestAIKeyUpdate_BindLegacyKey(t *testing.T) {
 
 func TestAIKeyUpdate_TogglePDNOnBoundKey(t *testing.T) {
 	h, _, shops := setupAIKeyHandler()
-	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false, false)
 	key := createAIKey(t, h, "user-1", shop.ID)
 
 	body, _ := json.Marshal(AIKeyRequest{PDNEnabled: boolPtr(true)})
@@ -254,7 +254,7 @@ func TestAIKeyUpdate_TogglePDNOnBoundKey(t *testing.T) {
 
 func TestAIKeyUpdate_ForeignUser(t *testing.T) {
 	h, _, shops := setupAIKeyHandler()
-	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false, false)
 	key := createAIKey(t, h, "user-1", shop.ID)
 
 	body, _ := json.Marshal(AIKeyRequest{Name: ptr("hacked")})
@@ -271,7 +271,7 @@ func TestAIKeyUpdate_ForeignUser(t *testing.T) {
 
 func TestAIKeyDelete_Success(t *testing.T) {
 	h, keys, shops := setupAIKeyHandler()
-	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false, false)
 	key := createAIKey(t, h, "user-1", shop.ID)
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/ai-keys/"+key.ID, nil)
@@ -290,7 +290,7 @@ func TestAIKeyDelete_Success(t *testing.T) {
 
 func TestAIKeyDelete_ForeignUser(t *testing.T) {
 	h, keys, shops := setupAIKeyHandler()
-	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false, false)
 	key := createAIKey(t, h, "user-1", shop.ID)
 
 	req := httptest.NewRequest(http.MethodDelete, "/api/ai-keys/"+key.ID, nil)
@@ -311,7 +311,7 @@ func TestAIKeyCreate_Limit(t *testing.T) {
 	keys := newMockAIKeyRepo()
 	shops := newMockShopRepo()
 	h := NewAIKeyHandler(keys, shops, 2)
-	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false, false)
 
 	for i := 0; i < 2; i++ {
 		createAIKey(t, h, "user-1", shop.ID)
@@ -333,7 +333,7 @@ func TestAIKeyCreate_Limit(t *testing.T) {
 
 func TestAIKeyRotate_NewSecretOldDies(t *testing.T) {
 	h, keys, shops := setupAIKeyHandler()
-	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false, false)
 	key := createAIKey(t, h, "user-1", shop.ID)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/ai-keys/"+key.ID+"/rotate", nil)
@@ -366,7 +366,7 @@ func TestAIKeyRotate_NewSecretOldDies(t *testing.T) {
 
 func TestAIKeyRotate_ForeignUser(t *testing.T) {
 	h, _, shops := setupAIKeyHandler()
-	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false)
+	shop, _ := shops.Create("user-1", "Ромашка", "r.myinsales.ru", "ik", "ip", true, false, false, false)
 	key := createAIKey(t, h, "user-1", shop.ID)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/ai-keys/"+key.ID+"/rotate", nil)

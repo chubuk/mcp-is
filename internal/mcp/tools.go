@@ -570,43 +570,9 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), deleteImageHandler(svc))
 
 	// === МЕТАПОЛЯ ===
-	addTool(s, mcp.NewTool("list_meta_fields",
-		mcp.WithDescription("List meta field from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список метаполей"),
-		mcp.WithString("resource_type", mcp.Description("Тип ресурса: Product, Variant, Order, Client, Category, Page")),
-		mcp.WithString("resource_id", mcp.Description("ID ресурса")),
-		mcp.WithReadOnlyHintAnnotation(true),
-		mcp.WithIdempotentHintAnnotation(true),
-		mcp.WithOpenWorldHintAnnotation(false),
-	), listMetaFieldsHandler(svc))
-
-	addTool(s, mcp.NewTool("create_meta_field",
-		mcp.WithDescription("Create or add a new meta field in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать метаполе для ресурса"),
-		mcp.WithString("resource_type", mcp.Required(), mcp.Description("Тип ресурса")),
-		mcp.WithString("resource_id", mcp.Required(), mcp.Description("ID ресурса")),
-		mcp.WithString("key", mcp.Required(), mcp.Description("Ключ")),
-		mcp.WithString("value", mcp.Required(), mcp.Description("Значение")),
-		mcp.WithReadOnlyHintAnnotation(false),
-		mcp.WithDestructiveHintAnnotation(false),
-		mcp.WithOpenWorldHintAnnotation(false),
-	), createMetaFieldHandler(svc))
-
-	addTool(s, mcp.NewTool("update_meta_field",
-		mcp.WithDescription("Update an existing meta field by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить метаполе"),
-		mcp.WithString("meta_field_id", mcp.Required(), mcp.Description("ID метаполя")),
-		mcp.WithString("value", mcp.Description("Значение")),
-		mcp.WithReadOnlyHintAnnotation(false),
-		mcp.WithIdempotentHintAnnotation(true),
-		mcp.WithDestructiveHintAnnotation(false),
-		mcp.WithOpenWorldHintAnnotation(false),
-	), updateMetaFieldHandler(svc))
-
-	addTool(s, mcp.NewTool("delete_meta_field",
-		mcp.WithDescription("Delete or remove meta field on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить метаполе"),
-		mcp.WithString("meta_field_id", mcp.Required(), mcp.Description("ID метаполя")),
-		mcp.WithReadOnlyHintAnnotation(false),
-		mcp.WithDestructiveHintAnnotation(true),
-		mcp.WithOpenWorldHintAnnotation(false),
-	), deleteMetaFieldHandler(svc))
+	// Тулы meta_fields (4) и list_currencies удалены из тулсета: эндпоинты
+	// /admin/meta_fields.json и /admin/currencies.json не существуют в API InSales
+	// (возвращают HTML). Клиентские методы и пайплайны оставлены как best-effort.
 
 	// === ВЕБХУКИ ===
 	addTool(s, mcp.NewTool("list_webhooks",
@@ -652,13 +618,6 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithOpenWorldHintAnnotation(false),
 		mcp.WithOutputSchema[insales.StoreInfo](),
 	), getShopInfoHandler(svc))
-
-	addTool(s, mcp.NewTool("list_currencies",
-		mcp.WithDescription("List currency from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Получить список валют магазина"),
-		mcp.WithReadOnlyHintAnnotation(true),
-		mcp.WithIdempotentHintAnnotation(true),
-		mcp.WithOpenWorldHintAnnotation(false),
-	), listCurrenciesHandler(svc))
 
 	addTool(s, mcp.NewTool("list_delivery_variants",
 		mcp.WithDescription("List delivery variant from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."),
@@ -2275,44 +2234,39 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericDeleteHandler(svc.DeleteUserTask, "task_id", "Задача удалена"))
 
-	// === SUPPLEMENTARY ===
-	addTool(s, mcp.NewTool("list_supplementaries", mcp.WithDescription("List supplementary-product link from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список дополнительных товаров"),
+	// === SUPPLEMENTARY === (линковки /products/:product_id/supplementaries.json — не сущности)
+	addTool(s, mcp.NewTool("list_supplementaries", mcp.WithDescription("List supplementary-product links for one product (GET /products/:product_id/supplementaries.json). Returns JSON items (envelope with total; total is the number of items in this response). This is a link list, not standalone entities."), mcp.WithToolTitle("Список сопутствующих товаров"), mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericListHandler(svc, svc.ListSupplementaries))
-	addTool(s, mcp.NewTool("get_supplementary", mcp.WithDescription("Get a single supplementary-product link by id or handle. Returns the full object as JSON text and structuredContent. Prefer this over list_* when the id is already known."), mcp.WithToolTitle("Получить дополнительный товар"), mcp.WithString("supplementary_id", mcp.Required(), mcp.Description("ID")),
-		mcp.WithReadOnlyHintAnnotation(true),
-		mcp.WithIdempotentHintAnnotation(true),
-		mcp.WithOpenWorldHintAnnotation(false),
-	), genericGetHandler(svc, "supplementary_id", svc.GetSupplementary))
-	addTool(s, mcp.NewTool("create_supplementary", mcp.WithDescription("Create or add a new supplementary-product link in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать дополнительный товар"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")),
+	), nestedListHandler(svc.ListSupplementaries, "product_id"))
+	addTool(s, mcp.NewTool("create_supplementary", mcp.WithDescription("Link a supplementary product to a product (POST /products/:product_id/supplementaries.json with supplementary_ids). This is a LINK operation, not entity creation. Returns the API status."), mcp.WithToolTitle("Связать сопутствующий товар"), mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")), mcp.WithString("supplementary_product_id", mcp.Required(), mcp.Description("ID сопутствующего товара")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateSupplementary))
-	addTool(s, mcp.NewTool("delete_supplementary", mcp.WithDescription("Delete or remove supplementary-product link on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить дополнительный товар"), mcp.WithString("supplementary_id", mcp.Required(), mcp.Description("ID")),
+	addTool(s, mcp.NewTool("delete_supplementary", mcp.WithDescription("Unlink a supplementary product from a product (DELETE /products/:product_id/supplementaries/:id.json). Destructive: removes the link."), mcp.WithToolTitle("Убрать сопутствующий товар"), mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")), mcp.WithString("supplementary_id", mcp.Required(), mcp.Description("ID связи")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericDeleteHandler(svc.DeleteSupplementary, "supplementary_id", "Удалено"))
+	), nestedDeleteHandler(svc.DeleteSupplementary, "product_id", "supplementary_id", "Связь удалена"))
 
-	// === SIMILARS ===
-	addTool(s, mcp.NewTool("list_similars", mcp.WithDescription("List similar-product link from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Похожие товары"), mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
+	// === SIMILARS === (линковки /products/:product_id/similars.json — не сущности)
+	addTool(s, mcp.NewTool("list_similars", mcp.WithDescription("List similar-product links for one product (GET /products/:product_id/similars.json). Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). IDs and handles are language-invariant."), mcp.WithToolTitle("Похожие товары"), mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
 		mcp.WithReadOnlyHintAnnotation(true),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), listSimilarsByProductHandler(svc))
-	addTool(s, mcp.NewTool("create_similar", mcp.WithDescription("Create or add a new similar-product link in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Добавить похожий товар"), mcp.WithNumber("product_id", mcp.Required(), mcp.Description("ID товара")), mcp.WithNumber("similar_product_id", mcp.Required(), mcp.Description("ID похожего товара")),
+	addTool(s, mcp.NewTool("create_similar", mcp.WithDescription("Link a similar product to a product (POST /products/:product_id/similars.json with similar_ids). This is a LINK operation, not entity creation. Returns the API status."), mcp.WithToolTitle("Добавить похожий товар"), mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")), mcp.WithString("similar_product_id", mcp.Required(), mcp.Description("ID похожего товара")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateSimilar))
-	addTool(s, mcp.NewTool("delete_similar", mcp.WithDescription("Delete or remove similar-product link on the InSales side. This is destructive and cannot be undone from this tool. Returns a short confirmation or the updated parent object."), mcp.WithToolTitle("Удалить похожий товар"), mcp.WithString("similar_id", mcp.Required(), mcp.Description("ID связи")),
+	addTool(s, mcp.NewTool("delete_similar", mcp.WithDescription("Unlink a similar product from a product (DELETE /products/:product_id/similars/:id.json). Destructive: removes the link."), mcp.WithToolTitle("Убрать похожий товар"), mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")), mcp.WithString("similar_id", mcp.Required(), mcp.Description("ID связи")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
-	), genericDeleteHandler(svc.DeleteSimilar, "similar_id", "Удалено"))
+	), nestedDeleteHandler(svc.DeleteSimilar, "product_id", "similar_id", "Связь удалена"))
 
 	// === UNITS ===
 	addTool(s, mcp.NewTool("list_units", mcp.WithDescription("List unit from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список единиц измерения"),
@@ -2320,6 +2274,13 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericListHandler(svc, svc.ListUnits))
+
+	// === FIELDS === (select-поля заказов/клиентов, /admin/fields.json)
+	addTool(s, mcp.NewTool("list_fields", mcp.WithDescription("List custom fields for orders and clients (/admin/fields.json: Field::TextField/TextArea/Checkbox/FileField/Delivery). Returns JSON items. NOT product fields — use list_product_fields for product custom fields."), mcp.WithToolTitle("Список полей заказов и клиентов"),
+		mcp.WithReadOnlyHintAnnotation(true),
+		mcp.WithIdempotentHintAnnotation(true),
+		mcp.WithOpenWorldHintAnnotation(false),
+	), genericListHandler(svc, svc.ListFields))
 
 	// === OUTLETS ===
 	addTool(s, mcp.NewTool("list_outlets", mcp.WithDescription("List outlet from the InSales shop. Returns JSON items (envelope with total/page/per_page; total is the number of items in this response, not the catalog size). Use page/per_page and filters to narrow results. IDs and handles are language-invariant."), mcp.WithToolTitle("Список точек выдачи"),

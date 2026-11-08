@@ -17,10 +17,12 @@ type Shop struct {
 	APIPasswordEncrypted  string
 	IsDefault             bool
 	IsReadOnly            bool
+	IsDeleteDenied        bool
 	Jurisdiction          string
 	PDNEnabled            bool
 	Capabilities          string // JSON снимок прав (probe)
 	CapabilitiesCheckedAt *time.Time
+	SettingsSnapshot      string // JSON снимок «Настройки товаров» (дифф доп. полей)
 	IsAppInstall          bool   // shop provisioned via InSales app install (billing-managed)
 	BillingStatus         string // active | unpaid | unknown
 	BillingUntil          *time.Time
@@ -38,14 +40,14 @@ func NewShopRepository(db *pgxpool.Pool) *ShopRepository {
 	return &ShopRepository{db: db}
 }
 
-func (r *ShopRepository) Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) (*Shop, error) {
+func (r *ShopRepository) Create(userID, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled, isDeleteDenied bool) (*Shop, error) {
 	var s Shop
 	err := r.db.QueryRow(context.Background(),
-		`INSERT INTO shops (user_id, name, shop_url, api_key_id, api_password_encrypted, is_default, is_read_only, pdn_enabled)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-		 RETURNING id, user_id, name, shop_url, api_key_id, is_default, is_read_only, COALESCE(jurisdiction,'AUTO'), pdn_enabled, created_at::text`,
-		userID, name, shopURL, apiKeyID, apiPasswordEncrypted, isDefault, isReadOnly, pdnEnabled,
-	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.Jurisdiction, &s.PDNEnabled, &s.CreatedAt)
+		`INSERT INTO shops (user_id, name, shop_url, api_key_id, api_password_encrypted, is_default, is_read_only, pdn_enabled, is_delete_denied)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		 RETURNING id, user_id, name, shop_url, api_key_id, is_default, is_read_only, is_delete_denied, COALESCE(jurisdiction,'AUTO'), pdn_enabled, created_at::text`,
+		userID, name, shopURL, apiKeyID, apiPasswordEncrypted, isDefault, isReadOnly, pdnEnabled, isDeleteDenied,
+	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.IsDeleteDenied, &s.Jurisdiction, &s.PDNEnabled, &s.CreatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("create shop: %w", err)
@@ -56,11 +58,11 @@ func (r *ShopRepository) Create(userID, name, shopURL, apiKeyID, apiPasswordEncr
 func (r *ShopRepository) GetByID(id string) (*Shop, error) {
 	var s Shop
 	err := r.db.QueryRow(context.Background(),
-		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, api_password_encrypted, is_default, is_read_only, COALESCE(jurisdiction,'AUTO'), pdn_enabled,
+		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, api_password_encrypted, is_default, is_read_only, is_delete_denied, COALESCE(jurisdiction,'AUTO'), pdn_enabled,
 			EXISTS (SELECT 1 FROM app_installs ai WHERE ai.shop_id = shops.id AND ai.status = 'installed'),
-			billing_status, billing_until, billing_checked_at, COALESCE(billing_pay_url,''), COALESCE(capabilities,''), capabilities_checked_at, created_at::text, updated_at::text
+			billing_status, billing_until, billing_checked_at, COALESCE(billing_pay_url,''), COALESCE(capabilities,''), capabilities_checked_at, COALESCE(settings_snapshot,''), created_at::text, updated_at::text
 		 FROM shops WHERE id = $1`, id,
-	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.APIPasswordEncrypted, &s.IsDefault, &s.IsReadOnly, &s.Jurisdiction, &s.PDNEnabled, &s.IsAppInstall, &s.BillingStatus, &s.BillingUntil, &s.BillingCheckedAt, &s.BillingPayURL, &s.Capabilities, &s.CapabilitiesCheckedAt, &s.CreatedAt, &s.UpdatedAt)
+	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.APIPasswordEncrypted, &s.IsDefault, &s.IsReadOnly, &s.IsDeleteDenied, &s.Jurisdiction, &s.PDNEnabled, &s.IsAppInstall, &s.BillingStatus, &s.BillingUntil, &s.BillingCheckedAt, &s.BillingPayURL, &s.Capabilities, &s.CapabilitiesCheckedAt, &s.SettingsSnapshot, &s.CreatedAt, &s.UpdatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("shop not found: %w", err)
@@ -70,7 +72,7 @@ func (r *ShopRepository) GetByID(id string) (*Shop, error) {
 
 func (r *ShopRepository) ListByUserID(userID string) ([]Shop, error) {
 	rows, err := r.db.Query(context.Background(),
-		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, is_default, is_read_only, pdn_enabled, COALESCE(capabilities,''), capabilities_checked_at, created_at::text, updated_at::text
+		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, is_default, is_read_only, is_delete_denied, pdn_enabled, COALESCE(capabilities,''), capabilities_checked_at, created_at::text, updated_at::text
 		 FROM shops WHERE user_id = $1 ORDER BY is_default DESC, created_at DESC`, userID,
 	)
 	if err != nil {
@@ -81,7 +83,7 @@ func (r *ShopRepository) ListByUserID(userID string) ([]Shop, error) {
 	var shops []Shop
 	for rows.Next() {
 		var s Shop
-		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.PDNEnabled, &s.Capabilities, &s.CapabilitiesCheckedAt, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.IsDeleteDenied, &s.PDNEnabled, &s.Capabilities, &s.CapabilitiesCheckedAt, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, fmt.Errorf("scan shop: %w", err)
 		}
 		shops = append(shops, s)
@@ -104,7 +106,7 @@ func (r *ShopRepository) ListByUserIDFiltered(userID string, page, perPage int) 
 	}
 
 	rows, err := r.db.Query(context.Background(),
-		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, is_default, is_read_only, pdn_enabled, billing_status, billing_until, COALESCE(billing_pay_url,''), COALESCE(capabilities,''), capabilities_checked_at, created_at::text, updated_at::text
+		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, is_default, is_read_only, is_delete_denied, pdn_enabled, billing_status, billing_until, COALESCE(billing_pay_url,''), COALESCE(capabilities,''), capabilities_checked_at, created_at::text, updated_at::text
 		 FROM shops WHERE user_id = $1 ORDER BY is_default DESC, created_at DESC LIMIT $2 OFFSET $3`,
 		userID, perPage, offset,
 	)
@@ -116,7 +118,7 @@ func (r *ShopRepository) ListByUserIDFiltered(userID string, page, perPage int) 
 	var shops []Shop
 	for rows.Next() {
 		var s Shop
-		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.PDNEnabled, &s.BillingStatus, &s.BillingUntil, &s.BillingPayURL, &s.Capabilities, &s.CapabilitiesCheckedAt, &s.CreatedAt, &s.UpdatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.IsDefault, &s.IsReadOnly, &s.IsDeleteDenied, &s.PDNEnabled, &s.BillingStatus, &s.BillingUntil, &s.BillingPayURL, &s.Capabilities, &s.CapabilitiesCheckedAt, &s.CreatedAt, &s.UpdatedAt); err != nil {
 			return nil, 0, fmt.Errorf("scan shop: %w", err)
 		}
 		shops = append(shops, s)
@@ -127,11 +129,11 @@ func (r *ShopRepository) ListByUserIDFiltered(userID string, page, perPage int) 
 func (r *ShopRepository) GetDefault(userID string) (*Shop, error) {
 	var s Shop
 	err := r.db.QueryRow(context.Background(),
-		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, api_password_encrypted, is_default, is_read_only, COALESCE(jurisdiction,'AUTO'), pdn_enabled,
+		`SELECT id, user_id, COALESCE(name,''), shop_url, api_key_id, api_password_encrypted, is_default, is_read_only, is_delete_denied, COALESCE(jurisdiction,'AUTO'), pdn_enabled,
 			EXISTS (SELECT 1 FROM app_installs ai WHERE ai.shop_id = shops.id AND ai.status = 'installed'),
-			billing_status, billing_until, billing_checked_at, COALESCE(billing_pay_url,''), COALESCE(capabilities,''), capabilities_checked_at, created_at::text, updated_at::text
+			billing_status, billing_until, billing_checked_at, COALESCE(billing_pay_url,''), COALESCE(capabilities,''), capabilities_checked_at, COALESCE(settings_snapshot,''), created_at::text, updated_at::text
 		 FROM shops WHERE user_id = $1 AND is_default = TRUE`, userID,
-	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.APIPasswordEncrypted, &s.IsDefault, &s.IsReadOnly, &s.Jurisdiction, &s.PDNEnabled, &s.IsAppInstall, &s.BillingStatus, &s.BillingUntil, &s.BillingCheckedAt, &s.BillingPayURL, &s.Capabilities, &s.CapabilitiesCheckedAt, &s.CreatedAt, &s.UpdatedAt)
+	).Scan(&s.ID, &s.UserID, &s.Name, &s.ShopURL, &s.APIKeyID, &s.APIPasswordEncrypted, &s.IsDefault, &s.IsReadOnly, &s.IsDeleteDenied, &s.Jurisdiction, &s.PDNEnabled, &s.IsAppInstall, &s.BillingStatus, &s.BillingUntil, &s.BillingCheckedAt, &s.BillingPayURL, &s.Capabilities, &s.CapabilitiesCheckedAt, &s.SettingsSnapshot, &s.CreatedAt, &s.UpdatedAt)
 
 	if err != nil {
 		return nil, fmt.Errorf("default shop not found: %w", err)
@@ -139,10 +141,10 @@ func (r *ShopRepository) GetDefault(userID string) (*Shop, error) {
 	return &s, nil
 }
 
-func (r *ShopRepository) Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled bool) error {
+func (r *ShopRepository) Update(id, name, shopURL, apiKeyID, apiPasswordEncrypted string, isDefault, isReadOnly, pdnEnabled, isDeleteDenied bool) error {
 	_, err := r.db.Exec(context.Background(),
-		`UPDATE shops SET name=$1, shop_url=$2, api_key_id=$3, api_password_encrypted=$4, is_default=$5, is_read_only=$6, pdn_enabled=$7, updated_at=NOW()
-		 WHERE id=$8`, name, shopURL, apiKeyID, apiPasswordEncrypted, isDefault, isReadOnly, pdnEnabled, id,
+		`UPDATE shops SET name=$1, shop_url=$2, api_key_id=$3, api_password_encrypted=$4, is_default=$5, is_read_only=$6, pdn_enabled=$7, is_delete_denied=$8, updated_at=NOW()
+		 WHERE id=$9`, name, shopURL, apiKeyID, apiPasswordEncrypted, isDefault, isReadOnly, pdnEnabled, isDeleteDenied, id,
 	)
 	if err != nil {
 		return fmt.Errorf("update shop: %w", err)
@@ -190,6 +192,18 @@ func (r *ShopRepository) UpdateCapabilities(id, capabilitiesJSON string, checked
 	)
 	if err != nil {
 		return fmt.Errorf("update shop capabilities: %w", err)
+	}
+	return nil
+}
+
+// UpdateSettingsSnapshot сохраняет JSON-снимок «Настройки товаров» для диффа при проверке.
+func (r *ShopRepository) UpdateSettingsSnapshot(id, settingsJSON string) error {
+	_, err := r.db.Exec(context.Background(),
+		`UPDATE shops SET settings_snapshot=$1, updated_at=NOW() WHERE id=$2`,
+		settingsJSON, id,
+	)
+	if err != nil {
+		return fmt.Errorf("update shop settings snapshot: %w", err)
 	}
 	return nil
 }

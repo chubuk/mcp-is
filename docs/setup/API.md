@@ -260,7 +260,7 @@ HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле 
     {"domain": "orders", "status": "denied", "http_status": 403}
   ],
   "allowed_tools": ["list_products", "get_product", "..."],
-  "count": 287
+  "count": 282
 }
 ```
 
@@ -851,7 +851,7 @@ Authorization: Bearer <AI_KEY>
 
 Получить список доступных инструментов.
 
-По умолчанию возвращается **core surface** (32 tools: products/orders/clients/categories/collections/product fields/pipelines/export + `search_insales_tools`/`call_insales_tool`/`store_info`). Полный каталог (287) — через catalog meta-tools или env `MCP_TOOLS_MODE=all`. Инструменты denied-доменов (по capabilities-снимку) и запрещённые политикой ИИ-ключа в список не попадают. Результат каждого tool: JSON text + `structuredContent`; `structuredContent` всегда JSON-**объект** (MCP-спека), списки — конверт `{items, total[, page, per_page]}`; у мутационных инструментов (`update_*`/`delete_*`/`add_*`/`decline_*`) объявлен `outputSchema` (runtime-валидация включена).
+По умолчанию возвращается **core surface** (32 tools: products/orders/clients/categories/collections/product fields/pipelines/export + `search_insales_tools`/`call_insales_tool`/`store_info`). Полный каталог (282) — через catalog meta-tools или env `MCP_TOOLS_MODE=all`. Инструменты denied-доменов (по capabilities-снимку) и запрещённые политикой ИИ-ключа в список не попадают. Результат каждого tool: JSON text + `structuredContent`; `structuredContent` всегда JSON-**объект** (MCP-спека), списки — конверт `{items, total[, page, per_page]}`; у мутационных инструментов (`update_*`/`delete_*`/`add_*`/`decline_*`) объявлен `outputSchema` (runtime-валидация включена).
 
 ```json
 {
@@ -1491,42 +1491,9 @@ Create/update/delete-инструменты возвращают подробн�
 | product_id | string | Да | ID товара |
 | image_id | string | Да | ID изображения |
 
-### list_meta_fields
+### list_meta_fields / create_meta_field / update_meta_field / delete_meta_field (удалены)
 
-Получить список метаполей.
-
-| Параметр | Тип | Обязательный | Описание |
-|----------|-----|--------------|----------|
-| resource_type | string | Нет | Тип ресурса: Product, Variant, Order, Client, Category, Page |
-| resource_id | integer | Нет | ID ресурса |
-
-### create_meta_field
-
-Создать метаполе.
-
-| Параметр | Тип | Обязательный | Описание |
-|----------|-----|--------------|----------|
-| resource_type | string | Да | Тип ресурса |
-| resource_id | integer | Да | ID ресурса |
-| key | string | Да | Ключ |
-| value | string | Да | Значение |
-
-### update_meta_field
-
-Обновить метаполе.
-
-| Параметр | Тип | Обязательный | Описание |
-|----------|-----|--------------|----------|
-| meta_field_id | string | Да | ID метаполя |
-| value | string | Нет | Значение |
-
-### delete_meta_field
-
-Удалить метаполе.
-
-| Параметр | Тип | Обязательный | Описание |
-|----------|-----|--------------|----------|
-| meta_field_id | string | Да | ID метаполя |
+Тулы удалены из тулсета: эндпоинт `/admin/meta_fields.json` в API InSales не существует (возвращает HTML). Метаполя в пайплайнах читаются best-effort и при недоступности пропускаются. Пользовательские поля — `list_product_fields`, `list_fields`.
 
 ### list_webhooks
 
@@ -1559,9 +1526,9 @@ Create/update/delete-инструменты возвращают подробн�
 |----------|-----|--------------|----------|
 | webhook_id | string | Да | ID вебхука |
 
-### list_currencies
+### list_currencies (удалён)
 
-Получить валюты магазина. Параметры не требуются.
+Тул удалён: эндпоинт `/admin/currencies.json` в API InSales не существует (возвращает HTML). Живые валюты склада — `list_stock_currencies`.
 
 ### list_delivery_variants
 
