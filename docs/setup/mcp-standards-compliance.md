@@ -29,6 +29,8 @@
 
 ## 2. FIX NOW (real remaining)
 
+**Статус: все три пункта закрыты до мержа (2026-11-10)** — `event`/`format` добавлены в схему `update_webhook` как legacy-алиасы; явные `WithIdempotentHintAnnotation(false)` проставлены на всех `create_*`; описание `update_blog_post` приведено к `MutationResult`. Тексты пунктов ниже сохранены как запись ревью.
+
 1. **`update_webhook` alias params missing → old names silently dropped despite promises** — `internal/mcp/tools.go:666-678`. Descriptions say «алиас event»/«алиас format» and catalog_changes/CHANGELOG claim «старые имена работают», but `event`/`format` are not in the schema, so `wrapArgsAudit` strips them (handlers.go:607-623) before `renameArgs` (client_impl.go:971) ever runs. Exact fix (mirror the `keywords` precedent of `update_seo`, tools.go:248-249): add to `update_webhook`:
    ```go
    mcp.WithString("event", mcp.Description("Устаревший алиас topic (legacy)")),
@@ -42,7 +44,7 @@
 
 - **`hiddenToolError` "not_core" counts use `context.Background()`** (discovery.go:164-166) — «показано X из N» ignores session RO/caps, so numbers can overstate what tools/list shows; thread `ctx` through when convenient. Error stays actionable either way.
 - **512-byte identity margin** — banner (502 bytes with prod counters) pushes `Connection:` to byte ~502/512 (storeinfo_test.go:67). Test green, but any banner growth breaks it; consider banner after the identity header or a slightly relaxed budget.
-- **113 read tools omit explicit `destructiveHint`** (default true — contradicts their readOnly nature) — pre-existing, untouched by this diff; harmless for clients that key off `readOnlyHint`, misleading for clients that filter on destructive. Sweep with the descriptions pass (Sentry compile-time style).
+- **Read tools omit explicit `destructiveHint`** (default true — contradicts their readOnly nature) — pre-existing, untouched by this diff; harmless for clients that key off `readOnlyHint`, misleading for clients that filter on destructive. Sweep with the descriptions pass (Sentry compile-time style).
 - **`call_insales_tool` hidden in read-only sessions** (it is `readOnlyHint=false`) — long-tail *reads* are unreachable via the meta-tool in RO mode; pre-existing design, consider a read-only dispatch path later.
 - **Protocol 2026-07-28 migration** (`server/discover`, `resultType`, stateless) and **OAuth 2.1 + RFC 8707** — separate roadmap (REPORT D6); API-key + per-shop DB creds remain acceptable for private hosting.
 - **Opaque cursors for lists** — page/per_page house envelope fine for data pagination [48]; cursors only for protocol-level list pagination.
@@ -51,6 +53,6 @@
 
 ## 4. Verdict
 
-The working tree is standards-compliant where the MCP contract matters. All four prior FIX NOW items are genuinely fixed: `CreateClient` sends `fields_values_attributes` (plus previously dropped fields), gofmt is clean (lint/tests green), `create_blog_post` carries all four explicit annotations, and `withFieldValues` no longer overpromises. W4–W7 land in line with REPORT vendor patterns: routing ids stripped (class iii fixed at tracked sites), rename aliases mirror GitHub deprecation practice, core 49 sits at the top edge of the 30–50 cliff with meta-tools escape, the instructions banner matches InitializeResult guidance, per-shop `field_values` schemas stay shape-stable and race-safe, and `retiredTools`/`ignored_keys` warnings follow GitHub/Notion deprecation patterns. Three FIX NOW items remain, none data-losing: a dead `event`/`format` alias pair on `update_webhook` that its own docs promise (one-schema-line fix), six missing explicit `idempotentHint(false)` (defaults already correct), and one stale return-shape description. Safe to merge after #1 (contract/doc mismatch); #2–#3 are mechanical.
+The working tree is standards-compliant where the MCP contract matters. All four prior FIX NOW items are genuinely fixed: `CreateClient` sends `fields_values_attributes` (plus previously dropped fields), gofmt is clean (lint/tests green), `create_blog_post` carries all four explicit annotations, and `withFieldValues` no longer overpromises. W4–W7 land in line with REPORT vendor patterns: routing ids stripped (class iii fixed at tracked sites), rename aliases mirror GitHub deprecation practice, core 49 sits at the top edge of the 30–50 cliff with meta-tools escape, the instructions banner matches InitializeResult guidance, per-shop `field_values` schemas stay shape-stable and race-safe, and `retiredTools`/`ignored_keys` warnings follow GitHub/Notion deprecation patterns. All three FIX NOW items of this review are closed: `event`/`format` legacy aliases added to the `update_webhook` schema, explicit `idempotentHint(false)` set on every `create_*`, and `update_blog_post` return-shape description aligned to `MutationResult`. Safe to merge.
 
 **Skipped/not checked:** live InSales validation of the new webhook/blog payloads and `fields_values_attributes` on create_client (docs-based); RFC3339 `published_at` format acceptance on InSales side; govulncheck (binary absent); web/ and packaging/ trees (not touched by this diff).

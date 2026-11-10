@@ -109,7 +109,7 @@ curl http://localhost:8080/health
 
 Реализовано через [mcp-go SDK](https://github.com/mark3labs/mcp-go) (MCP 2025-11-25). **282 инструмента** (121 read / 108 write / 53 delete). Каждый имеет аннотации `readOnlyHint`/`destructiveHint`/`idempotentHint`/`openWorldHint`. Описания tools — EN, заголовки `title` — RU. Результат — JSON text + `structuredContent` (structuredContent всегда JSON-объект, списки — конверт `{items, total}`; `outputSchema` объявлен у core-инструментов и у мутаций — `MutationResult` с `changed_fields`/`deleted`). Мутации — best effort (InSales API нетранзакционен): после create/update рекомендуется verify-after-write через `get_*`.
 
-По умолчанию `tools/list` возвращает **core surface** (32 tools, включая discovery meta-tools `search_insales_tools`/`call_insales_tool`/`store_info`). Полный каталог — `search_insales_tools` → `call_insales_tool` или `MCP_TOOLS_MODE=all`.
+По умолчанию `tools/list` возвращает **core surface** (49 tools: товары/заказы/клиенты/категории/коллекции/поля/пайплайны/экспорт + полный цикл блога + `create/update/delete_product`, `add_image`, `update_variant`, `create/update_order`, `add_order_line`; включая discovery meta-tools `search_insales_tools`/`call_insales_tool`/`store_info`). Полный каталог — `search_insales_tools` → `call_insales_tool` или `MCP_TOOLS_MODE=all`; в инструкциях подключения видно «показано X из N».
 
 ### Живые данные и безопасная запись
 
@@ -653,7 +653,7 @@ SMTP_FROM=MCP IS <user@mail.ru>
 }
 ```
 
-При `tools/list` с read-only write-инструменты скрыты. По умолчанию возвращается core surface (32 tools, включая `search_insales_tools` / `call_insales_tool`); полный каталог — через catalog или `MCP_TOOLS_MODE=all`.
+При `tools/list` с read-only write-инструменты скрыты. По умолчанию возвращается core surface (49 tools, включая `search_insales_tools` / `call_insales_tool`); полный каталог — через catalog или `MCP_TOOLS_MODE=all`.
 
 ## Доступные команды
 
@@ -661,7 +661,7 @@ SMTP_FROM=MCP IS <user@mail.ru>
 
 | Режим | Команд | Описание |
 |-------|--------|----------|
-| core (default tools/list) | 32 | products/orders/clients/categories/collections/fields/pipelines/export + discovery meta-tools |
+| core (default tools/list) | 49 | products/orders/clients/categories/collections/fields/pipelines/export + блог + `create/update/delete_product`, `add_image`, `update_variant`, `create/update_order`, `add_order_line` + discovery meta-tools |
 | read-only catalog | 121 | все read-команды (list_*, get_*, export, pipeline) |
 | read/write catalog | 282 | все команды включая create/update/delete + пайплайны |
 
