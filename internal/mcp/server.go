@@ -45,7 +45,9 @@ const (
 // catalogChanges — рукописный список последних изменений интерфейса (store_info).
 var catalogChanges = []string{
 	"update_blog_post/create_blog_post: добавлены published_at/author/image_url и SEO-поля; body_html теперь реально сохраняется (→article[content]); published_at при создании больше не «2025-01-01»",
-	"field_values ({handle: значение}) у create/update_product, update_variant, create/update_category, create/update_collection, create/update_order, create/update_client — доп. поля магазина; handle'ы — в описании параметра",
+	"field_values ({handle: значение}) у create/update_product, update_variant, create/update_collection, create/update_order, create/update_client — доп. поля магазина; handle'ы — в описании параметра",
+	"field_values у create/update_category УБРАН: категории InSales (дерево склада) не хранят доп. поля — используйте коллекции (create/update_collection)",
+	"create_order: доп. поля пишутся отдельным PUT после создания (InSales игнорирует их при POST /orders.json) — значения сохраняются",
 	"core расширен: товары, заказы и блог видны в tools/list напрямую (49 из N); остальное — search_insales_tools → call_insales_tool",
 	"переименования полей приняты через алиасы (title→name, event→topic, url→address, amount→bonus_points, quantity→quantity_at_warehouse0 и др.) — старые имена работают",
 	"лишние аргументы больше не проскакивают в API — смотрите ignored_keys; при непустом ignored_keys сверьте схему тула",

@@ -519,8 +519,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), getCategoryHandler(svc))
 
 	addTool(s, mcp.NewTool("create_category",
-		withFieldValues(),
-		mcp.WithDescription("Create or add a new category in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать новую категорию"),
+		mcp.WithDescription("Create or add a new category in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id. Доп. поля не поддерживаются (категории InSales их не хранят) — для field_values используйте коллекции."), mcp.WithToolTitle("Создать новую категорию"),
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название категории")),
 		mcp.WithNumber("parent_id", mcp.Description("ID родительской категории")),
 		mcp.WithReadOnlyHintAnnotation(false),
@@ -530,8 +529,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), createCategoryHandler(svc))
 
 	addTool(s, mcp.NewTool("update_category",
-		withFieldValues(),
-		mcp.WithDescription("Update an existing category by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить категорию"),
+		mcp.WithDescription("Update an existing category by id. Only send fields that should change. Returns the updated object as JSON. Доп. поля не поддерживаются (категории InSales их не хранят) — для field_values используйте коллекции."), mcp.WithToolTitle("Обновить категорию"),
 		mcp.WithString("category_id", mcp.Required(), mcp.Description("ID категории")),
 		mcp.WithString("title", mcp.Description("Название")),
 		mcp.WithReadOnlyHintAnnotation(false),

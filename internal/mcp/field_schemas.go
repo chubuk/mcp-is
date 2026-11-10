@@ -21,8 +21,6 @@ var fieldValuesTools = map[string]fieldValuesToolSpec{
 	"create_product":    {group: "product_fields"},
 	"update_product":    {group: "product_fields"},
 	"update_variant":    {group: "variant_fields"},
-	"create_category":   {group: "collection_fields"},
-	"update_category":   {group: "collection_fields"},
 	"create_collection": {group: "collection_fields"},
 	"update_collection": {group: "collection_fields"},
 	"create_order":      {group: "fields", destinies: []int{3}},

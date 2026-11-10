@@ -184,14 +184,26 @@ func (s *Service) CreateOrder(ctx context.Context, clientID int, args map[string
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
+	var attrs []map[string]any
 	if fv := popFieldValues(args); fv != nil {
-		attrs, aerr := s.fieldsValuesAttrs(ctx, orderFieldDestinies, fv)
-		if aerr != nil {
-			return nil, aerr
+		attrs, err = s.fieldsValuesAttrs(ctx, orderFieldDestinies, fv)
+		if err != nil {
+			return nil, err
 		}
 		args["fields_values_attributes"] = attrs
 	}
-	return client.CreateOrder(ctx, clientID, args)
+	order, err := client.CreateOrder(ctx, clientID, args)
+	if err != nil {
+		return nil, err
+	}
+	// InSales POST /orders.json игнорирует fields_values_attributes (живая
+	// проба 2026-11-10) — дописываем их отдельным PUT, как только что созданные.
+	if len(attrs) > 0 {
+		if _, uerr := client.UpdateOrder(ctx, order.ID, map[string]any{"fields_values_attributes": attrs}); uerr != nil {
+			return nil, fmt.Errorf("заказ %s создан, но доп. поля не записаны: %w", order.ID, uerr)
+		}
+	}
+	return order, nil
 }
 
 // === КЛИЕНТЫ ===
@@ -285,9 +297,8 @@ func (s *Service) CreateCategory(ctx context.Context, title string, args map[str
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
-	if fv := popFieldValues(args); fv != nil {
-		args["field_values_attributes"] = inlineFieldAttrs(fv)
-	}
+	// field_values не поддержаны: категории InSales (дерево склада) не хранят
+	// доп. поля — параметр убран из схем (см. catalog_changes).
 	return client.CreateCategory(ctx, title, args)
 }
 
@@ -298,9 +309,6 @@ func (s *Service) UpdateCategory(ctx context.Context, categoryID string, args ma
 	}
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
-	}
-	if fv := popFieldValues(args); fv != nil {
-		args["field_values_attributes"] = inlineFieldAttrs(fv)
 	}
 	return client.UpdateCategory(ctx, categoryID, args)
 }
@@ -343,7 +351,11 @@ func (s *Service) CreateCollection(ctx context.Context, title string, args map[s
 		return nil, err
 	}
 	if fv := popFieldValues(args); fv != nil {
-		args["field_values_attributes"] = inlineFieldAttrs(fv)
+		attrs, aerr := s.collectionFieldAttrs(ctx, fv)
+		if aerr != nil {
+			return nil, aerr
+		}
+		args["field_values_attributes"] = attrs
 	}
 	return client.CreateCollection(ctx, title, args)
 }
@@ -357,7 +369,11 @@ func (s *Service) UpdateCollection(ctx context.Context, collectionID string, arg
 		return nil, err
 	}
 	if fv := popFieldValues(args); fv != nil {
-		args["field_values_attributes"] = inlineFieldAttrs(fv)
+		attrs, aerr := s.collectionFieldAttrs(ctx, fv)
+		if aerr != nil {
+			return nil, aerr
+		}
+		args["field_values_attributes"] = attrs
 	}
 	return client.UpdateCollection(ctx, collectionID, args)
 }

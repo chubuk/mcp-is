@@ -84,6 +84,47 @@ func (s *Service) fieldsValuesAttrs(ctx context.Context, destinies map[int]bool,
 	return attrs, nil
 }
 
+// collectionFieldAttrs валидирует handle'ы доп. полей коллекции по каталогу
+// collection_fields и возвращает форму [{handle, value}]: неизвестный handle —
+// явная ошибка со списком доступных (как у заказов/клиентов), не сырой 422.
+func (s *Service) collectionFieldAttrs(ctx context.Context, fv map[string]any) ([]map[string]any, error) {
+	client, ctx, err := s.manager.GetClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	fields, err := client.ListCollectionFields(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list collection fields: %w", err)
+	}
+	known := make(map[string]bool, len(fields))
+	for _, f := range fields {
+		m, ok := f.(map[string]any)
+		if !ok {
+			continue
+		}
+		if h, ok := m["handle"].(string); ok && h != "" {
+			known[h] = true
+		}
+	}
+	var missing []string
+	for handle := range fv {
+		if !known[handle] {
+			missing = append(missing, handle)
+		}
+	}
+	if len(missing) > 0 {
+		sort.Strings(missing)
+		avail := make([]string, 0, len(known))
+		for h := range known {
+			avail = append(avail, h)
+		}
+		sort.Strings(avail)
+		return nil, fmt.Errorf("неизвестные handle полей: %s; доступные: %s",
+			strings.Join(missing, ", "), strings.Join(avail, ", "))
+	}
+	return inlineFieldAttrs(fv), nil
+}
+
 // anyToID — JSON-числа приходят float64: %v даёт экспоненту на больших ID.
 func anyToID(v any) string {
 	switch n := v.(type) {
