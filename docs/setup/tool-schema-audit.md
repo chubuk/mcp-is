@@ -11,6 +11,16 @@
 закрыты. Строки 3–4 (seed) остаются открытыми. Все update/create из `tools.go`
 (~52 + ~40) пройдены; `update_product` и `create/update_page` — см. «Не дефекты».
 
+Статус-сноска 2 (после W4–W7 и живых проб 2026-11-10): фиксы по таблице внедрены —
+алиасы переименований (`title→name`, `event→topic`, `quantity→quantity_at_warehouse0`,
+`handle→permalink` и др.), расширены схемы collection/page/blog/webhook/property_value/
+accessory/discount_code/variant/external_discount, `CreateClient`/`CreateOrder` не теряют
+`fields_values_attributes` (у заказа — follow-up PUT, т.к. InSales игнорирует их при
+POST /orders.json), `CreatePropertyValue(args)`, роутинг-id вырезаются. `field_values`
+добавлен как единый параметр (9 тулов) и убран у `create/update_category` — категории
+InSales не хранят доп. поля. Живые пробы: testshop `myshop-dgi816` (блог дата/картинка,
+field_values create+upsert на товарах/вариантах/заказах/клиентах/коллекциях).
+
 ## Таблица дефектов
 
 | # | тул | класс | сегодня (file:line) | InSales ждёт (строка доков) | фикс |

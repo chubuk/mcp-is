@@ -868,7 +868,7 @@ Authorization: Bearer <AI_KEY>
 
 Получить список доступных инструментов.
 
-По умолчанию возвращается **core surface** (32 tools: products/orders/clients/categories/collections/product fields/pipelines/export + `search_insales_tools`/`call_insales_tool`/`store_info`). Полный каталог (282) — через catalog meta-tools или env `MCP_TOOLS_MODE=all`. Инструменты denied-доменов (по capabilities-снимку) и запрещённые политикой ИИ-ключа в список не попадают. Результат каждого tool: JSON text + `structuredContent`; `structuredContent` всегда JSON-**объект** (MCP-спека), списки — конверт `{items, total[, page, per_page]}`; у мутационных инструментов (`update_*`/`delete_*`/`add_*`/`decline_*`) объявлен `outputSchema` (runtime-валидация включена).
+По умолчанию возвращается **core surface** (49 tools: products/orders/clients/categories/collections/product fields/pipelines/export + полный цикл блога (`list/get/create/update/delete_blog_posts`, `list/get/create/update_blog`) + `create/update/delete_product`, `add_image`, `update_variant`, `create/update_order`, `add_order_line` + `search_insales_tools`/`call_insales_tool`/`store_info`). Полный каталог (282) — через catalog meta-tools или env `MCP_TOOLS_MODE=all`; в инструкциях подключения видно «показано X из N», а прямой вызов скрытого тула отвечает подсказкой вызвать его через `call_insales_tool`. Инструменты denied-доменов (по capabilities-снимку) и запрещённые политикой ИИ-ключа в список не попадают. Результат каждого tool: JSON text + `structuredContent`; `structuredContent` всегда JSON-**объект** (MCP-спека), списки — конверт `{items, total[, page, per_page]}`; у мутационных инструментов (`update_*`/`delete_*`/`add_*`/`decline_*`) объявлен `outputSchema` (runtime-валидация включена).
 
 ```json
 {
@@ -898,6 +898,8 @@ Authorization: Bearer <AI_KEY>
 
 Идентификация соединения (без запроса к InSales). Поля: `connection_name`, `key_name`, `bound` (ключ привязан к магазину), `store:{id,name,shop_url}`, `read_only`, `direct_rest` (всегда «прямой REST недоступен»). Блок `capabilities` (при привязке): `{checked_at, stale, credentials_ok, allowed, denied, unknown, domains:[{domain,status,since,source}], error}` — снимок probe прав ключа; `since`/`source` (`probe`/`runtime_403`) объясняют, с какого момента и почему домен недоступен.
 
+Совместимость и охват каталога: `tools:{total, visible, mode}` (visible — сколько тулов реально видно этому ключу), `domain_index` (домен → число тулов, для навигации по каталогу), `catalog_version`/`catalog_date` (дата схемы каталога — сверяйте с датой настроенных скриптов) и `catalog_changes` (список последних изменений интерфейса: переименования, убранные параметры, новые механики).
+
 Отказы `call_insales_tool` для LLM:
 - политика ключа: `Инструмент "<имя>" отключён политикой ИИ-ключа — измените политику в настройках ключа`
 - нет прав магазина: `Нет прав ключа на ресурс "<домен>" — включите доступ в настройках приложения InSales; см. store_info (с <дата>, источник: probe|runtime_403)`
@@ -921,6 +923,17 @@ Create/update/delete-инструменты возвращают подробн�
 **Best effort (важно).** InSales API нетранзакционен: конверт описывает фактически выполненное, но при частичном сбое (например, заказ создан, а строки — нет) картина может быть неполной. Рекомендуется **verify-after-write**: после create/update выполнить соответствующий `get_*` и сверить состояние. `data` содержит ответ самой мутации, а не повторный GET.
 
 **Idempotency (create).** У всех `create_*`-инструментов есть опциональный аргумент `idempotency_key` (строка до 128 символов). Если MCP-клиент повторяет вызов с тем же ключом и теми же данными (retry после таймаута), вернётся сохранённый ответ первого вызова с флагом `idempotent_replay: true` — дубль не создаётся. Тот же ключ с другими данными — ошибка; параллельный вызов с одним ключом — «запрос уже выполняется». Хранение — 24 часа. Ключ служебный: из аргументов вырезается и в InSales не уходит.
+
+### Доп. поля магазина (field_values)
+
+Параметр `field_values` `{handle: значение}` доступен у `create/update_product`, `update_variant`, `create/update_collection`, `create/update_order`, `create/update_client` (9 тулов). Значения пишутся в пользовательские доп. поля магазина InSales; handle'ы этого магазина перечислены прямо в описании параметра (обновляются при «Проверить соединение/доступы» в кабинете).
+
+Как это работает:
+- **неизвестный handle** — явная ошибка со списком доступных (не тихий дроп);
+- **товары/варианты** — вложенные ресурсы `product_field_value`/`variant_field_value`; повторная запись обновляет существующее значение (upsert по id значения);
+- **заказы/клиенты** — `fields_values_attributes:[{field_id,value}]` (handle резолвится в id поля живым запросом); у `create_order` доп. поля дописываются отдельным PUT после создания — InSales `POST /orders.json` их игнорирует;
+- **коллекции** — `field_values_attributes:[{handle,value}]`;
+- **категории** — доп. поля **не поддерживаются** (категории InSales — дерево склада, API их не хранит); для полей используйте коллекции. При `field_values` в вызове `create/update_category` аргумент попадает в `ignored_keys` с предупреждением.
 
 ## Инструменты
 
@@ -956,6 +969,7 @@ Create/update/delete-инструменты возвращают подробн�
 | vendor | string | Нет | Производитель |
 | sku | string | Нет | Артикул |
 | quantity | integer | Нет | Количество на складе |
+| field_values | object | Нет | Доп. поля магазина `{handle: значение}` (см. «Доп. поля магазина») |
 
 ### update_product
 
@@ -974,6 +988,7 @@ Create/update/delete-инструменты возвращают подробн�
 | meta_description | string | Нет | SEO: meta description |
 | category_id | number | Нет | ID категории (перемещение товара) |
 | clear_fields | array | Нет | Очистить перечисленные поля (записать пустое значение) |
+| field_values | object | Нет | Доп. поля магазина `{handle: значение}` (см. «Доп. поля магазина») |
 
 ### delete_product
 
@@ -1020,6 +1035,7 @@ Create/update/delete-инструменты возвращают подробн�
 | coupon | string | Нет | Промокод |
 | order_lines_attributes | array | Нет | Строки: `{product_id` ИЛИ `variant_id, quantity, vat?, sale_price?}` |
 | shipping_address_attributes | object | Нет | Адрес: `{address?, full_locality_name?}` |
+| field_values | object | Нет | Доп. поля магазина `{handle: значение}` (см. «Доп. поля магазина»); у `create_order` дописываются отдельным PUT после создания |
 
 Живой контракт InSales (422 со списком полей): обязательны `delivery_variant_id`, `payment_gateway_id`, минимум одна позиция в `order_lines_attributes` и `full_locality_name` в адресе. Вложенные записи (`*_attributes`) в `changed_fields` возвращают `old: null` — сверка по верхнему уровню (`data`).
 
@@ -1043,6 +1059,7 @@ Create/update/delete-инструменты возвращают подробн�
 | order_lines_attributes | array | Нет | Строки: `{id, quantity?, sale_price?, vat?, comment?, _destroy?}` |
 | discounts_attributes | array | Нет | Скидки: `{discount, type_id? (1=percent, 2=money), description?, id?, _destroy?, discount_order_lines_ids?}` |
 | shipping_address_attributes | object | Нет | Адрес: `{address?, full_locality_name?, …}` |
+| field_values | object | Нет | Доп. поля магазина `{handle: значение}` (см. «Доп. поля магазина») |
 
 ### list_clients
 
@@ -1075,6 +1092,7 @@ Create/update/delete-инструменты возвращают подробн�
 | phone | string | Нет | Телефон |
 | password | string | Нет | Пароль (минимум 6 символов) |
 | registered | boolean | Нет | Зарегистрирован (требуется email и пароль) |
+| field_values | object | Нет | Доп. поля магазина `{handle: значение}` (см. «Доп. поля магазина») |
 
 Живой контракт InSales (422): нужен минимум `email` или `phone`.
 
@@ -1087,6 +1105,7 @@ Create/update/delete-инструменты возвращают подробн�
 | client_id | string | Да | ID клиента |
 | email | string | Нет | Email |
 | phone | string | Нет | Телефон |
+| field_values | object | Нет | Доп. поля магазина `{handle: значение}` (см. «Доп. поля магазина») |
 
 ### delete_client
 
@@ -1123,6 +1142,8 @@ Create/update/delete-инструменты возвращают подробн�
 | title | string | Да | Название |
 | parent_id | integer | Нет | ID родительской категории |
 
+Доп. поля не поддерживаются: категории InSales (дерево склада) их не хранят — для `field_values` используйте коллекции.
+
 ### update_category
 
 Обновить категорию.
@@ -1131,6 +1152,8 @@ Create/update/delete-инструменты возвращают подробн�
 |----------|-----|--------------|----------|
 | category_id | string | Да | ID категории |
 | title | string | Нет | Название |
+
+Доп. поля не поддерживаются (см. `create_category`).
 
 ### delete_category
 
@@ -1164,6 +1187,14 @@ Create/update/delete-инструменты возвращают подробн�
 | Параметр | Тип | Обязательный | Описание |
 |----------|-----|--------------|----------|
 | title | string | Да | Название |
+| parent_id | integer | Нет | ID родительской коллекции (0 — корень дерева) |
+| position | integer | Нет | Позиция в списке |
+| sort_type | integer | Нет | Тип сортировки |
+| description | string | Нет | Описание (HTML) |
+| html_title | string | Нет | SEO: html title |
+| meta_keywords | string | Нет | SEO: meta keywords |
+| meta_description | string | Нет | SEO: meta description |
+| field_values | object | Нет | Доп. поля магазина `{handle: значение}` (см. «Доп. поля магазина») |
 
 ### update_collection
 
@@ -1173,6 +1204,17 @@ Create/update/delete-инструменты возвращают подробн�
 |----------|-----|--------------|----------|
 | collection_id | string | Да | ID коллекции |
 | title | string | Нет | Название |
+| position | integer | Нет | Позиция в списке |
+| sort_type | integer | Нет | Тип сортировки |
+| description | string | Нет | Описание (HTML) |
+| html_title | string | Нет | SEO: html title |
+| seo_description | string | Нет | SEO-описание коллекции |
+| meta_keywords | string | Нет | SEO: meta keywords |
+| meta_description | string | Нет | SEO: meta description |
+| is_hidden | boolean | Нет | Скрыть коллекцию |
+| permalink | string | Нет | ЧПУ-адрес |
+| recursive | boolean | Нет | Рекурсивная коллекция |
+| field_values | object | Нет | Доп. поля магазина `{handle: значение}` (см. «Доп. поля магазина») |
 
 ### delete_collection
 
@@ -1298,8 +1340,10 @@ Create/update/delete-инструменты возвращают подробн�
 | variant_id | string | Да | ID варианта |
 | price | string | Нет | Цена |
 | sku | string | Нет | Артикул |
-| quantity | integer | Нет | Количество на складе |
-| weight | string | Нет | Вес |
+| quantity | integer | Нет | Количество (алиас `quantity_at_warehouse0`) |
+| quantity_at_warehouse0 | integer | Нет | Количество на основном складе (API-имя) |
+| dimensions | string | Нет | Габариты |
+| field_values | object | Нет | Доп. поля магазина `{handle: значение}` (см. «Доп. поля магазина») |
 
 ### delete_variant
 
