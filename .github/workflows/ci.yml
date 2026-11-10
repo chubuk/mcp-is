@@ -47,8 +47,9 @@ jobs:
       - name: Install gixy
         run: pip install gixy==0.1.21
 
-      # compose services declare env_file: .env (gitignored) — runners need an empty one
-      - run: touch .env
+      # compose services declare env_file: .env (gitignored) — runners need dummy
+      # values for required vars (DB_PASSWORD has no default since hardening 77c085b)
+      - run: echo "DB_PASSWORD=ci-dummy" > .env
 
       # gixy HIGH fails the gate; hadolint warns only (--no-fail in Makefile)
       - run: make lint-nginx
