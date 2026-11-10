@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.13.0] — 2026-11-11 (блог: дата/картинка/текст, доп. поля field_values, core 49, discovery и совместимость)
+
 ### Добавлено
 - **Доп. поля магазина в схемах тулов (динамические, per-shop)**: параметр `field_values` `{handle: значение}` у `create/update_product`, `update_variant`, `create/update_collection`, `create/update_order`, `create/update_client`. Описание параметра перечисляет актуальные handle'ы полей этого магазина из `settings_snapshot` и меняется при изменении полей (кнопки «Проверить соединение/доступы»). Запись: товары/варианты — вложенные ресурсы (upsert по id значения — повторная запись обновляет, не создаёт дубль), коллекции — `field_values_attributes[{handle,value}]`, заказы/клиенты — `fields_values_attributes[{field_id,value}]` (resolve handle→id живым запросом; неизвестный handle → явная ошибка со списком доступных — в том числе у коллекций). Поля заказов/клиентов (Field destiny 1–6) добавлены в снимок «Настроек товаров» (группа `fields`).
 - **Блог: полный набор полей Article**: `create/update_blog_post` получили `published_at`, `author`, `image_url` (add-or-replace единственной картинки; удаление API не поддерживает — см. `research/probe_article_image.md`), SEO-поля `html_title`/`meta_keywords`/`meta_description`, `notice`, `permalink`, `all_tags`, `pinned`.
@@ -20,12 +22,11 @@
 - **`keywords`-алиас `update_seo` ожил**: раньше вырезался whitelist'ом до маппинга.
 - **`CreateClient` не теряет `fields_values_attributes`** и принимает `subscribe`/`client_group_id`/`type`/`ip_addr`/`skip_send_mail`.
 - **Ответы accessory/property_value/menu**: парсится `name` (API), `title` больше не приходит пустым.
+- **PDN-настройки оживлены**: `shops.pdn_enabled` принудительно включает защиту ПДн (ранее галочка не влияла); `pdn_mask_pii` реально управляет маскировкой (по умолчанию включена, раньше маскировка игнорировала настройку); в `pdn_access_log` появился писатель — статистика «Персональные данные» заполняется (гейт `pdn_log_access`, по умолчанию вкл).
 
 ### Прочее
 - Аудит схем тулов vs API InSales: `docs/setup/tool-schema-audit.md`; сверка со стандартами MCP: `docs/setup/mcp-standards-compliance.md`; семантика картинки статьи: `research/probe_article_image.md`.
 - Каталогу инструментов присвоена версия `catalog_version=2026-11-10.2` — интеграции, настроенные раньше, должны сверить схемы (`store_info.catalog_changes`) до работы с данными.
-
-### PDN-настройки оживлены: `shops.pdn_enabled` принудительно включает защиту ПДн (ранее галочка не влияла); `pdn_mask_pii` реально управляет маскировкой (по умолчанию включена, раньше маскировка игнорировала настройку); в `pdn_access_log` появился писатель — статистика «Персональные данные» заполняется (гейт `pdn_log_access`, по умолчанию вкл).
 
 ### Изменено
 - Удалены мёртвые service-обёртки `Create/Update/DeleteMetaField`, `ListMetaFields`, `ListCurrencies` (вызывающих не было; клиентские методы и пайплайны не тронуты).
