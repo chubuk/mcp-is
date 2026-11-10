@@ -84,41 +84,63 @@ func (s *Service) fieldsValuesAttrs(ctx context.Context, destinies map[int]bool,
 }
 
 // applyNestedFieldValues пишет значения доп. полей товара/варианта через
-// вложенные ресурсы (upsert по handle: есть значение — обновляем, нет — создаём).
+// вложенные ресурсы (upsert: есть значение поля — обновляем, нет — создаём).
+// Список значений приходит без handle, поэтому матчим по product_field_id:
+// handle → id берём из каталога полей магазина.
 func (s *Service) applyNestedFieldValues(ctx context.Context, kind, parentID string, fv map[string]any) error {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return err
 	}
-	var existing []any
+	var existing, catalog []any
 	switch kind {
 	case "product":
 		existing, err = client.ListProductFieldValues(ctx, parentID)
+		if err == nil {
+			catalog, err = client.ListProductFields(ctx)
+		}
 	case "variant":
 		existing, err = client.ListVariantFieldValues(ctx, parentID)
+		if err == nil {
+			catalog, err = client.ListVariantFields(ctx)
+		}
 	default:
 		return fmt.Errorf("field values: неизвестный тип %q", kind)
 	}
 	if err != nil {
 		return fmt.Errorf("list %s field values: %w", kind, err)
 	}
-	idByHandle := make(map[string]string, len(existing))
-	for _, item := range existing {
+	fieldIDByHandle := make(map[string]string, len(catalog))
+	for _, item := range catalog {
 		m, ok := item.(map[string]any)
 		if !ok {
 			continue
 		}
 		if h, ok := m["handle"].(string); ok && h != "" {
-			idByHandle[h] = fmt.Sprintf("%v", m["id"])
+			fieldIDByHandle[h] = fmt.Sprintf("%v", m["id"])
 		}
 	}
+	valueIDByFieldID := make(map[string]string, len(existing))
+	for _, item := range existing {
+		m, ok := item.(map[string]any)
+		if !ok {
+			continue
+		}
+		valueIDByFieldID[fmt.Sprintf("%v", m["product_field_id"])] = fmt.Sprintf("%v", m["id"])
+	}
+	var missing []string
 	for handle, value := range fv {
-		valueKey := idByHandle[handle]
+		fieldID, ok := fieldIDByHandle[handle]
+		if !ok {
+			missing = append(missing, handle)
+			continue
+		}
+		valueKey := valueIDByFieldID[fieldID]
 		switch {
 		case valueKey == "" && kind == "product":
-			_, err = client.CreateProductFieldValue(ctx, parentID, map[string]any{"product_field_handle": handle, "value": value})
+			_, err = client.CreateProductFieldValue(ctx, parentID, map[string]any{"product_field_id": fieldID, "value": value})
 		case valueKey == "":
-			_, err = client.CreateVariantFieldValue(ctx, parentID, map[string]any{"variant_field_handle": handle, "value": value})
+			_, err = client.CreateVariantFieldValue(ctx, parentID, map[string]any{"variant_field_id": fieldID, "value": value})
 		case kind == "product":
 			_, err = client.UpdateProductFieldValue(ctx, parentID, valueKey, map[string]any{"value": value})
 		default:
@@ -127,6 +149,16 @@ func (s *Service) applyNestedFieldValues(ctx context.Context, kind, parentID str
 		if err != nil {
 			return fmt.Errorf("field %q (%s %s): %w", handle, kind, parentID, err)
 		}
+	}
+	if len(missing) > 0 {
+		sort.Strings(missing)
+		known := make([]string, 0, len(fieldIDByHandle))
+		for h := range fieldIDByHandle {
+			known = append(known, h)
+		}
+		sort.Strings(known)
+		return fmt.Errorf("неизвестные handle полей: %s; доступные: %s",
+			strings.Join(missing, ", "), strings.Join(known, ", "))
 	}
 	return nil
 }
