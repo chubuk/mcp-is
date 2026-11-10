@@ -106,6 +106,79 @@ func TestCreateOrder_WritesFieldValuesFollowUp(t *testing.T) {
 	}
 }
 
+// Апсерт варианта: список значений приходит без handle — матчим по
+// variant_field_id (не product_field_id) и не создаём дубль (422 «уже существует»).
+func TestApplyNestedFieldValues_VariantUpsert(t *testing.T) {
+	var putPath, postPath string
+	var lastBody map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/variants/9/variant_field_values.json":
+			_ = json.NewEncoder(w).Encode([]map[string]any{{"id": 55, "variant_field_id": 4489465, "value": "старое"}})
+		case r.Method == http.MethodGet && r.URL.Path == "/variant_fields.json":
+			_ = json.NewEncoder(w).Encode([]map[string]any{{"id": 4489465, "handle": "test_var_note"}})
+		case r.Method == http.MethodPut && r.URL.Path == "/variants/9/variant_field_values/55.json":
+			putPath = r.URL.Path
+			_ = json.NewDecoder(r.Body).Decode(&lastBody)
+			_ = json.NewEncoder(w).Encode(map[string]any{"id": 55})
+		case r.Method == http.MethodPost && r.URL.Path == "/variants/9/variant_field_values.json":
+			postPath = r.URL.Path
+			_ = json.NewDecoder(r.Body).Decode(&lastBody)
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(map[string]any{"id": 56})
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv.Close()
+
+	svc := newFieldTestService(srv)
+	// значение уже есть → должен уйти PUT на id=55, не POST
+	err := svc.applyNestedFieldValues(context.Background(), "variant", "9", map[string]any{"test_var_note": "новое"})
+	if err != nil {
+		t.Fatalf("upsert: %v", err)
+	}
+	if putPath != "/variants/9/variant_field_values/55.json" {
+		t.Fatalf("want update by value id, got PUT %q (POST %q)", putPath, postPath)
+	}
+	wrapped, _ := lastBody["variant_field_value"].(map[string]any)
+	if wrapped["value"] != "новое" {
+		t.Errorf("body = %#v", lastBody)
+	}
+
+	// значения ещё нет → создаём
+	srv2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/variants/9/variant_field_values.json":
+			_ = json.NewEncoder(w).Encode([]map[string]any{})
+		case r.Method == http.MethodGet && r.URL.Path == "/variant_fields.json":
+			_ = json.NewEncoder(w).Encode([]map[string]any{{"id": 4489465, "handle": "test_var_note"}})
+		case r.Method == http.MethodPost && r.URL.Path == "/variants/9/variant_field_values.json":
+			postPath = r.URL.Path
+			_ = json.NewDecoder(r.Body).Decode(&lastBody)
+			w.WriteHeader(http.StatusCreated)
+			_ = json.NewEncoder(w).Encode(map[string]any{"id": 56})
+		default:
+			t.Errorf("unexpected request: %s %s", r.Method, r.URL.Path)
+			w.WriteHeader(http.StatusNotFound)
+		}
+	}))
+	defer srv2.Close()
+	putPath, postPath = "", ""
+	svc = newFieldTestService(srv2)
+	if err := svc.applyNestedFieldValues(context.Background(), "variant", "9", map[string]any{"test_var_note": "x"}); err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	if postPath != "/variants/9/variant_field_values.json" {
+		t.Fatalf("want create, got POST %q", postPath)
+	}
+	wrapped, _ = lastBody["variant_field_value"].(map[string]any)
+	if anyToID(wrapped["variant_field_id"]) != "4489465" {
+		t.Errorf("body = %#v", lastBody)
+	}
+}
+
 func TestCollectionFieldAttrs_UnknownHandle(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/collection_fields.json" {
