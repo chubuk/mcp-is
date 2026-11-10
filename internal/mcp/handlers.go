@@ -677,6 +677,7 @@ var productArgFields = map[string]bool{
 	"vendor": true, "sku": true,
 	"html_title": true, "meta_keywords": true, "meta_description": true,
 	"category_id": true,
+	"field_values": true,
 }
 
 // orderArgFields is the update_order argument whitelist.
@@ -688,6 +689,7 @@ var orderArgFields = map[string]bool{
 	"coupon":                 true,
 	"order_lines_attributes": true, "discounts_attributes": true,
 	"shipping_address_attributes": true,
+	"field_values": true,
 }
 
 func updateProductHandler(svc *service.Service) func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
