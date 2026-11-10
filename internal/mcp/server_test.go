@@ -55,7 +55,7 @@ func TestToolFilterReadOnly(t *testing.T) {
 func TestToolFilterNilReadOnlyHintIsWrite(t *testing.T) {
 	withToolsMode(t, "all")
 	filter := toolFilter(true)
-	filtered := filter(context.Background(), []mcp.Tool{{Name: "orphan"}})
+	filtered := filter(context.Background(), []mcp.Tool{{Name: "orphan"}, {Name: "orphan2"}})
 	if len(filtered) != 0 {
 		t.Errorf("nil ReadOnlyHint must not leak into read-only list, got %d", len(filtered))
 	}
@@ -76,11 +76,11 @@ func TestToolFilterCoreSurface(t *testing.T) {
 	for _, t := range filtered {
 		names[t.Name] = true
 	}
-	if !names["list_products"] || !names["search_insales_tools"] || !names["call_insales_tool"] {
+	if !names["list_products"] || !names["search_insales_tools"] || !names["call_insales_tool"] || !names["create_product"] {
 		t.Errorf("core+meta must stay visible, got %v", names)
 	}
-	if names["create_product"] || names["update_webhook"] {
-		t.Errorf("non-core tools must be hidden in core mode, got %v", names)
+	if names["update_webhook"] {
+		t.Errorf("long-tail tools must be hidden in core mode, got %v", names)
 	}
 }
 
@@ -151,6 +151,6 @@ func TestCoreToolNamesAreKnownTools(t *testing.T) {
 		}
 	}
 	if len(coreToolNames) < 20 || len(coreToolNames) > 50 {
-		t.Errorf("core surface size = %d, want ~30-40", len(coreToolNames))
+		t.Errorf("core surface size = %d, want 20-50", len(coreToolNames))
 	}
 }

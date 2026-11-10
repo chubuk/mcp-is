@@ -390,6 +390,25 @@ func fetchPaged[T any](ctx context.Context, c *InSalesClient, base string, page,
 // cleanArgs drops nil and "" values from an outgoing entity payload: an echoed
 // object must not clear fields by accident. Zeros and false are kept (quantity: 0
 // is a legitimate write); explicit clearing goes through clear_fields.
+// renameArgs переименовывает ключи аргументов по алиасам (старое имя тула →
+// имя API InSales), если нового имени ещё нет. Алиасы держат обратную
+// совместимость старых скриптов (аудит W2, класс ii).
+func renameArgs(args map[string]any, aliases map[string]string) map[string]any {
+	out := make(map[string]any, len(args))
+	for k, v := range args {
+		out[k] = v
+	}
+	for old, newName := range aliases {
+		if v, ok := out[old]; ok {
+			if _, exists := out[newName]; !exists {
+				out[newName] = v
+			}
+			delete(out, old)
+		}
+	}
+	return out
+}
+
 func cleanArgs(args map[string]any) map[string]any {
 	out := make(map[string]any, len(args))
 	for k, v := range args {
@@ -612,13 +631,19 @@ func (c *InSalesClient) GetClient(ctx context.Context, clientID string) (any, er
 func (c *InSalesClient) CreateClient(ctx context.Context, args map[string]any) (any, error) {
 	payload := map[string]any{
 		"client": cleanArgs(map[string]any{
-			"name":       args["name"],
-			"surname":    args["surname"],
-			"middlename": args["middlename"],
-			"email":      args["email"],
-			"phone":      args["phone"],
-			"password":   args["password"],
-			"registered": args["registered"],
+			"name":                     args["name"],
+			"surname":                  args["surname"],
+			"middlename":               args["middlename"],
+			"email":                    args["email"],
+			"phone":                    args["phone"],
+			"password":                 args["password"],
+			"registered":               args["registered"],
+			"subscribe":                args["subscribe"],
+			"client_group_id":          args["client_group_id"],
+			"type":                     args["type"],
+			"ip_addr":                  args["ip_addr"],
+			"skip_send_mail":           args["skip_send_mail"],
+			"fields_values_attributes": args["fields_values_attributes"], // W9: доп. поля (доки 3131-3160)
 		}),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/clients.json", payload)
@@ -685,8 +710,9 @@ func (c *InSalesClient) GetCategory(ctx context.Context, categoryID string) (any
 func (c *InSalesClient) CreateCategory(ctx context.Context, title string, args map[string]any) (any, error) {
 	payload := map[string]any{
 		"category": cleanArgs(map[string]any{
-			"title":     title,
-			"parent_id": args["parent_id"],
+			"title":                   title,
+			"parent_id":               args["parent_id"],
+			"field_values_attributes": args["field_values_attributes"],
 		}),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/categories.json", payload)
@@ -753,8 +779,9 @@ func (c *InSalesClient) GetCollection(ctx context.Context, collectionID string) 
 func (c *InSalesClient) CreateCollection(ctx context.Context, title string, args map[string]any) (any, error) {
 	payload := map[string]any{
 		"collection": cleanArgs(map[string]any{
-			"title":     title,
-			"parent_id": args["parent_id"],
+			"title":                   title,
+			"parent_id":               args["parent_id"],
+			"field_values_attributes": args["field_values_attributes"],
 		}),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/collections.json", payload)
@@ -768,11 +795,9 @@ func (c *InSalesClient) CreateCollection(ctx context.Context, title string, args
 	return MapCollection(&resp), nil
 }
 
-func (c *InSalesClient) UpdateCollection(ctx context.Context, collectionID, title string) (any, error) {
+func (c *InSalesClient) UpdateCollection(ctx context.Context, collectionID string, args map[string]any) (any, error) {
 	payload := map[string]any{
-		"collection": map[string]any{
-			"title": title,
-		},
+		"collection": cleanArgs(args),
 	}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/collections/%s.json", collectionID), payload)
 	if err != nil {
@@ -911,17 +936,25 @@ func (c *InSalesClient) ListWebhooks(ctx context.Context) ([]any, error) {
 }
 
 func (c *InSalesClient) CreateWebhook(ctx context.Context, event, url string, args map[string]any) (any, error) {
-	format, _ := args["format"].(string)
+	format, _ := args["format_type"].(string)
+	if format == "" {
+		format, _ = args["format"].(string)
+	}
 	if format == "" {
 		format = "json"
 	}
-	payload := map[string]any{
-		"webhook": map[string]any{
-			"event":  event,
-			"url":    url,
-			"format": format,
-		},
+	wh := map[string]any{
+		"topic":       event,
+		"address":     url,
+		"format_type": format,
 	}
+	// доп. параметры API (доки 27161-27175)
+	for _, k := range []string{"warehouse_id", "sales_channel_id", "batch_size"} {
+		if v, ok := args[k]; ok {
+			wh[k] = v
+		}
+	}
+	payload := map[string]any{"webhook": cleanArgs(wh)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/webhooks.json", payload)
 	if err != nil {
 		return nil, err
@@ -934,6 +967,8 @@ func (c *InSalesClient) CreateWebhook(ctx context.Context, event, url string, ar
 }
 
 func (c *InSalesClient) UpdateWebhook(ctx context.Context, webhookID string, args map[string]any) (any, error) {
+	// алиасы старых имён: event→topic, url→address, format→format_type (доки 27349-27360)
+	args = renameArgs(args, map[string]string{"event": "topic", "url": "address", "format": "format_type"})
 	payload := map[string]any{
 		"webhook": cleanArgs(args),
 	}
@@ -1151,6 +1186,7 @@ func (c *InSalesClient) CreateAccessory(ctx context.Context, title string, args 
 }
 
 func (c *InSalesClient) UpdateAccessory(ctx context.Context, accessoryID string, args map[string]any) (*Accessory, error) {
+	args = renameArgs(args, map[string]string{"title": "name"}) // API: accessory[name], как в CreateAccessory
 	payload := map[string]any{"accessory": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/accessories/%s.json", accessoryID), payload)
 	if err != nil {
@@ -1196,6 +1232,7 @@ func (c *InSalesClient) GetVariant(ctx context.Context, productID, variantID str
 }
 
 func (c *InSalesClient) UpdateVariant(ctx context.Context, productID, variantID string, args map[string]any) (*Variant, error) {
+	args = renameArgs(args, map[string]string{"quantity": "quantity_at_warehouse0"}) // доки 26197
 	payload := map[string]any{"variant": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/products/%s/variants/%s.json", productID, variantID), payload)
 	if err != nil {
@@ -1232,13 +1269,12 @@ func (c *InSalesClient) ListPropertyValues(ctx context.Context, accessoryID stri
 	return result, nil
 }
 
-func (c *InSalesClient) CreatePropertyValue(ctx context.Context, accessoryID, title string) (*PropertyValue, error) {
-	payload := map[string]any{
-		"accessory_value": map[string]any{
-			"name":  title,
-			"price": 0,
-		},
+func (c *InSalesClient) CreatePropertyValue(ctx context.Context, accessoryID string, args map[string]any) (*PropertyValue, error) {
+	args = renameArgs(args, map[string]string{"title": "name"}) // API: accessory_value[name]
+	if _, ok := args["price"]; !ok {
+		args["price"] = 0 // price обязателен по API (доки 396-404)
 	}
+	payload := map[string]any{"accessory_value": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/accessories/%s/values.json", accessoryID), payload)
 	if err != nil {
 		return nil, err
@@ -1251,6 +1287,7 @@ func (c *InSalesClient) CreatePropertyValue(ctx context.Context, accessoryID, ti
 }
 
 func (c *InSalesClient) UpdatePropertyValue(ctx context.Context, accessoryID, propertyValueID string, args map[string]any) (*PropertyValue, error) {
+	args = renameArgs(args, map[string]string{"title": "name"}) // API: accessory_value[name] (доки 872)
 	payload := map[string]any{"accessory_value": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/accessories/%s/values/%s.json", accessoryID, propertyValueID), payload)
 	if err != nil {
@@ -1301,7 +1338,7 @@ func (c *InSalesClient) GetMenu(ctx context.Context, menuID string) (*Menu, erro
 func (c *InSalesClient) CreateMenu(ctx context.Context, title, handle string) (*Menu, error) {
 	payload := map[string]any{
 		"menu": map[string]any{
-			"title":  title,
+			"name":   title, // API: menu[name]; title — старое имя тула (доки 10164)
 			"handle": handle,
 		},
 	}
@@ -1317,6 +1354,7 @@ func (c *InSalesClient) CreateMenu(ctx context.Context, title, handle string) (*
 }
 
 func (c *InSalesClient) UpdateMenu(ctx context.Context, menuID string, args map[string]any) (*Menu, error) {
+	args = renameArgs(args, map[string]string{"title": "name"}) // API: menu[name] (доки 10292)
 	payload := map[string]any{"menu": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/menus/%s.json", menuID), payload)
 	if err != nil {
@@ -1429,6 +1467,7 @@ func (c *InSalesClient) DeleteBlog(ctx context.Context, blogID string) error {
 }
 
 func (c *InSalesClient) UpdateBlog(ctx context.Context, blogID string, args map[string]any) (*Blog, error) {
+	args = renameArgs(args, map[string]string{"handle": "permalink"}) // handle — имя тула, API: blog[permalink]
 	payload := map[string]any{"blog": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/blogs/%s.json", blogID), payload)
 	if err != nil {
@@ -1452,7 +1491,7 @@ func (c *InSalesClient) ListBlogPosts(ctx context.Context, blogID string) ([]Blo
 	}
 	result := make([]BlogPost, len(items))
 	for i, item := range items {
-		result[i] = *MapBlogPost(&item)
+		result[i] = *withBlogID(MapBlogPost(&item), blogID)
 	}
 	return result, nil
 }
@@ -1466,19 +1505,49 @@ func (c *InSalesClient) GetBlogPost(ctx context.Context, blogID, postID string) 
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("decode blog post: %w", err)
 	}
-	return MapBlogPost(&resp), nil
+	return withBlogID(MapBlogPost(&resp), blogID), nil
 }
 
-func (c *InSalesClient) CreateBlogPost(ctx context.Context, blogID, title, bodyHTML string) (*BlogPost, error) {
-	payload := map[string]any{
-		"article": map[string]any{
-			"title":        title,
-			"content":      bodyHTML,
-			"published_at": "2025-01-01",
-			"author":       "Admin",
-		},
+// BuildBlogArticle maps tool args → article payload: body_html→content,
+// image_url→image_attributes{src} (add-or-replace: слот один, удаление API не
+// поддерживает — research/probe_article_image.md). Роутинг-id вырезаются.
+func BuildBlogArticle(args map[string]any) map[string]any {
+	out := make(map[string]any, len(args))
+	for k, v := range args {
+		switch k {
+		case "blog_id", "post_id", "id", "idempotency_key":
+			continue
+		case "body_html":
+			if s, ok := v.(string); ok && s != "" {
+				out["content"] = s
+			}
+		case "image_url":
+			if s, ok := v.(string); ok && s != "" {
+				out["image_attributes"] = map[string]any{"src": s}
+			}
+		default:
+			out[k] = v
+		}
 	}
-	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/blogs/%s/articles.json", blogID), payload)
+	return cleanArgs(out)
+}
+
+func withBlogID(post *BlogPost, blogID string) *BlogPost {
+	if n, err := strconv.Atoi(blogID); err == nil {
+		post.BlogID = n
+	}
+	return post
+}
+
+func (c *InSalesClient) CreateBlogPost(ctx context.Context, blogID string, args map[string]any) (*BlogPost, error) {
+	article := BuildBlogArticle(args)
+	if _, ok := article["published_at"]; !ok {
+		article["published_at"] = time.Now().Format(time.RFC3339)
+	}
+	if _, ok := article["author"]; !ok {
+		article["author"] = "Admin"
+	}
+	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/blogs/%s/articles.json", blogID), map[string]any{"article": article})
 	if err != nil {
 		return nil, err
 	}
@@ -1486,11 +1555,11 @@ func (c *InSalesClient) CreateBlogPost(ctx context.Context, blogID, title, bodyH
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("decode blog post: %w", err)
 	}
-	return MapBlogPost(&resp), nil
+	return withBlogID(MapBlogPost(&resp), blogID), nil
 }
 
 func (c *InSalesClient) UpdateBlogPost(ctx context.Context, blogID, postID string, args map[string]any) (*BlogPost, error) {
-	payload := map[string]any{"article": cleanArgs(args)}
+	payload := map[string]any{"article": BuildBlogArticle(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/blogs/%s/articles/%s.json", blogID, postID), payload)
 	if err != nil {
 		return nil, err
@@ -1499,7 +1568,7 @@ func (c *InSalesClient) UpdateBlogPost(ctx context.Context, blogID, postID strin
 	if err := json.Unmarshal(body, &resp); err != nil {
 		return nil, fmt.Errorf("decode blog post: %w", err)
 	}
-	return MapBlogPost(&resp), nil
+	return withBlogID(MapBlogPost(&resp), blogID), nil
 }
 
 func (c *InSalesClient) DeleteBlogPost(ctx context.Context, blogID, postID string) error {
@@ -2028,6 +2097,7 @@ func (c *InSalesClient) GetCustomStatus(ctx context.Context, statusID string) (a
 }
 
 func (c *InSalesClient) CreateCustomStatus(ctx context.Context, args map[string]any) (any, error) {
+	args = renameArgs(args, map[string]string{"status_type": "system_status"})
 	payload := map[string]any{"custom_status": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, "/custom_statuses.json", payload)
 	if err != nil {
@@ -2250,10 +2320,12 @@ func (c *InSalesClient) GetCollectionFilter(ctx context.Context, filterID string
 	return c.crudGet(ctx, fmt.Sprintf("/collection_filters/%s.json", filterID))
 }
 func (c *InSalesClient) CreateCollectionFilter(ctx context.Context, args map[string]any) (any, error) {
-	return c.crudCreate(ctx, "/collection_filters.json", "collection_filter", args)
+	args = renameArgs(args, map[string]string{"filter_type": "type"})
+	return c.crudCreate(ctx, "/collection_filters.json", "filter", args)
 }
 func (c *InSalesClient) UpdateCollectionFilter(ctx context.Context, filterID string, args map[string]any) (any, error) {
-	return c.crudUpdate(ctx, fmt.Sprintf("/collection_filters/%s.json", filterID), "collection_filter", args)
+	args = renameArgs(args, map[string]string{"filter_type": "type"})
+	return c.crudUpdate(ctx, fmt.Sprintf("/collection_filters/%s.json", filterID), "filter", args)
 }
 func (c *InSalesClient) DeleteCollectionFilter(ctx context.Context, filterID string) error {
 	return c.crudDelete(ctx, fmt.Sprintf("/collection_filters/%s.json", filterID))
@@ -2286,9 +2358,11 @@ func (c *InSalesClient) GetExternalDiscount(ctx context.Context, discountID stri
 	return c.crudGet(ctx, fmt.Sprintf("/external_discounts/%s.json", discountID))
 }
 func (c *InSalesClient) CreateExternalDiscount(ctx context.Context, args map[string]any) (any, error) {
+	args = renameArgs(args, map[string]string{"title": "description"})
 	return c.crudCreate(ctx, "/external_discounts.json", "external_discount", args)
 }
 func (c *InSalesClient) UpdateExternalDiscount(ctx context.Context, discountID string, args map[string]any) (any, error) {
+	args = renameArgs(args, map[string]string{"title": "description"})
 	return c.crudUpdate(ctx, fmt.Sprintf("/external_discounts/%s.json", discountID), "external_discount", args)
 }
 func (c *InSalesClient) DeleteExternalDiscount(ctx context.Context, discountID string) error {
@@ -2506,6 +2580,8 @@ func (c *InSalesClient) GetBonusSystemTransaction(ctx context.Context, id string
 	return c.crudGet(ctx, fmt.Sprintf("/bonus_system_transactions/%s.json", id))
 }
 func (c *InSalesClient) CreateBonusSystemTransaction(ctx context.Context, clientID int, args map[string]any) (any, error) {
+	delete(args, "client_id")
+	args = renameArgs(args, map[string]string{"amount": "bonus_points", "comment": "description"})
 	payload := map[string]any{"bonus_system_transaction": cleanArgs(args)}
 	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/clients/%d/bonus_system_transactions.json", clientID), payload)
 	if err != nil {

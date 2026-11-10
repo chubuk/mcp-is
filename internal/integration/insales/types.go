@@ -212,6 +212,7 @@ type InSalesPageResponse struct {
 type InSalesAccessoryResponse struct {
 	ID        int    `json:"id"`
 	Title     string `json:"title"`
+	Name      string `json:"name"` // API возвращает name, title — legacy
 	Position  int    `json:"position"`
 	CreatedAt string `json:"created_at"`
 	UpdatedAt string `json:"updated_at"`
@@ -221,6 +222,7 @@ type InSalesPropertyValueResponse struct {
 	ID          int    `json:"id"`
 	AccessoryID int    `json:"accessory_id"`
 	Title       string `json:"title"`
+	Name        string `json:"name"` // API возвращает name, title — legacy
 	Position    int    `json:"position"`
 	CreatedAt   string `json:"created_at"`
 	UpdatedAt   string `json:"updated_at"`
@@ -229,6 +231,7 @@ type InSalesPropertyValueResponse struct {
 type InSalesMenuResponse struct {
 	ID        int               `json:"id"`
 	Title     string            `json:"title"`
+	Name      string            `json:"name"` // API возвращает name, title — legacy
 	Handle    string            `json:"handle"`
 	Items     []InSalesMenuItem `json:"items"`
 	CreatedAt string            `json:"created_at"`

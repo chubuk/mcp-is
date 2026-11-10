@@ -27,18 +27,50 @@ type MCPServer struct {
 type mcpContextKey string
 
 const (
-	mcpShopNameKey mcpContextKey = "shop_name"
-	mcpKeyNameKey  mcpContextKey = "key_name"
-	mcpReadOnlyKey mcpContextKey = "read_only"
-	mcpShopPDNKey  mcpContextKey = "shop_pdn_enabled"
-	mcpAIKeyPDNKey mcpContextKey = "ai_key_pdn_enabled"
+	mcpShopNameKey   mcpContextKey = "shop_name"
+	mcpKeyNameKey    mcpContextKey = "key_name"
+	mcpReadOnlyKey   mcpContextKey = "read_only"
+	mcpShopPDNKey    mcpContextKey = "shop_pdn_enabled"
+	mcpAIKeyPDNKey   mcpContextKey = "ai_key_pdn_enabled"
+	mcpNestedCallKey mcpContextKey = "nested_call" // вызов через call_insales_tool (guard видимости пропускает)
 )
+
+// Версия каталога инструментов (W7): бампать при любом изменении схем/состава
+// тулов — по ней интеграции понимают, что надо перепроверить свои скрипты.
+const (
+	catalogVersion = "2026-11-10.1"
+	catalogDate    = "2026-11-10"
+)
+
+// catalogChanges — рукописный список последних изменений интерфейса (store_info).
+var catalogChanges = []string{
+	"update_blog_post/create_blog_post: добавлены published_at/author/image_url и SEO-поля; body_html теперь реально сохраняется (→article[content]); published_at при создании больше не «2025-01-01»",
+	"field_values ({handle: значение}) у create/update_product, update_variant, create/update_category, create/update_collection, create/update_order, create/update_client — доп. поля магазина; handle'ы — в описании параметра",
+	"core расширен: товары, заказы и блог видны в tools/list напрямую (49 из N); остальное — search_insales_tools → call_insales_tool",
+	"переименования полей приняты через алиасы (title→name, event→topic, url→address, amount→bonus_points, quantity→quantity_at_warehouse0 и др.) — старые имена работают",
+	"лишние аргументы больше не проскакивают в API — смотрите ignored_keys; при непустом ignored_keys сверьте схему тула",
+	"удалены мёртвые тулы (list/create/update/delete_meta_field, list_currencies, get_supplementary) — используйте list_product_fields / stock_currencies",
+}
+
+// filterGlobalReadOnly — флаг read-only всего сервера; заполняется в toolFilter.
+var filterGlobalReadOnly bool
+
+// catalogCounts — фактические размеры каталога для этого ctx: видимых и всего.
+func catalogCounts(ctx context.Context) (visible, total int) {
+	total = len(registeredToolMeta)
+	for _, m := range registeredToolMeta {
+		if toolHiddenReason(ctx, m.Name, m.IsWrite, filterGlobalReadOnly) == "" {
+			visible++
+		}
+	}
+	return visible, total
+}
 
 const baseInstructions = `MCP-сервер для магазина InSales (mcp-is).
 
 ## Discovery
-Default tools/list is a core surface (~30 tools): products, orders, clients, categories, collections, product fields, pipelines, export.
-For anything else use search_insales_tools(query) then call_insales_tool(name, args). All ~280 InSales tools stay callable.
+Default tools/list is a core surface (~49 tools): products, orders, clients, categories, collections, blog, product fields, pipelines, export.
+For anything else use search_insales_tools(query) then call_insales_tool(name, args). All InSales tools stay callable.
 Set MCP_TOOLS_MODE=all to list every tool at once (more tokens, lower selection accuracy).
 
 ## Data conventions
@@ -76,6 +108,14 @@ func buildInstructions(ctx context.Context, base string) string {
 	shopID, _ := ctx.Value(auth.ShopIDKey).(string)
 
 	var header string
+	// Баннер совместимости + честные счётчики (W6/W7): первые строки — то, что
+	// агент должен прочитать до работы с данными. Плоско и коротко.
+	visible, total := catalogCounts(ctx)
+	banner := fmt.Sprintf(
+		"Каталог схем %s (%s): настроились раньше — сверьте store_info (catalog_changes) с датой своих скриптов, потом работа с данными.\n"+
+			"Показано %d из %d тулов; полный каталог — search_insales_tools → call_insales_tool.\n"+
+			"«Невозможно» — только после ошибки API или ignored_keys; иначе порядок: store_info → search → call_insales_tool.\n\n",
+		catalogVersion, catalogDate, visible, total)
 	if shopID == "" {
 		header = "ВНИМАНИЕ: AI-ключ не привязан к магазину — запросы к данным отклоняются. " +
 			"Попросите владельца привязать ключ к магазину в личном кабинете (раздел «AI-ключи»).\n\n"
@@ -110,7 +150,7 @@ func buildInstructions(ctx context.Context, base string) string {
 		header += "Прямой REST к InSales через этот ключ недоступен — используйте инструменты или call_insales_tool.\n" +
 			"При update передавайте только изменяемые поля: пустое значение затирает поле. Для явной очистки — clear_fields.\n\n"
 	}
-	return header + base
+	return banner + header + base
 }
 
 func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry string, auditRepo *storage.AuditRepository, idemRepo *storage.IdempotencyRepository) *MCPServer {

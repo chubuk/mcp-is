@@ -10,9 +10,10 @@ import (
 
 // SettingsItem — строка снимка настроек (элемент списка в админке InSales).
 type SettingsItem struct {
-	ID     string `json:"id"`
-	Title  string `json:"title"`
-	Handle string `json:"handle,omitempty"`
+	ID      string `json:"id"`
+	Title   string `json:"title"`
+	Handle  string `json:"handle,omitempty"`
+	Destiny int    `json:"destiny,omitempty"` // только группа fields: 1=ShippingAddress … 6=Client
 }
 
 // SettingsGroup — снимок одной группы «Настройки товаров».
@@ -45,6 +46,7 @@ type settingsClient interface {
 	ListDiscountCollectionsGroups(ctx context.Context) ([]any, error)
 	ListPriceKinds(ctx context.Context) ([]any, error)
 	ListAccessories(ctx context.Context, page, perPage int) ([]insales.Accessory, error)
+	ListFields(ctx context.Context) ([]any, error)
 }
 
 // settingsGroupDefs — блок «Настройки товаров» админки InSales, в порядке её страницы.
@@ -57,6 +59,7 @@ var settingsGroupDefs = []struct{ key, title string }{
 	{"discount_collections_groups", "Группы категорий"},
 	{"price_kinds", "Типы цен"},
 	{"accessories", "Опции"},
+	{"fields", "Дополнительные поля: Заказы/Клиенты"},
 }
 
 // collectShopSettings собирает снимок групп; ошибка одной группы не валит снимок.
@@ -85,6 +88,8 @@ func fetchSettingsGroup(ctx context.Context, cli settingsClient, key string) ([]
 		list, err = cli.ListVariantFields(ctx)
 	case "collection_fields":
 		list, err = cli.ListCollectionFields(ctx)
+	case "fields":
+		list, err = cli.ListFields(ctx)
 	case "properties":
 		list, err = cli.ListProperties(ctx)
 	case "option_names":
@@ -127,10 +132,16 @@ func extractSettingsItems(list any) []SettingsItem {
 	}
 	items := make([]SettingsItem, 0, len(rows))
 	for _, m := range rows {
+		title := anyToString(m["title"])
+		if title == "" {
+			title = anyToString(m["office_title"]) // Field: заголовок в админке
+		}
+		destiny, _ := m["destiny"].(float64)
 		items = append(items, SettingsItem{
-			ID:     anyToString(m["id"]),
-			Title:  anyToString(m["title"]),
-			Handle: anyToString(m["handle"]),
+			ID:      anyToString(m["id"]),
+			Title:   title,
+			Handle:  anyToString(m["handle"]),
+			Destiny: int(destiny),
 		})
 	}
 	return items

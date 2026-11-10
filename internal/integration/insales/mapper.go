@@ -312,9 +312,13 @@ func MapPage(resp *InSalesPageResponse) *Page {
 }
 
 func MapAccessory(resp *InSalesAccessoryResponse) *Accessory {
+	title := resp.Name
+	if title == "" {
+		title = resp.Title
+	}
 	return &Accessory{
 		ID:        fmt.Sprintf("%d", resp.ID),
-		Title:     resp.Title,
+		Title:     title,
 		Position:  resp.Position,
 		CreatedAt: resp.CreatedAt,
 		UpdatedAt: resp.UpdatedAt,
@@ -322,10 +326,14 @@ func MapAccessory(resp *InSalesAccessoryResponse) *Accessory {
 }
 
 func MapPropertyValue(resp *InSalesPropertyValueResponse) *PropertyValue {
+	title := resp.Name
+	if title == "" {
+		title = resp.Title
+	}
 	return &PropertyValue{
 		ID:          fmt.Sprintf("%d", resp.ID),
 		AccessoryID: resp.AccessoryID,
-		Title:       resp.Title,
+		Title:       title,
 		Position:    resp.Position,
 		CreatedAt:   resp.CreatedAt,
 		UpdatedAt:   resp.UpdatedAt,
@@ -337,9 +345,13 @@ func MapMenu(resp *InSalesMenuResponse) *Menu {
 	for i, item := range resp.Items {
 		items[i] = MenuItem(item)
 	}
+	title := resp.Name
+	if title == "" {
+		title = resp.Title
+	}
 	return &Menu{
 		ID:        fmt.Sprintf("%d", resp.ID),
-		Title:     resp.Title,
+		Title:     title,
 		Handle:    resp.Handle,
 		Items:     items,
 		CreatedAt: resp.CreatedAt,

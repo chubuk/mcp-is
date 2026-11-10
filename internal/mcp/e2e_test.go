@@ -72,15 +72,15 @@ func TestE2E_CoreSurfaceProtocol(t *testing.T) {
 			t.Errorf("core tool %q missing from tools/list", name)
 		}
 	}
-	if seen["create_product"] {
-		t.Error("long-tail create_product must not be in core tools/list")
+	if seen["update_webhook"] {
+		t.Error("long-tail update_webhook must not be in core tools/list")
 	}
 
 	// Discovery: поиск по каталогу находит long-tail тулзы.
 	res, err := c.CallTool(context.Background(), mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
 			Name:      "search_insales_tools",
-			Arguments: map[string]any{"query": "create_product"},
+			Arguments: map[string]any{"query": "update_webhook"},
 		},
 	})
 	if err != nil {
@@ -90,8 +90,8 @@ func TestE2E_CoreSurfaceProtocol(t *testing.T) {
 		t.Fatalf("search_insales_tools errored: %v", res.Content)
 	}
 	text, _ := res.Content[0].(mcp.TextContent)
-	if !strings.Contains(text.Text, "create_product") {
-		t.Errorf("search must find create_product, got: %s", text.Text)
+	if !strings.Contains(text.Text, "update_webhook") {
+		t.Errorf("search must find update_webhook, got: %s", text.Text)
 	}
 
 	// call_insales_tool: неизвестный тул → понятная ошибка, не паника.
@@ -108,15 +108,22 @@ func TestE2E_CoreSurfaceProtocol(t *testing.T) {
 		t.Errorf("unknown tool must be an error result")
 	}
 
-	// Прямой вызов отфильтрованного long-tail тулза — JSON-RPC ошибка «not found», не выполнение.
-	_, err = c.CallTool(context.Background(), mcp.CallToolRequest{
+	// Прямой вызов скрытого long-tail тулза — дружелюбная ошибка guard'а
+	// («существует, но скрыт — вызовите через call_insales_tool»), не выполнение.
+	res, err = c.CallTool(context.Background(), mcp.CallToolRequest{
 		Params: mcp.CallToolParams{
-			Name:      "create_product",
-			Arguments: map[string]any{"title": "x"},
+			Name:      "update_webhook",
+			Arguments: map[string]any{"webhook_id": "1"},
 		},
 	})
-	if err == nil || !strings.Contains(err.Error(), "not found") {
-		t.Errorf("filtered tool call must fail with not found, got: %v", err)
+	if err != nil {
+		t.Fatalf("hidden tool call should return tool-level error, not transport error: %v", err)
+	}
+	if !res.IsError {
+		t.Fatalf("hidden tool call must be an error result, got: %v", res.Content)
+	}
+	if txt, ok := res.Content[0].(mcp.TextContent); !ok || !strings.Contains(txt.Text, "call_insales_tool") {
+		t.Errorf("hidden tool error must point to call_insales_tool, got: %v", res.Content)
 	}
 }
 

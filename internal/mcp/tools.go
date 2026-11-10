@@ -68,9 +68,47 @@ func fixSchemaNodes(v any) any {
 	return v
 }
 
+// withFieldValues — параметр "field_values" ({handle: значение}) для тулов,
+// пишущих доп. поля магазина. Актуальные handle подставляются per-shop в
+// toolFilter (field_schemas.go) из settings_snapshot.
+func withFieldValues() mcp.ToolOption {
+	return mcp.WithObject("field_values",
+		mcp.Description("Значения дополнительных полей магазина: {handle: значение}. Актуальные handle этого магазина перечислены в описании параметра (обновляются при «Проверить соединение» в кабинете)"))
+}
+
+// toolMetaEntry — лёгкая карточка зарегистрированного тула для счётчиков каталога.
+type toolMetaEntry struct {
+	Name    string
+	IsWrite bool
+}
+
+// registeredToolMeta заполняется в addTool; используется catalogCounts (W6).
+var registeredToolMeta []toolMetaEntry
+
+// visibilityGuard — дружелюбная ошибка вместо голого «tool not found», когда тул
+// существует, но скрыт для этого ключа (B5). Вложенный вызов через
+// call_insales_tool пропускает guard — там свои проверки (discovery.go).
+func visibilityGuard(handler server.ToolHandlerFunc) server.ToolHandlerFunc {
+	return func(ctx context.Context, req mcp.CallToolRequest) (*mcp.CallToolResult, error) {
+		if v, ok := ctx.Value(mcpNestedCallKey).(bool); ok && v {
+			return handler(ctx, req)
+		}
+		name := req.Params.Name
+		isWrite := ToolClass(name) != ClassRead
+		if reason := toolHiddenReason(ctx, name, isWrite, filterGlobalReadOnly); reason != "" {
+			return hiddenToolError(name, reason), nil
+		}
+		return handler(ctx, req)
+	}
+}
+
 // addTool — единственная точка регистрации инструментов: нормализует outputSchema
 // (bool-схемы → объекты) перед AddTool. Все вызовы в пакете должны идти через неё.
 func addTool(s *server.MCPServer, tool mcp.Tool, handler server.ToolHandlerFunc) {
+	registeredToolMeta = append(registeredToolMeta, toolMetaEntry{
+		Name:    tool.Name,
+		IsWrite: tool.Annotations.ReadOnlyHint == nil || !*tool.Annotations.ReadOnlyHint,
+	})
 	// Автоматический outputSchema для мутационных инструментов (компромисс, см. output_schemas.go).
 	if tool.RawOutputSchema == nil && tool.OutputSchema.Type == "" {
 		if schema := outputSchemaFor(tool.Name); schema != nil {
@@ -89,6 +127,8 @@ func addTool(s *server.MCPServer, tool mcp.Tool, handler server.ToolHandlerFunc)
 	if class := ToolClass(tool.Name); class == ClassWrite || class == ClassDelete {
 		handler = wrapArgsAudit(handler)
 	}
+	// Guard видимости: тул скрыт для ключа → понятная ошибка, не «tool not found».
+	handler = visibilityGuard(handler)
 	// Idempotency: create_* получают опциональный idempotency_key (дедупликация retry
 	// MCP-клиента). Обёртка снаружи wrapArgsAudit — ключ вырезается до аудита аргументов;
 	// filterArgsByTool дублирует удаление (порядок обёрток не критичен).
@@ -148,6 +188,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), getProductHandler(svc))
 
 	addTool(s, mcp.NewTool("create_product",
+		withFieldValues(),
 		mcp.WithDescription("Create or add a new product in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать новый товар в магазине"),
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название товара (обычный текст)")),
 		mcp.WithString("price", mcp.Required(), mcp.Description("Цена (число, например 1000.00)")),
@@ -156,11 +197,13 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("sku", mcp.Description("Артикул (строка)")),
 		mcp.WithNumber("quantity", mcp.Description("Количество на складе (целое число)")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createProductHandler(svc))
 
 	addTool(s, mcp.NewTool("update_product",
+		withFieldValues(),
 		mcp.WithDescription("Update an existing product by id. Only send fields that should change. WARNING: a present key with an empty value CLEARS the field in InSales — omit keys you don't change; use clear_fields for explicit clearing. Price and stock live in variants — change them via update_variant. Returns {ok, action, changed_fields:{old,new}, data}. "), mcp.WithToolTitle("Обновить данные товара"),
 		mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
 		mcp.WithString("title", mcp.Description("Название")),
@@ -203,7 +246,8 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("resource_id", mcp.Required(), mcp.Description("ID объекта")),
 		mcp.WithString("blog_id", mcp.Description("ID блога (обязателен для resource_type=article)")),
 		mcp.WithString("html_title", mcp.Description("SEO: html title")),
-		mcp.WithString("meta_keywords", mcp.Description("SEO: meta keywords (алиас keywords устарел)")),
+		mcp.WithString("meta_keywords", mcp.Description("SEO: meta keywords")),
+		mcp.WithString("keywords", mcp.Description("Устаревший алиас meta_keywords (legacy)")),
 		mcp.WithString("meta_description", mcp.Description("SEO: meta description")),
 		mcp.WithString("seo_description", mcp.Description("SEO-описание (только resource_type=collection)")),
 		mcp.WithArray("clear_fields", mcp.WithStringItems(), mcp.Description("Очистить перечисленные SEO-поля")),
@@ -239,6 +283,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), getOrderHandler(svc))
 
 	addTool(s, mcp.NewTool("update_order",
+		withFieldValues(),
 		mcp.WithDescription("Update an existing order by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить заказ: статус, комментарий, строки, скидки, адрес доставки. status — alias для financial_status"),
 		mcp.WithString("order_id", mcp.Required(), mcp.Description("ID заказа")),
 		mcp.WithString("status", mcp.Enum("pending", "paid"), mcp.Description("Alias для financial_status")),
@@ -269,6 +314,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), updateOrderHandler(svc))
 
 	addTool(s, mcp.NewTool("create_order",
+		withFieldValues(),
 		mcp.WithDescription("Create or add a new order in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать заказ: клиент (client_id ИЛИ client name/email/phone) и опционально строки/адрес/оплата"),
 		mcp.WithNumber("client_id", mcp.Description("ID существующего клиента")),
 		mcp.WithObject("client", mcp.Description("Новый клиент: {name?, email?, phone?, consent_to_personal_data?}")),
@@ -286,6 +332,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 			})),
 		mcp.WithObject("shipping_address_attributes", mcp.Description("Адрес: {address?, full_locality_name?}")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createOrderHandler(svc))
@@ -418,6 +465,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), getClientHandler(svc))
 
 	addTool(s, mcp.NewTool("create_client",
+		withFieldValues(),
 		mcp.WithDescription("Create or add a new client in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать нового клиента"),
 		mcp.WithString("name", mcp.Required(), mcp.Description("Имя")),
 		mcp.WithString("surname", mcp.Required(), mcp.Description("Фамилия")),
@@ -427,11 +475,13 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("password", mcp.Description("Пароль (минимум 6 символов)")),
 		mcp.WithBoolean("registered", mcp.Description("Зарегистрирован (требуется email и пароль)")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createClientHandler(svc))
 
 	addTool(s, mcp.NewTool("update_client",
+		withFieldValues(),
 		mcp.WithDescription("Update an existing client by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить данные клиента"),
 		mcp.WithString("client_id", mcp.Required(), mcp.Description("ID клиента")),
 		mcp.WithString("email", mcp.Description("Email")),
@@ -469,15 +519,18 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), getCategoryHandler(svc))
 
 	addTool(s, mcp.NewTool("create_category",
+		withFieldValues(),
 		mcp.WithDescription("Create or add a new category in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать новую категорию"),
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название категории")),
 		mcp.WithNumber("parent_id", mcp.Description("ID родительской категории")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createCategoryHandler(svc))
 
 	addTool(s, mcp.NewTool("update_category",
+		withFieldValues(),
 		mcp.WithDescription("Update an existing category by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить категорию"),
 		mcp.WithString("category_id", mcp.Required(), mcp.Description("ID категории")),
 		mcp.WithString("title", mcp.Description("Название")),
@@ -514,18 +567,37 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), getCollectionHandler(svc))
 
 	addTool(s, mcp.NewTool("create_collection",
+		withFieldValues(),
 		mcp.WithDescription("Create or add a new collection in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать новую коллекцию"),
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название коллекции")),
 		mcp.WithNumber("parent_id", mcp.Description("ID родительской коллекции (0 — корень дерева)")),
+		mcp.WithNumber("position", mcp.Description("Позиция в списке")),
+		mcp.WithNumber("sort_type", mcp.Description("Тип сортировки")),
+		mcp.WithString("description", mcp.Description("Описание (HTML)")),
+		mcp.WithString("html_title", mcp.Description("SEO: html title")),
+		mcp.WithString("meta_keywords", mcp.Description("SEO: meta keywords")),
+		mcp.WithString("meta_description", mcp.Description("SEO: meta description")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createCollectionHandler(svc))
 
 	addTool(s, mcp.NewTool("update_collection",
+		withFieldValues(),
 		mcp.WithDescription("Update an existing collection by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить коллекцию"),
 		mcp.WithString("collection_id", mcp.Required(), mcp.Description("ID коллекции")),
 		mcp.WithString("title", mcp.Description("Название")),
+		mcp.WithNumber("position", mcp.Description("Позиция в списке")),
+		mcp.WithNumber("sort_type", mcp.Description("Тип сортировки")),
+		mcp.WithString("description", mcp.Description("Описание (HTML)")),
+		mcp.WithString("html_title", mcp.Description("SEO: html title")),
+		mcp.WithString("seo_description", mcp.Description("SEO-описание коллекции")),
+		mcp.WithString("meta_keywords", mcp.Description("SEO: meta keywords")),
+		mcp.WithString("meta_description", mcp.Description("SEO: meta description")),
+		mcp.WithBoolean("is_hidden", mcp.Description("Скрыть коллекцию")),
+		mcp.WithString("permalink", mcp.Description("ЧПУ-адрес")),
+		mcp.WithBoolean("recursive", mcp.Description("Рекурсивная коллекция")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
@@ -586,8 +658,12 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDescription("Create or add a new webhook in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Подписаться на событие InSales"),
 		mcp.WithString("event", mcp.Required(), mcp.Description("Событие: order_create, product_update и т.д.")),
 		mcp.WithString("url", mcp.Required(), mcp.Description("URL для получения событий")),
-		mcp.WithString("format", mcp.Description("Формат: json, xml"), mcp.DefaultString("json")),
+		mcp.WithString("format", mcp.Description("Формат: json, xml (API: format_type)"), mcp.DefaultString("json")),
+		mcp.WithNumber("warehouse_id", mcp.Description("ID склада")),
+		mcp.WithNumber("sales_channel_id", mcp.Description("ID канала продаж")),
+		mcp.WithNumber("batch_size", mcp.Description("Размер батча событий")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createWebhookHandler(svc))
@@ -595,7 +671,15 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	addTool(s, mcp.NewTool("update_webhook",
 		mcp.WithDescription("Update an existing webhook by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить URL вебхука"),
 		mcp.WithString("webhook_id", mcp.Required(), mcp.Description("ID вебхука")),
-		mcp.WithString("url", mcp.Description("Новый URL")),
+		mcp.WithString("url", mcp.Description("Новый URL (алиас address)")),
+		mcp.WithString("address", mcp.Description("URL для получения событий (API)")),
+		mcp.WithString("topic", mcp.Description("Событие (API)")),
+		mcp.WithString("event", mcp.Description("Устаревший алиас topic (legacy)")),
+		mcp.WithString("format_type", mcp.Description("Формат: json, xml (API)")),
+		mcp.WithString("format", mcp.Description("Устаревший алиас format_type (legacy)")),
+		mcp.WithNumber("warehouse_id", mcp.Description("ID склада")),
+		mcp.WithNumber("sales_channel_id", mcp.Description("ID канала продаж")),
+		mcp.WithNumber("batch_size", mcp.Description("Размер батча событий")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
@@ -652,6 +736,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithArray("delivery_locations_attributes", mcp.Description("Locations [{country?, region, area?, city?}]"),
 			mcp.Items(map[string]any{"type": "object", "additionalProperties": true})),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateDeliveryVariant))
@@ -707,6 +792,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithArray("payment_delivery_variants_attributes", mcp.Description("[{delivery_variant_id}]"),
 			mcp.Items(map[string]any{"type": "object", "additionalProperties": true})),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreatePaymentGateway))
@@ -757,6 +843,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("content", mcp.Required(), mcp.Description("HTML-содержимое")),
 		mcp.WithString("handle", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("URL-идентификатор (handle/slug)")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createPageHandler(svc))
@@ -766,6 +853,8 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("page_id", mcp.Required(), mcp.Description("ID страницы")),
 		mcp.WithString("title", mcp.Description("Название")),
 		mcp.WithString("content", mcp.Description("Содержимое")),
+		mcp.WithString("permalink", mcp.Description("ЧПУ-адрес")),
+		mcp.WithString("created_at", mcp.Description("Дата создания (ISO)")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
@@ -805,6 +894,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithNumber("min_count", mcp.Description("Минимальное количество опций в заказе")),
 		mcp.WithString("permalink", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("URL-идентификатор (handle/slug; в API InSales — permalink)")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createAccessoryHandler(svc))
@@ -812,8 +902,11 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	addTool(s, mcp.NewTool("update_accessory",
 		mcp.WithDescription("Update an existing accessory by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить аксессуар"),
 		mcp.WithString("accessory_id", mcp.Required(), mcp.Description("ID аксессуара")),
-		mcp.WithString("title", mcp.Description("Название")),
+		mcp.WithString("title", mcp.Description("Название (API: name)")),
 		mcp.WithNumber("position", mcp.Description("Позиция")),
+		mcp.WithNumber("max_count", mcp.Description("Максимальное количество")),
+		mcp.WithNumber("min_count", mcp.Description("Минимальное количество")),
+		mcp.WithString("permalink", mcp.Description("ЧПУ-адрес")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
@@ -847,12 +940,15 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), getVariantHandler(svc))
 
 	addTool(s, mcp.NewTool("update_variant",
+		withFieldValues(),
 		mcp.WithDescription("Update an existing product variant by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить данные варианта товара"),
 		mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")),
 		mcp.WithString("variant_id", mcp.Required(), mcp.Description("ID варианта")),
 		mcp.WithString("price", mcp.Description("Цена")),
 		mcp.WithString("sku", mcp.Description("Артикул")),
-		mcp.WithNumber("quantity", mcp.Description("Количество")),
+		mcp.WithNumber("quantity", mcp.Description("Количество (алиас quantity_at_warehouse0)")),
+		mcp.WithNumber("quantity_at_warehouse0", mcp.Description("Количество на основном складе (API)")),
+		mcp.WithString("dimensions", mcp.Description("Габариты")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
@@ -881,7 +977,10 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDescription("Create or add a new property value in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать новое значение для аксессуара"),
 		mcp.WithString("accessory_id", mcp.Required(), mcp.Description("ID аксессуара")),
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название значения")),
+		mcp.WithNumber("price", mcp.Description("Цена (по умолчанию 0)")),
+		mcp.WithNumber("accounting_variant_id", mcp.Description("ID учётного варианта")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createPropertyValueHandler(svc))
@@ -891,6 +990,8 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("accessory_id", mcp.Required(), mcp.Description("ID аксессуара")),
 		mcp.WithString("property_value_id", mcp.Required(), mcp.Description("ID значения")),
 		mcp.WithString("title", mcp.Description("Название")),
+		mcp.WithNumber("price", mcp.Description("Цена")),
+		mcp.WithNumber("accounting_variant_id", mcp.Description("ID учётного варианта")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
@@ -927,6 +1028,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название меню")),
 		mcp.WithString("handle", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("URL-идентификатор (handle/slug)")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createMenuHandler(svc))
@@ -981,6 +1083,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("related_object_id", mcp.Required(), mcp.Description(`Composite ref: "Blog_1" | "Page_2" | "Collection_3" | https://...`)),
 		mcp.WithNumber("position", mcp.Description("Sort position")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createMenuItemHandler(svc))
@@ -1026,6 +1129,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("url", mcp.Required(), mcp.Description("Старый URL")),
 		mcp.WithString("target", mcp.Required(), mcp.Description("Новый URL")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createRedirectHandler(svc))
@@ -1059,6 +1163,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название блога")),
 		mcp.WithString("handle", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("URL-идентификатор (handle/slug)")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createBlogHandler(svc))
@@ -1067,7 +1172,10 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDescription("Update an existing blog by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить блог"),
 		mcp.WithString("blog_id", mcp.Required(), mcp.Description("ID блога")),
 		mcp.WithString("title", mcp.Description("Название блога")),
-		mcp.WithString("handle", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("URL-идентификатор (handle/slug)")),
+		mcp.WithString("handle", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("URL-идентификатор (handle/slug; API: permalink)")),
+		mcp.WithString("html_title", mcp.Description("SEO: html title")),
+		mcp.WithString("meta_keywords", mcp.Description("SEO: meta keywords")),
+		mcp.WithString("meta_description", mcp.Description("SEO: meta description")),
 		mcp.WithString("commentable", mcp.Description("Комментарии: no, yes, moderable")),
 		mcp.WithBoolean("notify_about_comment", mcp.Description("Уведомлять о комментариях")),
 		mcp.WithBoolean("captcha_enabled", mcp.Description("Капча при комментировании")),
@@ -1109,17 +1217,38 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("blog_id", mcp.Required(), mcp.Description("ID блога")),
 		mcp.WithString("title", mcp.Required(), mcp.Description("Заголовок")),
 		mcp.WithString("body_html", mcp.Required(), mcp.Description("HTML-содержимое")),
+		mcp.WithString("published_at", mcp.Description("Дата публикации (ISO, напр. 2026-12-01 или 2026-12-01 12:00:00); по умолчанию — сейчас")),
+		mcp.WithString("author", mcp.Description("Автор записи; по умолчанию Admin")),
+		mcp.WithString("image_url", mcp.Description("URL картинки записи: добавляет ИЛИ заменяет единственную картинку (удаление API не поддерживает)")),
+		mcp.WithString("notice", mcp.Description("Анонс записи")),
+		mcp.WithString("permalink", mcp.Description("ЧПУ-адрес записи на blog/*")),
+		mcp.WithString("html_title", mcp.Description("SEO: html title")),
+		mcp.WithString("meta_keywords", mcp.Description("SEO: meta keywords")),
+		mcp.WithString("meta_description", mcp.Description("SEO: meta description")),
+		mcp.WithArray("all_tags", mcp.WithStringItems(), mcp.Description("Теги записи (массив, макс 10)")),
+		mcp.WithBoolean("pinned", mcp.Description("Закрепить запись (закреплённая всегда одна)")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createBlogPostHandler(svc))
 
 	addTool(s, mcp.NewTool("update_blog_post",
-		mcp.WithDescription("Update an existing blog post by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить запись блога"),
+		mcp.WithDescription("Update an existing blog post by id. Only send fields that should change. Returns {ok, action, changed_fields:{old,new}, data}."), mcp.WithToolTitle("Обновить запись блога"),
 		mcp.WithString("blog_id", mcp.Required(), mcp.Description("ID блога")),
 		mcp.WithString("post_id", mcp.Required(), mcp.Description("ID записи")),
 		mcp.WithString("title", mcp.Description("Заголовок")),
 		mcp.WithString("body_html", mcp.Description("Содержимое")),
+		mcp.WithString("published_at", mcp.Description("Дата публикации (ISO, напр. 2026-12-01 или 2026-12-01 12:00:00)")),
+		mcp.WithString("author", mcp.Description("Автор записи")),
+		mcp.WithString("image_url", mcp.Description("URL картинки записи: добавляет ИЛИ заменяет единственную картинку (удаление API не поддерживает)")),
+		mcp.WithString("notice", mcp.Description("Анонс записи")),
+		mcp.WithString("permalink", mcp.Description("ЧПУ-адрес записи на blog/*")),
+		mcp.WithString("html_title", mcp.Description("SEO: html title")),
+		mcp.WithString("meta_keywords", mcp.Description("SEO: meta keywords")),
+		mcp.WithString("meta_description", mcp.Description("SEO: meta description")),
+		mcp.WithArray("all_tags", mcp.WithStringItems(), mcp.Description("Теги записи (массив, макс 10)")),
+		mcp.WithBoolean("pinned", mcp.Description("Закрепить запись (закреплённая всегда одна)")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
@@ -1163,7 +1292,9 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithNumber("min_price", mcp.Description("Минимальная сумма заказа")),
 		mcp.WithBoolean("act_once", mcp.Description("Одноразовый")),
 		mcp.WithBoolean("act_once_for_client", mcp.Description("Одноразовый для клиента")),
+		mcp.WithBoolean("disabled", mcp.Description("Отключить промокод")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createDiscountCodeHandler(svc))
@@ -1259,6 +1390,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("permalink", mcp.Pattern("^[a-z0-9-]+$"), mcp.Description("URL-идентификатор (handle/slug; в API InSales — permalink)")),
 		mcp.WithBoolean("is_navigational", mcp.Description("Показывать в фильтре")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createPropertyHandler(svc))
@@ -1305,6 +1437,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("property_id", mcp.Required(), mcp.Description("ID свойства")),
 		mcp.WithString("title", mcp.Required(), mcp.Description("Название характеристики")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createCharacteristicHandler(svc))
@@ -1356,6 +1489,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithNumber("rating", mcp.Description("Оценка (1-10)")),
 		mcp.WithBoolean("published", mcp.Description("Опубликован")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createReviewHandler(svc))
@@ -1401,6 +1535,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithDescription("Create or add a new file in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Загрузить файл (по URL)"),
 		mcp.WithString("src", mcp.Required(), mcp.Description("URL файла")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createFileHandler(svc))
@@ -1426,6 +1561,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "domain_id", svc.GetDomain))
 	addTool(s, mcp.NewTool("create_domain", mcp.WithDescription("Create or add a new domain in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Добавить домен"), mcp.WithString("domain", mcp.Required(), mcp.Description("Домен")), mcp.WithBoolean("main", mcp.Description("Основной домен")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateDomain))
@@ -1454,6 +1590,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "group_id", svc.GetClientGroup))
 	addTool(s, mcp.NewTool("create_client_group", mcp.WithDescription("Create or add a new client group in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать группу клиентов"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithNumber("discount", mcp.Description("Скидка (%)")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateClientGroup))
@@ -1482,6 +1619,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "status_id", svc.GetCustomStatus))
 	addTool(s, mcp.NewTool("create_custom_status", mcp.WithDescription("Create or add a new custom order status in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать кастомный статус"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithString("status_type", mcp.Required(), mcp.Description("Тип статуса")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateCustomStatus))
@@ -1524,6 +1662,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithBoolean("is_indexed", mcp.Description("Include in search index")),
 		mcp.WithNumber("position", mcp.Description("Sort position")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createProductFieldHandler(svc))
@@ -1581,6 +1720,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("product_field_handle", mcp.Description("Field handle, e.g. dosage")),
 		mcp.WithString("value", mcp.Description("Value text")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createProductFieldValueHandler(svc))
@@ -1650,6 +1790,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithString("variant_field_handle", mcp.Description("Field handle")),
 		mcp.WithString("value", mcp.Description("Value text")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createVariantFieldValueHandler(svc))
@@ -1727,6 +1868,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "field_id", svc.GetVariantField))
 	addTool(s, mcp.NewTool("create_variant_field", mcp.WithDescription("Create or add a new variant custom field in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать поле варианта"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithString("field_type", mcp.Required(), mcp.Description("Тип поля")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateVariantField))
@@ -1755,6 +1897,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "field_id", svc.GetCollectionField))
 	addTool(s, mcp.NewTool("create_collection_field", mcp.WithDescription("Create or add a new collection custom field in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать поле коллекции"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithString("field_type", mcp.Required(), mcp.Description("Тип поля")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateCollectionField))
@@ -1781,12 +1924,13 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericGetHandler(svc, "filter_id", svc.GetCollectionFilter))
-	addTool(s, mcp.NewTool("create_collection_filter", mcp.WithDescription("Create or add a new collection filter in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать фильтр коллекции"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithString("filter_type", mcp.Required(), mcp.Description("Тип фильтра")), mcp.WithNumber("collection_id", mcp.Required(), mcp.Description("ID коллекции")),
+	addTool(s, mcp.NewTool("create_collection_filter", mcp.WithDescription("Create or add a new collection filter in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать фильтр коллекции"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithString("filter_type", mcp.Required(), mcp.Description("Тип фильтра (API: filter[type])")), mcp.WithNumber("collection_id", mcp.Required(), mcp.Description("ID коллекции")), mcp.WithString("description", mcp.Description("Описание")), mcp.WithString("permalink", mcp.Description("ЧПУ-адрес")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateCollectionFilter))
-	addTool(s, mcp.NewTool("update_collection_filter", mcp.WithDescription("Update an existing collection filter by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить фильтр коллекции"), mcp.WithString("filter_id", mcp.Required(), mcp.Description("ID фильтра")), mcp.WithString("title", mcp.Description("Название")),
+	addTool(s, mcp.NewTool("update_collection_filter", mcp.WithDescription("Update an existing collection filter by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить фильтр коллекции"), mcp.WithString("filter_id", mcp.Required(), mcp.Description("ID фильтра")), mcp.WithString("title", mcp.Description("Название")), mcp.WithString("description", mcp.Description("Описание")), mcp.WithString("permalink", mcp.Description("ЧПУ-адрес")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
@@ -1811,6 +1955,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "tag_id", svc.GetJsTag))
 	addTool(s, mcp.NewTool("create_js_tag", mcp.WithDescription("Create or add a new JS tag in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать JS-тег"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithString("content", mcp.Required(), mcp.Description("Код JS")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateJsTag))
@@ -1837,12 +1982,13 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericGetHandler(svc, "discount_id", svc.GetExternalDiscount))
-	addTool(s, mcp.NewTool("create_external_discount", mcp.WithDescription("Create or add a new external discount in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать внешнюю скидку"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithNumber("percent", mcp.Description("Процент скидки")), mcp.WithNumber("amount", mcp.Description("Сумма скидки")),
+	addTool(s, mcp.NewTool("create_external_discount", mcp.WithDescription("Create or add a new external discount in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать внешнюю скидку"), mcp.WithString("title", mcp.Description("Название (legacy-алиас description)")), mcp.WithString("description", mcp.Description("Описание скидки (API: external_discount[description])")), mcp.WithString("url", mcp.Description("URL скидки")), mcp.WithBoolean("order_lines_depend", mcp.Description("Зависимость от позиций заказа")), mcp.WithBoolean("active", mcp.Description("Активна")), mcp.WithArray("observed_fields", mcp.WithStringItems(), mcp.Description("Наблюдаемые поля (только create)")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateExternalDiscount))
-	addTool(s, mcp.NewTool("update_external_discount", mcp.WithDescription("Update an existing external discount by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить внешнюю скидку"), mcp.WithString("discount_id", mcp.Required(), mcp.Description("ID скидки")), mcp.WithString("title", mcp.Description("Название")),
+	addTool(s, mcp.NewTool("update_external_discount", mcp.WithDescription("Update an existing external discount by id. Only send fields that should change. Returns the updated object as JSON."), mcp.WithToolTitle("Обновить внешнюю скидку"), mcp.WithString("discount_id", mcp.Required(), mcp.Description("ID скидки")), mcp.WithString("title", mcp.Description("Название (legacy-алиас description)")), mcp.WithString("description", mcp.Description("Описание скидки")), mcp.WithString("url", mcp.Description("URL скидки")), mcp.WithBoolean("order_lines_depend", mcp.Description("Зависимость от позиций заказа")), mcp.WithBoolean("active", mcp.Description("Активна")),
 		mcp.WithReadOnlyHintAnnotation(false),
 		mcp.WithIdempotentHintAnnotation(true),
 		mcp.WithDestructiveHintAnnotation(false),
@@ -1867,6 +2013,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "group_id", svc.GetDiscountCollectionsGroup))
 	addTool(s, mcp.NewTool("create_discount_collections_group", mcp.WithDescription("Create or add a new discount collections group in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать группу коллекций скидок"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateDiscountCollectionsGroup))
@@ -1895,6 +2042,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "warehouse_id", svc.GetWarehouse))
 	addTool(s, mcp.NewTool("create_warehouse", mcp.WithDescription("Create or add a new warehouse in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать склад"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithString("address", mcp.Description("Адрес")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateWarehouse))
@@ -1923,6 +2071,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "channel_id", svc.GetSalesChannel))
 	addTool(s, mcp.NewTool("create_sales_channel", mcp.WithDescription("Create or add a new sales channel in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать канал продаж"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateSalesChannel))
@@ -1951,6 +2100,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "currency_id", svc.GetStockCurrency))
 	addTool(s, mcp.NewTool("create_stock_currency", mcp.WithDescription("Create or add a new stock currency in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать валюту склада"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithString("code", mcp.Required(), mcp.Description("Код валюты")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateStockCurrency))
@@ -1979,6 +2129,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "kind_id", svc.GetPriceKind))
 	addTool(s, mcp.NewTool("create_price_kind", mcp.WithDescription("Create or add a new price kind in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать тип цены"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreatePriceKind))
@@ -2007,6 +2158,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "option_name_id", svc.GetOptionName))
 	addTool(s, mcp.NewTool("create_option_name", mcp.WithDescription("Create or add a new option name in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать имя опции"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithBoolean("navigational", mcp.Description("Показывать в фильтре")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateOptionName))
@@ -2035,6 +2187,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetOptionValueHandler(svc))
 	addTool(s, mcp.NewTool("create_option_value", mcp.WithDescription("Create or add a new option value in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать значение опции"), mcp.WithString("option_name_id", mcp.Required(), mcp.Description("ID имени опции")), mcp.WithString("title", mcp.Required(), mcp.Description("Название")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateOptionValueHandler(svc))
@@ -2063,6 +2216,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "action_id", svc.GetApplicationAction))
 	addTool(s, mcp.NewTool("create_application_action", mcp.WithDescription("Create or add a new application action in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать действие приложения"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithString("handle", mcp.Required(), mcp.Description("Идентификатор")), mcp.WithString("entity", mcp.Required(), mcp.Description("Сущность: order, product, client...")), mcp.WithString("url", mcp.Required(), mcp.Description("URL")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateApplicationAction))
@@ -2091,6 +2245,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "charge_id", svc.GetApplicationCharge))
 	addTool(s, mcp.NewTool("create_application_charge", mcp.WithDescription("Create or add a new application charge in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать счёт приложения"), mcp.WithString("name", mcp.Required(), mcp.Description("Назначение")), mcp.WithNumber("price", mcp.Required(), mcp.Description("Сумма")), mcp.WithString("return_url", mcp.Description("URL уведомления")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateApplicationCharge))
@@ -2113,6 +2268,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "widget_id", svc.GetApplicationWidget))
 	addTool(s, mcp.NewTool("create_application_widget", mcp.WithDescription("Create or add a new application widget in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать виджет"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateApplicationWidget))
@@ -2141,6 +2297,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "charge_id", svc.GetRecurringApplicationCharge))
 	addTool(s, mcp.NewTool("create_recurring_application_charge", mcp.WithDescription("Create or add a new recurring application charge in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать рекуррентный счёт"), mcp.WithString("name", mcp.Required(), mcp.Description("Назначение")), mcp.WithNumber("price", mcp.Required(), mcp.Description("Сумма")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateRecurringApplicationCharge))
@@ -2169,6 +2326,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "transaction_id", svc.GetBonusSystemTransaction))
 	addTool(s, mcp.NewTool("create_bonus_system_transaction", mcp.WithDescription("Create or add a new bonus transaction in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать бонусную транзакцию"), mcp.WithNumber("client_id", mcp.Required(), mcp.Description("ID клиента")), mcp.WithNumber("amount", mcp.Required(), mcp.Description("Сумма баллов")), mcp.WithString("comment", mcp.Description("Комментарий")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createBonusSystemTransactionHandler(svc))
@@ -2191,6 +2349,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "app_id", svc.GetOAuthApp))
 	addTool(s, mcp.NewTool("create_oauth_app", mcp.WithDescription("Create or add a new OAuth app in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать OAuth приложение"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateOAuthApp))
@@ -2219,6 +2378,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "task_id", svc.GetUserTask))
 	addTool(s, mcp.NewTool("create_user_task", mcp.WithDescription("Create or add a new user task in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать задачу"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateUserTask))
@@ -2242,6 +2402,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), nestedListHandler(svc.ListSupplementaries, "product_id"))
 	addTool(s, mcp.NewTool("create_supplementary", mcp.WithDescription("Link a supplementary product to a product (POST /products/:product_id/supplementaries.json with supplementary_ids). This is a LINK operation, not entity creation. Returns the API status."), mcp.WithToolTitle("Связать сопутствующий товар"), mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")), mcp.WithString("supplementary_product_id", mcp.Required(), mcp.Description("ID сопутствующего товара")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateSupplementary))
@@ -2259,6 +2420,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), listSimilarsByProductHandler(svc))
 	addTool(s, mcp.NewTool("create_similar", mcp.WithDescription("Link a similar product to a product (POST /products/:product_id/similars.json with similar_ids). This is a LINK operation, not entity creation. Returns the API status."), mcp.WithToolTitle("Добавить похожий товар"), mcp.WithString("product_id", mcp.Required(), mcp.Description("ID товара")), mcp.WithString("similar_product_id", mcp.Required(), mcp.Description("ID похожего товара")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateSimilar))
@@ -2295,6 +2457,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "outlet_id", svc.GetOutlet))
 	addTool(s, mcp.NewTool("create_outlet", mcp.WithDescription("Create or add a new outlet in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать точку выдачи"), mcp.WithString("title", mcp.Required(), mcp.Description("Название")), mcp.WithString("address", mcp.Required(), mcp.Description("Адрес")), mcp.WithString("price", mcp.Required(), mcp.Description("Стоимость доставки")), mcp.WithString("latitude", mcp.Required(), mcp.Description("Широта")), mcp.WithString("longitude", mcp.Required(), mcp.Description("Долгота")), mcp.WithString("description", mcp.Description("Описание")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateOutlet))
@@ -2323,6 +2486,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	), genericGetHandler(svc, "marketplace_id", svc.GetMarketplace))
 	addTool(s, mcp.NewTool("create_marketplace", mcp.WithDescription("Create or add a new marketplace in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать маркетплейс"), mcp.WithString("name", mcp.Required(), mcp.Description("Название")), mcp.WithString("type", mcp.Required(), mcp.Enum("Marketplace::GoogleMerchant", "Marketplace::LiquidYandexMarket", "Marketplace::ModelYandexMarket"), mcp.Description("Тип маркетплейса")), mcp.WithString("page_encoding", mcp.Enum("windows-1251", "utf-8"), mcp.Description("Кодировка (для Yandex)")), mcp.WithString("offer_liquid", mcp.Description("Liquid шаблон (для LiquidYandexMarket)")), mcp.WithString("vendor_id", mcp.Description("ID свойства (для ModelYandexMarket)")), mcp.WithString("image_style", mcp.Enum("thumb", "compact", "medium", "large", "original"), mcp.Description("Стиль изображения (для ModelYandexMarket)")), mcp.WithString("model_type", mcp.Enum("name", "sku"), mcp.Description("Тип наименования (для ModelYandexMarket)")), mcp.WithString("shop_name", mcp.Description("Название магазина")), mcp.WithString("shop_company", mcp.Description("Название компании")), mcp.WithNumber("description_type", mcp.Description("Тип описания: 1=краткое, 2=полное")), mcp.WithString("local_delivery_cost", mcp.Description("Стоимость локальной доставки")), mcp.WithBoolean("adult", mcp.Description("Только для взрослых")), mcp.WithString("utm_label", mcp.Description("UTM метка")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), genericCreateHandler(svc, svc.CreateMarketplace))
@@ -2341,6 +2505,7 @@ func RegisterTools(s *server.MCPServer, svc *service.Service) {
 	// === PROVIDER TOKEN ===
 	addTool(s, mcp.NewTool("create_provider_token", mcp.WithDescription("Create or add a new messenger provider token in InSales. Pass required fields using API names (language-invariant ids/handles). Returns the created object including its id."), mcp.WithToolTitle("Создать токен провайдера мессенджера"), mcp.WithString("messenger_type", mcp.Required(), mcp.Description("Тип мессенджера: whats_app, telegram, viber, sms, email, vk, instagram")),
 		mcp.WithReadOnlyHintAnnotation(false),
+		mcp.WithIdempotentHintAnnotation(false),
 		mcp.WithDestructiveHintAnnotation(false),
 		mcp.WithOpenWorldHintAnnotation(false),
 	), createProviderTokenHandler(svc))

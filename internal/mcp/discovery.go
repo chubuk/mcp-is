@@ -52,6 +52,26 @@ var coreToolNames = map[string]bool{
 	"export_products": true,
 	"export_orders":   true,
 	"export_clients":  true,
+	// товары: базовая запись (W5, бюджет core ≤50)
+	"create_product": true,
+	"update_product": true,
+	"delete_product": true,
+	"add_image":      true,
+	"update_variant": true,
+	// публикации (блог): полный цикл постов (W5; delete_blog остаётся long-tail)
+	"list_blogs":       true,
+	"get_blog":         true,
+	"create_blog":      true,
+	"update_blog":      true,
+	"list_blog_posts":  true,
+	"get_blog_post":    true,
+	"create_blog_post": true,
+	"update_blog_post": true,
+	"delete_blog_post": true,
+	// заказы: основные записи (W5)
+	"create_order":   true,
+	"update_order":   true,
+	"add_order_line": true,
 	// discovery meta-tools
 	"search_insales_tools": true,
 	"call_insales_tool":    true,
@@ -62,6 +82,18 @@ const (
 	toolsModeCore = "core"
 	toolsModeAll  = "all"
 )
+
+// retiredTools — удалённые тулы с человеческим объяснением взамен
+// «unknown tool» (W7; каталог v2026-11-10: мёртвые эндпоинты InSales).
+var retiredTools = map[string]string{
+	"list_meta_fields":  "Тул удалён: /admin/meta_fields.json в API InSales не существует (возвращает HTML). Доп. поля товара — list_product_fields / list_product_field_values.",
+	"get_meta_field":    "Тул удалён: /admin/meta_fields.json в API InSales не существует. Доп. поля товара — get_product_field.",
+	"create_meta_field": "Тул удалён: эндпоинта нет в API InSales. Создавайте поля — create_product_field.",
+	"update_meta_field": "Тул удалён: эндпоинта нет в API InSales. Поля — update_product_field.",
+	"delete_meta_field": "Тул удалён: эндпоинта нет в API InSales. Поля — delete_product_field.",
+	"list_currencies":   "Тул удалён: /admin/currencies.json не существует в API InSales. Валюты учёта — list_stock_currencies.",
+	"get_supplementary": "Тул удалён: одиночного GET у supplementaries в API нет. Список — list_supplementaries.",
+}
 
 func toolsMode() string {
 	if strings.EqualFold(os.Getenv("MCP_TOOLS_MODE"), toolsModeAll) {
@@ -75,59 +107,85 @@ func isCoreTool(name string) bool {
 	return coreToolNames[name]
 }
 
+// toolHiddenReason — причина, по которой тул скрыт для этого ctx ("" = видим).
+// Единый источник для list-фильтра и guard'а вызовов: логика не должна расходиться.
+// Цепочка приоритетов (план D4): cfg.ReadOnly → capabilities (denied) →
+// is_read_only → delete-deny → политика ИИ-ключа → core/all.
+func toolHiddenReason(ctx context.Context, name string, isWrite bool, globalReadOnly bool) string {
+	readOnly := globalReadOnly
+	if v, ok := ctx.Value(mcpReadOnlyKey).(bool); ok {
+		readOnly = readOnly || v
+	}
+	if v, ok := ctx.Value(core.ShopReadOnlyKey).(bool); ok {
+		readOnly = readOnly || v
+	}
+	if readOnly && isWrite {
+		return "readonly"
+	}
+	deleteDenied := false
+	if v, ok := ctx.Value(core.ShopDeleteDeniedKey).(bool); ok {
+		deleteDenied = v
+	}
+	if deleteDenied && ToolMetaFor(name).Class == ClassDelete {
+		return "delete_denied"
+	}
+	if v, ok := ctx.Value(auth.CapabilitiesJSONKey).(string); ok && v != "" {
+		if snap := core.ParseSnapshot(v); snap != nil {
+			domain := ToolDomain(name)
+			if domain != "" && core.DomainStatus(snap, domain) == core.CapStatusDenied {
+				return "no_scope"
+			}
+		}
+	}
+	if v, ok := ctx.Value(auth.CommandPolicyJSONKey).(string); ok && v != "" {
+		if policy := parseCommandPolicy(v); policy != nil && !policy.IsCommandAllowed(name) {
+			return "policy"
+		}
+	}
+	if toolsMode() == toolsModeCore && !isCoreTool(name) {
+		return "not_core"
+	}
+	return ""
+}
+
+// hiddenToolError — дружелюбная ошибка вместо голого «tool not found»: агент
+// должен понимать, что тул существует, но скрыт, и как его вызвать (B5/hermes).
+func hiddenToolError(name, reason string) *mcp.CallToolResult {
+	var msg string
+	switch reason {
+	case "readonly":
+		msg = fmt.Sprintf("Инструмент %q скрыт: сессия только чтение (is_read_only). Для записи снимите ограничение в настройках магазина.", name)
+	case "delete_denied":
+		msg = fmt.Sprintf("Инструмент %q скрыт: удаление запрещено настройками магазина (is_delete_denied).", name)
+	case "no_scope":
+		msg = fmt.Sprintf("Инструмент %q скрыт: нет прав ключа на ресурс %q — включите доступ в настройках приложения InSales (см. store_info).", name, ToolDomain(name))
+	case "policy":
+		msg = fmt.Sprintf("Инструмент %q отключён политикой ИИ-ключа — измените политику в настройках ключа.", name)
+	case "not_core":
+		visible, total := catalogCounts(context.Background())
+		msg = fmt.Sprintf("Инструмент %q существует, но скрыт текущим списком (показано %d из %d). Вызовите через call_insales_tool(name=%q, args={...}) или найдите через search_insales_tools.", name, visible, total, name)
+	default:
+		msg = fmt.Sprintf("Инструмент %q скрыт.", name)
+	}
+	return mcp.NewToolResultError(msg)
+}
+
 // toolFilter hides write tools in read-only mode and applies progressive
 // discovery (core surface) unless MCP_TOOLS_MODE=all.
-// Цепочка приоритетов (план D4): cfg.ReadOnly → shop capabilities (denied) →
-// is_read_only → policy ИИ-ключа → core/all.
 func toolFilter(globalReadOnly bool) server.ToolFilterFunc {
+	filterGlobalReadOnly = globalReadOnly
 	return func(ctx context.Context, tools []mcp.Tool) []mcp.Tool {
-		readOnly := globalReadOnly
-		if v, ok := ctx.Value(mcpReadOnlyKey).(bool); ok {
-			readOnly = readOnly || v
+		tools = augmentFieldValuesSchemas(ctx, tools)
+		// mcp-go при tools/call прогоняет через фильтр только запрошенный тул
+		// (passesToolFilters, len==1) — пропускаем его, чтобы handler вернул
+		// понятную ошибку видимости вместо голого «tool not found».
+		if len(tools) == 1 {
+			return tools
 		}
-		if v, ok := ctx.Value(core.ShopReadOnlyKey).(bool); ok {
-			readOnly = readOnly || v
-		}
-		deleteDenied := false
-		if v, ok := ctx.Value(core.ShopDeleteDeniedKey).(bool); ok {
-			deleteDenied = v
-		}
-
-		// Capabilities снимка (denied домены скрывают инструменты).
-		var snap *core.Snapshot
-		if v, ok := ctx.Value(auth.CapabilitiesJSONKey).(string); ok && v != "" {
-			snap = core.ParseSnapshot(v)
-		}
-		// Политика ИИ-ключа.
-		var policy *CommandPolicy
-		if v, ok := ctx.Value(auth.CommandPolicyJSONKey).(string); ok && v != "" {
-			policy = parseCommandPolicy(v)
-		}
-
-		mode := toolsMode()
 		filtered := make([]mcp.Tool, 0, len(tools))
 		for _, t := range tools {
-			// nil ReadOnlyHint is treated as write (no leak into read-only list)
 			isWrite := t.Annotations.ReadOnlyHint == nil || !*t.Annotations.ReadOnlyHint
-			if readOnly && isWrite {
-				continue
-			}
-			// Запрет удаления: тулы класса delete скрыты (write-класс при этом доступен).
-			if deleteDenied && ToolMetaFor(t.Name).Class == ClassDelete {
-				continue
-			}
-			// Capabilities: denied домен → скрыт; unknown/нет снимка → виден (fail-open).
-			if snap != nil {
-				domain := ToolDomain(t.Name)
-				if domain != "" && core.DomainStatus(snap, domain) == core.CapStatusDenied {
-					continue
-				}
-			}
-			// Политика ИИ-ключа: deny побеждает.
-			if policy != nil && !policy.IsCommandAllowed(t.Name) {
-				continue
-			}
-			if mode == toolsModeCore && !isCoreTool(t.Name) {
+			if toolHiddenReason(ctx, t.Name, isWrite, globalReadOnly) != "" {
 				continue
 			}
 			filtered = append(filtered, t)
@@ -198,6 +256,23 @@ func storeInfoHandler() server.ToolHandlerFunc {
 		if v, ok := ctx.Value(mcpReadOnlyKey).(bool); ok {
 			info["read_only"] = v
 		}
+		// Каталог инструментов (W6/W7): честные счётчики per-ctx + оглавление доменов.
+		visible, total := catalogCounts(ctx)
+		domainIndex := map[string]int{}
+		for _, m := range registeredToolMeta {
+			if d := ToolDomain(m.Name); d != "" {
+				domainIndex[d]++
+			}
+		}
+		info["tools"] = map[string]any{
+			"total":   total,
+			"visible": visible,
+			"mode":    toolsMode(),
+		}
+		info["domain_index"] = domainIndex
+		info["catalog_version"] = catalogVersion
+		info["catalog_date"] = catalogDate
+		info["catalog_changes"] = catalogChanges
 		// Capabilities-блок: права ключа магазина (из снимка probe).
 		if v, ok := ctx.Value(auth.CapabilitiesJSONKey).(string); ok && v != "" {
 			snap := core.ParseSnapshot(v)
@@ -297,17 +372,20 @@ func searchInSalesToolsHandler(s *server.MCPServer) server.ToolHandlerFunc {
 		sort.Slice(matches, func(i, j int) bool {
 			return matches[i]["name"].(string) < matches[j]["name"].(string)
 		})
+		_, total := catalogCounts(ctx)
 		if len(matches) == 0 {
 			return mcp.NewToolResultText(formatResult(map[string]any{
-				"items": []any{},
-				"total": 0,
-				"hint":  "No tools matched. Try a shorter query or omit resource.",
+				"items":         []any{},
+				"total":         0,
+				"catalog_total": total,
+				"hint":          fmt.Sprintf("No tools matched. Try a shorter query or omit resource. Каталог: %d инструментов; оглавление доменов — store_info.", total),
 			})), nil
 		}
 		return mcp.NewToolResultText(formatResult(map[string]any{
-			"items": matches,
-			"total": len(matches),
-			"hint":  "Call the tool via call_insales_tool with name and args, or call it directly if present in tools/list.",
+			"items":         matches,
+			"total":         len(matches),
+			"catalog_total": total,
+			"hint":          fmt.Sprintf("Найдено %d из %d. Call the tool via call_insales_tool with name and args, or call it directly if present in tools/list.", len(matches), total),
 		})), nil
 	}
 }
@@ -317,6 +395,9 @@ func callInSalesToolHandler(s *server.MCPServer, auditRepo *storage.AuditReposit
 		name := strings.TrimSpace(req.GetString("name", ""))
 		if name == "" {
 			return mcp.NewToolResultError("name is required"), nil
+		}
+		if msg, gone := retiredTools[name]; gone {
+			return mcp.NewToolResultError(msg), nil
 		}
 		st := s.GetTool(name)
 		if st == nil || st.Handler == nil {
@@ -406,6 +487,7 @@ func callInSalesToolHandler(s *server.MCPServer, auditRepo *storage.AuditReposit
 				Arguments: args,
 			},
 		}
+		ctx = context.WithValue(ctx, mcpNestedCallKey, true) // guard видимости пропускает nested-вызов
 		if isWrite {
 			// nested dispatch bypasses server middleware — audit write tools explicitly
 			res, err := st.Handler(ctx, sub)

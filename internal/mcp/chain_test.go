@@ -225,9 +225,9 @@ var genericCreateCalls = []createCall{
 	{"create_custom_status", nil, "/custom_statuses.json", "custom_status", []string{"title"}},
 	{"create_variant_field", nil, "/variant_fields.json", "variant_field", []string{"title"}},
 	{"create_collection_field", nil, "/collection_fields.json", "collection_field", []string{"title"}},
-	{"create_collection_filter", nil, "/collection_filters.json", "collection_filter", []string{"title"}},
+	{"create_collection_filter", nil, "/collection_filters.json", "filter", []string{"title"}},
 	{"create_js_tag", nil, "/js_tags.json", "js_tag", []string{"title"}},
-	{"create_external_discount", nil, "/external_discounts.json", "external_discount", []string{"title"}},
+	{"create_external_discount", map[string]any{"description": "d"}, "/external_discounts.json", "external_discount", []string{"description"}},
 	{"create_discount_collections_group", nil, "/discount_collections_groups.json", "discount_collections_group", []string{"title"}},
 	{"create_warehouse", nil, "/warehouses.json", "warehouse", []string{"title"}},
 	{"create_sales_channel", nil, "/sales_channels.json", "sales_channel", []string{"title"}},
@@ -255,15 +255,15 @@ var customCreateCalls = []createCall{
 	{"create_client", nil, "/clients.json", "client", []string{"name", "surname"}},
 	{"create_category", nil, "/categories.json", "category", []string{"title"}},
 	{"create_collection", nil, "/collections.json", "collection", []string{"title"}},
-	{"create_webhook", nil, "/webhooks.json", "webhook", []string{"event", "url"}},
+	{"create_webhook", nil, "/webhooks.json", "webhook", []string{"topic", "address", "format_type"}},
 	{"create_page", nil, "/pages.json", "page", []string{"title", "content"}},
 	{"create_accessory", nil, "/accessories.json", "accessory", []string{"name"}},
 	{"create_property_value", nil, "/accessories/1/values.json", "accessory_value", []string{"name"}},
-	{"create_menu", nil, "/menus.json", "menu", []string{"title", "handle"}},
+	{"create_menu", nil, "/menus.json", "menu", []string{"name", "handle"}},
 	{"create_menu_item", map[string]any{"related_object_id": "Blog_1"}, "/menus/1/items.json", "menu_item", []string{"related_object_id"}},
 	{"create_redirect", nil, "/redirects.json", "redirect", []string{"url", "target"}},
 	{"create_blog", nil, "/blogs.json", "blog", []string{"title", "handle"}},
-	{"create_blog_post", nil, "/blogs/1/articles.json", "article", []string{"title", "content"}},
+	{"create_blog_post", nil, "/blogs/1/articles.json", "article", []string{"title", "content", "published_at", "author"}},
 	{"create_discount_code", nil, "/discount_codes.json", "discount_code", nil},
 	// add_* (не create_*): имя тулза — add_product_to_collection, строка нужна
 	// для контракта POST /collects.json; в инвариант «51 create_*» не входит.
@@ -276,7 +276,7 @@ var customCreateCalls = []createCall{
 	{"create_product_field_value", map[string]any{"product_field_id": "1"}, "/products/1/product_field_values.json", "product_field_value", []string{"product_field_id"}},
 	{"create_variant_field_value", map[string]any{"variant_field_id": "1"}, "/variants/1/variant_field_values.json", "variant_field_value", []string{"variant_field_id"}},
 	{"create_option_value", nil, "/option_names/1/option_values.json", "option_value", []string{"title"}},
-	{"create_bonus_system_transaction", nil, "/clients/1/bonus_system_transactions.json", "bonus_system_transaction", []string{"amount"}},
+	{"create_bonus_system_transaction", nil, "/clients/1/bonus_system_transactions.json", "bonus_system_transaction", []string{"bonus_points"}},
 	{"create_provider_token", nil, "/dialogs/provider_tokens.json", "", []string{"messenger_type"}},
 }
 
@@ -385,6 +385,54 @@ func TestChainUpdateProduct_DiffPath(t *testing.T) {
 	}
 	if ch["old"] != "old" || ch["new"] != "new" {
 		t.Errorf("changed_fields.title = %v, want old=new?", ch)
+	}
+}
+
+// TestChainUpdateBlogPost_PayloadMapping — body_html уезжает как content,
+// image_url → image_attributes{src}, роутинг-id (blog_id/post_id) не утекают
+// в article, published_at проходит как есть (регрессия B1/B2/B6).
+func TestChainUpdateBlogPost_PayloadMapping(t *testing.T) {
+	mock := newChainMock(t, func(rec recordedCall) string {
+		if rec.Method == http.MethodGet {
+			return `{"id":7,"title":"old","content":"<p>old</p>"}`
+		}
+		return `{"id":7,"title":"old","content":"<p>new</p>"}`
+	})
+	h := newChainHarness(t, mock)
+
+	callTool(t, h, context.Background(), "update_blog_post", map[string]any{
+		"blog_id":      "1",
+		"post_id":      "7",
+		"body_html":    "<p>new</p>",
+		"published_at": "2026-12-01 12:00:00",
+		"image_url":    "https://shop.example/img.jpg",
+	})
+	put := mock.calls[len(mock.calls)-1]
+	if put.Method != http.MethodPut || put.Path != "/blogs/1/articles/7.json" {
+		t.Fatalf("update = %s %s", put.Method, put.Path)
+	}
+	article, ok := put.Body["article"].(map[string]any)
+	if !ok {
+		t.Fatalf("article root missing: %v", put.Body)
+	}
+	if article["content"] != "<p>new</p>" {
+		t.Errorf("content = %v, want <p>new</p>", article["content"])
+	}
+	if _, ok := article["body_html"]; ok {
+		t.Errorf("body_html leaked into article: %v", article)
+	}
+	if _, ok := article["blog_id"]; ok {
+		t.Errorf("blog_id leaked into article: %v", article)
+	}
+	if _, ok := article["post_id"]; ok {
+		t.Errorf("post_id leaked into article: %v", article)
+	}
+	if article["published_at"] != "2026-12-01 12:00:00" {
+		t.Errorf("published_at = %v", article["published_at"])
+	}
+	img, _ := article["image_attributes"].(map[string]any)
+	if img["src"] != "https://shop.example/img.jpg" {
+		t.Errorf("image_attributes = %v, want src", article["image_attributes"])
 	}
 }
 

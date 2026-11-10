@@ -28,7 +28,7 @@ type Client interface {
 	ListCollections(ctx context.Context, page, perPage int) ([]any, error)
 	GetCollection(ctx context.Context, collectionID string) (any, error)
 	CreateCollection(ctx context.Context, title string, args map[string]any) (any, error)
-	UpdateCollection(ctx context.Context, collectionID, title string) (any, error)
+	UpdateCollection(ctx context.Context, collectionID string, args map[string]any) (any, error)
 	DeleteCollection(ctx context.Context, collectionID string) error
 	ListImages(ctx context.Context, productID string) ([]any, error)
 	AddImage(ctx context.Context, productID, url string, args map[string]any) (any, error)
@@ -71,7 +71,7 @@ type Client interface {
 
 	// Property Values
 	ListPropertyValues(ctx context.Context, accessoryID string) ([]PropertyValue, error)
-	CreatePropertyValue(ctx context.Context, accessoryID, title string) (*PropertyValue, error)
+	CreatePropertyValue(ctx context.Context, accessoryID string, args map[string]any) (*PropertyValue, error)
 	UpdatePropertyValue(ctx context.Context, accessoryID, propertyValueID string, args map[string]any) (*PropertyValue, error)
 	DeletePropertyValue(ctx context.Context, accessoryID, propertyValueID string) error
 
@@ -94,7 +94,7 @@ type Client interface {
 	DeleteBlog(ctx context.Context, blogID string) error
 	ListBlogPosts(ctx context.Context, blogID string) ([]BlogPost, error)
 	GetBlogPost(ctx context.Context, blogID, postID string) (*BlogPost, error)
-	CreateBlogPost(ctx context.Context, blogID, title, bodyHTML string) (*BlogPost, error)
+	CreateBlogPost(ctx context.Context, blogID string, args map[string]any) (*BlogPost, error)
 	UpdateBlogPost(ctx context.Context, blogID, postID string, args map[string]any) (*BlogPost, error)
 	DeleteBlogPost(ctx context.Context, blogID, postID string) error
 

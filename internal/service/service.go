@@ -74,7 +74,17 @@ func (s *Service) CreateProduct(ctx context.Context, title, price string, args m
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
-	return client.CreateProduct(ctx, title, price, args)
+	fv := popFieldValues(args)
+	product, err := client.CreateProduct(ctx, title, price, args)
+	if err != nil {
+		return nil, err
+	}
+	if fv != nil {
+		if err := s.applyNestedFieldValues(ctx, "product", product.ID, fv); err != nil {
+			return nil, fmt.Errorf("товар создан, но field_values не записаны: %w", err)
+		}
+	}
+	return product, nil
 }
 
 func (s *Service) UpdateProduct(ctx context.Context, productID string, args map[string]any) (*insales.Product, error) {
@@ -85,7 +95,17 @@ func (s *Service) UpdateProduct(ctx context.Context, productID string, args map[
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
-	return client.UpdateProduct(ctx, productID, args)
+	fv := popFieldValues(args)
+	product, err := client.UpdateProduct(ctx, productID, args)
+	if err != nil {
+		return nil, err
+	}
+	if fv != nil {
+		if err := s.applyNestedFieldValues(ctx, "product", productID, fv); err != nil {
+			return nil, fmt.Errorf("товар обновлён, но field_values не записаны: %w", err)
+		}
+	}
+	return product, nil
 }
 
 func (s *Service) DeleteProduct(ctx context.Context, productID string) error {
@@ -146,6 +166,13 @@ func (s *Service) UpdateOrder(ctx context.Context, orderID string, args map[stri
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
+	if fv := popFieldValues(args); fv != nil {
+		attrs, aerr := s.fieldsValuesAttrs(ctx, orderFieldDestinies, fv)
+		if aerr != nil {
+			return nil, aerr
+		}
+		args["fields_values_attributes"] = attrs
+	}
 	return client.UpdateOrder(ctx, orderID, args)
 }
 
@@ -156,6 +183,13 @@ func (s *Service) CreateOrder(ctx context.Context, clientID int, args map[string
 	}
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
+	}
+	if fv := popFieldValues(args); fv != nil {
+		attrs, aerr := s.fieldsValuesAttrs(ctx, orderFieldDestinies, fv)
+		if aerr != nil {
+			return nil, aerr
+		}
+		args["fields_values_attributes"] = attrs
 	}
 	return client.CreateOrder(ctx, clientID, args)
 }
@@ -186,6 +220,13 @@ func (s *Service) CreateClient(ctx context.Context, args map[string]any) (any, e
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
+	if fv := popFieldValues(args); fv != nil {
+		attrs, aerr := s.fieldsValuesAttrs(ctx, clientFieldDestinies, fv)
+		if aerr != nil {
+			return nil, aerr
+		}
+		args["fields_values_attributes"] = attrs
+	}
 	return client.CreateClient(ctx, args)
 }
 
@@ -196,6 +237,13 @@ func (s *Service) UpdateClient(ctx context.Context, clientID string, args map[st
 	}
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
+	}
+	if fv := popFieldValues(args); fv != nil {
+		attrs, aerr := s.fieldsValuesAttrs(ctx, clientFieldDestinies, fv)
+		if aerr != nil {
+			return nil, aerr
+		}
+		args["fields_values_attributes"] = attrs
 	}
 	return client.UpdateClient(ctx, clientID, args)
 }
@@ -237,6 +285,9 @@ func (s *Service) CreateCategory(ctx context.Context, title string, args map[str
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
+	if fv := popFieldValues(args); fv != nil {
+		args["field_values_attributes"] = inlineFieldAttrs(fv)
+	}
 	return client.CreateCategory(ctx, title, args)
 }
 
@@ -247,6 +298,9 @@ func (s *Service) UpdateCategory(ctx context.Context, categoryID string, args ma
 	}
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
+	}
+	if fv := popFieldValues(args); fv != nil {
+		args["field_values_attributes"] = inlineFieldAttrs(fv)
 	}
 	return client.UpdateCategory(ctx, categoryID, args)
 }
@@ -288,10 +342,13 @@ func (s *Service) CreateCollection(ctx context.Context, title string, args map[s
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
+	if fv := popFieldValues(args); fv != nil {
+		args["field_values_attributes"] = inlineFieldAttrs(fv)
+	}
 	return client.CreateCollection(ctx, title, args)
 }
 
-func (s *Service) UpdateCollection(ctx context.Context, collectionID, title string) (any, error) {
+func (s *Service) UpdateCollection(ctx context.Context, collectionID string, args map[string]any) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -299,7 +356,10 @@ func (s *Service) UpdateCollection(ctx context.Context, collectionID, title stri
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
-	return client.UpdateCollection(ctx, collectionID, title)
+	if fv := popFieldValues(args); fv != nil {
+		args["field_values_attributes"] = inlineFieldAttrs(fv)
+	}
+	return client.UpdateCollection(ctx, collectionID, args)
 }
 
 func (s *Service) DeleteCollection(ctx context.Context, collectionID string) error {
@@ -658,7 +718,17 @@ func (s *Service) UpdateVariant(ctx context.Context, productID, variantID string
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
-	return client.UpdateVariant(ctx, productID, variantID, args)
+	fv := popFieldValues(args)
+	variant, err := client.UpdateVariant(ctx, productID, variantID, args)
+	if err != nil {
+		return nil, err
+	}
+	if fv != nil {
+		if err := s.applyNestedFieldValues(ctx, "variant", variantID, fv); err != nil {
+			return nil, fmt.Errorf("вариант обновлён, но field_values не записаны: %w", err)
+		}
+	}
+	return variant, nil
 }
 
 func (s *Service) DeleteVariant(ctx context.Context, productID, variantID string) error {
@@ -682,7 +752,7 @@ func (s *Service) ListPropertyValues(ctx context.Context, accessoryID string) ([
 	return client.ListPropertyValues(ctx, accessoryID)
 }
 
-func (s *Service) CreatePropertyValue(ctx context.Context, accessoryID, title string) (*insales.PropertyValue, error) {
+func (s *Service) CreatePropertyValue(ctx context.Context, accessoryID string, args map[string]any) (*insales.PropertyValue, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -690,7 +760,7 @@ func (s *Service) CreatePropertyValue(ctx context.Context, accessoryID, title st
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
-	return client.CreatePropertyValue(ctx, accessoryID, title)
+	return client.CreatePropertyValue(ctx, accessoryID, args)
 }
 
 func (s *Service) UpdatePropertyValue(ctx context.Context, accessoryID, propertyValueID string, args map[string]any) (*insales.PropertyValue, error) {
@@ -865,7 +935,7 @@ func (s *Service) GetBlogPost(ctx context.Context, blogID, postID string) (*insa
 	return client.GetBlogPost(ctx, blogID, postID)
 }
 
-func (s *Service) CreateBlogPost(ctx context.Context, blogID, title, bodyHTML string) (*insales.BlogPost, error) {
+func (s *Service) CreateBlogPost(ctx context.Context, blogID string, args map[string]any) (*insales.BlogPost, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -873,7 +943,7 @@ func (s *Service) CreateBlogPost(ctx context.Context, blogID, title, bodyHTML st
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
-	return client.CreateBlogPost(ctx, blogID, title, bodyHTML)
+	return client.CreateBlogPost(ctx, blogID, args)
 }
 
 func (s *Service) UpdateBlogPost(ctx context.Context, blogID, postID string, args map[string]any) (*insales.BlogPost, error) {

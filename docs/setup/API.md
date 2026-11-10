@@ -1458,18 +1458,35 @@ Create/update/delete-инструменты возвращают подробн�
 |----------|-----|--------------|----------|
 | blog_id | string | Да | ID блога |
 | title | string | Да | Заголовок записи |
-| body_html | string | Да | HTML-содержимое записи |
+| body_html | string | Да | HTML-содержимое записи (API: `article[content]`) |
+| published_at | string | Нет | Дата публикации (ISO); по умолчанию — сейчас |
+| author | string | Нет | Автор; по умолчанию Admin |
+| image_url | string | Нет | URL картинки записи: добавляет **или заменяет** единственную картинку (удаление API не поддерживает) |
+| notice | string | Нет | Анонс записи |
+| permalink | string | Нет | ЧПУ-адрес записи |
+| html_title | string | Нет | SEO: html title |
+| meta_keywords | string | Нет | SEO: meta keywords |
+| meta_description | string | Нет | SEO: meta description |
+| all_tags | string[] | Нет | Теги записи (макс 10) |
+| pinned | boolean | Нет | Закрепить запись (закреплённая всегда одна) |
 
 ### update_blog_post
 
-Обновить запись блога.
+Обновить запись блога. Поля — как у `create_blog_post`, кроме обязательных;
+пустые значения не присылайте (не меняются).
 
 | Параметр | Тип | Обязательный | Описание |
 |----------|-----|--------------|----------|
 | blog_id | string | Да | ID блога |
 | post_id | string | Да | ID записи |
 | title | string | Нет | Заголовок |
-| body_html | string | Нет | Содержимое |
+| body_html | string | Нет | Содержимое (API: `article[content]`) |
+| published_at | string | Нет | Дата публикации (ISO) |
+| author | string | Нет | Автор |
+| image_url | string | Нет | Картинка: добавляет ИЛИ заменяет единственную (удаление API не поддерживает) |
+| notice / permalink / html_title / meta_keywords / meta_description | string | Нет | Анонс, ЧПУ, SEO-поля |
+| all_tags | string[] | Нет | Теги записи |
+| pinned | boolean | Нет | Закрепить запись |
 
 ### delete_blog_post
 
