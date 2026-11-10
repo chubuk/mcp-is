@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 )
 
@@ -83,6 +84,16 @@ func (s *Service) fieldsValuesAttrs(ctx context.Context, destinies map[int]bool,
 	return attrs, nil
 }
 
+// anyToID — JSON-числа приходят float64: %v даёт экспоненту на больших ID.
+func anyToID(v any) string {
+	switch n := v.(type) {
+	case float64:
+		return strconv.FormatFloat(n, 'f', -1, 64)
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
 // applyNestedFieldValues пишет значения доп. полей товара/варианта через
 // вложенные ресурсы (upsert: есть значение поля — обновляем, нет — создаём).
 // Список значений приходит без handle, поэтому матчим по product_field_id:
@@ -117,7 +128,7 @@ func (s *Service) applyNestedFieldValues(ctx context.Context, kind, parentID str
 			continue
 		}
 		if h, ok := m["handle"].(string); ok && h != "" {
-			fieldIDByHandle[h] = fmt.Sprintf("%v", m["id"])
+			fieldIDByHandle[h] = anyToID(m["id"])
 		}
 	}
 	valueIDByFieldID := make(map[string]string, len(existing))
@@ -126,7 +137,11 @@ func (s *Service) applyNestedFieldValues(ctx context.Context, kind, parentID str
 		if !ok {
 			continue
 		}
-		valueIDByFieldID[fmt.Sprintf("%v", m["product_field_id"])] = fmt.Sprintf("%v", m["id"])
+		fid := m["product_field_id"]
+		if fid == nil {
+			fid = m["variant_field_id"]
+		}
+		valueIDByFieldID[anyToID(fid)] = anyToID(m["id"])
 	}
 	var missing []string
 	for handle, value := range fv {
