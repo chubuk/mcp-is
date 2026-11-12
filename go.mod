@@ -2,6 +2,10 @@ module github.com/chubuk/mcp-is
 
 go 1.25.5
 
+// GO-2026-6859 (net/http MaxBytesReader): фикс в 1.26.11 — все сборки
+// (в т.ч. .deb) обязаны идти тулчейном не старше.
+toolchain go1.26.11
+
 require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/jackc/pgx/v5 v5.9.2
