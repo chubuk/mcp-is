@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/core"
@@ -33,6 +34,7 @@ const (
 	mcpShopPDNKey    mcpContextKey = "shop_pdn_enabled"
 	mcpAIKeyPDNKey   mcpContextKey = "ai_key_pdn_enabled"
 	mcpNestedCallKey mcpContextKey = "nested_call" // вызов через call_insales_tool (guard видимости пропускает)
+	mcpSpoolPathKey  mcpContextKey = "spool_path"  // спул-файл image_data, вырезанного из тела запроса (body_splice.go)
 )
 
 // Версия каталога инструментов (W7): бампать при любом изменении схем/состава
@@ -158,6 +160,14 @@ func buildInstructions(ctx context.Context, base string) string {
 }
 
 func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry string, auditRepo *storage.AuditRepository, idemRepo *storage.IdempotencyRepository) *MCPServer {
+	SweepSpoolFiles() // мусор после крэшей прошлых запусков
+	go func() {       // забытые спул-файлы при долгой работе: часовой тикер
+		t := time.NewTicker(time.Hour)
+		defer t.Stop()
+		for range t.C {
+			SweepSpoolFiles()
+		}
+	}()
 	hooks := &server.Hooks{}
 	hooks.AddAfterInitialize(func(ctx context.Context, _ any, _ *mcp.InitializeRequest, result *mcp.InitializeResult) {
 		result.Instructions = buildInstructions(ctx, baseInstructions)
@@ -195,6 +205,11 @@ func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry st
 func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Limit body size to 28MB (image_data: 20 МБ decoded ≈ 26.7 МБ base64; потолок InSales ~22 МБ файла)
 	r.Body = http.MaxBytesReader(w, r.Body, 28<<20)
+
+	// Вырезка image_data до парсинга mcp-go: base64 потоково уходит в спул-файл,
+	// mcp-go видит тело с маской — пик ОЗУ не зависит от размера картинки.
+	spoolPath, spoolCleanup := spliceImageBody(r)
+	defer spoolCleanup()
 
 	ctx := r.Context()
 
@@ -248,6 +263,10 @@ func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ctx = context.WithValue(ctx, mcpReadOnlyKey, readOnly)
 		ctx = context.WithValue(ctx, mcpShopPDNKey, shopPDN)
 		ctx = context.WithValue(ctx, mcpAIKeyPDNKey, aiKeyPDN)
+	}
+
+	if spoolPath != "" {
+		ctx = context.WithValue(ctx, mcpSpoolPathKey, spoolPath)
 	}
 
 	s.httpServer.ServeHTTP(w, r.WithContext(ctx))

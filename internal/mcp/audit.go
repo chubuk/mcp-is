@@ -5,7 +5,9 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"io"
 	"log/slog"
+	"strings"
 
 	"github.com/chubuk/mcp-is/internal/auth"
 	"github.com/chubuk/mcp-is/internal/storage"
@@ -14,11 +16,35 @@ import (
 )
 
 // hashArgs is a stable hash of the tool arguments (raw args are never stored — PDN).
+// Строки >8КБ (base64-вложения) хэшируются содержимым, а не через marshal:
+// хэш не должен материализовать мегабайты ради дедупликации/аудита.
+// Служебный путь спула (image_file) в хэш не входит.
 func hashArgs(args map[string]any) string {
 	if len(args) == 0 {
 		return ""
 	}
-	b, err := json.Marshal(args)
+	prepared := args
+	copied := false
+	for k, v := range args {
+		s, ok := v.(string)
+		if k == "image_file" || (ok && len(s) > 8<<10) {
+			if !copied {
+				copied = true
+				prepared = make(map[string]any, len(args))
+				for k2, v2 := range args {
+					prepared[k2] = v2
+				}
+			}
+			if k == "image_file" {
+				delete(prepared, k)
+				continue
+			}
+			h := sha256.New()
+			_, _ = io.Copy(h, strings.NewReader(s))
+			prepared[k] = "sha256:" + hex.EncodeToString(h.Sum(nil))
+		}
+	}
+	b, err := json.Marshal(prepared)
 	if err != nil {
 		return ""
 	}

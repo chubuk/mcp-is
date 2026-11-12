@@ -2,7 +2,6 @@ package mcp
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -234,9 +233,9 @@ func fieldOf(obj any, key string) any {
 // (order_lines_attributes и т.п.) — их нет в верхнем уровне снимка, поэтому
 // old для таких ключей = null; итоговое состояние видно в data.
 // image_data маскируется размером: сырые байты base64 не должны уезжать в ответ
-// (LLM-контекст, логи).
+// (LLM-контекст, логи). image_file — служебный путь спула, в diff не попадает.
 func diffFromArgs(oldObj any, args map[string]any, ignored []string) map[string]FieldChange {
-	skip := map[string]bool{}
+	skip := map[string]bool{"image_file": true}
 	for _, k := range ignored {
 		skip[k] = true
 	}
@@ -247,7 +246,11 @@ func diffFromArgs(oldObj any, args map[string]any, ignored []string) map[string]
 		}
 		if k == "image_data" {
 			if s, ok := v.(string); ok {
-				diff[k] = FieldChange{Old: fieldOf(oldObj, k), New: fmt.Sprintf("<base64, %d КБ>", len(s)/1024)}
+				mask := s
+				if !strings.HasPrefix(mask, "<base64,") {
+					mask = fmt.Sprintf("<base64, %d КБ>", len(s)/1024)
+				}
+				diff[k] = FieldChange{Old: fieldOf(oldObj, k), New: mask}
 				continue
 			}
 		}
@@ -626,42 +629,28 @@ func filterKnown(args map[string]any, known map[string]bool) []string {
 // validateImageArgs проверяет пару URL/байты картинки до ухода в InSales.
 // <urlKey> XOR image_data (exactlyOne — ровно одно обязательно); image_data без
 // filenameKey — ошибка (InSales без имени файла молча затирает слот заглушкой
-// no_image_original.jpg — research/probe_article_image.md); base64 должен
-// декодироваться, data:URI-префикс нормализуется, размер ≤ 20 МБ. Без отсебятины:
-// значения не подставляются, некорректный ввод отклоняется.
-func validateImageArgs(args map[string]any, urlKey, filenameKey string, exactlyOne bool) error {
+// no_image_original.jpg — research/probe_article_image.md). Байты image_data
+// спулятся во временный файл (spoolImageData), маска остаётся в args. Без
+// отсебятины: значения не подставляются, некорректный ввод отклоняется.
+// cleanup удаляет спул-файл — вызывать defer'ом.
+func validateImageArgs(ctx context.Context, args map[string]any, urlKey, filenameKey string, exactlyOne bool) (cleanup func(), err error) {
+	noop := func() {}
 	urlVal, _ := args[urlKey].(string)
 	dataVal, _ := args["image_data"].(string)
 	hasURL := strings.TrimSpace(urlVal) != ""
 	hasData := strings.TrimSpace(dataVal) != ""
 	switch {
 	case hasURL && hasData:
-		return fmt.Errorf("%s и image_data взаимоисключимы: укажите только один", urlKey)
+		return noop, fmt.Errorf("%s и image_data взаимоисключимы: укажите только один", urlKey)
 	case exactlyOne && !hasURL && !hasData:
-		return fmt.Errorf("укажите %s или image_data", urlKey)
+		return noop, fmt.Errorf("укажите %s или image_data", urlKey)
 	case !hasData:
-		return nil
+		return noop, nil
 	}
 	if fn, _ := args[filenameKey].(string); strings.TrimSpace(fn) == "" {
-		return fmt.Errorf("%s обязателен при image_data", filenameKey)
+		return noop, fmt.Errorf("%s обязателен при image_data", filenameKey)
 	}
-	raw := dataVal
-	if strings.HasPrefix(raw, "data:") {
-		if i := strings.Index(raw, "base64,"); i >= 0 {
-			raw = raw[i+len("base64,"):]
-		}
-	}
-	raw = strings.Join(strings.Fields(raw), "")
-	decoded, err := base64.StdEncoding.DecodeString(raw)
-	if err != nil {
-		return fmt.Errorf("image_data: некорректный base64: %w", err)
-	}
-	const maxImageBytes = 20 << 20
-	if len(decoded) > maxImageBytes {
-		return fmt.Errorf("изображение слишком большое: максимум %d МБ", maxImageBytes>>20)
-	}
-	args["image_data"] = raw
-	return nil
+	return spoolImageData(ctx, args)
 }
 
 // filterArgsByTool фильтрует args по whitelist из inputSchema инструмента
@@ -1111,7 +1100,9 @@ func addImageHandler(svc *service.Service) func(ctx context.Context, req mcp.Cal
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		if err := validateImageArgs(args, "url", "filename", true); err != nil {
+		cleanup, err := validateImageArgs(ctx, args, "url", "filename", true)
+		defer cleanup()
+		if err != nil {
 			return toolError(err), nil
 		}
 		result, err := svc.AddImage(ctx, productID, args)
@@ -1756,7 +1747,9 @@ func createBlogPostHandler(svc *service.Service) func(ctx context.Context, req m
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		if err := validateImageArgs(args, "image_url", "image_filename", false); err != nil {
+		cleanup, err := validateImageArgs(ctx, args, "image_url", "image_filename", false)
+		defer cleanup()
+		if err != nil {
 			return toolError(err), nil
 		}
 		result, err := svc.CreateBlogPost(ctx, blogID, args)
@@ -1778,7 +1771,9 @@ func updateBlogPostHandler(svc *service.Service) func(ctx context.Context, req m
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
-		if err := validateImageArgs(args, "image_url", "image_filename", false); err != nil {
+		cleanup, err := validateImageArgs(ctx, args, "image_url", "image_filename", false)
+		defer cleanup()
+		if err != nil {
 			return toolError(err), nil
 		}
 		return updateWithDiff("blog_post", postID, args, nil,

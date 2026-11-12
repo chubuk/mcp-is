@@ -1,10 +1,14 @@
 package insales
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -65,14 +69,123 @@ func captureRequest(t *testing.T) (*httptest.Server, *captured) {
 	c := &captured{}
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		c.req = r
-		buf := make([]byte, r.ContentLength)
-		_, _ = r.Body.Read(buf)
+		buf, _ := io.ReadAll(r.Body)
 		c.body = buf
 		w.Header().Set("Content-Type", "application/json")
 		w.Write([]byte(`{"id": 1, "title": "t"}`))
 	}))
 	t.Cleanup(srv.Close)
 	return srv, c
+}
+
+func TestStreamBody_RoundTrip(t *testing.T) {
+	dir := t.TempDir()
+	file := filepath.Join(dir, "img.bin")
+	if err := os.WriteFile(file, []byte("hello"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	payload := map[string]any{"image": map[string]any{
+		"attachment": spoolMarker,
+		"filename":   "a.png",
+		"position":   float64(2),
+	}}
+	sb, err := newStreamBody(payload, file)
+	if err != nil {
+		t.Fatalf("newStreamBody: %v", err)
+	}
+	var buf bytes.Buffer
+	if err := sb.writeTo(&buf); err != nil {
+		t.Fatalf("writeTo: %v", err)
+	}
+	if int64(buf.Len()) != sb.contentLength() {
+		t.Errorf("contentLength %d != written %d", sb.contentLength(), buf.Len())
+	}
+	var out map[string]map[string]any
+	if err := json.Unmarshal(buf.Bytes(), &out); err != nil {
+		t.Fatalf("streamed body is not JSON: %v\n%s", err, buf.Bytes())
+	}
+	img := out["image"]
+	if img["attachment"] != "aGVsbG8=" {
+		t.Errorf("attachment = %v, want base64(hello)", img["attachment"])
+	}
+	if img["filename"] != "a.png" || img["position"] != float64(2) {
+		t.Errorf("other fields broken: %v", img)
+	}
+}
+
+func TestAddImage_SpoolStreamsAttachment(t *testing.T) {
+	srv, cap := captureRequest(t)
+	client := newTestClient(srv)
+	dir := t.TempDir()
+	file := filepath.Join(dir, "img.bin")
+	if err := os.WriteFile(file, []byte("hello"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	_, err := client.AddImage(context.Background(), "123", map[string]any{
+		"image_file": file,
+		"image_data": "<base64, 1 КБ>",
+		"filename":   "a.png",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var payload map[string]map[string]any
+	if err := json.Unmarshal(cap.body, &payload); err != nil {
+		t.Fatalf("bad body %q: %v", cap.body, err)
+	}
+	img := payload["image"]
+	if img["attachment"] != "aGVsbG8=" {
+		t.Errorf("attachment = %v, want base64(hello)", img["attachment"])
+	}
+	if strings.Contains(string(cap.body), "image_file") {
+		t.Errorf("image_file leaked into payload: %s", cap.body)
+	}
+}
+
+func TestSpoolBody_Retry429ReStreams(t *testing.T) {
+	// 429 → ретрай: тело из файла должно перечитаться и дойти целиком оба раза.
+	var bodies [][]byte
+	n := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		buf, _ := io.ReadAll(r.Body)
+		bodies = append(bodies, buf)
+		n++
+		if n == 1 {
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusTooManyRequests)
+			w.Write([]byte("rate limited (429), retry after 0"))
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"id": 3418753025, "filename": "a.png"}`))
+	}))
+	t.Cleanup(srv.Close)
+	client := newTestClient(srv)
+	dir := t.TempDir()
+	file := filepath.Join(dir, "img.bin")
+	if err := os.WriteFile(file, []byte("hello"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	res, err := client.AddImage(context.Background(), "123", map[string]any{
+		"image_file": file,
+		"filename":   "a.png",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if n != 2 {
+		t.Fatalf("want 2 attempts, got %d", n)
+	}
+	for i, b := range bodies {
+		var payload map[string]map[string]any
+		if err := json.Unmarshal(b, &payload); err != nil {
+			t.Fatalf("attempt %d: bad body %q: %v", i+1, b, err)
+		}
+		if payload["image"]["attachment"] != "aGVsbG8=" {
+			t.Errorf("attempt %d: attachment = %v", i+1, payload["image"]["attachment"])
+		}
+	}
+	_ = res
 }
 
 func TestUpdateProduct_WhitelistAndClearFields(t *testing.T) {

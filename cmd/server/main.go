@@ -232,10 +232,15 @@ func main() {
 	metrics.StartupTime.Set(time.Since(startupTime).Seconds())
 
 	httpServer := &http.Server{
-		Addr:         ":" + cfg.ServerPort,
-		Handler:      auth.Chain(mux, auth.RecoveryMiddleware, auth.RequestIDMiddleware, auth.NoStoreMiddleware, auth.CORSMiddleware(cfg.AllowedOrigins)),
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 30 * time.Second,
+		Addr:    ":" + cfg.ServerPort,
+		Handler: auth.Chain(mux, auth.RecoveryMiddleware, auth.RequestIDMiddleware, auth.NoStoreMiddleware, auth.CORSMiddleware(cfg.AllowedOrigins)),
+		// 20-МБ image_data: клиент → nginx → app → InSales укладывается не всегда
+		// в 30с (замер: полный update_blog_post с аплоадом ~37с) — WriteTimeout
+		// 30с рвал соединение уже после успешного вызова, ответ не доходил.
+		// ReadHeaderTimeout держит защиту от slowloris.
+		ReadHeaderTimeout: 15 * time.Second,
+		ReadTimeout:       5 * time.Minute,
+		WriteTimeout:      5 * time.Minute,
 	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)

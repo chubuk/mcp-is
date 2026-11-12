@@ -3,6 +3,7 @@ package insales
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -18,6 +20,80 @@ import (
 	"github.com/chubuk/mcp-is/internal/ratelimit"
 	"github.com/chubuk/mcp-is/internal/resilience"
 )
+
+// spoolMarker — метка вложения в JSON-пэлоаде: на её месте тело запроса
+// стримит base64 содержимого файла (streamBody), без marshal-копий мегабайт.
+const spoolMarker = "MCP-IS-SPOOL-ATTACHMENT"
+
+// streamBody — тело запроса, где значение attachment зачитывается из файла и
+// кодируется в base64 на лету. prefix заканчивается открывающей кавычкой
+// строки-вложения, suffix начинается с закрывающей.
+type streamBody struct {
+	prefix, suffix string
+	file           string
+	size           int64
+}
+
+// newStreamBody марширует payload (attachment в нём = spoolMarker) и готовит
+// стрим-тело с вложением из файла.
+func newStreamBody(payload map[string]any, file string) (*streamBody, error) {
+	raw, err := json.Marshal(payload)
+	if err != nil {
+		return nil, fmt.Errorf("marshal stream payload: %w", err)
+	}
+	fi, err := os.Stat(file)
+	if err != nil {
+		return nil, fmt.Errorf("spool file: %w", err)
+	}
+	needle := []byte(`"attachment":"` + spoolMarker + `"`)
+	i := bytes.Index(raw, needle)
+	if i < 0 {
+		return nil, fmt.Errorf("stream payload: метка вложения не найдена")
+	}
+	open := i + len(`"attachment":"`) // позиция открывающей кавычки значения
+	return &streamBody{
+		prefix: string(raw[:open]),                  // включая открывающую кавычку
+		suffix: string(raw[open+len(spoolMarker):]), // начиная с закрывающей кавычки
+		file:   file,
+		size:   fi.Size(),
+	}, nil
+}
+
+// contentLength — точный Content-Length (base64 StdEncoding без переносов).
+func (b *streamBody) contentLength() int64 {
+	return int64(len(b.prefix) + base64.StdEncoding.EncodedLen(int(b.size)) + len(b.suffix))
+}
+
+// writeTo пишет prefix + base64(файл) + suffix в w.
+func (b *streamBody) writeTo(w io.Writer) error {
+	if _, err := io.WriteString(w, b.prefix); err != nil {
+		return err
+	}
+	f, err := os.Open(b.file)
+	if err != nil {
+		return fmt.Errorf("spool file: %w", err)
+	}
+	defer func() { _ = f.Close() }()
+	enc := base64.NewEncoder(base64.StdEncoding, w)
+	if _, err := io.Copy(enc, f); err != nil {
+		return err
+	}
+	if err := enc.Close(); err != nil {
+		return err
+	}
+	_, err = io.WriteString(w, b.suffix)
+	return err
+}
+
+// bodyWithSpool: при спул-файле картинки тело стримится из него (streamBody),
+// иначе — обычный map (маршал в doRequestRaw).
+func bodyWithSpool(payload map[string]any, args map[string]any) (any, error) {
+	file, _ := args["image_file"].(string)
+	if file == "" {
+		return payload, nil
+	}
+	return newStreamBody(payload, file)
+}
 
 // Сентинелы ошибок InSales API (обнаруживаются через errors.Is).
 var (
@@ -50,7 +126,9 @@ func NewClient(shopDomain, apiKey, password string) (*InSalesClient, error) {
 		APIKey:     apiKey,
 		Password:   password,
 		HTTPClient: &http.Client{
-			Timeout: 30 * time.Second,
+			// Аплоад 20-МБ картинки к InSales дольше обычного вызова API
+			// (замер: до ~30с на медленном testshop) — 30с рвал загрузку.
+			Timeout: 5 * time.Minute,
 		},
 		CircuitBreaker: resilience.NewCircuitBreaker(5, 30*time.Second),
 		RateTracker:    ratelimit.NewRateTracker(500, 5*time.Minute),
@@ -117,18 +195,25 @@ func parseRetryAfter(errMsg string) time.Duration {
 func (c *InSalesClient) doRequestRaw(ctx context.Context, method, path string, body any) ([]byte, int, error) {
 	url := fmt.Sprintf("%s%s", c.BaseURL, path)
 
-	var bodyReader io.Reader
-	if body != nil {
+	// Запрос создаётся ДО pipe: иначе ошибка NewRequest утекает горутину writer'а.
+	req, err := http.NewRequestWithContext(ctx, method, url, nil)
+	if err != nil {
+		return nil, 0, fmt.Errorf("create request: %w", err)
+	}
+	switch b := body.(type) {
+	case nil:
+	case *streamBody:
+		pr, pw := io.Pipe()
+		go func() { pw.CloseWithError(b.writeTo(pw)) }()
+		req.Body = pr
+		req.ContentLength = b.contentLength()
+	default:
 		jsonBytes, err := json.Marshal(body)
 		if err != nil {
 			return nil, 0, fmt.Errorf("marshal request body: %w", err)
 		}
-		bodyReader = bytes.NewReader(jsonBytes)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, method, url, bodyReader)
-	if err != nil {
-		return nil, 0, fmt.Errorf("create request: %w", err)
+		req.Body = io.NopCloser(bytes.NewReader(jsonBytes))
+		req.ContentLength = int64(len(jsonBytes))
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -836,18 +921,27 @@ func (c *InSalesClient) AddImage(ctx context.Context, productID string, args map
 		"filename": args["filename"],
 		"position": args["position"],
 	})
-	if b64, _ := args["image_data"].(string); b64 != "" {
-		image["attachment"] = b64
+	attach := ""
+	if file, _ := args["image_file"].(string); file != "" {
+		attach = spoolMarker
+	} else if b64, _ := args["image_data"].(string); b64 != "" {
+		attach = b64
+	}
+	if attach != "" {
+		image["attachment"] = attach
 	} else {
 		image["src"] = args["url"]
 	}
-	payload := map[string]any{"image": image}
-	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/products/%s/images.json", productID), payload)
+	body, err := bodyWithSpool(map[string]any{"image": image}, args)
+	if err != nil {
+		return nil, err
+	}
+	raw, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/products/%s/images.json", productID), body)
 	if err != nil {
 		return nil, err
 	}
 	var resp InSalesImage
-	if err := json.Unmarshal(body, &resp); err != nil {
+	if err := json.Unmarshal(raw, &resp); err != nil {
 		return nil, fmt.Errorf("decode image: %w", err)
 	}
 	return resp, nil
@@ -1514,13 +1608,14 @@ func (c *InSalesClient) GetBlogPost(ctx context.Context, blogID, postID string) 
 // BuildBlogArticle maps tool args → article payload: body_html→content,
 // image_url→image_attributes{src} или image_data+image_filename→
 // image_attributes{attachment,filename} (add-or-replace: слот один, удаление API не
-// поддерживает — research/probe_article_image.md). Роутинг-id и ключи картинок
-// вырезаются. Без отсебятины: значения не подставляются, уходят только присланные.
+// поддерживает — research/probe_article_image.md). При спул-файле (image_file)
+// attachment = spoolMarker — байты стримятся из файла (streamBody). Роутинг-id и
+// ключи картинок вырезаются. Без отсебятины: значения не подставляются.
 func BuildBlogArticle(args map[string]any) map[string]any {
 	out := make(map[string]any, len(args))
 	for k, v := range args {
 		switch k {
-		case "blog_id", "post_id", "id", "idempotency_key", "image_data", "image_filename":
+		case "blog_id", "post_id", "id", "idempotency_key", "image_data", "image_filename", "image_file":
 			continue
 		case "body_html":
 			if s, ok := v.(string); ok && s != "" {
@@ -1534,8 +1629,14 @@ func BuildBlogArticle(args map[string]any) map[string]any {
 			out[k] = v
 		}
 	}
-	if b64, _ := args["image_data"].(string); b64 != "" {
-		out["image_attributes"] = map[string]any{"attachment": b64, "filename": args["image_filename"]}
+	attach := ""
+	if file, _ := args["image_file"].(string); file != "" {
+		attach = spoolMarker
+	} else if b64, _ := args["image_data"].(string); b64 != "" {
+		attach = b64
+	}
+	if attach != "" {
+		out["image_attributes"] = map[string]any{"attachment": attach, "filename": args["image_filename"]}
 	}
 	return cleanArgs(out)
 }
@@ -1548,29 +1649,35 @@ func withBlogID(post *BlogPost, blogID string) *BlogPost {
 }
 
 func (c *InSalesClient) CreateBlogPost(ctx context.Context, blogID string, args map[string]any) (*BlogPost, error) {
-	article := BuildBlogArticle(args)
-	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/blogs/%s/articles.json", blogID), map[string]any{"article": article})
+	body, err := bodyWithSpool(map[string]any{"article": BuildBlogArticle(args)}, args)
 	if err != nil {
 		return nil, err
 	}
-	var resp InSalesBlogPostResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
+	resp, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/blogs/%s/articles.json", blogID), body)
+	if err != nil {
+		return nil, err
+	}
+	var out InSalesBlogPostResponse
+	if err := json.Unmarshal(resp, &out); err != nil {
 		return nil, fmt.Errorf("decode blog post: %w", err)
 	}
-	return withBlogID(MapBlogPost(&resp), blogID), nil
+	return withBlogID(MapBlogPost(&out), blogID), nil
 }
 
 func (c *InSalesClient) UpdateBlogPost(ctx context.Context, blogID, postID string, args map[string]any) (*BlogPost, error) {
-	payload := map[string]any{"article": BuildBlogArticle(args)}
-	body, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/blogs/%s/articles/%s.json", blogID, postID), payload)
+	body, err := bodyWithSpool(map[string]any{"article": BuildBlogArticle(args)}, args)
 	if err != nil {
 		return nil, err
 	}
-	var resp InSalesBlogPostResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
+	resp, _, err := c.doRequest(ctx, http.MethodPut, fmt.Sprintf("/blogs/%s/articles/%s.json", blogID, postID), body)
+	if err != nil {
+		return nil, err
+	}
+	var out InSalesBlogPostResponse
+	if err := json.Unmarshal(resp, &out); err != nil {
 		return nil, fmt.Errorf("decode blog post: %w", err)
 	}
-	return withBlogID(MapBlogPost(&resp), blogID), nil
+	return withBlogID(MapBlogPost(&out), blogID), nil
 }
 
 func (c *InSalesClient) DeleteBlogPost(ctx context.Context, blogID, postID string) error {

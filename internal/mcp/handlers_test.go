@@ -296,16 +296,17 @@ func TestValidateImageArgs(t *testing.T) {
 		args    map[string]any
 		exactly bool
 		wantErr string
-		want    string // нормализованный image_data после успеха
+		wantRaw string // ожидаемое содержимое спул-файла после успеха ("-" = без картинки)
 	}{
 		{
-			name: "url only ok",
-			args: map[string]any{"image_url": "https://x/i.png"},
+			name:    "url only ok",
+			args:    map[string]any{"image_url": "https://x/i.png"},
+			wantRaw: "-",
 		},
 		{
-			name: "data only ok",
-			args: map[string]any{"image_data": b64, "image_filename": "a.png"},
-			want: b64,
+			name:    "data only ok",
+			args:    map[string]any{"image_data": b64, "image_filename": "a.png"},
+			wantRaw: "hello",
 		},
 		{
 			name:    "both rejected",
@@ -334,17 +335,15 @@ func TestValidateImageArgs(t *testing.T) {
 			wantErr: "слишком большое",
 		},
 		{
-			name: "data uri prefix stripped",
-			args: map[string]any{
-				"image_data":     "data:image/png;base64," + b64,
-				"image_filename": "a.png",
-			},
-			want: b64,
+			name:    "data uri prefix stripped",
+			args:    map[string]any{"image_data": "data:image/png;base64," + b64, "image_filename": "a.png"},
+			wantRaw: "hello",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateImageArgs(tt.args, "image_url", "image_filename", tt.exactly)
+			cleanup, err := validateImageArgs(context.Background(), tt.args, "image_url", "image_filename", tt.exactly)
+			defer cleanup()
 			if tt.wantErr != "" {
 				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
 					t.Fatalf("err = %v, want substring %q", err, tt.wantErr)
@@ -354,10 +353,94 @@ func TestValidateImageArgs(t *testing.T) {
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
-			if tt.want != "" && tt.args["image_data"] != tt.want {
-				t.Errorf("image_data = %v, want %q", tt.args["image_data"], tt.want)
+			switch tt.wantRaw {
+			case "-":
+				if path, _ := tt.args["image_file"].(string); path != "" {
+					t.Errorf("image_file must be empty without image_data, got %q", path)
+				}
+			default:
+				path, _ := tt.args["image_file"].(string)
+				if path == "" {
+					t.Fatal("image_file not set")
+				}
+				got, rerr := os.ReadFile(path)
+				if rerr != nil {
+					t.Fatalf("read spool: %v", rerr)
+				}
+				if string(got) != tt.wantRaw {
+					t.Errorf("spool bytes = %q, want %q", got, tt.wantRaw)
+				}
+				if mask, _ := tt.args["image_data"].(string); !strings.HasPrefix(mask, "<base64,") {
+					t.Errorf("image_data must be masked, got %q", mask)
+				}
 			}
 		})
+	}
+}
+
+func TestSpoolImageData_CleanupRemovesFile(t *testing.T) {
+	args := map[string]any{"image_data": "aGVsbG8=", "image_filename": "a.png"}
+	cleanup, err := spoolImageData(context.Background(), args)
+	if err != nil {
+		t.Fatalf("unexpected: %v", err)
+	}
+	path := args["image_file"].(string)
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("spool file missing: %v", err)
+	}
+	cleanup()
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Errorf("spool file not removed: %v", err)
+	}
+}
+
+func TestSpoolImageData_MaskContentBound(t *testing.T) {
+	// Разные картинки одного размера → разные маски (иначе коллизия ArgsHash).
+	a := map[string]any{"image_data": "aGVsbG8=", "image_filename": "a.png"}
+	b := map[string]any{"image_data": "d29ybGQ=", "image_filename": "b.png"} // "world"
+	ca, err := spoolImageData(context.Background(), a)
+	defer ca()
+	if err != nil {
+		t.Fatal(err)
+	}
+	cb, err := spoolImageData(context.Background(), b)
+	defer cb()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a["image_data"] == b["image_data"] {
+		t.Errorf("same mask for different content: %v", a["image_data"])
+	}
+	if !strings.Contains(a["image_data"].(string), "sha256:") {
+		t.Errorf("mask must carry content hash: %v", a["image_data"])
+	}
+}
+
+func TestSpoolImageData_EmptyPayloadRejected(t *testing.T) {
+	noop, err := spoolImageData(context.Background(), map[string]any{"image_data": "data:image/png;base64,", "image_filename": "a.png"})
+	defer noop()
+	if err == nil || !strings.Contains(err.Error(), "пустое") {
+		t.Errorf("err = %v, want пустое изображение", err)
+	}
+}
+
+func TestHashArgs_BigStringMasked(t *testing.T) {
+	big := strings.Repeat("A", 200<<10)
+	h1 := hashArgs(map[string]any{"image_data": big, "title": "x"})
+	h2 := hashArgs(map[string]any{"image_data": big, "title": "x"})
+	h3 := hashArgs(map[string]any{"image_data": big + "B", "title": "x"})
+	if h1 == "" || h1 != h2 {
+		t.Errorf("hash not stable: %q vs %q", h1, h2)
+	}
+	if h1 == h3 {
+		t.Error("different content must differ")
+	}
+	if strings.Contains(h1, strings.Repeat("A", 64)) {
+		t.Error("hash leaked raw string")
+	}
+	// image_file — служебный путь, в хэш не входит
+	if hashArgs(map[string]any{"image_file": "/tmp/x", "title": "x"}) != hashArgs(map[string]any{"title": "x"}) {
+		t.Error("image_file must not affect hash")
 	}
 }
 

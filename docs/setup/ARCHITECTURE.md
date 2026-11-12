@@ -121,6 +121,7 @@ Web UI → HTTP POST /api/shops → Shop Handler → AES encrypt → PostgreSQL
 | CORS | Разрешённые origins |
 | DNS rebinding | Автоматическая защита (mcp-go) |
 | HTTPS | Let's Encrypt или self-signed |
+| Таймауты | nginx 60с (header/body/send, стандартные); app: header 15с, чтение/ответ 5мин (20-МБ загрузка картинки + стрим в InSales > 30с); InSales-клиент 5мин |
 
 ## Read-only режим
 
