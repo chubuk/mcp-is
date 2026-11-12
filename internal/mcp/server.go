@@ -38,12 +38,14 @@ const (
 // Версия каталога инструментов (W7): бампать при любом изменении схем/состава
 // тулов — по ней интеграции понимают, что надо перепроверить свои скрипты.
 const (
-	catalogVersion = "2026-11-10.2"
-	catalogDate    = "2026-11-10"
+	catalogVersion = "2026-11-12.1"
+	catalogDate    = "2026-11-12"
 )
 
 // catalogChanges — рукописный список последних изменений интерфейса (store_info).
 var catalogChanges = []string{
+	"create/update_blog_post: image_data+image_filename — загрузка/замена обложки байтами (base64); add_image: image_data+filename — загрузка картинки товара байтами, url больше не обязателен (ровно одно из url|image_data); имя файла обязательно",
+	"create_blog_post: published_at и author теперь обязательны — дефолтов («сейчас»/«Admin») больше нет, InSales отвечает 422 без них",
 	"update_blog_post/create_blog_post: добавлены published_at/author/image_url и SEO-поля; body_html теперь реально сохраняется (→article[content]); published_at при создании больше не «2025-01-01»",
 	"field_values ({handle: значение}) у create/update_product, update_variant, create/update_collection, create/update_order, create/update_client — доп. поля магазина; handle'ы — в описании параметра",
 	"field_values у create/update_category УБРАН: категории InSales (дерево склада) не хранят доп. поля — используйте коллекции (create/update_collection)",
@@ -163,7 +165,7 @@ func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry st
 
 	s := server.NewMCPServer(
 		"mcp-is",
-		"0.13.0",
+		"0.14.0",
 		server.WithToolCapabilities(true),
 		server.WithToolFilter(toolFilter(readOnly)),
 		server.WithRecovery(),
@@ -191,8 +193,8 @@ func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry st
 }
 
 func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// Limit body size to 1MB
-	r.Body = http.MaxBytesReader(w, r.Body, 1<<20)
+	// Limit body size to 28MB (image_data: 20 МБ decoded ≈ 26.7 МБ base64; потолок InSales ~22 МБ файла)
+	r.Body = http.MaxBytesReader(w, r.Body, 28<<20)
 
 	ctx := r.Context()
 

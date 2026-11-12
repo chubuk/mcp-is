@@ -166,7 +166,7 @@ func TestAddImage_UsesSrcField(t *testing.T) {
 	srv, cap := captureRequest(t)
 	client := newTestClient(srv)
 
-	_, err := client.AddImage(context.Background(), "123", "https://x/img.png", nil)
+	_, err := client.AddImage(context.Background(), "123", map[string]any{"url": "https://x/img.png"})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -273,5 +273,36 @@ func TestFetchPaged_NormalPagePassesThrough(t *testing.T) {
 	}
 	if len(urls) != 1 || urls[0] != "/products.json?page=2&per_page=25" {
 		t.Errorf("URLs = %v", urls)
+	}
+}
+
+func TestAddImage_UsesAttachment(t *testing.T) {
+	srv, cap := captureRequest(t)
+	client := newTestClient(srv)
+
+	_, err := client.AddImage(context.Background(), "123", map[string]any{
+		"image_data": "aGVsbG8=",
+		"filename":   "cover.png",
+		"position":   float64(2),
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var payload map[string]map[string]any
+	if err := json.Unmarshal(cap.body, &payload); err != nil {
+		t.Fatalf("bad body %q: %v", cap.body, err)
+	}
+	img := payload["image"]
+	if img["attachment"] != "aGVsbG8=" {
+		t.Errorf("attachment missing/wrong: %v", img)
+	}
+	if img["filename"] != "cover.png" {
+		t.Errorf("filename missing/wrong: %v", img)
+	}
+	if _, ok := img["src"]; ok {
+		t.Errorf("src must not be sent in attachment mode: %v", img)
+	}
+	if _, ok := img["image_data"]; ok {
+		t.Errorf("image_data must not leak into payload: %v", img)
 	}
 }

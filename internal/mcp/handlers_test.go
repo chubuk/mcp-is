@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/chubuk/mcp-is/internal/integration/insales"
@@ -285,5 +286,103 @@ func fixSchemaForTest(opt mcp.ToolOption) mcp.ToolOption {
 		if t.OutputSchema.Defs != nil {
 			t.OutputSchema.Defs = fixSchemaNodes(t.OutputSchema.Defs).(map[string]any)
 		}
+	}
+}
+
+func TestValidateImageArgs(t *testing.T) {
+	const b64 = "aGVsbG8=" // "hello"
+	tests := []struct {
+		name    string
+		args    map[string]any
+		exactly bool
+		wantErr string
+		want    string // нормализованный image_data после успеха
+	}{
+		{
+			name: "url only ok",
+			args: map[string]any{"image_url": "https://x/i.png"},
+		},
+		{
+			name: "data only ok",
+			args: map[string]any{"image_data": b64, "image_filename": "a.png"},
+			want: b64,
+		},
+		{
+			name:    "both rejected",
+			args:    map[string]any{"image_url": "https://x/i.png", "image_data": b64, "image_filename": "a.png"},
+			wantErr: "взаимоисключимы",
+		},
+		{
+			name:    "exactly one required",
+			args:    map[string]any{},
+			exactly: true,
+			wantErr: "укажите",
+		},
+		{
+			name:    "filename required with data",
+			args:    map[string]any{"image_data": b64},
+			wantErr: "обязателен",
+		},
+		{
+			name:    "bad base64",
+			args:    map[string]any{"image_data": "не base64!", "image_filename": "a.png"},
+			wantErr: "base64",
+		},
+		{
+			name:    "oversize",
+			args:    map[string]any{"image_data": strings.Repeat("A", 28<<20), "image_filename": "a.png"},
+			wantErr: "слишком большое",
+		},
+		{
+			name: "data uri prefix stripped",
+			args: map[string]any{
+				"image_data":     "data:image/png;base64," + b64,
+				"image_filename": "a.png",
+			},
+			want: b64,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateImageArgs(tt.args, "image_url", "image_filename", tt.exactly)
+			if tt.wantErr != "" {
+				if err == nil || !strings.Contains(err.Error(), tt.wantErr) {
+					t.Fatalf("err = %v, want substring %q", err, tt.wantErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if tt.want != "" && tt.args["image_data"] != tt.want {
+				t.Errorf("image_data = %v, want %q", tt.args["image_data"], tt.want)
+			}
+		})
+	}
+}
+
+func TestDiffFromArgs_MasksImageData(t *testing.T) {
+	diff := diffFromArgs(nil, map[string]any{
+		"title":      "t",
+		"image_data": strings.Repeat("A", 5000),
+	}, nil)
+	if diff["title"].New != "t" {
+		t.Errorf("title masked unexpectedly: %#v", diff["title"])
+	}
+	newVal, _ := diff["image_data"].New.(string)
+	if newVal == "" || newVal == strings.Repeat("A", 5000) {
+		t.Errorf("image_data not masked: %#v", diff["image_data"])
+	}
+	if !strings.Contains(newVal, "base64") {
+		t.Errorf("mask should say base64, got %q", newVal)
+	}
+}
+
+func TestIdString(t *testing.T) {
+	if got := idString(float64(3418753025)); got != "3418753025" {
+		t.Errorf("idString(float64) = %q, want 3418753025", got)
+	}
+	if got := idString("16460017"); got != "16460017" {
+		t.Errorf("idString(string) = %q, want 16460017", got)
 	}
 }

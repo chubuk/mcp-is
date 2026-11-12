@@ -857,7 +857,7 @@ Authorization: Bearer <AI_KEY>
     "capabilities": {"tools": {"listChanged": true}},
     "serverInfo": {
       "name": "mcp-is",
-      "version": "0.13.0"
+      "version": "0.14.0"
     },
     "instructions": "Discovery: default tools/list is a core surface; use search_insales_tools → call_insales_tool for the full catalog. MCP_TOOLS_MODE=all lists everything."
   }
@@ -1503,9 +1503,11 @@ Create/update/delete-инструменты возвращают подробн�
 | blog_id | string | Да | ID блога |
 | title | string | Да | Заголовок записи |
 | body_html | string | Да | HTML-содержимое записи (API: `article[content]`) |
-| published_at | string | Нет | Дата публикации (ISO); по умолчанию — сейчас |
-| author | string | Нет | Автор; по умолчанию Admin |
-| image_url | string | Нет | URL картинки записи: добавляет **или заменяет** единственную картинку (удаление API не поддерживает) |
+| published_at | string | Да | Дата публикации (ISO); **дефолтов нет** — InSales требует поле (422 без него) |
+| author | string | Да | Автор; **дефолтов нет** — InSales требует поле (422 без него) |
+| image_url | string | Нет | URL картинки записи: добавляет **или заменяет** единственную картинку (удаление API не поддерживает); взаимоисключим с `image_data` |
+| image_data | string | Нет | Картинка как base64 (или `data:<mime>;base64,...`) + `image_filename`: добавляет **или заменяет** единственную картинку; передавать программно (curl/код), не текстом LLM; ≤20 МБ раскодированных |
+| image_filename | string | Нет | Имя файла картинки; **обязательно при `image_data`** (без имени InSales молча затирает картинку заглушкой) |
 | notice | string | Нет | Анонс записи |
 | permalink | string | Нет | ЧПУ-адрес записи |
 | html_title | string | Нет | SEO: html title |
@@ -1527,7 +1529,9 @@ Create/update/delete-инструменты возвращают подробн�
 | body_html | string | Нет | Содержимое (API: `article[content]`) |
 | published_at | string | Нет | Дата публикации (ISO) |
 | author | string | Нет | Автор |
-| image_url | string | Нет | Картинка: добавляет ИЛИ заменяет единственную (удаление API не поддерживает) |
+| image_url | string | Нет | Картинка: добавляет ИЛИ заменяет единственную (удаление API не поддерживает); взаимоисключим с `image_data` |
+| image_data | string | Нет | Картинка как base64 (или `data:`-URI) + `image_filename`: добавляет ИЛИ заменяет единственную; программно (curl/код), не текстом LLM; ≤20 МБ |
+| image_filename | string | Нет | Имя файла картинки; обязательно при `image_data` |
 | notice / permalink / html_title / meta_keywords / meta_description | string | Нет | Анонс, ЧПУ, SEO-поля |
 | all_tags | string[] | Нет | Теги записи |
 | pinned | boolean | Нет | Закрепить запись |
@@ -1551,13 +1555,14 @@ Create/update/delete-инструменты возвращают подробн�
 
 ### add_image
 
-Добавить изображение товару.
+Добавить изображение товару (создание — можно и несколько).
 
 | Параметр | Тип | Обязательный | Описание |
 |----------|-----|--------------|----------|
 | product_id | string | Да | ID товара |
-| url | string | Да | URL изображения |
-| filename | string | Нет | Имя файла |
+| url | string | Нет* | URL изображения; *ровно одно из `url`\|`image_data` обязательно |
+| image_data | string | Нет* | Картинка как base64 (или `data:`-URI); программно (curl/код), не текстом LLM; ≤20 МБ; требуется `filename` |
+| filename | string | Нет | Имя файла; обязательно при `image_data` (без имени InSales молча затирает картинку заглушкой) |
 | position | integer | Нет | Позиция |
 
 ### delete_image

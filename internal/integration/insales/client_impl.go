@@ -831,14 +831,17 @@ func (c *InSalesClient) ListImages(ctx context.Context, productID string) ([]any
 	return result, nil
 }
 
-func (c *InSalesClient) AddImage(ctx context.Context, productID, url string, args map[string]any) (any, error) {
-	payload := map[string]any{
-		"image": cleanArgs(map[string]any{
-			"src":      url,
-			"filename": args["filename"],
-			"position": args["position"],
-		}),
+func (c *InSalesClient) AddImage(ctx context.Context, productID string, args map[string]any) (any, error) {
+	image := cleanArgs(map[string]any{
+		"filename": args["filename"],
+		"position": args["position"],
+	})
+	if b64, _ := args["image_data"].(string); b64 != "" {
+		image["attachment"] = b64
+	} else {
+		image["src"] = args["url"]
 	}
+	payload := map[string]any{"image": image}
 	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/products/%s/images.json", productID), payload)
 	if err != nil {
 		return nil, err
@@ -1509,13 +1512,15 @@ func (c *InSalesClient) GetBlogPost(ctx context.Context, blogID, postID string) 
 }
 
 // BuildBlogArticle maps tool args → article payload: body_html→content,
-// image_url→image_attributes{src} (add-or-replace: слот один, удаление API не
-// поддерживает — research/probe_article_image.md). Роутинг-id вырезаются.
+// image_url→image_attributes{src} или image_data+image_filename→
+// image_attributes{attachment,filename} (add-or-replace: слот один, удаление API не
+// поддерживает — research/probe_article_image.md). Роутинг-id и ключи картинок
+// вырезаются. Без отсебятины: значения не подставляются, уходят только присланные.
 func BuildBlogArticle(args map[string]any) map[string]any {
 	out := make(map[string]any, len(args))
 	for k, v := range args {
 		switch k {
-		case "blog_id", "post_id", "id", "idempotency_key":
+		case "blog_id", "post_id", "id", "idempotency_key", "image_data", "image_filename":
 			continue
 		case "body_html":
 			if s, ok := v.(string); ok && s != "" {
@@ -1529,6 +1534,9 @@ func BuildBlogArticle(args map[string]any) map[string]any {
 			out[k] = v
 		}
 	}
+	if b64, _ := args["image_data"].(string); b64 != "" {
+		out["image_attributes"] = map[string]any{"attachment": b64, "filename": args["image_filename"]}
+	}
 	return cleanArgs(out)
 }
 
@@ -1541,12 +1549,6 @@ func withBlogID(post *BlogPost, blogID string) *BlogPost {
 
 func (c *InSalesClient) CreateBlogPost(ctx context.Context, blogID string, args map[string]any) (*BlogPost, error) {
 	article := BuildBlogArticle(args)
-	if _, ok := article["published_at"]; !ok {
-		article["published_at"] = time.Now().Format(time.RFC3339)
-	}
-	if _, ok := article["author"]; !ok {
-		article["author"] = "Admin"
-	}
 	body, _, err := c.doRequest(ctx, http.MethodPost, fmt.Sprintf("/blogs/%s/articles.json", blogID), map[string]any{"article": article})
 	if err != nil {
 		return nil, err

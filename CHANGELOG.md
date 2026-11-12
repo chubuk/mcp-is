@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [0.14.0] — 2026-11-12 (загрузка картинок байтами: image_data для блога и add_image, лимит 20 МБ)
+
+### Добавлено
+- **Загрузка картинок байтами (`image_data`)**: `create/update_blog_post` принимают `image_data` (base64 или `data:<mime>;base64,...`) + `image_filename` → `article[image_attributes]{attachment, filename}`; `add_image` принимает `image_data` + `filename` → `image{attachment, filename}`. Ровно одно из `image_url`|`image_data` (`у add_image` — `url`|`image_data`; оба сразу — ошибка, ничего — без картинки). Имя файла обязательно: без него InSales молча затирает слот заглушкой `no_image_original.jpg` (живая проба, `research/probe_article_image.md`). Лимит — 20 МБ раскодированных (28 МиБ на тело запроса; потолок самого InSales ~22 МБ — дальше nginx 413, см. `research/probe_article_image.md`). Передавать **программно** (curl/код агента), не текстом LLM. Проверено на testshop 2026-11-12: create/replace обложки статьи, add-or-replace, `add_image` к товару, обложки оседают на CDN с сохранённым именем файла.
+
+### Изменено
+- **`create_blog_post` больше не подставляет `published_at=now`/`author="Admin"`** («без отсебятины» — сервер не выдумывает значения): оба поля теперь **обязательны** — без них InSales отвечает 422 «Не заполнены обязательные поля» (живая проба). Дефолтов нет ни в схеме, ни в коде.
+- **`changed_fields` маскирует `image_data`**: в diff уходит `"<base64, N КБ>"`, а не мегабайты base64 (утечка в LLM-контекст и логи закрыта).
+
+### Исправлено
+- **`id` в конверте `add_image`/`add_product_to_collection` больше не превращается в экспоненту** (`"3.418753025e+09"` → `"3418753025"`).
+
 ## [0.13.0] — 2026-11-11 (блог: дата/картинка/текст, доп. поля field_values, core 49, discovery и совместимость)
 
 ### Добавлено

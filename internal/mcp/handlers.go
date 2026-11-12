@@ -2,6 +2,7 @@ package mcp
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -201,6 +202,15 @@ func asMap(obj any) map[string]any {
 	return m
 }
 
+// idString форматирует id из JSON-ответа: float64 через %v даёт экспоненту
+// на больших ID (см. service.anyToID).
+func idString(v any) string {
+	if n, ok := v.(float64); ok {
+		return strconv.FormatFloat(n, 'f', -1, 64)
+	}
+	return fmt.Sprint(v)
+}
+
 // fieldOf возвращает значение поля объекта по ключу аргумента.
 // Особый случай: цена товара живёт в variants[0].price (product.price = null).
 func fieldOf(obj any, key string) any {
@@ -223,6 +233,8 @@ func fieldOf(obj any, key string) any {
 // Ограничение: вложенные операции заказа шлют Rails-обёртки *_attributes
 // (order_lines_attributes и т.п.) — их нет в верхнем уровне снимка, поэтому
 // old для таких ключей = null; итоговое состояние видно в data.
+// image_data маскируется размером: сырые байты base64 не должны уезжать в ответ
+// (LLM-контекст, логи).
 func diffFromArgs(oldObj any, args map[string]any, ignored []string) map[string]FieldChange {
 	skip := map[string]bool{}
 	for _, k := range ignored {
@@ -232,6 +244,12 @@ func diffFromArgs(oldObj any, args map[string]any, ignored []string) map[string]
 	for k, v := range args {
 		if skip[k] || k == "id" || strings.HasSuffix(k, "_id") {
 			continue
+		}
+		if k == "image_data" {
+			if s, ok := v.(string); ok {
+				diff[k] = FieldChange{Old: fieldOf(oldObj, k), New: fmt.Sprintf("<base64, %d КБ>", len(s)/1024)}
+				continue
+			}
 		}
 		diff[k] = FieldChange{Old: fieldOf(oldObj, k), New: v}
 	}
@@ -603,6 +621,47 @@ func filterKnown(args map[string]any, known map[string]bool) []string {
 	}
 	sort.Strings(ignored)
 	return ignored
+}
+
+// validateImageArgs проверяет пару URL/байты картинки до ухода в InSales.
+// <urlKey> XOR image_data (exactlyOne — ровно одно обязательно); image_data без
+// filenameKey — ошибка (InSales без имени файла молча затирает слот заглушкой
+// no_image_original.jpg — research/probe_article_image.md); base64 должен
+// декодироваться, data:URI-префикс нормализуется, размер ≤ 20 МБ. Без отсебятины:
+// значения не подставляются, некорректный ввод отклоняется.
+func validateImageArgs(args map[string]any, urlKey, filenameKey string, exactlyOne bool) error {
+	urlVal, _ := args[urlKey].(string)
+	dataVal, _ := args["image_data"].(string)
+	hasURL := strings.TrimSpace(urlVal) != ""
+	hasData := strings.TrimSpace(dataVal) != ""
+	switch {
+	case hasURL && hasData:
+		return fmt.Errorf("%s и image_data взаимоисключимы: укажите только один", urlKey)
+	case exactlyOne && !hasURL && !hasData:
+		return fmt.Errorf("укажите %s или image_data", urlKey)
+	case !hasData:
+		return nil
+	}
+	if fn, _ := args[filenameKey].(string); strings.TrimSpace(fn) == "" {
+		return fmt.Errorf("%s обязателен при image_data", filenameKey)
+	}
+	raw := dataVal
+	if strings.HasPrefix(raw, "data:") {
+		if i := strings.Index(raw, "base64,"); i >= 0 {
+			raw = raw[i+len("base64,"):]
+		}
+	}
+	raw = strings.Join(strings.Fields(raw), "")
+	decoded, err := base64.StdEncoding.DecodeString(raw)
+	if err != nil {
+		return fmt.Errorf("image_data: некорректный base64: %w", err)
+	}
+	const maxImageBytes = 20 << 20
+	if len(decoded) > maxImageBytes {
+		return fmt.Errorf("изображение слишком большое: максимум %d МБ", maxImageBytes>>20)
+	}
+	args["image_data"] = raw
+	return nil
 }
 
 // filterArgsByTool фильтрует args по whitelist из inputSchema инструмента
@@ -1051,12 +1110,11 @@ func addImageHandler(svc *service.Service) func(ctx context.Context, req mcp.Cal
 		if err != nil {
 			return toolError(err), nil
 		}
-		url, err := req.RequireString("url")
-		if err != nil {
+		args := req.GetArguments()
+		if err := validateImageArgs(args, "url", "filename", true); err != nil {
 			return toolError(err), nil
 		}
-		args := req.GetArguments()
-		result, err := svc.AddImage(ctx, productID, url, args)
+		result, err := svc.AddImage(ctx, productID, args)
 		if err != nil {
 			return toolError(err), nil
 		}
@@ -1064,7 +1122,7 @@ func addImageHandler(svc *service.Service) func(ctx context.Context, req mcp.Cal
 			OK:       true,
 			Action:   "create",
 			Resource: "image",
-			ID:       fmt.Sprint(fieldOf(result, "id")),
+			ID:       idString(fieldOf(result, "id")),
 			Data:     result,
 		}), nil
 	}
@@ -1697,7 +1755,11 @@ func createBlogPostHandler(svc *service.Service) func(ctx context.Context, req m
 		if _, err := req.RequireString("body_html"); err != nil {
 			return toolError(err), nil
 		}
-		result, err := svc.CreateBlogPost(ctx, blogID, req.GetArguments())
+		args := req.GetArguments()
+		if err := validateImageArgs(args, "image_url", "image_filename", false); err != nil {
+			return toolError(err), nil
+		}
+		result, err := svc.CreateBlogPost(ctx, blogID, args)
 		if err != nil {
 			return toolError(err), nil
 		}
@@ -1716,6 +1778,9 @@ func updateBlogPostHandler(svc *service.Service) func(ctx context.Context, req m
 			return toolError(err), nil
 		}
 		args := req.GetArguments()
+		if err := validateImageArgs(args, "image_url", "image_filename", false); err != nil {
+			return toolError(err), nil
+		}
 		return updateWithDiff("blog_post", postID, args, nil,
 			func() (any, error) { return svc.GetBlogPost(ctx, blogID, postID) },
 			func() (any, error) { return svc.UpdateBlogPost(ctx, blogID, postID, args) },
@@ -1858,7 +1923,7 @@ func createCollectHandler(svc *service.Service) func(ctx context.Context, req mc
 			OK:       true,
 			Action:   "create",
 			Resource: "collect",
-			ID:       fmt.Sprint(fieldOf(result, "id")),
+			ID:       idString(fieldOf(result, "id")),
 			Data:     result,
 		}), nil
 	}

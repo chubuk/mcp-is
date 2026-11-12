@@ -56,3 +56,28 @@ func TestBuildBlogArticle_SeOAndTagsPassThrough(t *testing.T) {
 		t.Errorf("BuildBlogArticle = %#v, want %#v", got, want)
 	}
 }
+
+func TestBuildBlogArticle_Attachment(t *testing.T) {
+	got := BuildBlogArticle(map[string]any{
+		"blog_id":        "1",
+		"post_id":        "7",
+		"title":          "t",
+		"image_data":     "aGVsbG8=",
+		"image_filename": "cover.png",
+	})
+	want := map[string]any{
+		"title": "t",
+		"image_attributes": map[string]any{
+			"attachment": "aGVsbG8=",
+			"filename":   "cover.png",
+		},
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("BuildBlogArticle = %#v, want %#v", got, want)
+	}
+	for _, k := range []string{"image_data", "image_filename"} {
+		if _, ok := got[k]; ok {
+			t.Errorf("key %q must not leak into article payload: %#v", k, got)
+		}
+	}
+}

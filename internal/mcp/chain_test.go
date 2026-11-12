@@ -436,6 +436,43 @@ func TestChainUpdateBlogPost_PayloadMapping(t *testing.T) {
 	}
 }
 
+// TestChainUpdateBlogPost_AttachmentMapping — image_data+image_filename уходят
+// как image_attributes{attachment,filename}, ключи не утекают в article, а в
+// changed_fields base64 замаскирован размером (утечка в LLM-контекст недопустима).
+func TestChainUpdateBlogPost_AttachmentMapping(t *testing.T) {
+	mock := newChainMock(t, func(rec recordedCall) string {
+		if rec.Method == http.MethodGet {
+			return `{"id":7,"title":"old","content":"<p>old</p>"}`
+		}
+		return `{"id":7,"title":"old","content":"<p>old</p>"}`
+	})
+	h := newChainHarness(t, mock)
+
+	res := callTool(t, h, context.Background(), "update_blog_post", map[string]any{
+		"blog_id":        "1",
+		"post_id":        "7",
+		"image_data":     "aGVsbG8=",
+		"image_filename": "cover.png",
+	})
+	put := mock.calls[len(mock.calls)-1]
+	article, ok := put.Body["article"].(map[string]any)
+	if !ok {
+		t.Fatalf("article root missing: %v", put.Body)
+	}
+	img, _ := article["image_attributes"].(map[string]any)
+	if img["attachment"] != "aGVsbG8=" || img["filename"] != "cover.png" {
+		t.Errorf("image_attributes = %v, want attachment+filename", article["image_attributes"])
+	}
+	for _, k := range []string{"image_data", "image_filename"} {
+		if _, ok := article[k]; ok {
+			t.Errorf("key %q leaked into article: %v", k, article)
+		}
+	}
+	if text := formatResult(res); strings.Contains(text, "aGVsbG8=") {
+		t.Errorf("changed_fields must not contain raw base64, got: %s", text)
+	}
+}
+
 // TestChainIdempotentReplay — полная цепочка с idempotency_key: второй вызов
 // не трогает InSales и возвращает сохранённый ответ с idempotent_replay.
 func TestChainIdempotentReplay(t *testing.T) {

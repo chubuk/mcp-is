@@ -31,7 +31,7 @@ type Client interface {
 	UpdateCollection(ctx context.Context, collectionID string, args map[string]any) (any, error)
 	DeleteCollection(ctx context.Context, collectionID string) error
 	ListImages(ctx context.Context, productID string) ([]any, error)
-	AddImage(ctx context.Context, productID, url string, args map[string]any) (any, error)
+	AddImage(ctx context.Context, productID string, args map[string]any) (any, error)
 	DeleteImage(ctx context.Context, productID, imageID string) error
 	ListMetaFields(ctx context.Context, args map[string]any) ([]any, error)
 	CreateMetaField(ctx context.Context, args map[string]any) (any, error)

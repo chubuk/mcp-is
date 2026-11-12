@@ -399,7 +399,7 @@ func (s *Service) ListImages(ctx context.Context, productID string) ([]any, erro
 	return client.ListImages(ctx, productID)
 }
 
-func (s *Service) AddImage(ctx context.Context, productID, url string, args map[string]any) (any, error) {
+func (s *Service) AddImage(ctx context.Context, productID string, args map[string]any) (any, error) {
 	client, ctx, err := s.manager.GetClient(ctx)
 	if err != nil {
 		return nil, err
@@ -407,7 +407,7 @@ func (s *Service) AddImage(ctx context.Context, productID, url string, args map[
 	if err := s.checkReadOnly(ctx); err != nil {
 		return nil, err
 	}
-	return client.AddImage(ctx, productID, url, args)
+	return client.AddImage(ctx, productID, args)
 }
 
 func (s *Service) DeleteImage(ctx context.Context, productID, imageID string) error {
