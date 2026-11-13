@@ -65,6 +65,8 @@ cp "${PROJECT_DIR}/README.md" "${BUILD_DIR}/usr/share/doc/mcp-is/"
 cp "${PROJECT_DIR}/LICENSE" "${BUILD_DIR}/usr/share/doc/mcp-is/"
 cp "${PROJECT_DIR}/CHANGELOG.md" "${BUILD_DIR}/usr/share/doc/mcp-is/"
 cp -r "${PROJECT_DIR}/docs" "${BUILD_DIR}/usr/share/doc/mcp-is/"
+# docs/dev is local-only (gitignored) — never ship in the package
+rm -rf "${BUILD_DIR}/usr/share/doc/mcp-is/docs/dev"
 
 # Create changelog (first entries from CHANGELOG.md header)
 {
