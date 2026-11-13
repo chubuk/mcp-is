@@ -1,2 +1,2 @@
-# Local-only docs: never in git archives (even if force-added)
+# local only
 docs/dev export-ignore

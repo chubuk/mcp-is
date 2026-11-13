@@ -20,7 +20,7 @@ config.yaml
 
 docs/api/Insales-api-docs.txt
 
-# local-only InSales developer docs (never publish)
+# local only
 docs/dev/
 
 # research scratch (keep findings/REPORT)
