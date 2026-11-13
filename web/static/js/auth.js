@@ -335,6 +335,11 @@ const Auth = {
             body.innerHTML = '<div class="alert alert--error"><strong>Текущий период не оплачен.</strong> Данные недоступны для ИИ до оплаты — продлите приложение в админке InSales.</div><p class="link"><a href="/dashboard">Перейти в панель</a></p>';
             return;
         }
+        // Повторный монтаж (bfcache/re-render) при живой сессии — не сжигать код заново.
+        if (Auth._onboardExchanged && API.isLoggedIn()) {
+            App.navigate('/dashboard');
+            return;
+        }
         // Обмен кода: одноразовый код приходит в HttpOnly-куке (autologin) или
         // в body (fallback для старых ссылок/кэша JS). В URL кода нет.
         const legacyCode = params.get('code');
@@ -345,10 +350,17 @@ const Auth = {
                 localStorage.setItem('nickname', res.data.nickname);
                 localStorage.setItem('role', res.data.role);
                 localStorage.setItem('user_id', res.data.user_id);
-                showKey(res.data.api_key || '(ключ недоступен — создайте новый в разделе «Ключи»)', location.origin + '/mcp', res.data.connection_name || '');
-                if (res.data.require_password_change) {
-                    body.insertAdjacentHTML('beforeend',
-                        '<p class="link"><a href="/force-change-password">🔑 Задать новый пароль для входа (обязательно)</a></p>');
+                Auth._onboardExchanged = true;
+                const forceChange = res.data.require_password_change
+                    ? '<p class="link"><a href="/force-change-password">🔑 Задать новый пароль для входа (обязательно)</a></p>'
+                    : '';
+                if (res.data.api_key) {
+                    showKey(res.data.api_key, location.origin + '/mcp', res.data.connection_name || '');
+                    if (forceChange) body.insertAdjacentHTML('beforeend', forceChange);
+                } else {
+                    // Returning user: rawKey пуст by design — не показывать пугающий
+                    // «ключ недоступен», отправить в панель (автологин по вендору).
+                    Auth.renderReturning(body, forceChange);
                 }
                 API.get('/api/shops').then((r) => {
                     if (r && r.ok && App.billingBanner(r.data.items)) {
@@ -356,9 +368,33 @@ const Auth = {
                         body.insertAdjacentHTML('afterbegin', App.billingBanner(r.data.items));
                     }
                 });
+            } else if (API.isLoggedIn()) {
+                // Код уже сгорел (reload/back), но сессия жива — просто в панель.
+                App.navigate('/dashboard');
             } else {
                 body.innerHTML = '<p>Код недействителен или истёк. Откройте приложение из InSales ещё раз.</p><p class="subtitle">Если сервер перезапускался — просто откройте приложение заново: код действует 2 минуты.</p>';
             }
+        });
+    },
+
+    // Returning user после автологина: ключи есть → сразу в панель; ключей нет →
+    // честно предложить создать. Состояние «неизвестно» → в панель (сессия уже жива).
+    renderReturning(body, forceChange) {
+        API.get('/api/ai-keys').then((r) => {
+            if (!r || !r.ok) {
+                App.navigate('/dashboard');
+                return;
+            }
+            const hasKeys = (r.data.items || []).length > 0;
+            if (hasKeys && !forceChange) {
+                App.navigate('/dashboard');
+                return;
+            }
+            // eslint-disable-next-line no-unsanitized/method -- статический шаблон, данные не вставляются
+            body.innerHTML = hasKeys
+                ? '<p><strong>Магазин уже подключён.</strong> Ключи и настройки сохранены.</p><p class="link"><a href="/dashboard">Перейти в панель</a></p>'
+                : '<p>Ключей пока нет — создайте их в разделе «AI-ключи».</p><p class="link"><a href="/dashboard">Перейти в панель</a></p><p class="link"><a href="/ai-keys">🔑 AI-ключи</a></p>';
+            if (hasKeys && forceChange) body.insertAdjacentHTML('beforeend', forceChange);
         });
     },
 

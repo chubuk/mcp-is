@@ -164,7 +164,8 @@
 
 Обмен one-time code (после autologin) на JWT и MCP-ключ. Код приходит в
 HttpOnly-cookie `mcp_onboarding` (основной путь) или в теле запроса (fallback);
-в URL код не передаётся. Одноразовый: повторный обмен тем же кодом → 401.
+в URL код не передаётся. Одноразовый: невалидный/сгоревший код → 400
+(не 401 — чтобы SPA не сбрасывал живую сессию при reload страницы).
 
 **Тело:** `{ "code": "..." }` (опционально при cookie) → `{ "token", "user_id", "nickname", "role", "api_key" }`
 
@@ -857,7 +858,7 @@ Authorization: Bearer <AI_KEY>
     "capabilities": {"tools": {"listChanged": true}},
     "serverInfo": {
       "name": "mcp-is",
-      "version": "0.14.1"
+      "version": "0.14.2"
     },
     "instructions": "Discovery: default tools/list is a core surface; use search_insales_tools → call_insales_tool for the full catalog. MCP_TOOLS_MODE=all lists everything."
   }

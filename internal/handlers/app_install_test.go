@@ -261,6 +261,9 @@ func TestAppLanding_AlwaysInSalesRoundTrip(t *testing.T) {
 	if rec.Code != http.StatusFound {
 		t.Fatalf("status = %d, want 302", rec.Code)
 	}
+	if !strings.HasPrefix(loc, "https://") {
+		t.Errorf("Location = %q, want https:// round-trip (Secure admin cookies)", loc)
+	}
 	if !strings.Contains(loc, "/admin/applications/myapplogin/login") {
 		t.Errorf("Location = %q, want InSales login URL", loc)
 	}
@@ -797,13 +800,25 @@ func TestExchangeCode_E2E_CookieHandoff(t *testing.T) {
 	if !cleared {
 		t.Error("mcp_onboarding cookie must be cleared after exchange")
 	}
-	// replay via the same cookie must fail
+	// replay via the same cookie must fail with 400 — never 401 (SPA nukes session on 401)
 	replay := httptest.NewRequest("POST", "/api/exchange-code", strings.NewReader(`{}`))
 	replay.AddCookie(cookie)
 	replayRec := httptest.NewRecorder()
 	h.ExchangeCode(replayRec, replay)
-	if replayRec.Code == http.StatusOK {
-		t.Error("code replayed via old cookie")
+	if replayRec.Code != http.StatusBadRequest {
+		t.Errorf("replay status = %d, want 400 (burned code is a client error, not auth)", replayRec.Code)
+	}
+}
+
+// burned/garbage code → 400, not 401: api.js clears the session and redirects
+// on any 401, which killed the post-autologin JWT on /onboarding reload.
+func TestExchangeCode_InvalidCode_400_Not401(t *testing.T) {
+	h, _, _, _, _ := newTestAppHandler(t)
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest("POST", "/api/exchange-code", strings.NewReader(`{"code":"garbage"}`))
+	h.ExchangeCode(rec, req)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want 400", rec.Code)
 	}
 }
 

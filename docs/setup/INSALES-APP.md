@@ -95,7 +95,7 @@ INSALES_SECRET_KEY=mysecret
    но наша сессия (JWT) живёт в localStorage SPA и серверу недоступна — поэтому
    на чистом браузере вход работал бы только через круг.
 4. Круг: `/app` → одноразовый nonce в cookie → редирект в InSales
-   `http://<shop>/admin/applications/<app_key>/login?token=<nonce>&login=https://mcp-is.ru/autologin`
+   `https://<shop>/admin/applications/<app_key>/login?token=<nonce>&login=https://mcp-is.ru/autologin`
    → InSales проверяет админ-сессию (нет — просит войти в бэк-офис) → возврат на
    `/autologin` с подписанной строкой. Два формата колбэка:
    - полный: `token3=MD5(nonce+user_email+user_name+user_id+email_сonfirmed+password)`
@@ -109,9 +109,10 @@ INSALES_SECRET_KEY=mysecret
    (`POST /api/link-code/send` → `/api/link-code/verify`) либо после
    входа паролем (`/api/shops/link-pending`). InSales не пишет
    в нашу БД напрямую — данные приходят проверенной подписью, а пишет их наш сервер.
-6. Пользователь попадает в ЛК на mcp-is.ru уже авторизованным (`/onboarding`) и
-   настраивает AI-ключи. Пароль магазина вручную не прописывается — он вычисляется
-   из `token + secret` при установке.
+6. Пользователь попадает в ЛК на mcp-is.ru уже авторизованным: новый email —
+   `/onboarding` с выданным MCP-ключом; вернувшийся (магазин уже привязан) —
+   сразу в `/dashboard` (экран «Подключение» пропускается). Пароль магазина
+   вручную не прописывается — он вычисляется из `token + secret` при установке.
 
 > **Ограничение nonce.** Одноразовость nonce — cookie-based (TTL 300 с, серверного
 > хранилища нет): повтор в этом окне теоретически возможен. Сессию защищает одноразовый
@@ -176,7 +177,8 @@ curl "https://mcp-is.ru/install?shop=test.myinsales.ru&token=token123&insales_id
 curl https://mcp-is.ru/health
 ```
 
-Затем в бэк-офисе InSales нажмите «Войти в приложение» — после автологина появится MCP-ключ.
+Затем в бэк-офисе InSales нажмите «Войти в приложение» — после автологина новый
+пользователь увидит экран с MCP-ключом, вернувшийся попадёт прямо в панель.
 
 ## Безопасность
 

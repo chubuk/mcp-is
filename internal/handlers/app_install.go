@@ -246,7 +246,8 @@ func (h *AppHandler) AppLanding(w http.ResponseWriter, r *http.Request) {
 	})
 
 	loginURL := fmt.Sprintf("https://%s/autologin", h.domain)
-	target := fmt.Sprintf("http://%s/admin/applications/%s/login?token=%s&login=%s",
+	// https: Secure-куки админки InSales не уезжают на http-хоп — InSales требует повторный вход (docs/dev/02:79).
+	target := fmt.Sprintf("https://%s/admin/applications/%s/login?token=%s&login=%s",
 		shop, h.appKey, nonce, loginURL)
 	http.Redirect(w, r, target, http.StatusFound) // #nosec G710 -- host from normalizeShopHost (strict host[:port]); InSales install protocol redirect
 }
@@ -427,14 +428,16 @@ func (h *AppHandler) ExchangeCode(w http.ResponseWriter, r *http.Request) {
 	}
 	userID, rawKey, connName, ok := h.onboard.take(code)
 	if !ok {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid or expired code"})
+		// 400, не 401: у эндпоинта нет сессионной авторизации, а SPA-обработчик 401
+		// сносит живую сессию при перезагрузке /onboarding (сгоревший код).
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid or expired code"})
 		return
 	}
 	// Consume the handoff cookie even on later failures — the code is already burned.
 	http.SetCookie(w, &http.Cookie{Name: "mcp_onboarding", Value: "", Path: "/", MaxAge: -1, HttpOnly: true, Secure: true, SameSite: http.SameSiteLaxMode})
 	user, err := h.users.GetByID(userID)
 	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "invalid code"})
+		writeJSON(w, http.StatusBadRequest, map[string]string{"error": "invalid code"})
 		return
 	}
 	token, err := h.jwt.GenerateToken(user.ID, user.Nickname, user.Role)
