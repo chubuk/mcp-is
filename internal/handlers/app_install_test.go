@@ -269,6 +269,31 @@ func TestAppLanding_AlwaysInSalesRoundTrip(t *testing.T) {
 	}
 }
 
+// /app must never redirect to a host other than the installed one: the query
+// string is attacker-controllable (auto-recovery re-enters from SPA localStorage).
+func TestAppLanding_ShopInstallMismatch_400(t *testing.T) {
+	h, installs, _, shops, _ := newTestAppHandler(t)
+	installFor(t, h, "123", "token123")
+	enc, _ := h.aes.Encrypt(appinstall.InstallPassword("token123", "mysecret"))
+	shop, _ := shops.Create("user-1", "test.myinsales.ru", "test.myinsales.ru", "myapplogin", enc, true, false, false, false)
+	_ = installs.LinkShop("123", "user-1", shop.ID)
+
+	for _, u := range []string{
+		"/app?shop=evil.example.com&insales_id=123",
+		"/app?shop=test.myinsales.ru&insales_id=999",
+	} {
+		req := httptest.NewRequest("GET", u, nil)
+		rec := httptest.NewRecorder()
+		h.AppLanding(rec, req)
+		if rec.Code != http.StatusBadRequest {
+			t.Errorf("%s: status = %d, want 400", u, rec.Code)
+		}
+		if loc := rec.Header().Get("Location"); loc != "" {
+			t.Errorf("%s: Location = %q, want no redirect", u, loc)
+		}
+	}
+}
+
 // (2) returning user (UserID matches, shop linked) → session, no pending_link, empty api_key.
 func TestAutologin_ReturningUser_ReuseShop(t *testing.T) {
 	h, installs, users, shops, keys := newTestAppHandler(t)
@@ -289,7 +314,7 @@ func TestAutologin_ReturningUser_ReuseShop(t *testing.T) {
 		t.Fatalf("status = %d, want 302", rec.Code)
 	}
 	loc := rec.Header().Get("Location")
-	if loc != "/onboarding" {
+	if loc != "/onboarding?shop=test.myinsales.ru&insales_id=123" {
 		t.Fatalf("Location = %q, want /onboarding (code must not be in URL)", loc)
 	}
 	uid, raw, _, ok := h.onboard.take(onboardingCode(t, rec))
@@ -330,7 +355,7 @@ func TestAutologin_ReinstallLeftover_Reprovision(t *testing.T) {
 		t.Fatalf("status = %d, want 302", rec.Code)
 	}
 	loc := rec.Header().Get("Location")
-	if loc != "/onboarding" {
+	if loc != "/onboarding?shop=test.myinsales.ru&insales_id=123" {
 		t.Fatalf("Location = %q, want /onboarding", loc)
 	}
 	_, raw, _, ok := h.onboard.take(onboardingCode(t, rec))
@@ -414,7 +439,7 @@ func TestAutologin_NewEmail_Provision(t *testing.T) {
 	if rec.Code != http.StatusFound {
 		t.Fatalf("status = %d, want 302", rec.Code)
 	}
-	if loc := rec.Header().Get("Location"); loc != "/onboarding" {
+	if loc := rec.Header().Get("Location"); loc != "/onboarding?shop=test.myinsales.ru&insales_id=123" {
 		t.Errorf("Location = %q", loc)
 	}
 	if len(users.users) != 1 {
@@ -460,7 +485,7 @@ func TestAutologin_ShortToken(t *testing.T) {
 	if rec.Code != http.StatusFound {
 		t.Fatalf("bound: status = %d, want 302", rec.Code)
 	}
-	if loc := rec.Header().Get("Location"); loc != "/onboarding" {
+	if loc := rec.Header().Get("Location"); loc != "/onboarding?shop=test.myinsales.ru&insales_id=123" {
 		t.Errorf("Location = %q", loc)
 	}
 }
@@ -606,7 +631,7 @@ func TestAutologin_BillingBlocked_SessionIssued(t *testing.T) {
 	if rec.Code != http.StatusFound {
 		t.Fatalf("status = %d, want 302 (login must never be blocked)", rec.Code)
 	}
-	if loc := rec.Header().Get("Location"); loc != "/onboarding" {
+	if loc := rec.Header().Get("Location"); loc != "/onboarding?shop=test.myinsales.ru&insales_id=123" {
 		t.Fatalf("Location = %q, want /onboarding", loc)
 	}
 	if shops.shops[shop.ID].BillingStatus != "unpaid" {

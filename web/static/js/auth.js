@@ -1,4 +1,13 @@
 const Auth = {
+    // Входной URL приложения (URL входа из карточки InSales) для повторного
+    // автологина. Параметры — из localStorage (запоминаются при успешном входе).
+    insalesEntryURL() {
+        const shop = localStorage.getItem('insales_shop') || '';
+        const insalesId = localStorage.getItem('insales_id') || '';
+        if (!/^[a-z0-9.-]+(:\d+)?$/i.test(shop) || !/^[a-z0-9_-]+$/i.test(insalesId)) return '';
+        return '/app?shop=' + encodeURIComponent(shop) + '&insales_id=' + encodeURIComponent(insalesId);
+    },
+
     renderLogin() {
         return `
             <div class="auth-page">
@@ -59,7 +68,41 @@ const Auth = {
     },
 
     bindLogin() {
+        const expired = new URLSearchParams(location.search).get('expired');
         const pending = new URLSearchParams(location.search).get('pending_install');
+        if (expired) {
+            const alert = document.getElementById('alert');
+            // retry_at жив → авто-вход уже пробовали и он не вышел (критик: разные тексты).
+            const autoTried = parseInt(sessionStorage.getItem('autologin_retry') || '0', 10) > 0;
+            const head = autoTried
+                ? '<strong>Не удалось войти автоматически.</strong> Войдите через InSales — пароль не понадобится.'
+                : '<strong>Сессия истекла.</strong> Войдите заново — пароль не понадобится, если входить через InSales.';
+            if (alert) {
+                // eslint-disable-next-line no-unsanitized/property -- статические строки
+                alert.innerHTML = `<div class="alert alert--info">${head}</div>`;
+            }
+        }
+        // Повторный вход через InSales показываем всегда, когда путь известен:
+        // пользователь мог бросить авто-вход на логине InSales и вернуться без токена.
+        {
+            const entry = Auth.insalesEntryURL();
+            const shop = localStorage.getItem('insales_shop') || '';
+            const admin = /^[a-z0-9.-]+(:\d+)?$/i.test(shop)
+                ? `<p class="link"><a href="https://${esc(shop)}/admin2/applications" target="_blank" rel="noopener">📋 Список приложений в админке InSales</a></p>`
+                : '';
+            const retry = entry
+                ? `<button class="btn btn--primary" id="expired-retry" style="width:100%">🔁 Войти через InSales</button>`
+                : '';
+            if (entry || admin) {
+                const alert = document.getElementById('alert');
+                if (alert) {
+                    // eslint-disable-next-line no-unsanitized/method -- строки статические, shop экранирован esc()
+                    alert.insertAdjacentHTML('beforeend', retry + admin);
+                    const btn = document.getElementById('expired-retry');
+                    if (btn) btn.addEventListener('click', () => { location.href = entry; });
+                }
+            }
+        }
         if (pending) {
             const alert = document.getElementById('alert');
             if (alert) {
@@ -102,7 +145,7 @@ const Auth = {
                 if (res.data.require_password_change) {
                     App.navigate('/force-change-password');
                 } else {
-                    App.navigate('/dashboard');
+                    App.goReturnTo();
                 }
             } else if (res && res.status === 403 && res.data.require_email) {
                 Auth.renderVerifyCodeForm(res.data.user_id);
@@ -260,6 +303,15 @@ const Auth = {
         const params = new URLSearchParams(location.search);
         const body = document.getElementById('onboarding-body');
 
+        // Точка повторного входа для авто-восстановления после протухания JWT.
+        // Формат сверяется до сохранения; host дополнительно проверяет сервер (400).
+        const shop = params.get('shop') || '';
+        const insalesId = params.get('insales_id') || '';
+        if (/^[a-z0-9.-]+(:\d+)?$/i.test(shop) && /^[a-z0-9_-]+$/i.test(insalesId)) {
+            localStorage.setItem('insales_shop', shop);
+            localStorage.setItem('insales_id', insalesId);
+        }
+
         // 409 «account conflict» — магазин привязан к другому аккаунту.
         if (params.get('conflict') === '1') {
             body.innerHTML = `
@@ -270,6 +322,9 @@ const Auth = {
         }
 
         const showKey = (apiKey, mcpUrl, connName) => {
+            // Пользователь остаётся на экране ключа — return_to сгорает, чтобы не
+            // примениться к чужому следующему логину (критик #4).
+            sessionStorage.removeItem('return_to');
             const url = mcpUrl || (location.origin + '/mcp');
             const alias = connName || 'mcp-is';
             body.innerHTML = `
@@ -337,7 +392,7 @@ const Auth = {
         }
         // Повторный монтаж (bfcache/re-render) при живой сессии — не сжигать код заново.
         if (Auth._onboardExchanged && API.isLoggedIn()) {
-            App.navigate('/dashboard');
+            App.goReturnTo();
             return;
         }
         // Обмен кода: одноразовый код приходит в HttpOnly-куке (autologin) или
@@ -356,6 +411,7 @@ const Auth = {
                     : '';
                 if (res.data.api_key) {
                     showKey(res.data.api_key, location.origin + '/mcp', res.data.connection_name || '');
+                    // eslint-disable-next-line no-unsanitized/method -- forceChange собирается из статических строк
                     if (forceChange) body.insertAdjacentHTML('beforeend', forceChange);
                 } else {
                     // Returning user: rawKey пуст by design — не показывать пугающий
@@ -370,9 +426,19 @@ const Auth = {
                 });
             } else if (API.isLoggedIn()) {
                 // Код уже сгорел (reload/back), но сессия жива — просто в панель.
-                App.navigate('/dashboard');
+                App.goReturnTo();
             } else {
-                body.innerHTML = '<p>Код недействителен или истёк. Откройте приложение из InSales ещё раз.</p><p class="subtitle">Если сервер перезапускался — просто откройте приложение заново: код действует 2 минуты.</p>';
+                // Failure-ветка: return_to сгорает здесь (иначе применится к чужому
+                // следующему логину) — критик #4.
+                sessionStorage.removeItem('return_to');
+                const entry = Auth.insalesEntryURL();
+                const retry = entry
+                    ? '<p class="link"><button class="btn btn--primary" id="reopen-app">Открыть приложение заново</button></p>'
+                    : '';
+                // eslint-disable-next-line no-unsanitized/property -- статические строки
+                body.innerHTML = '<p>Код недействителен или истёк. Откройте приложение из InSales ещё раз.</p><p class="subtitle">Если сервер перезапускался — просто откройте приложение заново: код действует 2 минуты.</p>' + retry;
+                const btn = document.getElementById('reopen-app');
+                if (btn) btn.addEventListener('click', () => { location.href = entry; });
             }
         });
     },
@@ -381,20 +447,23 @@ const Auth = {
     // честно предложить создать. Состояние «неизвестно» → в панель (сессия уже жива).
     renderReturning(body, forceChange) {
         API.get('/api/ai-keys').then((r) => {
-            if (!r || !r.ok) {
-                App.navigate('/dashboard');
+            if (!r) return; // 401 → сессию уже ведёт sessionExpired(), не мешать
+            if (!r.ok) {
+                App.goReturnTo();
                 return;
             }
             const hasKeys = (r.data.items || []).length > 0;
             if (hasKeys && !forceChange) {
-                App.navigate('/dashboard');
+                App.goReturnTo();
                 return;
             }
-            // eslint-disable-next-line no-unsanitized/method -- статический шаблон, данные не вставляются
+            // eslint-disable-next-line no-unsanitized/property -- статический шаблон, данные не вставляются
             body.innerHTML = hasKeys
                 ? '<p><strong>Магазин уже подключён.</strong> Ключи и настройки сохранены.</p><p class="link"><a href="/dashboard">Перейти в панель</a></p>'
                 : '<p>Ключей пока нет — создайте их в разделе «AI-ключи».</p><p class="link"><a href="/dashboard">Перейти в панель</a></p><p class="link"><a href="/ai-keys">🔑 AI-ключи</a></p>';
+            // eslint-disable-next-line no-unsanitized/method -- forceChange собирается из статических строк
             if (hasKeys && forceChange) body.insertAdjacentHTML('beforeend', forceChange);
+            sessionStorage.removeItem('return_to');
         });
     },
 

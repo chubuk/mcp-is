@@ -72,6 +72,11 @@ const App = {
         window.addEventListener('pageshow', (e) => {
             if (!e.persisted) return;
             if (!API.isLoggedIn()) {
+                if (API._expired) {
+                    API._expired = false;
+                    this.sessionExpired();
+                    return;
+                }
                 this.navigate('/login');
                 return;
             }
@@ -151,6 +156,11 @@ const App = {
         const { route, params } = result;
 
         if (route.auth && !API.isLoggedIn()) {
+            if (API._expired) {
+                API._expired = false;
+                this.sessionExpired();
+                return;
+            }
             this.navigate('/login');
             return;
         }
@@ -212,7 +222,58 @@ const App = {
         // «Выйти» всегда закрывает сессию локально — без зависимостей от сервера
         // и от флага имперсонации (иначе кнопка может упереться в «not impersonating»).
         API.clearSession();
+        sessionStorage.removeItem('return_to');
+        sessionStorage.removeItem('autologin_retry');
         this.navigate('/login');
+    },
+
+    // Протухание JWT (а не «никогда не логинился»): авто-восстановление через
+    // входной URL приложения (/app?shop&insales_id) с возвратом на исходную
+    // страницу. return_to только относительный путь; cooldown — timestamp
+    // (5 мин), снимается после первого 200 от авторизованного API (api.js),
+    // чтобы свежий битый JWT не устроил петлю round-trip'ов через InSales.
+    sessionExpired() {
+        if (this._expiring) return; // параллельные 401 не стартуют второй round-trip
+        this._expiring = true;
+        const shop = localStorage.getItem('insales_shop');
+        const insalesId = localStorage.getItem('insales_id');
+        const retryAt = parseInt(sessionStorage.getItem('autologin_retry') || '0', 10);
+        const cooling = retryAt > 0 && (Date.now() - retryAt) < 5 * 60 * 1000;
+        if (shop && insalesId && !cooling) {
+            if (!sessionStorage.getItem('return_to')) {
+                sessionStorage.setItem('return_to', location.pathname + location.search);
+            }
+            sessionStorage.setItem('autologin_retry', String(Date.now()));
+            location.href = '/app?shop=' + encodeURIComponent(shop) + '&insales_id=' + encodeURIComponent(insalesId);
+            return;
+        }
+        sessionStorage.removeItem('return_to');
+        this.navigate('/login?expired=1');
+        this._expiring = false;
+    },
+
+    // Путь из return_to допускает только внутренний маршрут (анти open-redirect:
+    // «/\evil.com» парсится как «//evil.com», поэтому одного startsWith('/') мало).
+    safeReturnTo(p) {
+        if (typeof p !== 'string' || !p.startsWith('/') || p.startsWith('//')) return '';
+        if (/[\\<>\x00]/.test(p)) return '';
+        try {
+            const u = new URL(p, location.origin);
+            if (u.origin !== location.origin || u.hash) return '';
+            return u.pathname === p.split(/[?#]/)[0] ? p : '';
+        } catch {
+            return '';
+        }
+    },
+
+    // После успешного обмена кода — вернуть на страницу, с которой протухла
+    // сессия; return_to сгорает в любом случае (чужой логин его не наследует).
+    // Cooldown здесь НЕ снимаем — его снимает первый 200 от авторизованного API.
+    goReturnTo() {
+        const rt = sessionStorage.getItem('return_to');
+        sessionStorage.removeItem('return_to');
+        const safe = this.safeReturnTo(rt);
+        this.navigate(safe || '/dashboard');
     },
 
     async stopImpersonate() {

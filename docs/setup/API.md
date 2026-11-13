@@ -159,6 +159,11 @@
 #### GET /app → GET /autologin
 
 Страница входа и автологин. `token3 = MD5(nonce + user_email + user_name + user_id + email_сonfirmed + password)`.
+Query `/app`: `shop`, `insales_id` — сверяются с записью установки в БД:
+`shop != inst.ShopHost` (или install не найден) → 400, редирект идёт только на
+`inst.ShopHost` (анти open-redirect). Успешный `/autologin` редиректит на
+`/onboarding?shop=…&insales_id=…` (SPA запоминает их для авто-восстановления
+сессии после протухания JWT).
 
 #### POST /api/exchange-code
 
@@ -858,7 +863,7 @@ Authorization: Bearer <AI_KEY>
     "capabilities": {"tools": {"listChanged": true}},
     "serverInfo": {
       "name": "mcp-is",
-      "version": "0.14.2"
+      "version": "0.14.3"
     },
     "instructions": "Discovery: default tools/list is a core surface; use search_insales_tools → call_insales_tool for the full catalog. MCP_TOOLS_MODE=all lists everything."
   }

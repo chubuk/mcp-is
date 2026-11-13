@@ -226,6 +226,15 @@ func (h *AppHandler) AppLanding(w http.ResponseWriter, r *http.Request) {
 		appBadRequest(w)
 		return
 	}
+	// The install record is the source of truth for the shop host: the query
+	// string is attacker-controllable and must never become a redirect target
+	// (auto-recovery on session expiry re-enters here from SPA localStorage).
+	inst, err := h.installs.GetByInsalesID(insalesID)
+	if err != nil || normalizeShopHost(inst.ShopHost) != shop {
+		slog.Warn("app landing: shop/install mismatch", "insales_id", insalesID, "shop", shop)
+		appBadRequest(w)
+		return
+	}
 
 	// Always do the InSales round-trip: the SPA JWT lives in localStorage and is
 	// invisible to the server, so a shortcut would drop users on a clean browser.
@@ -349,7 +358,7 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 			slog.Info("app autologin: returning user", "insales_id", insalesID, "user_id", user.ID)
-			redirectOnboarding(w, r, code)
+			redirectOnboarding(w, r, code, inst.ShopHost, insalesID)
 			return
 		case inst.UserID != "" && inst.UserID != existing.ID:
 			// Email reassigned to another account — never rewrite ownership.
@@ -390,12 +399,14 @@ func (h *AppHandler) Autologin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	redirectOnboarding(w, r, code)
+	redirectOnboarding(w, r, code, inst.ShopHost, insalesID)
 }
 
 // redirectOnboarding hands the one-time code to the SPA via HttpOnly cookie —
 // never in the URL (browser history / proxy logs / Referer must not see it).
-func redirectOnboarding(w http.ResponseWriter, r *http.Request, code string) {
+// shop/insales_id ride along so the SPA can persist the re-entry point for
+// auto-recovery after JWT expiry (they are public — already in the entry URL).
+func redirectOnboarding(w http.ResponseWriter, r *http.Request, code, shopHost, insalesID string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "mcp_onboarding",
 		Value:    code,
@@ -405,7 +416,8 @@ func redirectOnboarding(w http.ResponseWriter, r *http.Request, code string) {
 		SameSite: http.SameSiteLaxMode,
 		MaxAge:   120,
 	})
-	http.Redirect(w, r, "/onboarding", http.StatusFound)
+	target := "/onboarding?shop=" + url.QueryEscape(shopHost) + "&insales_id=" + url.QueryEscape(insalesID)
+	http.Redirect(w, r, target, http.StatusFound)
 }
 
 // ExchangeCode handles POST /api/exchange-code — swaps the one-time code for a JWT (+ fresh MCP key).

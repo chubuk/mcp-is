@@ -6,6 +6,9 @@ function esc(v) {
 
 const API = {
     token: localStorage.getItem('token'),
+    // Ставится isLoggedIn() при протухшем JWT — route guard отличает «сессия
+    // протухла» (авто-восстановление) от «никогда не логинился» (просто /login).
+    _expired: false,
 
     async request(method, path, body) {
         const headers = { 'Content-Type': 'application/json' };
@@ -21,8 +24,16 @@ const API = {
 
         if (res.status === 401 && this.token) {
             this.clearSession();
-            App.navigate('/login');
+            App.sessionExpired();
             return null;
+        }
+        // Первый ответ 200 от защищённого API подтверждает, что восстановление
+        // удалось, и снимает cooldown авто-retry. Публичные эндпоинты (200 и с
+        // мусорным токеном) подтверждением не являются — иначе битый свежий JWT
+        // устроил бы петлю round-trip'ов через InSales (критик #3).
+        const pub = path === '/api/exchange-code' || path === '/api/mcp-client-types';
+        if (res.ok && this.token && !pub) {
+            sessionStorage.removeItem('autologin_retry');
         }
 
         return { ok: res.ok, status: res.status, data };
@@ -35,6 +46,7 @@ const API = {
 
     setToken(token) {
         this.token = token;
+        this._expired = false;
         localStorage.setItem('token', token);
     },
 
@@ -45,8 +57,10 @@ const API = {
 
     // Полная зачистка сессии, включая следы имперсонации (admin_*, impersonating):
     // иначе протухший флаг переживает перелогин и обе кнопки выхода уходят в «not impersonating».
+    // _expired тоже сбрасывается: явный logout не должен переиспользоваться как «протухание».
     clearSession() {
         this.clearToken();
+        this._expired = false;
         ['nickname', 'role', 'user_id', 'impersonating', 'admin_token', 'admin_user_id', 'admin_nickname', 'admin_role']
             .forEach(k => localStorage.removeItem(k));
     },
@@ -60,10 +74,12 @@ const API = {
             while (p.length % 4) p += '=';
             const claims = JSON.parse(atob(p));
             if (claims.exp && claims.exp * 1000 <= Date.now()) {
+                this._expired = true;
                 this.clearToken();
                 return false;
             }
         } catch {
+            this._expired = true;
             this.clearToken();
             return false;
         }
