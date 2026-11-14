@@ -71,6 +71,8 @@ services:
       SERVER_PORT: "8080"
       # docker CLI ходит в dockerproxy вместо прямого /var/run/docker.sock
       DOCKER_HOST: tcp://dockerproxy:2375
+      PAGETREE_CONTENT_DIR: /opt/mcp-is/content
+      PAGETREE_DATA_DIR: /opt/mcp-is/data
     volumes:
       - ./scripts:/opt/mcp-is/scripts:ro
       - ./backups:/opt/mcp-is/backups
