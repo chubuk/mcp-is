@@ -254,6 +254,7 @@ func main() {
 		mux.Handle("/api/admin/content/keys/", jwtMW(adminMW(ptEngine.KeysAPI())))
 		// Agent API — Bearer ptk_* (module-owned auth)
 		mux.Handle("/api/agent/v1/", ptEngine.AgentAPI())
+		mux.Handle("/api/agent/mcp", ptEngine.AgentMCPHandler())
 		// Admin UI — static shell (data via XHR with JWT)
 		mux.Handle("/content/admin/", ptEngine.AdminUIHandler())
 		slog.Info("pagetree mounted", "content", ptContentDir, "site_url", ptSiteURL)
