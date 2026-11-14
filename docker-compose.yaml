@@ -74,6 +74,8 @@ services:
     volumes:
       - ./scripts:/opt/mcp-is/scripts:ro
       - ./backups:/opt/mcp-is/backups
+      - ./content:/opt/mcp-is/content:rw
+      - ./data:/opt/mcp-is/data:rw
       # /etc/letsencrypt: GetCertInfo читает серт напрямую (статус/планировщик)
       - certbot_data:/etc/letsencrypt:ro
     depends_on:

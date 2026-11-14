@@ -518,6 +518,43 @@ log_incident() {
 }
 
 # ============================================================================
+# Бэкап content/ (markdown pages/news + data/)
+# ============================================================================
+
+backup_content() {
+    local timestamp
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    local content_dir="${CONTENT_DIR:-/opt/mcp-is/content}"
+    local data_dir="${DATA_DIR:-/opt/mcp-is/data}"
+
+    if [ ! -d "$content_dir" ] && [ ! -d "$data_dir" ]; then
+        info "content/ и data/ не найдены — пропуск"
+        return 0
+    fi
+
+    local backup_file="${BACKUP_DIR}/content_${timestamp}.tar.gz"
+    local tar_args=()
+
+    [ -d "$content_dir" ] && tar_args+=(-C "$(dirname "$content_dir")" "$(basename "$content_dir")")
+    [ -d "$data_dir" ] && tar_args+=(-C "$(dirname "$data_dir")" "$(basename "$data_dir")")
+
+    info "Бэкап content/ + data/..."
+    if tar -czf "$backup_file" "${tar_args[@]}" 2>/dev/null; then
+        local size
+        size=$(du -h "$backup_file" | cut -f1)
+        ok "Content бэкап создан: $backup_file ($size)"
+        write_sha256 "$backup_file"
+        secure_backup_file "$backup_file"
+
+        if [ "$BACKUP_REMOTE_ENABLED" = "true" ]; then
+            sync_to_remote "$backup_file"
+        fi
+    else
+        fail "Ошибка бэкапа content/"
+    fi
+}
+
+# ============================================================================
 # Очистка старых бэкапов
 # ============================================================================
 
@@ -995,7 +1032,8 @@ main() {
             else
                 do_backup_pg_dump
             fi
-            
+
+            backup_content
             check_missed_backups
             ;;
             
@@ -1025,7 +1063,8 @@ main() {
             else
                 do_backup_pg_dump
             fi
-            
+
+            backup_content
             cleanup_old_backups
             ;;
             

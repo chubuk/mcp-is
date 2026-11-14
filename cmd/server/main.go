@@ -20,6 +20,10 @@ import (
 	"github.com/chubuk/mcp-is/internal/metrics"
 	"github.com/chubuk/mcp-is/internal/service"
 	"github.com/chubuk/mcp-is/internal/storage"
+	"github.com/chubuk/pagetree"
+	"github.com/gomarkdown/markdown"
+	"github.com/gomarkdown/markdown/html"
+	"github.com/gomarkdown/markdown/parser"
 )
 
 func main() {
@@ -216,6 +220,45 @@ func main() {
 	mux.Handle("POST /api/admin/backup/restore", jwtMW(superAdminMW(http.HandlerFunc(backupHandler.Restore))))
 	mux.Handle("GET /api/admin/backup/restore/status", jwtMW(adminMW(http.HandlerFunc(backupHandler.GetRestoreStatus))))
 
+	// PageTree — file-based markdown pages/news engine
+	ptContentDir := getEnvDefault("PAGETREE_CONTENT_DIR", "./content")
+	ptDataDir := getEnvDefault("PAGETREE_DATA_DIR", "./data")
+	ptSiteURL := "https://" + cfg.Domain
+	var ptMasterKey, ptPrevKey []byte
+	if mk := os.Getenv("PAGETREE_MASTER_KEY"); mk != "" {
+		ptMasterKey = []byte(mk)
+	}
+	if pk := os.Getenv("PAGETREE_MASTER_KEY_PREVIOUS"); pk != "" {
+		ptPrevKey = []byte(pk)
+	}
+	ptRenderer := &mdRenderer{}
+	ptEngine, ptErr := pagetree.New(pagetree.Config{
+		Root:     ptContentDir,
+		DataDir:  ptDataDir,
+		SiteURL:  ptSiteURL,
+		Renderer: ptRenderer,
+		Log:      slog.Default(),
+		MasterKey: ptMasterKey,
+		PrevKey:   ptPrevKey,
+	})
+	if ptErr != nil {
+		slog.Warn("pagetree init failed (content features disabled)", "error", ptErr)
+	} else {
+		// Public — no auth
+		mux.Handle("GET /pages/", ptEngine.PageHandler())
+		mux.Handle("GET /news/", ptEngine.NewsHandler())
+		mux.Handle("GET /media/", ptEngine.MediaHandler())
+		mux.Handle("GET /api/content/menu", ptEngine.MenuHandler())
+		// Admin — JWT + role
+		mux.Handle("/api/admin/content/", jwtMW(adminMW(ptEngine.ContentAPI())))
+		mux.Handle("/api/admin/content/keys/", jwtMW(adminMW(ptEngine.KeysAPI())))
+		// Agent API — Bearer ptk_* (module-owned auth)
+		mux.Handle("/api/agent/v1/", ptEngine.AgentAPI())
+		// Admin UI — static shell (data via XHR with JWT)
+		mux.Handle("/content/admin/", ptEngine.AdminUIHandler())
+		slog.Info("pagetree mounted", "content", ptContentDir, "site_url", ptSiteURL)
+	}
+
 	mux.HandleFunc("GET /api/mcp-client-types", mcpClientTypeHandler.List)
 
 	apiKeyMW := auth.APIKeyMiddleware(pool)
@@ -267,4 +310,23 @@ func main() {
 	if err := httpServer.Shutdown(shutdownCtx); err != nil {
 		slog.Error("shutdown error", "error", err)
 	}
+}
+
+// mdRenderer adapts gomarkdown to pagetree.Renderer interface.
+type mdRenderer struct{}
+
+func (r *mdRenderer) Render(md []byte) ([]byte, error) {
+	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock
+	p := parser.NewWithExtensions(extensions)
+	doc := p.Parse(md)
+	opts := html.RendererOptions{Flags: html.CommonFlags | html.HrefTargetBlank}
+	renderer := html.NewRenderer(opts)
+	return markdown.Render(doc, renderer), nil
+}
+
+func getEnvDefault(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
 }

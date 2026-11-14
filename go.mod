@@ -19,6 +19,11 @@ require (
 )
 
 require (
+	github.com/chubuk/pagetree v0.0.0-20261114192433-518abec945c5
+	github.com/gomarkdown/markdown v0.0.0-20261109103609-13f93121d67a
+)
+
+require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/google/jsonschema-go v0.4.2 // indirect
