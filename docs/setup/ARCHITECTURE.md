@@ -119,6 +119,7 @@ Web UI → HTTP POST /api/shops → Shop Handler → AES encrypt → PostgreSQL
 | JWT | HMAC-SHA256 (срок 24 часа) |
 | Rate limiting | nginx: MCP per-API-ключ 300/мин (burst 60, замедление до 200, 429), щит 100/с на IP; login/API — in-memory sliding window |
 | CORS | Разрешённые origins |
+| CSP | `default-src 'self'; object-src 'none'; frame-src 'none'` — блокирует `<object>`/`<iframe>` XSS (Vditor plantuml-вектор) |
 | DNS rebinding | Автоматическая защита (mcp-go) |
 | HTTPS | Let's Encrypt или self-signed |
 | Таймауты | nginx 60с (header/body/send, стандартные); app: header 15с, чтение/ответ 5мин (20-МБ загрузка картинки + стрим в InSales > 30с); InSales-клиент 5мин |

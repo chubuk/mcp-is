@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Безопасность
+- **CSP усилен: `object-src 'none'; frame-src 'none'; font-src 'self' data:`** — блокирует XSS через `<object>`/`<iframe>` (plantuml-вектор в Vditor) и утечки на сторонние фреймы.
+- **Vditor fork: 0 внешних запросов** — вырезаны hardcoded URL (`plantuml.com`, `unpkg.com`, `cdn.jsdelivr.net`), добавлен DOMPurify + sanitize на paste, `preview.markdown.sanitize: true`. Проверено live: `performance.getEntriesByType('resource')` — ни одного внешнего запроса.
+
+### Исправлено
+- **SPA: клики по `target="_blank"` ссылкам больше не перехватываются** — `!link.target` в `app.js` (пункт «Страницы» не открывался из-за `preventDefault`).
+
+### Добавлено
+- **PageTree content routing** — `location ^~ /content/` в nginx (prefix-локейт для редактора страниц).
+
 ## [0.14.3] — 2026-12-02 (авто-восстановление протухшей сессии, закрыт open redirect в /app)
 
 ### Исправлено

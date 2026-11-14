@@ -84,7 +84,7 @@ const App = {
         });
         document.addEventListener('click', (e) => {
             const link = e.target.closest('a[href]');
-            if (link) {
+            if (link && !link.target) {
                 e.preventDefault();
                 this.navigate(link.getAttribute('href'));
             }

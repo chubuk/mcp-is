@@ -19,7 +19,7 @@ require (
 )
 
 require (
-	github.com/chubuk/pagetree v0.0.0-20261114195245-5afd8003f7a9
+	github.com/chubuk/pagetree v0.0.0-20261114215528-7affe3825414
 	github.com/gomarkdown/markdown v0.0.0-20261109103609-13f93121d67a
 )
 
