@@ -252,8 +252,9 @@ func main() {
 		// Admin — JWT + role; StripPrefix обязателен: inner mux регистрирует «голые» /list, /page
 		mux.Handle("/api/admin/content/", jwtMW(adminMW(http.StripPrefix("/api/admin/content", ptEngine.ContentAPI()))))
 		mux.Handle("/api/admin/content/keys/", jwtMW(adminMW(http.StripPrefix("/api/admin/content/keys", ptEngine.KeysAPI()))))
-		// Agent API — Bearer ptk_* (module-owned auth)
-		mux.Handle("/api/agent/v1/", ptEngine.AgentAPI())
+		// Agent API — Bearer ptk_* (module-owned auth); StripPrefix как у contentAPI,
+		// иначе inner mux («голые» /pages, /menu) не матчится → 404.
+		mux.Handle("/api/agent/v1/", http.StripPrefix("/api/agent/v1", ptEngine.AgentAPI()))
 		mux.Handle("/api/agent/mcp", ptEngine.AgentMCPHandler())
 		// Admin UI — static shell (data via XHR with JWT)
 		mux.Handle("/content/admin/", ptEngine.AdminUIHandler())
