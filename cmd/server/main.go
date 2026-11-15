@@ -233,11 +233,11 @@ func main() {
 	}
 	ptRenderer := &mdRenderer{}
 	ptEngine, ptErr := pagetree.New(pagetree.Config{
-		Root:     ptContentDir,
-		DataDir:  ptDataDir,
-		SiteURL:  ptSiteURL,
-		Renderer: ptRenderer,
-		Log:      slog.Default(),
+		Root:      ptContentDir,
+		DataDir:   ptDataDir,
+		SiteURL:   ptSiteURL,
+		Renderer:  ptRenderer,
+		Log:       slog.Default(),
 		MasterKey: ptMasterKey,
 		PrevKey:   ptPrevKey,
 	})
@@ -249,9 +249,9 @@ func main() {
 		mux.Handle("GET /news/", ptEngine.NewsHandler())
 		mux.Handle("GET /media/", ptEngine.MediaHandler())
 		mux.Handle("GET /api/content/menu", ptEngine.MenuHandler())
-		// Admin — JWT + role
-		mux.Handle("/api/admin/content/", jwtMW(adminMW(ptEngine.ContentAPI())))
-		mux.Handle("/api/admin/content/keys/", jwtMW(adminMW(ptEngine.KeysAPI())))
+		// Admin — JWT + role; StripPrefix обязателен: inner mux регистрирует «голые» /list, /page
+		mux.Handle("/api/admin/content/", jwtMW(adminMW(http.StripPrefix("/api/admin/content", ptEngine.ContentAPI()))))
+		mux.Handle("/api/admin/content/keys/", jwtMW(adminMW(http.StripPrefix("/api/admin/content/keys", ptEngine.KeysAPI()))))
 		// Agent API — Bearer ptk_* (module-owned auth)
 		mux.Handle("/api/agent/v1/", ptEngine.AgentAPI())
 		mux.Handle("/api/agent/mcp", ptEngine.AgentMCPHandler())
