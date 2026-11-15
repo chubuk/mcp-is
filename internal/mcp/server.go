@@ -175,7 +175,7 @@ func NewMCPServer(svc *service.Service, readOnly, autoPDN bool, serverCountry st
 
 	s := server.NewMCPServer(
 		"mcp-is",
-		"0.15.0",
+		"0.15.1",
 		server.WithToolCapabilities(true),
 		server.WithToolFilter(toolFilter(readOnly)),
 		server.WithRecovery(),

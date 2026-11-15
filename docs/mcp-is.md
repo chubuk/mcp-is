@@ -18,7 +18,7 @@ MCP IS — MCP-сервер для интеграции ИИ-агентов с �
 | `docs/api/insales-api-reference.md` | Справочник REST API InSales |
 | `docs/mcp-acceptance-checklist.md` | Чеклист приёмки MCP-инструментов |
 | `server.json` | Манифест MCP-сервера для реестров |
-| `mcp-pagetree.md`, `api-pagetree.md` | Контент-движок PageTree: MCP и REST API |
+| `mcp-pagetree.md`, `api-pagetree.md` | Контент-движок PageTree: MCP и REST API (в репо `chubuk/pagetree`, см. ссылки ниже) |
 
 ## Возможности
 
@@ -37,7 +37,7 @@ MCP IS — MCP-сервер для интеграции ИИ-агентов с �
 ### Контент-движок PageTree
 - Страницы и новости сайта (`*.md` + sidecar `*.json`), редактор в админке («Страницы»), медиа, SEO, меню.
 - Доступ агентов: REST `/api/agent/v1/` и MCP `/api/agent/mcp` (Bearer `ptk_*`), управление ключами — страница «Ключи и доступы».
-- Подробно: [api-pagetree.md](api-pagetree.md), [mcp-pagetree.md](mcp-pagetree.md).
+- Подробно: [REST API PageTree](https://mcp-is.ru/pages/docs/api-pagetree), [MCP API PageTree](https://mcp-is.ru/pages/docs/mcp-pagetree).
 
 ### Эксплуатация
 - Резервное копирование/восстановление (backup.sh, pg_basebackup), метрики Prometheus `/metrics`, health `/health`.

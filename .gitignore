@@ -38,3 +38,6 @@ tmp/
 web/node_modules/
 web/lighthouse-results/
 web/.lighthouseci/
+
+# test/site content (runtime data — never commit)
+content/
